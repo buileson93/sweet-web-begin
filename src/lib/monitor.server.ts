@@ -5,33 +5,6 @@
  * chỉ cập nhật khi thực sự có thay đổi.
  */
 
-export type LiveSession = {
-  id: string;
-  quizId: string;
-  quizTitle: string;
-  candidateName: string;
-  unit: string;
-  startedAt: string;
-  expiresAt: string;
-  submittedAt: string | null;
-  status: string;
-  answered: number;
-  total: number;
-};
-
-export type LivePage = {
-  /** Vân tay của trang dữ liệu; giống nhau nghĩa là không có gì đổi. */
-  version: string;
-  /** false khi client đã có đúng phiên bản này (không gửi lại rows). */
-  changed: boolean;
-  rows: LiveSession[];
-  /** Còn dữ liệu cũ hơn để tải thêm hay không. */
-  hasMore: boolean;
-  activeCount: number;
-  submittedCount: number;
-  serverNow: string;
-};
-
 const MONITOR_ROLES = ["admin", "staff", "editor"] as const;
 
 /** Kiểm tra quyền bằng MỘT truy vấn thay vì gọi has_role nhiều lần. */
