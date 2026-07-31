@@ -193,20 +193,23 @@ export function DuelFighter({
             💥
           </span>
         ) : null}
-        <ClassSprite
-          key={`${pose}-${dealt}-${hp}`}
-          classId={player?.classId}
-          action={pose}
-          flip={!mine}
-          size={196}
-          className={cn(
-            "-mb-3 drop-shadow-[0_8px_12px_rgba(0,0,0,0.35)]",
-            pose === "idle" && "animate-idle-bob",
-            pose === "attack" && (mine ? "animate-lunge-right" : "animate-lunge-left"),
-            pose === "hurt" && (mine ? "animate-recoil-left" : "animate-recoil-right"),
-            pose === "hurt" && "animate-sprite-flash",
-          )}
-        />
+        {/* Bọc ngoài để nháy trắng (filter) không đè hoạt ảnh lao/giật (transform). */}
+        <div className={cn(pose === "hurt" && "animate-sprite-flash")}>
+          <ClassSprite
+            key={`${pose}-${dealt}-${hp}`}
+            classId={player?.classId}
+            action={pose}
+            flip={!mine}
+            size={196}
+            className={cn(
+              "-mb-3 drop-shadow-[0_8px_12px_rgba(0,0,0,0.35)]",
+              pose === "idle" && "animate-idle-bob",
+              pose === "attack" && (mine ? "animate-lunge-right" : "animate-lunge-left"),
+              pose === "hurt" && (mine ? "animate-recoil-left" : "animate-recoil-right"),
+            )}
+          />
+        </div>
+
       </div>
 
 
