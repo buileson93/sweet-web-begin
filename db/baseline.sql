@@ -352,7 +352,6 @@ CREATE TRIGGER update_employees_updated_at BEFORE UPDATE ON public.employees
 -- -----------------------------------------------------------------------------
 
 -- user_roles
-CREATE INDEX IF NOT EXISTS idx_user_roles_user ON public.user_roles (user_id, role);
 
 -- employees
 CREATE INDEX IF NOT EXISTS employees_lookup_idx          ON public.employees (name_key, phone_last4);
@@ -365,7 +364,6 @@ CREATE INDEX IF NOT EXISTS idx_employees_name_key_active ON public.employees (na
 CREATE INDEX IF NOT EXISTS idx_login_attempts_name_created ON public.employee_login_attempts (name_key, created_at DESC);
 
 -- quizzes
-CREATE INDEX IF NOT EXISTS idx_quizzes_legacy_id ON public.quizzes (legacy_id);
 
 -- questions
 CREATE INDEX IF NOT EXISTS questions_quiz_order_idx      ON public.questions (quiz_id, order_index, created_at);
@@ -404,7 +402,6 @@ CREATE INDEX IF NOT EXISTS exam_events_session_created_idx ON public.exam_events
 -- audit_logs
 CREATE INDEX IF NOT EXISTS audit_logs_user_idx       ON public.audit_logs (user_id);
 CREATE INDEX IF NOT EXISTS audit_logs_created_at_idx ON public.audit_logs (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON public.audit_logs (created_at DESC);
 
 -- device_visits
 CREATE INDEX IF NOT EXISTS device_visits_ip_idx          ON public.device_visits (ip);
