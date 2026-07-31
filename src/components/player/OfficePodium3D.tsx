@@ -96,6 +96,20 @@ function Podium({
         <Suspense fallback={<PlaceholderFigure color={color} />}>
           {player.avatarUrl ? <GlbFigure url={player.avatarUrl} /> : <PlaceholderFigure color={color} />}
         </Suspense>
+        {rank === 0 ? (
+          <group position={[0, 1.32, 0]}>
+            <mesh castShadow>
+              <cylinderGeometry args={[0.13, 0.11, 0.09, 16, 1, true]} />
+              <meshStandardMaterial color="#e8b45a" metalness={0.7} roughness={0.25} side={2} />
+            </mesh>
+            {[0, 1, 2, 3].map((i) => (
+              <mesh key={i} position={[Math.cos((i * Math.PI) / 2) * 0.11, 0.07, Math.sin((i * Math.PI) / 2) * 0.11]}>
+                <sphereGeometry args={[0.025, 12, 12]} />
+                <meshStandardMaterial color="#f2d089" metalness={0.7} roughness={0.2} />
+              </mesh>
+            ))}
+          </group>
+        ) : null}
         {hover ? (
           <Html center distanceFactor={4.5} position={[0, 1.75, 0]} zIndexRange={[40, 0]}>
             <div className="pointer-events-none w-52 rounded-2xl border border-border bg-card/95 p-3 text-center shadow-[var(--shadow-lift)] backdrop-blur">
