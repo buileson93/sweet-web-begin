@@ -4,6 +4,7 @@ import { CheckCircle2, Clock3, Search, Users } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { ParticipantDone } from "@/lib/participation";
 import { getQuizParticipation } from "@/lib/participation.functions";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -94,13 +95,13 @@ export function QuizParticipation({ quizId }: { quizId: string }) {
                   <span className="block truncate text-sm font-semibold">{r.name}</span>
                   <span className="type-meta block truncate">{r.unit}</span>
                 </span>
-                {"bestScore" in r ? (
+                {tab === "done" && "bestScore" in r ? (
                   <span className="shrink-0 text-right">
                     <span className="font-heading block text-sm font-extrabold text-primary">
-                      {r.bestScore}/{r.total}
+                      {(r as ParticipantDone).bestScore}/{(r as ParticipantDone).total}
                     </span>
                     <span className="type-meta block">
-                      {r.attempts} lượt • {formatDateTime(r.lastAt)}
+                      {(r as ParticipantDone).attempts} lượt • {formatDateTime((r as ParticipantDone).lastAt)}
                     </span>
                   </span>
                 ) : (
