@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -73,9 +74,15 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const [uploading, setUploading] = useState(false);
   const [quizId, setQuizId] = useState("");
   const [keyword, setKeyword] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState<"all" | Difficulty>("all");
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<QuestionRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+
+  const PAGE_SIZE = 20;
+
 
   const { data: quizzes = [] } = useQuery({
     queryKey: ["admin-quizzes-lite"],
@@ -108,8 +115,46 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
 
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-    return questions.filter((q) => !kw || q.question.toLowerCase().includes(kw));
-  }, [questions, keyword]);
+    return questions.filter(
+      (q) =>
+        (!kw || q.question.toLowerCase().includes(kw)) &&
+        (difficultyFilter === "all" || (q.difficulty ?? "medium") === difficultyFilter),
+    );
+  }, [questions, keyword, difficultyFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const paged = useMemo(
+    () => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filtered, safePage],
+  );
+
+  // Đổi bộ lọc thì quay lại trang đầu và bỏ chọn.
+  useEffect(() => {
+    setPage(1);
+    setSelected(new Set());
+  }, [quizId, keyword, difficultyFilter]);
+
+  const allOnPageSelected = paged.length > 0 && paged.every((q) => selected.has(q.id));
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function togglePage() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allOnPageSelected) paged.forEach((q) => next.delete(q.id));
+      else paged.forEach((q) => next.add(q.id));
+      return next;
+    });
+  }
+
 
   const save = useMutation({
     mutationFn: async () => {
@@ -185,6 +230,54 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  /** Xoá hàng loạt các câu hỏi đang được chọn. */
+  const bulkRemove = useMutation({
+    mutationFn: async () => {
+      const ids = [...selected];
+      const rows = questions.filter((q) => ids.includes(q.id));
+      const { error } = await supabase.from("questions").delete().in("id", ids);
+      if (error) throw error;
+      await Promise.all(rows.filter((r) => r.image_url).map((r) => removeQuestionImage(r.image_url!)));
+      await logAudit({
+        action: "delete",
+        entity: "question",
+        entityLabel: `${ids.length} câu hỏi (hàng loạt)`,
+        details: { count: ids.length, quiz_id: quizId },
+      });
+      return ids.length;
+    },
+    onSuccess: (n) => {
+      toast.success(`Đã xoá ${n} câu hỏi.`);
+      setSelected(new Set());
+      void qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  /** Đổi độ khó cho các câu hỏi đang được chọn. */
+  const bulkDifficulty = useMutation({
+    mutationFn: async (value: Difficulty) => {
+      const ids = [...selected];
+      const { error } = await supabase.from("questions").update({ difficulty: value }).in("id", ids);
+      if (error) throw error;
+      await logAudit({
+        action: "update",
+        entity: "question",
+        entityLabel: `Đổi độ khó ${ids.length} câu hỏi`,
+        details: { count: ids.length, difficulty: value },
+      });
+      return ids.length;
+    },
+    onSuccess: (n) => {
+      toast.success(`Đã cập nhật độ khó cho ${n} câu hỏi.`);
+      setSelected(new Set());
+      void qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
 
   const importFile = useMutation({
     mutationFn: async (file: File) => {
@@ -332,6 +425,22 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={difficultyFilter}
+              onValueChange={(v) => setDifficultyFilter(v as "all" | Difficulty)}
+            >
+              <SelectTrigger className="rounded-full sm:w-40">
+                <SelectValue placeholder="Độ khó" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Mọi độ khó</SelectItem>
+                {DIFFICULTIES.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <div className="relative sm:w-56">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -435,12 +544,70 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
           }
         >
           <div className="space-y-3">
-            {filtered.map((q, idx) => (
+            {/* Thanh chọn nhiều + thao tác hàng loạt */}
+            {canEdit ? (
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-2.5">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                  <Checkbox checked={allOnPageSelected} onCheckedChange={togglePage} aria-label="Chọn cả trang" />
+                  Chọn cả trang
+                </label>
+                {selected.size > 0 ? (
+                  <>
+                    <span className="type-meta">Đã chọn {selected.size} câu</span>
+                    <Select onValueChange={(v) => bulkDifficulty.mutate(v as Difficulty)}>
+                      <SelectTrigger className="h-8 w-40 rounded-full">
+                        <SelectValue placeholder="Đổi độ khó…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DIFFICULTIES.map((d) => (
+                          <SelectItem key={d.value} value={d.value}>
+                            {d.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={bulkRemove.isPending}
+                      onClick={() => {
+                        if (confirm(`Xoá ${selected.size} câu hỏi đã chọn?`)) bulkRemove.mutate();
+                      }}
+                    >
+                      {bulkRemove.isPending ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="size-4" />
+                      )}
+                      Xoá đã chọn
+                    </Button>
+                    <Button size="sm" variant="ghost" className="rounded-full" onClick={() => setSelected(new Set())}>
+                      Bỏ chọn
+                    </Button>
+                  </>
+                ) : (
+                  <span className="type-meta">Tích chọn để xoá hoặc đổi độ khó hàng loạt.</span>
+                )}
+              </div>
+            ) : null}
+
+            {paged.map((q, idx) => (
               <div key={q.id} className="card-elevated p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="font-semibold leading-relaxed">
-                    {idx + 1}. {q.question}
-                  </p>
+                  <div className="flex min-w-0 items-start gap-3">
+                    {canEdit ? (
+                      <Checkbox
+                        className="mt-1"
+                        checked={selected.has(q.id)}
+                        onCheckedChange={() => toggleOne(q.id)}
+                        aria-label={`Chọn câu ${(safePage - 1) * PAGE_SIZE + idx + 1}`}
+                      />
+                    ) : null}
+                    <p className="font-semibold leading-relaxed">
+                      {(safePage - 1) * PAGE_SIZE + idx + 1}. {q.question}
+                    </p>
+                  </div>
                   <div className={cn("flex shrink-0 gap-1", !canEdit && "hidden")}>
                     <Button size="icon" variant="ghost" aria-label="Sửa" onClick={() => openEdit(q)}>
                       <Pencil className="size-4" />
@@ -484,7 +651,36 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                 </ul>
               </div>
             ))}
+
+            {pageCount > 1 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border px-4 py-3">
+                <span className="type-meta">
+                  Trang {safePage} / {pageCount} — {filtered.length} câu hỏi
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={safePage <= 1}
+                    onClick={() => setPage(safePage - 1)}
+                  >
+                    Trang trước
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={safePage >= pageCount}
+                    onClick={() => setPage(safePage + 1)}
+                  >
+                    Trang sau
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
+
         </QueryState>
       </AdminSection>
 
