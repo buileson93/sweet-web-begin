@@ -19,12 +19,21 @@ import {
   uploadQuestionImage,
 } from "@/lib/questionImage";
 import type { Difficulty } from "@/lib/questionKinds";
+import { clearDraft, draftKey, isDraftMeaningful, loadDraft, saveDraft } from "@/lib/questionDraft";
 
 import { QuestionFilters } from "./questions/QuestionFilters";
 import { QuestionForm } from "./questions/QuestionForm";
 import { QuestionList } from "./questions/QuestionList";
+import { QuestionPreviewDialog } from "./questions/QuestionPreviewDialog";
 import { useQuestionMutations } from "./questions/useQuestionMutations";
-import { emptyForm, type CsvQuestion, type QuestionRow } from "./questions/types";
+import {
+  emptyForm,
+  type ArchiveFilter,
+  type CsvQuestion,
+  type QuestionFormState,
+  type QuestionRow,
+} from "./questions/types";
+
 
 export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const qc = useQueryClient();
