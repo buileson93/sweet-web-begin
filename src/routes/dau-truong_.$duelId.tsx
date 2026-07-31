@@ -211,6 +211,23 @@ function WaitingPanel({
         {me?.ready ? <Check className="mr-2 size-4" /> : null}
         {me?.ready ? "Đã sẵn sàng" : "Sẵn sàng"}
       </Button>
+      {state.players.length < 2 ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            const link = `${window.location.origin}/dau-truong/${state.duelId}`;
+            try {
+              await navigator.clipboard.writeText(link);
+              toast.success("Đã sao chép liên kết vào phòng. Gửi cho đồng nghiệp là vào ngay!");
+            } catch {
+              toast.message(link);
+            }
+          }}
+        >
+          <Link2 className="mr-2 size-4" /> Sao chép liên kết mời
+        </Button>
+      ) : null}
     </div>
   );
 }
