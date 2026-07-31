@@ -34,6 +34,7 @@ import { startExam } from "@/lib/exam.functions";
 import { saveExamEntry } from "@/lib/examSession";
 import { verifyEmployeeFn } from "@/lib/employees.functions";
 import { formatDateTime, quizStatus, statusLabel } from "@/lib/format";
+import { QuizStatusBadge } from "@/components/QuizStatusBadge";
 import { cn } from "@/lib/utils";
 
 export type RegisterQuiz = {
