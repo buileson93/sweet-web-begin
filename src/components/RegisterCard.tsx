@@ -136,6 +136,12 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           extraCredential: extraCredential.trim() || undefined,
         },
       });
+      saveExamEntry(sessionStorage, {
+        quizId,
+        name: trimmed,
+        credential: credential.trim(),
+        extraCredential: extraCredential.trim() || undefined,
+      });
       sessionStorage.setItem("exam:" + session.sessionId, JSON.stringify(session));
       sessionStorage.setItem("exam:current", session.sessionId);
       navigate({ to: "/thi" });
