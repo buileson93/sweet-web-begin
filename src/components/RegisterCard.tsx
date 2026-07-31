@@ -1,11 +1,28 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { BadgeCheck, CalendarClock, Loader2, LogIn, Plane, Play, RefreshCw, Repeat, ShieldCheck, Zap } from "lucide-react";
+import {
+  AlertCircle,
+  BadgeCheck,
+  CalendarClock,
+  CircleDashed,
+  Clock,
+  Loader2,
+  LogIn,
+  Plane,
+  Play,
+  RefreshCw,
+  Repeat,
+  ShieldCheck,
+  Trophy,
+  User,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { CredentialInput } from "@/components/CredentialInput";
 import { HintTip } from "@/components/HintTip";
+import { IconTip } from "@/components/IconTip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -108,6 +125,45 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           ? "Vui lòng đọc nội quy và tích ô cam kết."
           : "Sẵn sàng vào phòng thi.";
 
+  /** Xem trước trực tiếp 3 bước: cuộc thi → họ tên → xác thực. */
+  const steps = useMemo(() => {
+    const quizTone = !quizId ? "idle" : selectedStatus === "open" ? "ok" : "error";
+    const quizTip = !quizId
+      ? "Chưa chọn cuộc thi — hãy chọn một cuộc thi đang mở."
+      : selectedStatus === "open"
+        ? `Cuộc thi: ${selected?.title ?? ""}`
+        : `Cuộc thi "${selected?.title ?? ""}" ${selectedStatus === "upcoming" ? "chưa đến giờ mở" : selectedStatus === "closed" ? "đã kết thúc" : "đang tạm dừng"}.`;
+
+    const nameTone = !trimmed ? "idle" : nameError ? "error" : "ok";
+    const credTone = verified ? "ok" : credential ? (credentialError ? "error" : "idle") : "idle";
+
+    return [
+      {
+        key: "quiz",
+        Icon: quizTone === "ok" ? Trophy : quizTone === "error" ? Clock : CircleDashed,
+        tone: quizTone,
+        value: selected ? selected.title : "Chọn cuộc thi",
+        tip: quizTip,
+      },
+      {
+        key: "name",
+        Icon: nameTone === "error" ? AlertCircle : User,
+        tone: nameTone,
+        value: trimmed || "Họ và tên",
+        tip: nameError ?? `Họ tên dự thi: ${trimmed}`,
+      },
+      {
+        key: "cred",
+        Icon: credTone === "ok" ? BadgeCheck : credTone === "error" ? AlertCircle : ShieldCheck,
+        tone: credTone,
+        value: verified ? "Đã xác thực" : credential ? "Chờ xác thực" : "Xác thực",
+        tip: verified
+          ? `Đã xác thực: ${verified.fullName}${verified.unitName ? " · " + verified.unitName : ""}`
+          : (credentialError ?? "Bấm nút xác thực để đối chiếu với danh bạ nhân viên."),
+      },
+    ] as const;
+  }, [credential, credentialError, nameError, quizId, selected, selectedStatus, trimmed, verified]);
+
   function resetVerified() {
     if (verified) setVerified(null);
   }
@@ -181,27 +237,59 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
             <p className="type-meta text-primary-foreground/75">Xác thực nhanh bằng danh bạ nhân viên</p>
           </div>
         </div>
-        {/* Đặc điểm phòng thi diễn tả bằng icon, không dùng chữ */}
+        {/* Đặc điểm phòng thi diễn tả bằng icon + tooltip, không dùng chữ */}
         <div className="relative mt-3 flex flex-wrap gap-2">
           {[
-            { Icon: ShieldCheck, label: "Một thiết bị chỉ dành cho một nhân viên" },
-            { Icon: Zap, label: "Chấm điểm ngay khi chọn đáp án" },
-            { Icon: Repeat, label: "Thi lại không giới hạn" },
+            { Icon: ShieldCheck, label: "Một thiết bị chỉ dành cho một nhân viên trong 30 phút" },
+            { Icon: Zap, label: "Chấm điểm ngay khi bạn chọn đáp án" },
+            { Icon: Repeat, label: "Thi lại không giới hạn số lần" },
           ].map(({ Icon, label }) => (
-            <span
-              key={label}
-              title={label}
-              aria-label={label}
-              className="grid size-9 place-items-center rounded-xl bg-primary-foreground/12 text-primary-foreground/90 backdrop-blur transition-transform duration-200 hover:scale-110 hover:bg-primary-foreground/20"
-            >
-              <Icon className="size-4.5" strokeWidth={2.4} />
-            </span>
+            <IconTip key={label} label={label}>
+              <span className="grid size-9 place-items-center rounded-xl bg-primary-foreground/12 text-primary-foreground/90 backdrop-blur transition-transform duration-200 hover:scale-110 hover:bg-primary-foreground/20">
+                <Icon className="size-4.5" strokeWidth={2.4} />
+              </span>
+            </IconTip>
           ))}
         </div>
+      </div>
 
+      {/* Bảng xem trước trực tiếp: mỗi mục tự đổi màu theo trạng thái đã nhập */}
+      <div className="grid grid-cols-3 gap-px border-b border-border bg-border">
+        {steps.map((step) => (
+          <IconTip key={step.key} label={step.tip} className="w-full">
+            <span
+              className={cn(
+                "flex h-full w-full flex-col items-center gap-1 bg-card px-2 py-2.5 text-center transition-colors",
+                step.tone === "ok" && "bg-success/10",
+                step.tone === "error" && "bg-destructive/10",
+              )}
+            >
+              <span
+                className={cn(
+                  "grid size-7 place-items-center rounded-full",
+                  step.tone === "ok" && "bg-success/20 text-success",
+                  step.tone === "error" && "bg-destructive/15 text-destructive",
+                  step.tone === "idle" && "bg-muted text-muted-foreground",
+                )}
+              >
+                <step.Icon className="size-4" strokeWidth={2.4} />
+              </span>
+              <span
+                className={cn(
+                  "type-meta line-clamp-1 max-w-full font-semibold",
+                  step.tone === "ok" && "text-success",
+                  step.tone === "error" && "text-destructive",
+                )}
+              >
+                {step.value}
+              </span>
+            </span>
+          </IconTip>
+        ))}
       </div>
 
       <div className="p-5 sm:p-6">
+
 
 
 
@@ -240,6 +328,16 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                   })}
                 </SelectContent>
               </Select>
+            )}
+            {selected && selectedStatus !== "open" && (
+              <p className="flex items-center gap-1.5 text-xs font-medium text-destructive">
+                <Clock className="size-3.5 shrink-0" />
+                {selectedStatus === "upcoming"
+                  ? `Chưa đến giờ mở — mở lúc ${formatDateTime(selected.start_time)}`
+                  : selectedStatus === "closed"
+                    ? "Cuộc thi đã kết thúc"
+                    : "Cuộc thi đang tạm dừng"}
+              </p>
             )}
           </div>
         )}
@@ -374,7 +472,15 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           {submitting ? "Đang tạo phiên thi..." : "Bắt đầu làm bài"}
         </Button>
 
-        <p className={cn("type-meta text-center", canStart && "text-success")}>{hint}</p>
+        <p
+          className={cn(
+            "type-meta flex items-center justify-center gap-1.5 text-center",
+            canStart && "text-success",
+          )}
+        >
+          {canStart ? <BadgeCheck className="size-3.5 shrink-0" /> : <AlertCircle className="size-3.5 shrink-0" />}
+          {hint}
+        </p>
 
         <div className="flex items-center justify-center gap-3 border-t border-border pt-3">
           <Link to="/lich-su" className="type-meta inline-flex items-center gap-1.5 hover:text-foreground">

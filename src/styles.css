@@ -1142,39 +1142,69 @@
   animation: cork-pop 2.8s ease-out infinite;
 }
 
-/* Máy bay bay quanh cuốn sách theo quỹ đạo elip nghiêng (cảm giác 3D) */
+/* Máy bay lượn quanh cuốn sách trên mặt phẳng quỹ đạo nghiêng thật (3D perspective).
+   Vòng quay đặt trong không gian 3D nên xa/gần, nhanh/chậm do phối cảnh tự sinh ra,
+   máy bay luôn chúi mũi theo hướng bay và nghiêng cánh khi vào cua. */
 .plane-orbit {
-  --orbit-r: 1.55rem;
+  --orbit-r: 1.5rem;
+  --orbit-tilt: 66deg;
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  perspective: 260px;
+  perspective: 220px;
+  perspective-origin: 50% 45%;
+}
+
+.plane-orbit-ring {
+  position: absolute;
   transform-style: preserve-3d;
+  transform: rotateX(var(--orbit-tilt)) rotateZ(0deg);
+  animation: plane-orbit-spin 9s linear infinite;
 }
 
-@keyframes plane-orbit {
-  0% { transform: translate3d(var(--orbit-r), 0, 0) rotate(-45deg) scale(0.9); opacity: 1; }
-  12.5% { transform: translate3d(calc(var(--orbit-r) * 0.707), calc(var(--orbit-r) * -0.269), 0) rotate(-90deg) scale(0.74); opacity: 0.85; }
-  25% { transform: translate3d(0, calc(var(--orbit-r) * -0.38), 0) rotate(-135deg) scale(0.66); opacity: 0.7; }
-  37.5% { transform: translate3d(calc(var(--orbit-r) * -0.707), calc(var(--orbit-r) * -0.269), 0) rotate(-180deg) scale(0.74); opacity: 0.85; }
-  50% { transform: translate3d(calc(var(--orbit-r) * -1), 0, 0) rotate(-225deg) scale(0.9); opacity: 1; }
-  62.5% { transform: translate3d(calc(var(--orbit-r) * -0.707), calc(var(--orbit-r) * 0.269), 0) rotate(-270deg) scale(1.08); opacity: 1; }
-  75% { transform: translate3d(0, calc(var(--orbit-r) * 0.38), 0) rotate(-315deg) scale(1.16); opacity: 1; }
-  87.5% { transform: translate3d(calc(var(--orbit-r) * 0.707), calc(var(--orbit-r) * 0.269), 0) rotate(-360deg) scale(1.08); opacity: 1; }
-  100% { transform: translate3d(var(--orbit-r), 0, 0) rotate(-405deg) scale(0.9); opacity: 1; }
+@keyframes plane-orbit-spin {
+  from {
+    transform: rotateX(var(--orbit-tilt)) rotateZ(0deg);
+  }
+  to {
+    transform: rotateX(var(--orbit-tilt)) rotateZ(360deg);
+  }
 }
 
+/* Đặt máy bay ra bán kính quỹ đạo, xoay 135deg để mũi hướng đúng tiếp tuyến. */
 .plane-orbit-craft {
   position: absolute;
-  animation: plane-orbit 7s linear infinite;
+  transform: translate3d(var(--orbit-r), 0, 0) rotate(135deg);
   transform-style: preserve-3d;
+  animation: plane-orbit-bank 9s ease-in-out infinite;
   will-change: transform;
 }
 
-@media (min-width: 640px) {
-  .plane-orbit { --orbit-r: 2.15rem; }
+/* Nhấp nhô nhẹ như máy bay thật gặp nhiễu động, không phá quỹ đạo chính. */
+@keyframes plane-orbit-bank {
+  0%,
+  100% {
+    transform: translate3d(var(--orbit-r), 0, 0.06rem) rotate(135deg) rotateY(8deg);
+  }
+  25% {
+    transform: translate3d(var(--orbit-r), 0, -0.05rem) rotate(131deg) rotateY(-6deg);
+  }
+  50% {
+    transform: translate3d(var(--orbit-r), 0, 0.05rem) rotate(139deg) rotateY(6deg);
+  }
+  75% {
+    transform: translate3d(var(--orbit-r), 0, -0.06rem) rotate(132deg) rotateY(-8deg);
+  }
 }
+
+@media (min-width: 640px) {
+  .plane-orbit {
+    --orbit-r: 2.1rem;
+    perspective: 300px;
+  }
+}
+
 
 @keyframes book-flip {
   0%,
@@ -1195,6 +1225,7 @@
   .champagne-bubble,
   .cork-pop,
   .plane-orbit-craft,
+  .plane-orbit-ring,
   .animate-book-flip {
     animation: none;
   }
