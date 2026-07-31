@@ -133,15 +133,21 @@ export function DuelFighter({
       </div>
       <div
         className={cn(
-          "relative flex h-24 items-end overflow-hidden rounded-lg bg-gradient-to-b from-primary/5 to-muted/40",
-          // Hai nhân vật đứng quay mặt vào nhau, dồn về phía sân giữa.
-          mine ? "justify-end pr-1" : "justify-start pl-1",
+          "relative flex h-36 items-end overflow-hidden rounded-lg bg-gradient-to-b from-primary/5 to-muted/40 sm:h-40",
+          // Hai nhân vật đứng quay mặt vào nhau, dồn sát về phía sân giữa.
+          mine ? "justify-end pr-0" : "justify-start pl-0",
         )}
       >
         <span
           className={cn(
-            "pointer-events-none absolute bottom-2 h-3 w-16 rounded-[50%] bg-foreground/15 blur-[2px]",
-            mine ? "right-6" : "left-6",
+            "pointer-events-none absolute bottom-3 h-16 w-16 rounded-full blur-xl",
+            mine ? "right-6 bg-primary/25" : "left-6 bg-rose-500/20",
+          )}
+        />
+        <span
+          className={cn(
+            "pointer-events-none absolute bottom-2 h-3 w-20 rounded-[50%] bg-foreground/15 blur-[2px]",
+            mine ? "right-8" : "left-8",
           )}
         />
         <ClassSprite
@@ -149,14 +155,15 @@ export function DuelFighter({
           classId={player?.classId}
           action={pose}
           flip={!mine}
-          size={128}
+          size={160}
           className={cn(
-            "-mb-1",
+            "-mb-2 drop-shadow-[0_6px_10px_rgba(0,0,0,0.35)]",
             pose === "attack" && (mine ? "animate-lunge-right" : "animate-lunge-left"),
             pose === "hurt" && (mine ? "animate-recoil-left" : "animate-recoil-right"),
           )}
         />
       </div>
+
       <HpBar hp={hp} hpStart={hpStart} mine={mine} />
       <p className="text-[11px] text-muted-foreground">
         ⚔️ {player?.damageDealt ?? 0} sát thương · ✅ {player?.correct ?? 0} câu đúng
