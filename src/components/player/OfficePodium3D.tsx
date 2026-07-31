@@ -29,15 +29,15 @@ function GlbFigure({ url }: { url: string }) {
 function PlaceholderFigure({ color }: { color: string }) {
   return (
     <group>
-      <mesh position={[0, 1.28, 0]} castShadow>
+      <mesh position={[0, 1.0, 0]} castShadow>
         <sphereGeometry args={[0.2, 32, 32]} />
         <meshStandardMaterial color="#f0d9c4" roughness={0.6} />
       </mesh>
-      <mesh position={[0, 0.78, 0]} castShadow>
+      <mesh position={[0, 0.5, 0]} castShadow>
         <capsuleGeometry args={[0.22, 0.52, 8, 24]} />
         <meshStandardMaterial color={color} roughness={0.5} metalness={0.05} />
       </mesh>
-      <mesh position={[0, 0.9, 0.19]} rotation={[0.1, 0, 0]}>
+      <mesh position={[0, 0.62, 0.19]} rotation={[0.1, 0, 0]}>
         <boxGeometry args={[0.1, 0.42, 0.03]} />
         <meshStandardMaterial color="#f7f7f7" roughness={0.8} />
       </mesh>
@@ -97,7 +97,7 @@ function Podium({
           {player.avatarUrl ? <GlbFigure url={player.avatarUrl} /> : <PlaceholderFigure color={color} />}
         </Suspense>
         {hover ? (
-          <Html center distanceFactor={4.5} position={[0, 2.15, 0]} zIndexRange={[40, 0]}>
+          <Html center distanceFactor={4.5} position={[0, 1.75, 0]} zIndexRange={[40, 0]}>
             <div className="pointer-events-none w-52 rounded-2xl border border-border bg-card/95 p-3 text-center shadow-[var(--shadow-lift)] backdrop-blur">
               <p className="font-heading truncate text-sm font-extrabold">{player.displayName}</p>
               <p className="type-meta truncate">{player.unit || "Chưa rõ đơn vị"}</p>
@@ -110,7 +110,7 @@ function Podium({
         ) : null}
       </group>
 
-      <Html center distanceFactor={3.4} position={[0, height / 2 - 0.05, 0.6]} zIndexRange={[30, 0]}>
+      <Html center distanceFactor={3.4} position={[0, 0.16, 0.62]} zIndexRange={[30, 0]}>
         <div className="pointer-events-none rounded-full bg-background/85 px-2.5 py-1 text-center">
           <span className="font-heading block max-w-28 truncate text-[0.65rem] font-extrabold">{player.displayName}</span>
         </div>
