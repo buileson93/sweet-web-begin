@@ -318,6 +318,52 @@ export async function useFiftyFifty(input: {
 }
 
 /** Người thi chủ động thoát khỏi phòng thi (không tính điểm, không ghi bảng xếp hạng). */
+/**
+ * Ghi nhận một sự kiện hành vi trong phòng thi và cộng dồn điểm liêm chính.
+ * Không bao giờ tự huỷ bài ở đây — quyết định nằm ở lúc chấm bài (submitExamSession).
+ */
+export async function reportExamEvent(input: {
+  sessionId: string;
+  submitToken: string;
+  kind: string;
+  detail?: Record<string, unknown>;
+}): Promise<{ ok: boolean; integrityScore: number }> {
+  const { data: session } = await supabaseAdmin
+    .from("exam_sessions")
+    .select("id, submit_token, status, integrity_score")
+    .eq("id", input.sessionId)
+    .maybeSingle();
+
+  if (!session || session.submit_token !== input.submitToken || session.status !== "active")
+    return { ok: false, integrityScore: session?.integrity_score ?? 0 };
+
+  if (!isExamEventKind(input.kind)) return { ok: false, integrityScore: session.integrity_score ?? 0 };
+
+  // Chống spam: mỗi phiên chỉ ghi tối đa MAX_EVENTS_PER_SESSION sự kiện.
+  const { count } = await supabaseAdmin
+    .from("exam_events")
+    .select("id", { count: "exact", head: true })
+    .eq("session_id", session.id);
+  if ((count ?? 0) >= MAX_EVENTS_PER_SESSION)
+    return { ok: false, integrityScore: session.integrity_score ?? 0 };
+
+  const detail = (input.detail ?? {}) as ExamEventDetail;
+  const weight = scoreEvent(input.kind, detail);
+
+  await supabaseAdmin.from("exam_events").insert({
+    session_id: session.id,
+    kind: input.kind,
+    weight,
+    detail: detail as never,
+  });
+
+  const next = (session.integrity_score ?? 0) + weight;
+  if (weight > 0)
+    await supabaseAdmin.from("exam_sessions").update({ integrity_score: next }).eq("id", session.id);
+
+  return { ok: true, integrityScore: next };
+}
+
 export async function abandonExamSession(input: { sessionId: string; submitToken: string }) {
   const { error } = await supabaseAdmin
     .from("exam_sessions")
