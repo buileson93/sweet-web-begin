@@ -56,7 +56,7 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
           <div className="lg:hidden">
             <SiteHeader />
           </div>
-          <main className="min-w-0 flex-1 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-10 lg:py-10 lg:pb-10">
+          <main className="min-w-0 flex-1 px-[calc(1rem+env(safe-area-inset-left))] pb-[calc(5.25rem+env(safe-area-inset-bottom))] pt-5 sm:px-[calc(1.5rem+env(safe-area-inset-left))] lg:px-10 lg:py-10 lg:pb-10">
             {children}
           </main>
           <div className="hidden lg:block">
