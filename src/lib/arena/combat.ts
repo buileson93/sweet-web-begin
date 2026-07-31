@@ -67,6 +67,8 @@ export type CombatInput = {
   /** Chuỗi đúng liên tiếp tính cả câu này. */
   streak: number;
   hpBefore: number;
+  /** Kỹ năng đã kích hoạt cho câu này (nếu có). */
+  skill?: SkillId | null;
 };
 
 export type CombatLine = {
@@ -80,14 +82,26 @@ export type CombatLine = {
   firstCorrect: boolean;
 };
 
+export type SkillNote = {
+  employeeId: string;
+  skill: SkillId;
+  label: string;
+};
+
 export type CombatOutcome = {
   lines: CombatLine[];
   /** Không ai gây sát thương (cả hai cùng sai / bỏ trống). */
   neutral: boolean;
+  /** Cả hai cùng KHÔNG gửi đáp án — câu bị bỏ trống do hết giờ. */
+  timedOut: boolean;
   /** Mã nhân viên bị hạ gục (máu về 0) nếu có. */
   knockedOutId: string | null;
   /** Hai viên xúc xắc đã tung cho đòn đánh (rỗng khi không ai đánh trúng). */
   dice: number[];
+  /** Sát thương gốc trước khi áp kỹ năng. */
+  baseDamage: number;
+  /** Diễn giải hiệu ứng kỹ năng đã kích hoạt trong câu. */
+  skillNotes: SkillNote[];
 };
 
 /** Phân xử sát thương của MỘT câu giữa hai đấu thủ. */
@@ -107,14 +121,30 @@ export function resolveRoundCombat(
   const striker = tie ? null : first;
 
   const roll = striker ? rollDice(rng) : { dice: [], total: 0 };
-  const damage = striker ? comboDamage(striker.streak, striker.msTaken, limitMs, roll.total) : 0;
+  const baseDamage = striker
+    ? comboDamage(striker.streak, striker.msTaken, limitMs, roll.total)
+    : 0;
+
+  const skillNotes: SkillNote[] = [];
+  // Kỹ năng tấn công của người ra đòn.
+  const attack = applyAttackSkill(striker?.skill, baseDamage, rng);
+  if (striker?.skill && attack.label)
+    skillNotes.push({ employeeId: striker.employeeId, skill: striker.skill, label: attack.label });
+
+  const defender = striker ? inputs.find((i) => i.employeeId !== striker.employeeId) : undefined;
+  // Kỹ năng phòng thủ của người nhận đòn.
+  const defend = applyDefenseSkill(defender?.skill, attack.damage, rng);
+  if (defender?.skill && defend.label)
+    skillNotes.push({ employeeId: defender.employeeId, skill: defender.skill, label: defend.label });
+
+  const finalDamage = defend.damage;
 
   const lines: CombatLine[] = inputs.map((i) => {
     const isStriker = !!striker && striker.employeeId === i.employeeId;
-    const taken = striker && !isStriker ? damage : 0;
+    const taken = striker && !isStriker ? finalDamage : 0;
     return {
       employeeId: i.employeeId,
-      damageDealt: isStriker ? damage : 0,
+      damageDealt: isStriker ? finalDamage : 0,
       damageTaken: taken,
       hpAfter: Math.max(0, i.hpBefore - taken),
       firstCorrect: isStriker,
@@ -124,11 +154,15 @@ export function resolveRoundCombat(
   const ko = lines.find((l) => l.hpAfter <= 0) ?? null;
   return {
     lines,
-    neutral: !striker,
+    neutral: !striker || finalDamage <= 0,
+    timedOut: inputs.length > 0 && inputs.every((i) => !i.answered),
     knockedOutId: ko ? ko.employeeId : null,
     dice: roll.dice,
+    baseDamage,
+    skillNotes,
   };
 }
+
 
 export type HpScoreLine = {
   employeeId: string;
