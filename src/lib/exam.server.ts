@@ -492,7 +492,7 @@ export async function submitExamSession(input: {
   const [quizRes, rowsRes, historyRes, existingRes] = await Promise.all([
     supabaseAdmin
       .from("quizzes")
-      .select("title, pass_percent, negative_marking, streak_bonus")
+      .select("title, pass_percent, negative_marking, streak_bonus, strict_mode, disqualify_threshold")
       .eq("id", session.quiz_id)
       .maybeSingle(),
     supabaseAdmin.from("questions").select(QUESTION_COLUMNS).in("id", session.question_ids),
