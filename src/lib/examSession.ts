@@ -93,3 +93,21 @@ export function readExamEntry(
     return null;
   }
 }
+
+/**
+ * Hợp nhất đáp án lưu trên máy và trên máy chủ khi vào lại phòng thi.
+ * Bên nào có seq lớn hơn thì thắng ở các câu bị trùng; câu chỉ có ở một bên luôn được giữ.
+ * Khi seq bằng nhau ưu tiên bản local vì đó là máy đang làm bài.
+ */
+export function mergeAnswers<T>(
+  local: Record<string, T> | null | undefined,
+  server: Record<string, T> | null | undefined,
+  localSeq: number,
+  serverSeq: number,
+): { answers: Record<string, T>; seq: number } {
+  const l = local ?? {};
+  const s = server ?? {};
+  const serverWins = serverSeq > localSeq;
+  const answers: Record<string, T> = serverWins ? { ...l, ...s } : { ...s, ...l };
+  return { answers, seq: Math.max(localSeq || 0, serverSeq || 0) };
+}
