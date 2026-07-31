@@ -3,7 +3,8 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
-import { removeQuestionImage } from "@/lib/questionImage";
+import { isTempImagePath, removeQuestionImage } from "@/lib/questionImage";
+import { commitQuestionImage } from "@/lib/questionImages.functions";
 import { readXlsxSheetData } from "@/lib/xlsxIo";
 import type { Difficulty } from "@/lib/questionKinds";
 
@@ -77,10 +78,31 @@ export function useQuestionMutations({
         explanation: form.explanation.trim(),
         image_url: form.image_url,
       };
-      const { error } = editing
-        ? await supabase.from("questions").update(payload).eq("id", editing.id)
-        : await supabase.from("questions").insert(payload);
-      if (error) throw error;
+      let questionId = editing?.id ?? "";
+      if (editing) {
+        const { error } = await supabase.from("questions").update(payload).eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("questions")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error) throw error;
+        questionId = data.id;
+      }
+
+      // Ảnh mới tải lên đang nằm trong thư mục tạm: chuyển sang thư mục chính
+      // thức của câu hỏi sau khi câu hỏi đã lưu thành công.
+      if (payload.image_url && isTempImagePath(payload.image_url) && questionId) {
+        try {
+          await commitQuestionImage({
+            data: { path: payload.image_url, quizId, questionId },
+          });
+        } catch {
+          toast.warning("Đã lưu câu hỏi nhưng chưa chuyển được ảnh vào kho chính thức.");
+        }
+      }
 
       await logAudit({
         action: editing ? "update" : "create",

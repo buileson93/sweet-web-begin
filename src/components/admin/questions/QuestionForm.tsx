@@ -67,6 +67,7 @@ export function QuestionForm({
   uploadStage,
   uploadInfo,
   onAttachImage,
+  onRemoveImage,
   onSave,
   saving,
 }: {
@@ -78,6 +79,7 @@ export function QuestionForm({
   uploadStage: "idle" | "compressing" | "uploading";
   uploadInfo: string | null;
   onAttachImage: (file: File) => void;
+  onRemoveImage: () => void;
   onSave: () => void;
   saving: boolean;
 }) {
@@ -117,7 +119,7 @@ export function QuestionForm({
                   variant="secondary"
                   aria-label="Gỡ ảnh"
                   className="absolute -right-2 -top-2 size-7 rounded-full"
-                  onClick={() => setForm((f) => ({ ...f, image_url: null }))}
+                  onClick={onRemoveImage}
                 >
                   <X className="size-4" />
                 </Button>

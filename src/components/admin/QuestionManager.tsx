@@ -14,6 +14,8 @@ import {
   SOFT_WARN_BYTES,
   extractImageFromClipboard,
   formatBytes,
+  isTempImagePath,
+  removeQuestionImage,
   uploadQuestionImage,
 } from "@/lib/questionImage";
 import type { Difficulty } from "@/lib/questionKinds";
@@ -175,7 +177,11 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
           quizId,
           setUploadStage,
         );
-        setForm((f) => ({ ...f, image_url: path }));
+        setForm((f) => {
+          // Thay ảnh khác khi ảnh cũ còn nằm trong thư mục tạm: thu hồi ngay.
+          if (isTempImagePath(f.image_url)) void removeQuestionImage(f.image_url!);
+          return { ...f, image_url: path };
+        });
         const label = mime === "image/webp" ? "WebP" : "JPEG";
         const summary = `${formatBytes(originalBytes)} → ${formatBytes(bytes)} (${label}, ${width}×${height})`;
         setUploadInfo(summary);
@@ -221,6 +227,30 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     };
   }, [open]);
 
+
+  /** Gỡ ảnh khỏi biểu mẫu; nếu ảnh còn ở thư mục tạm thì xoá hẳn khỏi kho. */
+  const dropPendingImage = useCallback(() => {
+    setForm((f) => {
+      if (isTempImagePath(f.image_url)) void removeQuestionImage(f.image_url!);
+      return { ...f, image_url: null };
+    });
+    setUploadInfo(null);
+  }, []);
+
+  /** Đóng hộp thoại mà chưa lưu: thu hồi ảnh tạm để không bỏ rác trong kho. */
+  const handleDialogOpenChange = useCallback(
+    (next: boolean) => {
+      if (!next) {
+        setForm((f) => {
+          if (isTempImagePath(f.image_url)) void removeQuestionImage(f.image_url!);
+          return f;
+        });
+        setUploadInfo(null);
+      }
+      setOpen(next);
+    },
+    [],
+  );
 
   function openCreate() {
     setEditing(null);
@@ -402,13 +432,14 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
 
       <QuestionForm
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleDialogOpenChange}
         editing={Boolean(editing)}
         form={form}
         setForm={setForm}
         uploadStage={uploadStage}
         uploadInfo={uploadInfo}
         onAttachImage={(file) => void attachImage(file)}
+        onRemoveImage={dropPendingImage}
         onSave={() => save.mutate()}
         saving={save.isPending}
       />

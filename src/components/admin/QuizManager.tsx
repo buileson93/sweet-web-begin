@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
+import { purgeQuizImages } from "@/lib/questionImages.functions";
 import { formatDateTime, fromLocalInputValue, quizStatus, toLocalInputValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -164,6 +165,12 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
 
   const remove = useMutation({
     mutationFn: async (quiz: QuizRow) => {
+      // Câu hỏi bị xoá theo dây chuyền nên phải thu ảnh TRƯỚC khi xoá cuộc thi.
+      try {
+        await purgeQuizImages({ data: { quizId: quiz.id } });
+      } catch {
+        toast.warning("Chưa thu hồi được ảnh của cuộc thi; công việc dọn dẹp sẽ xử lý sau.");
+      }
       const { error } = await supabase.from("quizzes").delete().eq("id", quiz.id);
       if (error) throw error;
       await logAudit({ action: "delete", entity: "quiz", entityId: quiz.id, entityLabel: quiz.title });
