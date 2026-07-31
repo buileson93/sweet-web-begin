@@ -351,7 +351,7 @@ CREATE TRIGGER update_employees_updated_at BEFORE UPDATE ON public.employees
 -- 6. CHỈ MỤC
 -- -----------------------------------------------------------------------------
 
--- user_roles
+-- user_roles: đã có UNIQUE(user_id, role) phục vụ tra cứu, không cần index riêng
 
 -- employees
 CREATE INDEX IF NOT EXISTS employees_lookup_idx          ON public.employees (name_key, phone_last4);
@@ -363,7 +363,7 @@ CREATE INDEX IF NOT EXISTS idx_employees_name_key_active ON public.employees (na
 -- employee_login_attempts
 CREATE INDEX IF NOT EXISTS idx_login_attempts_name_created ON public.employee_login_attempts (name_key, created_at DESC);
 
--- quizzes
+-- quizzes: đã có UNIQUE(legacy_id), không cần index riêng
 
 -- questions
 CREATE INDEX IF NOT EXISTS questions_quiz_order_idx      ON public.questions (quiz_id, order_index, created_at);
