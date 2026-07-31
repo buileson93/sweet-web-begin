@@ -13,8 +13,9 @@ import {
   LogOut,
   PieChart,
   RadioTower,
-
+  ScrollText,
   ShieldAlert,
+
   ShieldCheck,
   Trophy,
 } from "lucide-react";
@@ -29,6 +30,9 @@ import { ReminderManager } from "@/components/admin/ReminderManager";
 import { AuditLogManager } from "@/components/admin/AuditLogManager";
 import { RoleManager } from "@/components/admin/RoleManager";
 import { BackupManager } from "@/components/admin/BackupManager";
+import { LiveMonitor } from "@/components/admin/LiveMonitor";
+import { UnitStats } from "@/components/admin/UnitStats";
+
 import { SiteHeader } from "@/components/SiteHeader";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
