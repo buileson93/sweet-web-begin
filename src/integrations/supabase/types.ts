@@ -425,6 +425,7 @@ export type Database = {
           disqualify_reason: string | null
           employee_id: string | null
           id: string
+          late_submit: boolean
           max_points: number
           passed: boolean
           points: number
@@ -446,6 +447,7 @@ export type Database = {
           disqualify_reason?: string | null
           employee_id?: string | null
           id?: string
+          late_submit?: boolean
           max_points?: number
           passed?: boolean
           points?: number
@@ -467,6 +469,7 @@ export type Database = {
           disqualify_reason?: string | null
           employee_id?: string | null
           id?: string
+          late_submit?: boolean
           max_points?: number
           passed?: boolean
           points?: number
