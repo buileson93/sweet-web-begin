@@ -65,7 +65,7 @@ function HomePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quizzes")
-        .select("id, title, description, start_time, end_time, is_active, question_count, duration_minutes, intro_markdown, cover_url")
+        .select("id, title, description, start_time, end_time, is_active, question_count, duration_minutes, intro_markdown, cover_url, cover_fit, peek_rewards, pass_percent")
         .neq("status", "draft")
         .order("start_time", { ascending: true });
       if (error) throw error;
@@ -303,7 +303,7 @@ function HomePage() {
                     type="button"
                     onClick={() => navigate({ to: "/cuoc-thi/$quizId", params: { quizId: q.id } })}
                     className={cn(
-                      "game-card quiz-card group relative overflow-hidden p-5 text-left",
+                      "game-card quiz-card group relative min-w-0 overflow-hidden p-4 text-left sm:p-5",
                       st === "closed" && "opacity-70",
                     )}
                   >
@@ -313,10 +313,17 @@ function HomePage() {
                       alt=""
                       aria-hidden
                       loading="lazy"
+                      decoding="async"
                       width={1536}
                       height={640}
-                      className="quiz-card-art pointer-events-none absolute inset-y-0 right-0 h-full w-[68%] max-w-none select-none object-contain object-right"
+                      data-ready="0"
+                      onLoad={(e) => e.currentTarget.setAttribute("data-ready", "1")}
+                      className={cn(
+                        "quiz-card-art pointer-events-none absolute inset-y-0 right-0 h-full w-[62%] max-w-none select-none bg-secondary/30 object-right sm:w-[68%]",
+                        q.cover_fit === "cover" ? "object-cover" : "object-contain",
+                      )}
                     />
+                    <span className="quiz-card-scrim" aria-hidden />
 
                     <span
                       aria-hidden
@@ -338,7 +345,7 @@ function HomePage() {
                         {q.duration_minutes}′
                       </span>
                     </span>
-                    <h3 className="type-h3 relative mt-3 line-clamp-2 transition-colors group-hover:text-primary">
+                    <h3 className="type-h3 relative mt-3 line-clamp-2 break-words text-pretty pr-1 transition-colors group-hover:text-primary">
                       {q.title}
                     </h3>
                     <span className="relative mt-4 flex items-center justify-between border-t border-border pt-3">
