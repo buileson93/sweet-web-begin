@@ -230,6 +230,54 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /** Xoá hàng loạt các câu hỏi đang được chọn. */
+  const bulkRemove = useMutation({
+    mutationFn: async () => {
+      const ids = [...selected];
+      const rows = questions.filter((q) => ids.includes(q.id));
+      const { error } = await supabase.from("questions").delete().in("id", ids);
+      if (error) throw error;
+      await Promise.all(rows.filter((r) => r.image_url).map((r) => removeQuestionImage(r.image_url!)));
+      await logAudit({
+        action: "delete",
+        entity: "question",
+        entityLabel: `${ids.length} câu hỏi (hàng loạt)`,
+        details: { count: ids.length, quiz_id: quizId },
+      });
+      return ids.length;
+    },
+    onSuccess: (n) => {
+      toast.success(`Đã xoá ${n} câu hỏi.`);
+      setSelected(new Set());
+      void qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  /** Đổi độ khó cho các câu hỏi đang được chọn. */
+  const bulkDifficulty = useMutation({
+    mutationFn: async (value: Difficulty) => {
+      const ids = [...selected];
+      const { error } = await supabase.from("questions").update({ difficulty: value }).in("id", ids);
+      if (error) throw error;
+      await logAudit({
+        action: "update",
+        entity: "question",
+        entityLabel: `Đổi độ khó ${ids.length} câu hỏi`,
+        details: { count: ids.length, difficulty: value },
+      });
+      return ids.length;
+    },
+    onSuccess: (n) => {
+      toast.success(`Đã cập nhật độ khó cho ${n} câu hỏi.`);
+      setSelected(new Set());
+      void qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
+
   const importFile = useMutation({
     mutationFn: async (file: File) => {
       const XLSX = await import("xlsx");
