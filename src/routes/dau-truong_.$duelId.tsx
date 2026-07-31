@@ -330,6 +330,13 @@ function ResultPanel({ state, meId }: { state: DuelState; meId?: string }) {
             ? `${mine?.firstCorrect ? "Nhanh tay nhất! " : ""}Gây ${dealt} sát thương ⚔️`
             : `Bị trừ ${taken} máu 💔`}
       </p>
+      {r.dice?.length ? (
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Dices className="size-4 text-primary" />
+          Xúc xắc: <strong className="text-foreground">{r.dice.join(" + ")}</strong> ={" "}
+          <strong className="text-foreground">{r.dice.reduce((a, b) => a + b, 0)}</strong> sát thương gốc
+        </p>
+      ) : null}
       <p className="text-sm">
         Đáp án đúng: <strong>{r.correctText}</strong>
       </p>
