@@ -1201,3 +1201,156 @@
     animation: none;
   }
 }
+
+/* Thanh điều hướng biểu tượng: icon sắc nét + hover sinh động */
+@keyframes nav-icon-jiggle {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  35% {
+    transform: rotate(-9deg) scale(1.16);
+  }
+  65% {
+    transform: rotate(7deg) scale(1.12);
+  }
+  100% {
+    transform: rotate(0deg) scale(1.1);
+  }
+}
+
+@utility nav-rail-item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 3rem;
+  width: 3rem;
+  border-radius: 1rem;
+  color: color-mix(in oklab, var(--sidebar-foreground) 62%, transparent);
+  transition:
+    color 220ms ease,
+    background-color 220ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 320ms ease;
+
+  & svg {
+    height: 1.3rem;
+    width: 1.3rem;
+    stroke-width: 1.75;
+    /* render sắc nét hơn trên màn hình thường */
+    shape-rendering: geometricPrecision;
+    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Vòng sáng lan ra khi hover */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: color-mix(in oklab, var(--sidebar-accent) 85%, transparent);
+    opacity: 0;
+    transform: scale(0.6);
+    transition:
+      opacity 260ms ease,
+      transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Vạch chỉ báo bên trái */
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0.18rem;
+    top: 50%;
+    height: 0;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--sidebar-primary, var(--primary));
+    transform: translateY(-50%);
+    transition:
+      height 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 200ms ease;
+    opacity: 0;
+  }
+
+  &:hover {
+    color: var(--sidebar-accent-foreground);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px -14px color-mix(in oklab, var(--sidebar-foreground) 70%, transparent);
+  }
+
+  &:hover::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  &:hover::after {
+    height: 1.15rem;
+    opacity: 0.9;
+  }
+
+  &:hover svg {
+    animation: nav-icon-jiggle 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(0.96);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--sidebar-primary, var(--primary));
+    outline-offset: 3px;
+  }
+}
+
+@utility nav-rail-item-active {
+  color: var(--sidebar-foreground);
+  background-color: color-mix(in oklab, var(--sidebar-foreground) 14%, transparent);
+  box-shadow: inset 0 0 0 1px var(--sidebar-border);
+
+  &::after {
+    height: 1.5rem;
+    opacity: 1;
+  }
+
+  & svg {
+    transform: scale(1.06);
+  }
+}
+
+/* Nhãn tooltip trượt ra khi hover */
+@utility nav-rail-label {
+  pointer-events: none;
+  position: absolute;
+  left: calc(100% + 0.65rem);
+  top: 50%;
+  z-index: 30;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: var(--foreground);
+  color: var(--background);
+  padding: 0.3rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  transform: translate(-0.35rem, -50%) scale(0.94);
+  transition:
+    opacity 200ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-rail-item:hover .nav-rail-label,
+.nav-rail-item:focus-visible .nav-rail-label {
+  opacity: 1;
+  transform: translate(0, -50%) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-rail-item,
+  .nav-rail-item:hover {
+    transform: none;
+  }
+  .nav-rail-item:hover svg {
+    animation: none;
+  }
+}
