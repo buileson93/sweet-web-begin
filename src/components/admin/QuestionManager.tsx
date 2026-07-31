@@ -1,102 +1,27 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { downloadXlsx, readXlsxSheetData } from "@/lib/xlsxIo";
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Download,
-  FileQuestion,
-  ImagePlus,
-  Loader2,
-  Pencil,
-  Plus,
-  Search,
-  SearchX,
-  Trash2,
-  Upload,
-  X,
-} from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { downloadXlsx } from "@/lib/xlsxIo";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Download, FileQuestion, Plus, SearchX, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { CsvImportDialog } from "@/components/admin/CsvImportDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { normalizeKey } from "@/lib/csv";
-import {
-  formatBytes,
-  questionImageSrc,
-  removeQuestionImage,
-  uploadQuestionImage,
-} from "@/lib/questionImage";
-import { cn } from "@/lib/utils";
+import { formatBytes, uploadQuestionImage } from "@/lib/questionImage";
+import type { Difficulty } from "@/lib/questionKinds";
 
-import {
-  DIFFICULTIES,
-  QUESTION_KINDS,
-  type Difficulty,
-  type QuestionKind,
-} from "@/lib/questionKinds";
-
-type Pair = { left: string; right: string };
-
-type QuestionRow = {
-  id: string;
-  quiz_id: string;
-  question: string;
-  options: string[];
-  correct_index: number;
-  correct_indices: number[] | null;
-  accepted_answers: string[] | null;
-  pairs: Pair[] | null;
-  kind: QuestionKind | null;
-  difficulty: Difficulty | null;
-  points: number | null;
-  /** Thứ tự hiển thị ổn định khi cuộc thi tắt "Xáo trộn câu hỏi". */
-  order_index: number | null;
-  tags: string[] | null;
-  explanation: string | null;
-  image_url: string | null;
-};
-
-const emptyForm = {
-  question: "",
-  options: ["", "", "", ""],
-  correct_index: 0,
-  correct_indices: [] as number[],
-  accepted_answers: "",
-  pairs: [] as Pair[],
-  kind: "single" as QuestionKind,
-  difficulty: "medium" as Difficulty,
-  points: 1,
-  order_index: 0,
-  tags: "",
-  explanation: "",
-  image_url: null as string | null,
-};
+import { QuestionFilters } from "./questions/QuestionFilters";
+import { QuestionForm } from "./questions/QuestionForm";
+import { QuestionList } from "./questions/QuestionList";
+import { useQuestionMutations } from "./questions/useQuestionMutations";
+import { emptyForm, type CsvQuestion, type QuestionRow } from "./questions/types";
 
 export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
-  const imageRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [quizId, setQuizId] = useState("");
   const [keyword, setKeyword] = useState("");
@@ -184,174 +109,14 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     });
   }
 
-  const save = useMutation({
-    mutationFn: async () => {
-      const options = form.options
-        .map((o) => o.trim())
-        .filter((o, i) => o || form.kind === "fill_blank" || i < 2);
-      const accepted = form.accepted_answers
-        .split("\n")
-        .map((a) => a.trim())
-        .filter(Boolean);
-      const pairs = form.pairs
-        .map((p) => ({ left: p.left.trim(), right: p.right.trim() }))
-        .filter((p) => p.left && p.right);
-
-      if (form.question.trim().length < 5) throw new Error("Nội dung câu hỏi quá ngắn.");
-      if (form.kind === "fill_blank" && accepted.length === 0)
-        throw new Error("Cần ít nhất một đáp án được chấp nhận.");
-      if (form.kind === "matching" && pairs.length < 2)
-        throw new Error("Câu nối cặp cần ít nhất 2 cặp.");
-      if (["single", "true_false", "multi", "ordering"].includes(form.kind)) {
-        if (options.length < 2 || options.some((o) => !o))
-          throw new Error("Vui lòng nhập đủ nội dung các phương án.");
-      }
-      if (form.kind === "multi" && form.correct_indices.length === 0)
-        throw new Error("Chọn ít nhất một đáp án đúng.");
-
-      const payload = {
-        quiz_id: quizId,
-        question: form.question.trim(),
-        options: form.kind === "matching" ? [] : options,
-        correct_index: form.kind === "multi" || form.kind === "fill_blank" ? 0 : form.correct_index,
-        correct_indices: form.kind === "multi" ? form.correct_indices : [],
-        accepted_answers: form.kind === "fill_blank" ? accepted : [],
-        pairs: form.kind === "matching" ? pairs : [],
-        correct_order: form.kind === "ordering" ? options.map((_, i) => i) : [],
-        kind: form.kind,
-        difficulty: form.difficulty,
-        points: Number(form.points) || 1,
-        order_index: Math.max(0, Number(form.order_index) || 0),
-        tags: form.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
-        explanation: form.explanation.trim(),
-        image_url: form.image_url,
-      };
-      const { error } = editing
-        ? await supabase.from("questions").update(payload).eq("id", editing.id)
-        : await supabase.from("questions").insert(payload);
-      if (error) throw error;
-
-      await logAudit({
-        action: editing ? "update" : "create",
-        entity: "question",
-        entityId: editing?.id ?? null,
-        entityLabel: payload.question.slice(0, 120),
-      });
-    },
-    onSuccess: () => {
-      toast.success(editing ? "Đã cập nhật câu hỏi." : "Đã thêm câu hỏi.");
-      setOpen(false);
-      void qc.invalidateQueries();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const remove = useMutation({
-    mutationFn: async (row: QuestionRow) => {
-      const { error } = await supabase.from("questions").delete().eq("id", row.id);
-      if (error) throw error;
-      if (row.image_url) await removeQuestionImage(row.image_url);
-      await logAudit({
-        action: "delete",
-        entity: "question",
-        entityId: row.id,
-        entityLabel: row.question.slice(0, 120),
-      });
-    },
-    onSuccess: () => {
-      toast.success("Đã xoá câu hỏi.");
-      void qc.invalidateQueries();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  /** Xoá hàng loạt các câu hỏi đang được chọn. */
-  const bulkRemove = useMutation({
-    mutationFn: async () => {
-      const ids = [...selected];
-      const rows = questions.filter((q) => ids.includes(q.id));
-      const { error } = await supabase.from("questions").delete().in("id", ids);
-      if (error) throw error;
-      await Promise.all(
-        rows.filter((r) => r.image_url).map((r) => removeQuestionImage(r.image_url!)),
-      );
-      await logAudit({
-        action: "delete",
-        entity: "question",
-        entityLabel: `${ids.length} câu hỏi (hàng loạt)`,
-        details: { count: ids.length, quiz_id: quizId },
-      });
-      return ids.length;
-    },
-    onSuccess: (n) => {
-      toast.success(`Đã xoá ${n} câu hỏi.`);
-      setSelected(new Set());
-      void qc.invalidateQueries();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  /** Đổi độ khó cho các câu hỏi đang được chọn. */
-  const bulkDifficulty = useMutation({
-    mutationFn: async (value: Difficulty) => {
-      const ids = [...selected];
-      const { error } = await supabase
-        .from("questions")
-        .update({ difficulty: value })
-        .in("id", ids);
-      if (error) throw error;
-      await logAudit({
-        action: "update",
-        entity: "question",
-        entityLabel: `Đổi độ khó ${ids.length} câu hỏi`,
-        details: { count: ids.length, difficulty: value },
-      });
-      return ids.length;
-    },
-    onSuccess: (n) => {
-      toast.success(`Đã cập nhật độ khó cho ${n} câu hỏi.`);
-      setSelected(new Set());
-      void qc.invalidateQueries();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const importFile = useMutation({
-    mutationFn: async (file: File) => {
-      const rows = await readXlsxSheetData(await file.arrayBuffer());
-      const body = rows.filter((r) => r.length >= 6 && String(r[0]).trim());
-      const start = /câu hỏi|question/i.test(String(body[0]?.[0] ?? "")) ? 1 : 0;
-      const payload = body.slice(start).map((r) => {
-        const answer = String(r[5] ?? "A")
-          .trim()
-          .toUpperCase();
-        const idx = ["A", "B", "C", "D"].indexOf(answer);
-        return {
-          quiz_id: quizId,
-          question: String(r[0]).trim(),
-          options: [1, 2, 3, 4].map((i) => String(r[i] ?? "").trim()),
-          correct_index: idx >= 0 ? idx : Math.max(0, Number(answer) - 1) || 0,
-        };
-      });
-      if (!payload.length) throw new Error("Không đọc được dòng hợp lệ nào trong tệp.");
-      const { error } = await supabase.from("questions").insert(payload);
-      if (error) throw error;
-      await logAudit({
-        action: "import",
-        entity: "question",
-        entityLabel: `${payload.length} câu hỏi (Excel)`,
-        details: { count: payload.length, quiz_id: quizId },
-      });
-      return payload.length;
-    },
-    onSuccess: (n) => {
-      toast.success(`Đã nhập ${n} câu hỏi.`);
-      void qc.invalidateQueries();
-    },
-    onError: (e: Error) => toast.error(e.message),
+  const { save, remove, bulkRemove, bulkDifficulty, importFile } = useQuestionMutations({
+    quizId,
+    questions,
+    selected,
+    setSelected,
+    form,
+    editing,
+    onSaved: () => setOpen(false),
   });
 
   async function exportExcel() {
@@ -370,8 +135,6 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     () => new Set(questions.map((q) => normalizeKey(q.question))),
     [questions],
   );
-
-  type CsvQuestion = { question: string; options: string[]; correct_index: number };
 
   async function importCsv(rows: CsvQuestion[]) {
     const { error } = await supabase
@@ -392,19 +155,22 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   }
 
   /** Tải ảnh lên kho lưu trữ và gán vào câu hỏi đang soạn. */
-  async function attachImage(file: File) {
-    if (!quizId) return;
-    setUploading(true);
-    try {
-      const { path, bytes } = await uploadQuestionImage(file, quizId);
-      setForm((f) => ({ ...f, image_url: path }));
-      toast.success(`Đã tải ảnh lên (${formatBytes(bytes)} sau khi nén).`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Không tải được ảnh.");
-    } finally {
-      setUploading(false);
-    }
-  }
+  const attachImage = useCallback(
+    async (file: File) => {
+      if (!quizId) return;
+      setUploading(true);
+      try {
+        const { path, bytes } = await uploadQuestionImage(file, quizId);
+        setForm((f) => ({ ...f, image_url: path }));
+        toast.success(`Đã tải ảnh lên (${formatBytes(bytes)} sau khi nén).`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Không tải được ảnh.");
+      } finally {
+        setUploading(false);
+      }
+    },
+    [quizId],
+  );
 
   // Dán ảnh từ clipboard (Ctrl/Cmd + V) khi đang mở hộp thoại soạn câu hỏi.
   useEffect(() => {
@@ -420,8 +186,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     }
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, canEdit, quizId]);
+  }, [open, canEdit, attachImage]);
 
   function openCreate() {
     setEditing(null);
@@ -455,45 +220,15 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         title="Ngân hàng câu hỏi"
         description={isLoading ? "Đang tải..." : `${filtered.length} / ${questions.length} câu hỏi`}
         toolbar={
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Select value={quizId} onValueChange={setQuizId}>
-              <SelectTrigger className="rounded-full sm:w-56">
-                <SelectValue placeholder="Chọn cuộc thi" />
-              </SelectTrigger>
-              <SelectContent>
-                {quizzes.map((q) => (
-                  <SelectItem key={q.id} value={q.id}>
-                    {q.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={difficultyFilter}
-              onValueChange={(v) => setDifficultyFilter(v as "all" | Difficulty)}
-            >
-              <SelectTrigger className="rounded-full sm:w-40">
-                <SelectValue placeholder="Độ khó" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Mọi độ khó</SelectItem>
-                {DIFFICULTIES.map((d) => (
-                  <SelectItem key={d.value} value={d.value}>
-                    {d.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="relative sm:w-56">
-              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="rounded-full pl-10"
-                placeholder="Tìm câu hỏi..."
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-              />
-            </div>
-          </div>
+          <QuestionFilters
+            quizzes={quizzes}
+            quizId={quizId}
+            onQuizChange={setQuizId}
+            difficultyFilter={difficultyFilter}
+            onDifficultyChange={setDifficultyFilter}
+            keyword={keyword}
+            onKeywordChange={setKeyword}
+          />
         }
         actions={
           <>
@@ -609,490 +344,39 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
             )
           }
         >
-          <div className="space-y-3">
-            {/* Thanh chọn nhiều + thao tác hàng loạt */}
-            {canEdit ? (
-              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-2.5">
-                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-                  <Checkbox
-                    checked={allOnPageSelected}
-                    onCheckedChange={togglePage}
-                    aria-label="Chọn cả trang"
-                  />
-                  Chọn cả trang
-                </label>
-                {selected.size > 0 ? (
-                  <>
-                    <span className="type-meta">Đã chọn {selected.size} câu</span>
-                    <Select onValueChange={(v) => bulkDifficulty.mutate(v as Difficulty)}>
-                      <SelectTrigger className="h-8 w-40 rounded-full">
-                        <SelectValue placeholder="Đổi độ khó…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DIFFICULTIES.map((d) => (
-                          <SelectItem key={d.value} value={d.value}>
-                            {d.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      disabled={bulkRemove.isPending}
-                      onClick={() => {
-                        if (confirm(`Xoá ${selected.size} câu hỏi đã chọn?`)) bulkRemove.mutate();
-                      }}
-                    >
-                      {bulkRemove.isPending ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="size-4" />
-                      )}
-                      Xoá đã chọn
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="rounded-full"
-                      onClick={() => setSelected(new Set())}
-                    >
-                      Bỏ chọn
-                    </Button>
-                  </>
-                ) : (
-                  <span className="type-meta">Tích chọn để xoá hoặc đổi độ khó hàng loạt.</span>
-                )}
-              </div>
-            ) : null}
-
-            {paged.map((q, idx) => (
-              <div key={q.id} className="card-elevated p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-3">
-                    {canEdit ? (
-                      <Checkbox
-                        className="mt-1"
-                        checked={selected.has(q.id)}
-                        onCheckedChange={() => toggleOne(q.id)}
-                        aria-label={`Chọn câu ${(safePage - 1) * PAGE_SIZE + idx + 1}`}
-                      />
-                    ) : null}
-                    <p className="font-semibold leading-relaxed">
-                      {(safePage - 1) * PAGE_SIZE + idx + 1}. {q.question}
-                    </p>
-                  </div>
-                  <div className={cn("flex shrink-0 gap-1", !canEdit && "hidden")}>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      aria-label="Sửa"
-                      onClick={() => openEdit(q)}
-                    >
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      aria-label="Xoá"
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => {
-                        if (confirm("Xoá câu hỏi này?")) remove.mutate(q);
-                      }}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-                {questionImageSrc(q.image_url) ? (
-                  <img
-                    src={questionImageSrc(q.image_url)!}
-                    alt={`Ảnh minh hoạ câu ${idx + 1}`}
-                    loading="lazy"
-                    className="mt-3 max-h-40 rounded-xl border border-border object-contain"
-                  />
-                ) : null}
-                <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {q.options.map((o, i) => (
-                    <li
-                      key={i}
-                      className={cn(
-                        "rounded-lg border px-3 py-2 text-sm",
-                        i === q.correct_index
-                          ? "border-success/50 bg-success/10 text-success"
-                          : "border-border text-muted-foreground",
-                      )}
-                    >
-                      <span className="font-semibold">{String.fromCharCode(65 + i)}. </span>
-                      {o}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-
-            {pageCount > 1 ? (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border px-4 py-3">
-                <span className="type-meta">
-                  Trang {safePage} / {pageCount} — {filtered.length} câu hỏi
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="rounded-full"
-                    disabled={safePage <= 1}
-                    onClick={() => setPage(safePage - 1)}
-                  >
-                    Trang trước
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="rounded-full"
-                    disabled={safePage >= pageCount}
-                    onClick={() => setPage(safePage + 1)}
-                  >
-                    Trang sau
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-          </div>
+          <QuestionList
+            paged={paged}
+            canEdit={canEdit}
+            selected={selected}
+            allOnPageSelected={allOnPageSelected}
+            onToggleOne={toggleOne}
+            onTogglePage={togglePage}
+            onClearSelection={() => setSelected(new Set())}
+            onBulkDifficulty={(v) => bulkDifficulty.mutate(v)}
+            onBulkRemove={() => bulkRemove.mutate()}
+            bulkRemoving={bulkRemove.isPending}
+            onEdit={openEdit}
+            onRemove={(q) => remove.mutate(q)}
+            pageSize={PAGE_SIZE}
+            page={safePage}
+            pageCount={pageCount}
+            totalFiltered={filtered.length}
+            onPageChange={setPage}
+          />
         </QueryState>
       </AdminSection>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Sửa câu hỏi" : "Thêm câu hỏi"}</DialogTitle>
-            <DialogDescription>Chọn phương án đúng bằng nút bên trái.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nội dung câu hỏi</Label>
-              <Textarea
-                rows={3}
-                value={form.question}
-                onChange={(e) => setForm({ ...form, question: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Ảnh minh hoạ (không bắt buộc)</Label>
-              {questionImageSrc(form.image_url) ? (
-                <div className="relative w-fit">
-                  <img
-                    src={questionImageSrc(form.image_url)!}
-                    alt="Ảnh minh hoạ câu hỏi"
-                    className="max-h-48 rounded-xl border border-border object-contain"
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="secondary"
-                    aria-label="Gỡ ảnh"
-                    className="absolute -right-2 -top-2 size-7 rounded-full"
-                    onClick={() => setForm((f) => ({ ...f, image_url: null }))}
-                  >
-                    <X className="size-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div
-                  onPaste={(e) => {
-                    const item = Array.from(e.clipboardData.items).find((i) =>
-                      i.type.startsWith("image/"),
-                    );
-                    const file = item?.getAsFile();
-                    if (!file) return;
-                    e.preventDefault();
-                    void attachImage(file);
-                  }}
-                  className="flex flex-col items-start gap-2 rounded-2xl border border-dashed border-border p-4"
-                >
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="rounded-full"
-                    disabled={uploading}
-                    onClick={() => imageRef.current?.click()}
-                  >
-                    {uploading ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <ImagePlus className="size-4" />
-                    )}
-                    {uploading ? "Đang nén và tải lên..." : "Chọn ảnh"}
-                  </Button>
-                  <p className="type-meta">
-                    Hoặc{" "}
-                    <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[10px]">
-                      Ctrl/⌘ + V
-                    </kbd>{" "}
-                    để dán ảnh chụp màn hình trực tiếp từ clipboard.
-                  </p>
-                </div>
-              )}
-              <p className="type-meta">
-                Ảnh được tự động nén về WebP, cạnh dài tối đa 1280px để tiết kiệm dung lượng.
-              </p>
-              <input
-                ref={imageRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  e.target.value = "";
-                  if (file) void attachImage(file);
-                }}
-              />
-            </div>
-            {/* Thuộc tính câu hỏi */}
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label>Loại câu hỏi</Label>
-                <Select
-                  value={form.kind}
-                  onValueChange={(v) => {
-                    const kind = v as QuestionKind;
-                    setForm((f) => ({
-                      ...f,
-                      kind,
-                      options:
-                        kind === "true_false"
-                          ? ["Đúng", "Sai"]
-                          : f.options.length >= 2
-                            ? f.options
-                            : ["", "", "", ""],
-                      correct_index: 0,
-                      correct_indices: [],
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {QUESTION_KINDS.map((k) => (
-                      <SelectItem key={k.value} value={k.value}>
-                        {k.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Độ khó</Label>
-                <Select
-                  value={form.difficulty}
-                  onValueChange={(v) => setForm({ ...form, difficulty: v as Difficulty })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DIFFICULTIES.map((d) => (
-                      <SelectItem key={d.value} value={d.value}>
-                        {d.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Điểm</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={form.points}
-                  onChange={(e) => setForm({ ...form, points: Number(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Số thứ tự</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.order_index}
-                  onChange={(e) => setForm({ ...form, order_index: Number(e.target.value) })}
-                />
-                <p className="type-meta">
-                  Dùng khi cuộc thi tắt &quot;Xáo trộn câu hỏi&quot;: số nhỏ hiện trước.
-                </p>
-              </div>
-            </div>
-
-            <p className="type-meta">{QUESTION_KINDS.find((k) => k.value === form.kind)?.hint}</p>
-
-            {/* Đáp án theo từng loại */}
-            {form.kind === "fill_blank" ? (
-              <div className="space-y-2">
-                <Label>Các đáp án được chấp nhận (mỗi dòng một đáp án)</Label>
-                <Textarea
-                  rows={3}
-                  value={form.accepted_answers}
-                  onChange={(e) => setForm({ ...form, accepted_answers: e.target.value })}
-                  placeholder={"Hà Nội\nHa Noi"}
-                />
-              </div>
-            ) : form.kind === "matching" ? (
-              <div className="space-y-2">
-                <Label>Các cặp cần nối</Label>
-                {form.pairs.map((p, i) => (
-                  <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
-                    <Input
-                      value={p.left}
-                      placeholder="Vế trái"
-                      onChange={(e) => {
-                        const next = [...form.pairs];
-                        next[i] = { ...next[i], left: e.target.value };
-                        setForm({ ...form, pairs: next });
-                      }}
-                    />
-                    <Input
-                      value={p.right}
-                      placeholder="Vế phải"
-                      onChange={(e) => {
-                        const next = [...form.pairs];
-                        next[i] = { ...next[i], right: e.target.value };
-                        setForm({ ...form, pairs: next });
-                      }}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Xoá cặp"
-                      onClick={() =>
-                        setForm({ ...form, pairs: form.pairs.filter((_, j) => j !== i) })
-                      }
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={() =>
-                    setForm({ ...form, pairs: [...form.pairs, { left: "", right: "" }] })
-                  }
-                >
-                  <Plus className="size-4" /> Thêm cặp
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label>
-                  {form.kind === "ordering" ? "Các mục theo đúng thứ tự" : "Phương án trả lời"}
-                </Label>
-                {form.options.map((o, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    {form.kind === "ordering" ? (
-                      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-secondary text-sm font-bold">
-                        {i + 1}
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        aria-label={`Đánh dấu phương án ${String.fromCharCode(65 + i)} là đúng`}
-                        onClick={() =>
-                          setForm((f) =>
-                            f.kind === "multi"
-                              ? {
-                                  ...f,
-                                  correct_indices: f.correct_indices.includes(i)
-                                    ? f.correct_indices.filter((x) => x !== i)
-                                    : [...f.correct_indices, i].sort((a, b) => a - b),
-                                }
-                              : { ...f, correct_index: i },
-                          )
-                        }
-                        className={cn(
-                          "flex size-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors",
-                          (
-                            form.kind === "multi"
-                              ? form.correct_indices.includes(i)
-                              : form.correct_index === i
-                          )
-                            ? "border-success bg-success text-success-foreground"
-                            : "border-border bg-secondary text-muted-foreground",
-                        )}
-                      >
-                        {String.fromCharCode(65 + i)}
-                      </button>
-                    )}
-                    <Input
-                      value={o}
-                      placeholder={
-                        form.kind === "ordering"
-                          ? `Mục ${i + 1}`
-                          : `Phương án ${String.fromCharCode(65 + i)}`
-                      }
-                      onChange={(e) => {
-                        const next = [...form.options];
-                        next[i] = e.target.value;
-                        setForm({ ...form, options: next });
-                      }}
-                    />
-                    {form.options.length > 2 ? (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Xoá phương án"
-                        onClick={() =>
-                          setForm({ ...form, options: form.options.filter((_, j) => j !== i) })
-                        }
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    ) : null}
-                  </div>
-                ))}
-                {form.kind !== "true_false" ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full"
-                    onClick={() => setForm({ ...form, options: [...form.options, ""] })}
-                  >
-                    <Plus className="size-4" /> Thêm phương án
-                  </Button>
-                ) : null}
-              </div>
-            )}
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Thẻ chủ đề (cách nhau bằng dấu phẩy)</Label>
-                <Input
-                  value={form.tags}
-                  placeholder="an toàn bay, khí tượng"
-                  onChange={(e) => setForm({ ...form, tags: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Giải thích đáp án (hiện khi xem lại)</Label>
-                <Textarea
-                  rows={2}
-                  value={form.explanation}
-                  onChange={(e) => setForm({ ...form, explanation: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Huỷ
-            </Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending}>
-              Lưu
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <QuestionForm
+        open={open}
+        onOpenChange={setOpen}
+        editing={Boolean(editing)}
+        form={form}
+        setForm={setForm}
+        uploading={uploading}
+        onAttachImage={(file) => void attachImage(file)}
+        onSave={() => save.mutate()}
+        saving={save.isPending}
+      />
     </div>
   );
 }
