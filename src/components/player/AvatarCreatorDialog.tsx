@@ -17,7 +17,7 @@ import { savePlayerAvatar, type PlayerProfile } from "@/lib/player.functions";
 
 const AvatarView3D = lazy(() => import("@/components/player/AvatarView3D"));
 
-const RPM_URL = "https://vatm.readyplayer.me/avatar?frameApi&bodyType=halfbody&clearCache";
+const RPM_URL = "https://vatm.readyplayer.me/avatar?frameApi&bodyType=fullbody&quality=high&textureAtlas=none&clearCache";
 
 /** Ảnh chân dung 2D do Ready Player Me kết xuất từ mô hình GLB. */
 function portraitOf(glbUrl: string) {
