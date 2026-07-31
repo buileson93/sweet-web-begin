@@ -14,7 +14,9 @@ import {
   isRankedEligible,
   vnDayStart,
 } from "@/lib/arena/rules";
+import { pickBestRoom, type Candidate } from "@/lib/arena/matchmaking";
 import { decideWinner, eloDelta, roundPoints } from "@/lib/arena/scoring";
+import { levelProgress } from "@/lib/xp";
 import { DUEL_COLUMNS, type DuelFinish, type DuelState, type RoundResult } from "@/lib/arena/types";
 import { QUESTION_COLUMNS } from "@/lib/exam/types";
 import {
@@ -252,7 +254,6 @@ export async function quickMatch(input: {
   if (mine) return { duelId: mine.duel_id, created: false };
 
   const waited = input.waitedSeconds ?? 0;
-  const spread = waited >= 30 ? 100_000 : waited >= 15 ? 300 : 150;
 
   const { data: waitingRaw } = await supabaseAdmin
     .from("duels")
@@ -261,17 +262,41 @@ export async function quickMatch(input: {
     .order("created_at", { ascending: true })
     .limit(20);
 
-  for (const room of waitingRaw ?? []) {
-    const seats = (room as { duel_players: { employee_id: string; elo_before: number; left_at: string | null }[] })
-      .duel_players.filter((p) => !p.left_at);
-    if (seats.length !== 1) continue;
-    if (seats[0].employee_id === input.employeeId) continue;
-    if (Math.abs(seats[0].elo_before - player.elo) > spread) continue;
+  // Cấp độ kinh nghiệm của người tìm trận và của các đối thủ đang chờ
+  const rooms = (waitingRaw ?? [])
+    .map((room) => {
+      const seats = (room as { duel_players: { employee_id: string; elo_before: number; left_at: string | null }[] })
+        .duel_players.filter((p) => !p.left_at);
+      return seats.length === 1 ? { room, seat: seats[0] } : null;
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+
+  const ids = [input.employeeId, ...rooms.map((r) => r.seat.employee_id)];
+  const { data: xpRows } = await supabaseAdmin
+    .from("player_profiles")
+    .select("employee_id, xp")
+    .in("employee_id", ids);
+  const levelOf = (id: string) =>
+    levelProgress(Number((xpRows ?? []).find((x) => x.employee_id === id)?.xp ?? 0)).level;
+
+  const candidates: Candidate[] = rooms.map((r) => ({
+    duelId: r.room.id,
+    employeeId: r.seat.employee_id,
+    elo: r.seat.elo_before,
+    level: levelOf(r.seat.employee_id),
+    createdAt: r.room.created_at,
+  }));
+
+  const seeker = { employeeId: input.employeeId, elo: player.elo, level: levelOf(input.employeeId) };
+  let pool = [...candidates];
+  for (let i = 0; i < 3; i += 1) {
+    const best = pickBestRoom(seeker, pool, waited);
+    if (!best) break;
     try {
-      await joinDuel({ duelId: room.id, employeeId: input.employeeId, deviceHash: input.deviceHash });
-      return { duelId: room.id, created: false };
+      await joinDuel({ duelId: best.duelId, employeeId: input.employeeId, deviceHash: input.deviceHash });
+      return { duelId: best.duelId, created: false };
     } catch {
-      continue; // phòng vừa bị người khác chiếm — thử phòng tiếp theo
+      pool = pool.filter((c) => c.duelId !== best.duelId); // phòng vừa bị chiếm — thử phòng khác
     }
   }
 
