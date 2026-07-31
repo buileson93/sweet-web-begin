@@ -213,27 +213,33 @@ export async function startExamSession(input: {
 
   const expiresAt = new Date(now.getTime() + quiz.duration_minutes * 60_000);
 
-  const { data: session, error: sessionError } = await supabaseAdmin
-    .from("exam_sessions")
-    .insert({
-      quiz_id: quiz.id,
-      candidate_name: name,
-      birth_year: birthYear || undefined,
-      unit: unit || "Chưa cập nhật",
-      employee_id: employee.id,
-      question_ids: ordered.map((q) => q.id),
-      option_orders: optionOrders,
-      expires_at: expiresAt.toISOString(),
-    })
-    .select("id, submit_token")
-    .single();
+  // Một transaction duy nhất: khoá theo (cuộc thi, nhân viên) → kiểm tra lượt thi
+  // → huỷ phiên cũ → tạo phiên mới. Chạy song song cũng không tạo thừa lượt thi.
+  const maxAttempts = quiz.max_attempts ?? 0;
+  const { data: created, error: sessionError } = await supabaseAdmin.rpc(
+    "start_exam_session_tx",
+    {
+      p_quiz_id: quiz.id,
+      p_employee_id: employee.id,
+      p_max_attempts: maxAttempts,
+      p_question_ids: ordered.map((q) => q.id),
+      p_option_orders: optionOrders as unknown as Json,
+      p_expires_at: expiresAt.toISOString(),
+      p_candidate_name: name,
+      p_birth_year: birthYear || "",
+      p_unit: unit || "",
+    },
+  );
 
-  if (sessionError) throw new Error(sessionError.message);
+  if (sessionError) throw mapStartExamError(sessionError, maxAttempts);
+  const session = created?.[0];
+  if (!session) throw new Error("Không tạo được phiên thi. Vui lòng thử lại.");
 
   return {
-    sessionId: session.id,
-    submitToken: session.submit_token as string,
-    attempt: attempts + 1,
+    sessionId: session.session_id,
+    submitToken: session.submit_token,
+    attempt: session.attempts + 1,
+
     bestPercent,
     candidateName: name,
     unit: unit || "Chưa cập nhật",
