@@ -68,6 +68,14 @@ export const requestFiftyFifty = createServerFn({ method: "POST" })
     return useFiftyFifty(data);
   });
 
+/** Vật phẩm X2: nhân đôi điểm của câu đang làm (một lần mỗi lượt thi). */
+export const requestDoublePoints = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => fiftyFiftySchema.parse(input))
+  .handler(async ({ data }) => {
+    const { useDoublePoints } = await import("@/lib/exam.server");
+    return useDoublePoints(data);
+  });
+
 /** Thoát phòng thi giữa chừng (không chấm điểm). */
 export const abandonExam = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>

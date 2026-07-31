@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
-import { checkAnswer, requestFiftyFifty } from "@/lib/exam.functions";
+import { checkAnswer, requestDoublePoints, requestFiftyFifty } from "@/lib/exam.functions";
 import type { StartExamResult } from "@/lib/exam.server";
 import { COMBO_MIN } from "@/lib/comboFx";
 import type { AnswerValue } from "@/lib/questionKinds";
@@ -19,10 +19,14 @@ export function useExamAnswers(opts: {
 }) {
   const { session, current, setCurrent, setAnswers } = opts;
   const runFifty = useServerFn(requestFiftyFifty);
+  const runX2 = useServerFn(requestDoublePoints);
   const runCheck = useServerFn(checkAnswer);
 
   const [fifty, setFifty] = useState<Record<string, number[]>>({});
   const [fiftyBusy, setFiftyBusy] = useState(false);
+  /** Chỉ số câu đã đặt vật phẩm X2 (mỗi lượt thi một lần). */
+  const [x2Index, setX2Index] = useState<number | null>(null);
+  const [x2Busy, setX2Busy] = useState(false);
   /** Phản hồi tức thì cho từng câu (chỉ ở chế độ chốt đáp án một lần). */
   const [feedback, setFeedback] = useState<Record<string, "correct" | "wrong">>({});
   /** Đáp án đúng + giải thích do máy chủ trả về sau khi chốt (chế độ chấm ngay). */
@@ -52,6 +56,22 @@ export function useExamAnswers(opts: {
       setFiftyBusy(false);
     }
   }, [current, runFifty, session]);
+
+  const requestX2 = useCallback(async () => {
+    if (!session || x2Index !== null) return;
+    setX2Busy(true);
+    try {
+      const res = await runX2({
+        data: { sessionId: session.sessionId, submitToken: session.submitToken, index: current },
+      });
+      setX2Index(res.index);
+      toast.success("Đã kích hoạt X2 — câu này được nhân đôi điểm!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không dùng được X2.");
+    } finally {
+      setX2Busy(false);
+    }
+  }, [current, runX2, session, x2Index]);
 
   const instant = Boolean(session?.settings?.instantFeedback);
   const locked = (idx: number) => instant && feedback[String(idx)] !== undefined;
@@ -111,6 +131,7 @@ export function useExamAnswers(opts: {
   /** Dọn trạng thái khi mở lượt thi mới. */
   const resetHelpers = useCallback(() => {
     setFifty({});
+    setX2Index(null);
     setFeedback({});
     setFeedbackInfo({});
     setAnswerFx(null);
@@ -123,6 +144,10 @@ export function useExamAnswers(opts: {
     fiftyBusy,
     fiftyLeft,
     requestFifty,
+    x2Index,
+    x2Busy,
+    x2Left: x2Index === null ? 1 : 0,
+    requestX2,
     feedback,
     feedbackInfo,
     answerFx,

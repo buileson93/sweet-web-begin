@@ -8,6 +8,8 @@ import {
   type QuestionRow,
   DEFAULT_SCORE_RULES,
   scoreForAnswer,
+  estimatePoints,
+  comboBonus,
 } from "@/lib/grading";
 import type { AnswerValue, Difficulty, QuestionKind } from "@/lib/questionKinds";
 
@@ -357,15 +359,45 @@ describe("scoreForAnswer", () => {
     expect(scoreForAnswer(1, true, true, 5, rules)).toBe(4);
   });
 
-  it("không vượt trần điểm thưởng", () => {
+  it("không vượt trần điểm thưởng khi có đặt trần", () => {
     expect(scoreForAnswer(1, true, true, 20, { ...rules, streakMaxBonus: 5 })).toBe(6);
+  });
+
+  it("combo luỹ tiến vô tận khi không đặt trần", () => {
+    expect(scoreForAnswer(1, true, true, 20, { ...rules, streakMaxBonus: 0 })).toBe(19);
+  });
+
+  it("vật phẩm X2 nhân đôi cả điểm thưởng combo", () => {
+    expect(scoreForAnswer(1, true, true, 5, rules, { x2: true })).toBe(8);
+    expect(scoreForAnswer(1, true, true, 1, rules, { x2: true })).toBe(2);
   });
 
   it("nhân đôi điểm khi đạt ngưỡng chuỗi", () => {
     expect(scoreForAnswer(2, true, true, 5, { ...rules, streakBonus: false, doublePointsAfter: 5 })).toBe(4);
   });
 
+
   it("tắt thưởng chuỗi thì chỉ còn điểm gốc", () => {
     expect(scoreForAnswer(3, true, true, 9, { ...rules, streakBonus: false })).toBe(3);
+  });
+});
+
+describe("estimatePoints", () => {
+  it("không có combo thì điểm bằng số câu đúng", () => {
+    expect(estimatePoints(10, 2)).toBe(10);
+  });
+
+  it("cộng dồn thưởng combo luỹ tiến", () => {
+    // chuỗi 5: các câu thứ 3,4,5 được +1,+2,+3
+    expect(estimatePoints(10, 5)).toBe(10 + 1 + 2 + 3);
+  });
+
+  it("chuỗi không thể dài hơn số câu đúng", () => {
+    expect(estimatePoints(2, 9)).toBe(2);
+  });
+
+  it("comboBonus bắt đầu từ combo thứ 3", () => {
+    expect(comboBonus(2, DEFAULT_SCORE_RULES)).toBe(0);
+    expect(comboBonus(3, DEFAULT_SCORE_RULES)).toBe(1);
   });
 });

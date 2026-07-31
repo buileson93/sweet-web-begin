@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { ensurePlayer } from "@/lib/arena/duel.server";
 import { issueArenaToken } from "@/lib/arena/token.server";
 import type { ArenaProfile } from "@/lib/arena/types";
+import { levelProgress, levelTitle } from "@/lib/xp";
 import { verifyEmployee } from "@/lib/employees.server";
 
 export async function arenaLogin(input: {
@@ -151,4 +152,46 @@ export async function setArenaAvatar(employeeId: string, avatar: string) {
     .update({ avatar: avatar.slice(0, 8) })
     .eq("employee_id", employeeId);
   return { ok: true };
+}
+
+/**
+ * Tìm đồng nghiệp theo TÊN để gửi lời mời thách đấu.
+ * Chỉ trả về thông tin hiển thị (tên, đơn vị, cấp độ, avatar) — không lộ dữ liệu cá nhân.
+ */
+export async function searchOpponents(input: { employeeId: string; query: string; limit?: number }) {
+  const q = input.query.trim();
+  if (q.length < 2) return [];
+
+  const { data: rows } = await supabaseAdmin
+    .from("employees")
+    .select("id, full_name, unit_name")
+    .eq("is_active", true)
+    .ilike("full_name", `%${q}%`)
+    .neq("id", input.employeeId)
+    .order("full_name", { ascending: true })
+    .limit(Math.min(20, input.limit ?? 10));
+
+  const list = rows ?? [];
+  if (list.length === 0) return [];
+
+  const ids = list.map((r) => r.id);
+  const [{ data: profiles }, { data: arena }] = await Promise.all([
+    supabaseAdmin.from("player_profiles").select("employee_id, xp, avatar_url, avatar_image").in("employee_id", ids),
+    supabaseAdmin.from("players").select("employee_id, elo").in("employee_id", ids),
+  ]);
+
+  return list.map((r) => {
+    const prof = (profiles ?? []).find((p) => p.employee_id === r.id);
+    const level = levelProgress(Number(prof?.xp ?? 0)).level;
+    return {
+      employeeId: r.id,
+      fullName: r.full_name,
+      unit: r.unit_name ?? "",
+      level,
+      title: levelTitle(level),
+      elo: Number((arena ?? []).find((a) => a.employee_id === r.id)?.elo ?? 1000),
+      avatarUrl: String(prof?.avatar_url ?? ""),
+      avatarImage: String(prof?.avatar_image ?? ""),
+    };
+  });
 }

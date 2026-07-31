@@ -292,7 +292,7 @@ export type ScoreRules = {
   streakBonus: boolean;
   /** Điểm cộng thêm cho mỗi câu đúng liên tiếp kể từ câu thứ 3. */
   streakStep: number;
-  /** Trần điểm thưởng chuỗi cho mỗi câu. */
+  /** Trần điểm thưởng chuỗi cho mỗi câu; 0 hoặc âm = KHÔNG giới hạn (combo luỹ tiến vô tận). */
   streakMaxBonus: number;
   /** Số câu đúng liên tiếp để nhân đôi điểm câu đó; 0 = tắt. */
   doublePointsAfter: number;
@@ -303,14 +303,29 @@ export type ScoreRules = {
 export const DEFAULT_SCORE_RULES: ScoreRules = {
   streakBonus: true,
   streakStep: 1,
-  streakMaxBonus: 5,
+  streakMaxBonus: 0,
   doublePointsAfter: 0,
   negativeMarking: 0,
 };
 
+/** Mốc combo bắt đầu được thưởng điểm luỹ tiến. */
+export const COMBO_START = 3;
+
+/**
+ * Điểm thưởng chuỗi cho MỘT câu khi combo đạt `streak`.
+ * Luỹ tiến từ combo thứ 3 trở lên; nếu `streakMaxBonus <= 0` thì tăng vô tận.
+ */
+export function comboBonus(streak: number, rules: ScoreRules): number {
+  if (!rules.streakBonus || streak < COMBO_START) return 0;
+  const step = Math.max(0, rules.streakStep);
+  const raw = (streak - (COMBO_START - 1)) * step;
+  return rules.streakMaxBonus > 0 ? Math.min(rules.streakMaxBonus, raw) : raw;
+}
+
 /**
  * Điểm nhận được cho MỘT câu, đã tính thưởng chuỗi luỹ tiến và nhân đôi.
  * @param streak số câu đúng liên tiếp TÍNH CẢ câu này (1 nếu là câu đầu chuỗi).
+ * @param opts.x2 thí sinh dùng vật phẩm X2 cho chính câu này (nhân đôi CẢ điểm thưởng combo).
  */
 export function scoreForAnswer(
   basePoints: number,
@@ -318,6 +333,7 @@ export function scoreForAnswer(
   answered: boolean,
   streak: number,
   rules: ScoreRules,
+  opts: { x2?: boolean } = {},
 ): number {
   const base = Math.max(1, basePoints || 1);
   if (!correct) return answered ? -Math.max(0, rules.negativeMarking) * base : 0;
@@ -325,8 +341,18 @@ export function scoreForAnswer(
   const doubled =
     rules.doublePointsAfter > 0 && streak >= rules.doublePointsAfter ? base * 2 : base;
 
-  if (!rules.streakBonus || streak < 3) return doubled;
-  const step = Math.max(0, rules.streakStep);
-  const bonus = Math.min(Math.max(0, rules.streakMaxBonus), (streak - 2) * step);
-  return doubled + bonus;
+  const total = doubled + comboBonus(streak, rules);
+  return opts.x2 ? total * 2 : total;
+}
+
+/**
+ * Ước lượng lại tổng điểm của một lượt thi CŨ (chỉ còn số câu đúng và chuỗi dài nhất).
+ * Dùng để xếp hạng lại theo thuật toán điểm mới mà không cần chấm lại từng câu.
+ */
+export function estimatePoints(score: number, bestStreak: number, rules = DEFAULT_SCORE_RULES) {
+  const correct = Math.max(0, Math.floor(score || 0));
+  const streak = Math.min(correct, Math.max(0, Math.floor(bestStreak || 0)));
+  let total = correct; // mỗi câu đúng 1 điểm gốc
+  for (let s = COMBO_START; s <= streak; s++) total += comboBonus(s, rules);
+  return total;
 }

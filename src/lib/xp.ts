@@ -73,19 +73,20 @@ export type LevelTier = {
   tone: string;
 };
 
-/** 10 cấp bậc dựng sẵn, mỗi cấp là một phần thưởng danh hiệu. */
+/** 10 cấp bậc dựng sẵn theo hành trình học tập của NHÂN VIÊN (không gắn với nghề cụ thể). */
 export const LEVEL_TIERS: LevelTier[] = [
-  { level: 1, title: "Tân binh sân đỗ", reward: "Mở khoá hồ sơ nhân vật", tone: "bg-muted text-muted-foreground" },
-  { level: 2, title: "Học viên tập sự", reward: "Huy hiệu đồng trên bảng xếp hạng", tone: "bg-amber-100 text-amber-800" },
+  { level: 1, title: "Nhân viên mới", reward: "Mở khoá hồ sơ nhân vật", tone: "bg-muted text-muted-foreground" },
+  { level: 2, title: "Nhân viên tập sự", reward: "Huy hiệu đồng trên bảng xếp hạng", tone: "bg-amber-100 text-amber-800" },
   { level: 3, title: "Nhân viên chăm chỉ", reward: "Khung ảnh đại diện màu đồng", tone: "bg-amber-200 text-amber-900" },
-  { level: 4, title: "Kỹ thuật viên tin cậy", reward: "Hiệu ứng chuỗi đúng nâng cao", tone: "bg-sky-100 text-sky-800" },
-  { level: 5, title: "Học viên xuất sắc", reward: "Khung ảnh đại diện màu bạc", tone: "bg-slate-200 text-slate-800" },
-  { level: 6, title: "Kiểm soát viên lành nghề", reward: "Danh hiệu hiển thị cạnh tên", tone: "bg-teal-100 text-teal-800" },
-  { level: 7, title: "Phi công kỳ cựu", reward: "Khung ảnh đại diện màu vàng", tone: "bg-yellow-200 text-yellow-900" },
-  { level: 8, title: "Cơ trưởng tri thức", reward: "Hiệu ứng ánh vàng khi vào phòng thi", tone: "bg-orange-200 text-orange-900" },
-  { level: 9, title: "Chỉ huy bầu trời", reward: "Khung bạch kim + ưu tiên vinh danh", tone: "bg-indigo-200 text-indigo-900" },
-  { level: 10, title: "Huyền thoại bầu trời", reward: "Vương miện huyền thoại vĩnh viễn", tone: "surface-gold" },
+  { level: 4, title: "Nhân viên tin cậy", reward: "Hiệu ứng chuỗi đúng nâng cao", tone: "bg-sky-100 text-sky-800" },
+  { level: 5, title: "Nhân viên xuất sắc", reward: "Khung ảnh đại diện màu bạc", tone: "bg-slate-200 text-slate-800" },
+  { level: 6, title: "Nhân viên lành nghề", reward: "Danh hiệu hiển thị cạnh tên", tone: "bg-teal-100 text-teal-800" },
+  { level: 7, title: "Chuyên viên", reward: "Khung ảnh đại diện màu vàng", tone: "bg-yellow-200 text-yellow-900" },
+  { level: 8, title: "Chuyên viên cao cấp", reward: "Hiệu ứng ánh vàng khi vào phòng thi", tone: "bg-orange-200 text-orange-900" },
+  { level: 9, title: "Chuyên gia tri thức", reward: "Khung bạch kim + ưu tiên vinh danh", tone: "bg-indigo-200 text-indigo-900" },
+  { level: 10, title: "Ngôi sao tri thức VATM", reward: "Vương miện huyền thoại vĩnh viễn", tone: "surface-gold" },
 ];
+
 
 /** Cấp bậc (1–10) tương ứng với cấp độ hiện tại. */
 export function levelTier(level: number): LevelTier {

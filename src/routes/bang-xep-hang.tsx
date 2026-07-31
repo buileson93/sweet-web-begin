@@ -56,6 +56,8 @@ function LeaderboardPage() {
         .from("results")
         .select("id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, best_streak")
         .eq("disqualified", false)
+        // Xếp hạng theo ĐIỂM SỐ (đã tính thưởng combo, X2), sau đó tới số câu đúng và thời gian.
+        .order("points", { ascending: false })
         .order("score", { ascending: false })
         .order("time_seconds", { ascending: true })
         .limit(500);
@@ -120,8 +122,9 @@ function LeaderboardPage() {
       "Họ và tên": r.candidate_name,
       "Đơn vị": r.unit ?? "",
       "Cuộc thi": r.quiz_title ?? "",
-      "Điểm": r.score,
-      "Tổng câu": r.total,
+      "Điểm số": r.points ?? 0,
+      "Số câu đúng": `${r.score}/${r.total}`,
+      "Chuỗi dài nhất": r.best_streak ?? 0,
       "Thời gian làm bài": formatSeconds(r.time_seconds),
       "Thời điểm nộp": formatDateTime(r.submitted_at),
     }));
@@ -311,8 +314,11 @@ function LeaderboardPage() {
 
                     <div className="shrink-0 text-right">
                       <p className="font-mono text-lg font-extrabold text-primary">
-                        {r.score}
-                        <span className="text-sm text-muted-foreground">/{r.total}</span>
+                        {r.points ?? 0}
+                        <span className="text-sm text-muted-foreground"> đ</span>
+                      </p>
+                      <p className="font-mono text-xs text-muted-foreground">
+                        {r.score}/{r.total} câu
                       </p>
                       <p className="font-mono text-xs text-muted-foreground">{formatSeconds(r.time_seconds)}</p>
                     </div>

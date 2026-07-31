@@ -147,6 +147,10 @@ function ExamPage() {
     fiftyBusy,
     fiftyLeft,
     requestFifty,
+    x2Index,
+    x2Busy,
+    x2Left,
+    requestX2,
     feedback,
     feedbackInfo,
     answerFx,
@@ -291,6 +295,10 @@ function ExamPage() {
             fiftyBusy={fiftyBusy}
             fiftyLeft={fiftyLeft}
             fiftyUsed={Boolean(fifty[String(current)])}
+            x2Left={x2Left}
+            x2Busy={x2Busy}
+            x2Active={x2Index === current}
+            onX2={() => void requestX2()}
             onFifty={() => void requestFifty()}
             onAnswer={(value) => void handleAnswer(current, value)}
             onPrev={() => setCurrent((c) => c - 1)}

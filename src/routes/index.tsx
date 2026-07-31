@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, quizStatus } from "@/lib/format";
 import { resolveQuizCover } from "@/lib/quizCover";
+import { PlayerHeroCard } from "@/components/player/PlayerHeroCard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -151,6 +152,8 @@ function HomePage() {
               Thi thử không giới hạn — mỗi lượt là một lần vững kiến thức hơn.
             </p>
           </div>
+
+          <PlayerHeroCard className="animate-pop" />
 
           <div data-tour="register" className="animate-pop" style={{ animationDelay: "0.1s" }}>
             <RegisterCard quizzes={quizzes} loading={quizzesQuery.isLoading} value={quizId} onValueChange={setQuizId} />

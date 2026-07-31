@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
+import { usePlayerIdentity } from "@/hooks/usePlayerIdentity";
 
 import { Avatar2D } from "@/components/player/Avatar2D";
 import { AvatarBubble, type AvatarBubbleSize } from "@/components/player/AvatarBubble";
@@ -68,6 +69,7 @@ function CharacterPage() {
   const runVerify = useServerFn(verifyEmployeeFn);
   const runProfile = useServerFn(getPlayerProfile);
   const runHistory = useServerFn(getExamHistory);
+  const { save: savePlayer } = usePlayerIdentity();
 
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
@@ -87,8 +89,10 @@ function CharacterPage() {
         runProfile({ data: { employeeId: employee.id } }),
         runHistory({ data: { name: name.trim(), credential: credential.trim() } }),
       ]);
-      setProfile({ ...p, displayName: p.displayName || employee.fullName || name.trim() });
+      const merged = { ...p, displayName: p.displayName || employee.fullName || name.trim() };
+      setProfile(merged);
       setHistory(h);
+      savePlayer(merged);
     } catch (error) {
       setProfile(null);
       setHistory(null);

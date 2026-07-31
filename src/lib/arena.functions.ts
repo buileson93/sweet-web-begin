@@ -66,6 +66,16 @@ export const arenaQuickMatch = createServerFn({ method: "POST" })
     return quickMatch({ employeeId, waitedSeconds: data.waitedSeconds, deviceHash: data.deviceHash });
   });
 
+export const arenaSearchOpponents = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ token, query: z.string().min(2).max(60) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const employeeId = await auth(data.token);
+    const { searchOpponents } = await import("@/lib/arena/lobby.server");
+    return searchOpponents({ employeeId, query: data.query });
+  });
+
 export const arenaInvite = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
