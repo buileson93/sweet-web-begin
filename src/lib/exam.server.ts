@@ -14,10 +14,14 @@ import {
   shuffle,
   type QuestionRow,
 } from "@/lib/grading";
-import { type AnswerValue, type Blueprint, type Difficulty, type QuestionKind } from "@/lib/questionKinds";
+import {
+  type AnswerValue,
+  type Blueprint,
+  type Difficulty,
+  type QuestionKind,
+} from "@/lib/questionKinds";
 
 export { PASS_PERCENT_DEFAULT };
-
 
 export type ExamQuestion = {
   id: string;
@@ -95,13 +99,11 @@ export type SubmitExamResult = {
   review: ReviewItem[];
 };
 
-
 const QUESTION_COLUMNS =
   "id, question, options, correct_index, image_url, kind, correct_indices, accepted_answers, pairs, correct_order, difficulty, tags, points, explanation, time_limit_seconds";
 
 const QUIZ_COLUMNS =
   "id, title, is_active, start_time, end_time, question_count, duration_minutes, shuffle_options, shuffle_questions, pass_percent, room_password, max_attempts, instant_feedback, allow_fifty_fifty, allow_skip, streak_bonus, show_question_map, negative_marking, blueprint";
-
 
 export async function startExamSession(input: {
   quizId: string;
@@ -150,7 +152,10 @@ export async function startExamSession(input: {
     .eq("disqualified", false);
 
   const attempts = previous?.length ?? 0;
-  const bestPercent = (previous ?? []).reduce((max, r) => Math.max(max, percentOf(r.score, r.total)), 0);
+  const bestPercent = (previous ?? []).reduce(
+    (max, r) => Math.max(max, percentOf(r.score, r.total)),
+    0,
+  );
   if (quiz.max_attempts && attempts >= quiz.max_attempts) {
     throw new Error(`Cuộc thi này chỉ cho phép tối đa ${quiz.max_attempts} lượt thi.`);
   }
@@ -278,14 +283,23 @@ export async function useFiftyFifty(input: {
   if (usedList.length >= 2) throw new Error("Bạn đã dùng hết lượt trợ giúp 50:50.");
 
   const qid = (session.question_ids as string[])[input.index];
-  const { data: rowRaw } = await supabaseAdmin.from("questions").select(QUESTION_COLUMNS).eq("id", qid).maybeSingle();
+  const { data: rowRaw } = await supabaseAdmin
+    .from("questions")
+    .select(QUESTION_COLUMNS)
+    .eq("id", qid)
+    .maybeSingle();
   const row = rowRaw as unknown as QuestionRow | null;
   if (!row) throw new Error("Không tìm thấy câu hỏi.");
-  if (row.kind !== "single" && row.kind !== "true_false") throw new Error("Câu hỏi này không hỗ trợ 50:50.");
+  if (row.kind !== "single" && row.kind !== "true_false")
+    throw new Error("Câu hỏi này không hỗ trợ 50:50.");
 
   const order = ((session.option_orders as unknown as number[][]) ?? [])[input.index] ?? [];
-  const wrong = order.map((orig, display) => ({ orig, display })).filter((o) => o.orig !== row.correct_index);
-  const removed = shuffle(wrong).slice(0, Math.max(1, Math.min(2, wrong.length - 1))).map((o) => o.display);
+  const wrong = order
+    .map((orig, display) => ({ orig, display }))
+    .filter((o) => o.orig !== row.correct_index);
+  const removed = shuffle(wrong)
+    .slice(0, Math.max(1, Math.min(2, wrong.length - 1)))
+    .map((o) => o.display);
 
   await supabaseAdmin
     .from("exam_sessions")
@@ -299,7 +313,11 @@ export async function useFiftyFifty(input: {
 export async function abandonExamSession(input: { sessionId: string; submitToken: string }) {
   const { error } = await supabaseAdmin
     .from("exam_sessions")
-    .update({ status: "abandoned", submitted_at: new Date().toISOString(), submit_token: crypto.randomUUID() })
+    .update({
+      status: "abandoned",
+      submitted_at: new Date().toISOString(),
+      submit_token: crypto.randomUUID(),
+    })
     .eq("id", input.sessionId)
     .eq("submit_token", input.submitToken)
     .eq("status", "active");
@@ -326,7 +344,11 @@ export async function checkExamAnswer(input: {
   const qid = (session.question_ids as string[])[input.index];
   if (!qid) throw new Error("Câu hỏi không tồn tại.");
 
-  const { data: rowRaw } = await supabaseAdmin.from("questions").select(QUESTION_COLUMNS).eq("id", qid).maybeSingle();
+  const { data: rowRaw } = await supabaseAdmin
+    .from("questions")
+    .select(QUESTION_COLUMNS)
+    .eq("id", qid)
+    .maybeSingle();
   const row = rowRaw as unknown as QuestionRow | null;
   if (!row) throw new Error("Câu hỏi không tồn tại.");
 
@@ -335,8 +357,14 @@ export async function checkExamAnswer(input: {
   const order = orders[input.index] ?? display.map((_, i) => i);
   const correct = gradeOne(row, order, input.value);
 
-  const answers = { ...((session.answers as Record<string, AnswerValue>) ?? {}), [String(input.index)]: input.value };
-  await supabaseAdmin.from("exam_sessions").update({ answers: answers as never }).eq("id", session.id);
+  const answers = {
+    ...((session.answers as Record<string, AnswerValue>) ?? {}),
+    [String(input.index)]: input.value,
+  };
+  await supabaseAdmin
+    .from("exam_sessions")
+    .update({ answers: answers as never })
+    .eq("id", session.id);
 
   return { correct, correctText: correctTextOf(row), explanation: row.explanation ?? "" };
 }
@@ -375,7 +403,11 @@ export async function submitExamSession(input: {
     if (lockError) throw new Error(lockError.message);
     if (!locked || locked.length === 0) {
       // Một tiến trình khác vừa chấm xong — đọc lại và trả kết quả đã có.
-      const { data: fresh } = await supabaseAdmin.from("exam_sessions").select("*").eq("id", session.id).maybeSingle();
+      const { data: fresh } = await supabaseAdmin
+        .from("exam_sessions")
+        .select("*")
+        .eq("id", session.id)
+        .maybeSingle();
       if (fresh) Object.assign(session, fresh);
     }
   }
@@ -399,7 +431,11 @@ export async function submitExamSession(input: {
       .eq("quiz_id", session.quiz_id)
       .eq("employee_id", session.employee_id ?? "00000000-0000-0000-0000-000000000000")
       .eq("disqualified", false),
-    supabaseAdmin.from("results").select("id, disqualified, time_seconds").eq("session_id", session.id).maybeSingle(),
+    supabaseAdmin
+      .from("results")
+      .select("id, disqualified, time_seconds")
+      .eq("session_id", session.id)
+      .maybeSingle(),
   ]);
 
   const quiz = quizRes.data;
@@ -407,7 +443,6 @@ export async function submitExamSession(input: {
   const rows = (rowsRes.data ?? []) as unknown as QuestionRow[];
   const history = historyRes.data;
   const existing = existingRes.data;
-
 
   const byId = new Map(rows.map((r) => [r.id, r]));
   const orders = (session.option_orders as unknown as number[][]) ?? [];
@@ -472,7 +507,10 @@ export async function submitExamSession(input: {
   const passPercent = quiz?.pass_percent || PASS_PERCENT_DEFAULT;
   const passed = disqualified ? false : isPassed(finalScore, total, passPercent);
 
-  const previousBestPercent = (history ?? []).reduce((max, r) => Math.max(max, percentOf(r.score, r.total)), 0);
+  const previousBestPercent = (history ?? []).reduce(
+    (max, r) => Math.max(max, percentOf(r.score, r.total)),
+    0,
+  );
 
   if (!replay) {
     await supabaseAdmin
@@ -508,9 +546,9 @@ export async function submitExamSession(input: {
       submitted_at: now.toISOString(),
     });
 
-    if (insertError && !insertError.message.includes("duplicate")) throw new Error(insertError.message);
+    if (insertError && !insertError.message.includes("duplicate"))
+      throw new Error(insertError.message);
   }
-
 
   return {
     score: finalScore,
@@ -579,7 +617,13 @@ export async function getExamHistoryFor(input: {
 
   const list = sessions ?? [];
   if (list.length === 0) {
-    return { candidateName: employee.fullName, unitName: employee.unitName, attempts: [], bestPercent: 0, passedCount: 0 };
+    return {
+      candidateName: employee.fullName,
+      unitName: employee.unitName,
+      attempts: [],
+      bestPercent: 0,
+      passedCount: 0,
+    };
   }
 
   const questionIds = [...new Set(list.flatMap((s) => s.question_ids as string[]))];
@@ -598,7 +642,9 @@ export async function getExamHistoryFor(input: {
       .in("id", [...new Set(list.map((s) => s.quiz_id))]),
   ]);
 
-  const questionById = new Map(((questionRows ?? []) as unknown as QuestionRow[]).map((q) => [q.id, q]));
+  const questionById = new Map(
+    ((questionRows ?? []) as unknown as QuestionRow[]).map((q) => [q.id, q]),
+  );
   const resultBySession = new Map((resultRows ?? []).map((r) => [r.session_id, r]));
   const quizTitleById = new Map((quizRows ?? []).map((q) => [q.id, q.title]));
   // Mức đạt (phần trăm) của từng cuộc thi để tính "Đạt/Chưa đạt" thống nhất với lúc chấm bài.
@@ -612,7 +658,13 @@ export async function getExamHistoryFor(input: {
     const questions: HistoryQuestion[] = (s.question_ids as string[]).map((qid, idx) => {
       const row = questionById.get(qid);
       if (!row) {
-        return { question: "(Câu hỏi đã bị xoá)", correct: false, answered: false, chosenText: null, correctText: "" };
+        return {
+          question: "(Câu hỏi đã bị xoá)",
+          correct: false,
+          answered: false,
+          chosenText: null,
+          correctText: "",
+        };
       }
       const display = baseOptions(row);
       const order = orders[idx] ?? display.map((_, i) => i);
@@ -640,7 +692,9 @@ export async function getExamHistoryFor(input: {
       score,
       total,
       percent,
-      passed: !result?.disqualified && isPassed(score, total, passPercentById.get(s.quiz_id) ?? PASS_PERCENT_DEFAULT),
+      passed:
+        !result?.disqualified &&
+        isPassed(score, total, passPercentById.get(s.quiz_id) ?? PASS_PERCENT_DEFAULT),
       timeSeconds: result?.time_seconds ?? 0,
       questions,
     };
