@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { PlayerChip } from "@/components/player/PlayerChip";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,10 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "onDark"
           ))}
         </nav>
 
+        <div className="flex items-center gap-2">
+          <PlayerChip size="sm" className="hidden sm:inline-flex" />
+          <PlayerChip size="xs" compact className="sm:hidden" />
+
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <Button
@@ -87,6 +92,7 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "onDark"
             </nav>
           </SheetContent>
         </Sheet>
+        </div>
       </div>
     </header>
   );
