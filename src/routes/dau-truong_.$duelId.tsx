@@ -286,19 +286,39 @@ function RoundPanel({
 function ResultPanel({ state, meId }: { state: DuelState; meId?: string }) {
   const r = state.lastResult!;
   const mine = r.lines.find((l) => l.employeeId === meId);
+  const foe = r.lines.find((l) => l.employeeId !== meId);
+  const dealt = mine?.damage ?? 0;
+  const taken = foe?.damage ?? 0;
+
   return (
     <div
       className={cn(
         "space-y-1 rounded-2xl border p-4",
-        mine?.isCorrect ? "border-emerald-500/50 bg-emerald-500/10" : "border-rose-500/50 bg-rose-500/10",
+        r.neutral
+          ? "border-border bg-muted/40"
+          : dealt > 0
+            ? "border-emerald-500/50 bg-emerald-500/10"
+            : "border-rose-500/50 bg-rose-500/10",
       )}
     >
       <p className="flex items-center gap-2 font-semibold">
-        {mine?.isCorrect ? <Check className="size-5 text-emerald-600" /> : <X className="size-5 text-rose-600" />}
-        {mine?.isCorrect ? `Chính xác! +${mine.points} điểm` : "Chưa chính xác"}
+        {mine?.isCorrect ? (
+          <Check className="size-5 text-emerald-600" />
+        ) : (
+          <X className="size-5 text-rose-600" />
+        )}
+        {r.neutral
+          ? "Cả hai cùng chưa đúng — không ai mất máu"
+          : dealt > 0
+            ? `${mine?.firstCorrect ? "Nhanh tay nhất! " : ""}Gây ${dealt} sát thương ⚔️`
+            : `Bị trừ ${taken} máu 💔`}
       </p>
       <p className="text-sm">
         Đáp án đúng: <strong>{r.correctText}</strong>
+      </p>
+      <p className="text-sm text-muted-foreground">
+        ❤️ Máu của bạn: <strong>{mine?.hp ?? state.hpStart}</strong> · Đối thủ:{" "}
+        <strong>{foe?.hp ?? state.hpStart}</strong>
       </p>
       {r.explanation ? <p className="text-sm text-muted-foreground">{r.explanation}</p> : null}
     </div>
@@ -315,14 +335,17 @@ function FinishPanel({ state, meId }: { state: DuelState; meId?: string }) {
       <p className="text-3xl font-black">
         {draw ? "🤝 Hoà!" : win ? "🏆 Chiến thắng!" : "😢 Thất bại"}
       </p>
+      <p className="text-sm text-muted-foreground">{f.reasonLabel}</p>
       <div className="grid gap-2 sm:grid-cols-2">
         {f.lines.map((l) => (
           <div key={l.employeeId} className="rounded-xl border bg-muted/40 p-3">
             <p className="truncate font-semibold">{l.displayName}</p>
-            <p className="font-mono text-2xl">{l.score}</p>
+            <p className="font-mono text-2xl">❤️ {l.hp}</p>
             <p className="text-xs text-muted-foreground">
-              Đúng {l.correct}/{state.roundCount} · Elo {l.eloBefore} →{" "}
-              <strong>{l.eloAfter}</strong>
+              ⚔️ {l.damageDealt} sát thương · Đúng {l.correct}/{state.roundCount}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Elo {l.eloBefore} → <strong>{l.eloAfter}</strong>
             </p>
           </div>
         ))}
@@ -336,6 +359,12 @@ function FinishPanel({ state, meId }: { state: DuelState; meId?: string }) {
       {!f.isRanked && f.rankedNote ? (
         <p className="text-xs text-muted-foreground">{f.rankedNote}</p>
       ) : null}
+      <Button asChild variant="outline" className="rounded-full">
+        <Link to="/dau-truong/xem-lai/$duelId" params={{ duelId: state.duelId }}>
+          Xem lại diễn biến
+        </Link>
+      </Button>
     </div>
   );
 }
+
