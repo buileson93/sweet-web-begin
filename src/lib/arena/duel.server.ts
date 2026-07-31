@@ -836,13 +836,28 @@ export async function closeRound(duelId: string, roundIndex: number) {
       };
     }),
   };
+  // Mốc thời gian do máy chủ quyết định: cả hai bên đổ xúc xắc cùng lúc, cùng độ dài.
+  result.resolvedAt = nowIso();
+  result.revealMs = DICE_MS;
 
   const isLast = roundIndex + 1 >= duel.round_count || !!combat.knockedOutId || !!noShow;
   await supabaseAdmin
     .from("duels")
     .update({ last_result: result as never, version: duel.version + 2 })
     .eq("id", duelId);
-  await broadcastDuel(duelId, "round.result", result);
+  // Một lô duy nhất: kết quả câu + ảnh chụp máu, để client vẽ lại đúng một lần.
+  await broadcastDuelBatch(duelId, [
+    { event: "round.result", payload: result },
+    {
+      event: "hp.sync",
+      payload: {
+        roundIndex,
+        version: duel.version + 2,
+        hp: result.lines.map((l) => ({ employeeId: l.employeeId, hp: l.hp })),
+      },
+    },
+  ]);
+
 
   if (noShow) {
     await logArenaAudit(
