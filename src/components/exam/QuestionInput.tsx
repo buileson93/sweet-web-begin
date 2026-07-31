@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { ArrowDown, ArrowUp, Check, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { questionImageSrc } from "@/lib/questionImage";
 import { Button } from "@/components/ui/button";
 import type { AnswerValue, QuestionKind } from "@/lib/questionKinds";
 import { cn } from "@/lib/utils";
@@ -8,6 +10,8 @@ import { cn } from "@/lib/utils";
 export type QuestionInputProps = {
   kind: QuestionKind;
   options: string[];
+  /** Ảnh riêng của từng phương án, cùng chỉ số với `options` (rỗng = không có). */
+  optionImages?: string[];
   matchLeft: string[];
   value: AnswerValue | undefined;
   onChange: (value: AnswerValue) => void;
@@ -24,6 +28,7 @@ const LETTER = (i: number) => String.fromCharCode(65 + i);
 export function QuestionInput({
   kind,
   options,
+  optionImages = [],
   matchLeft,
   value,
   onChange,
@@ -31,6 +36,8 @@ export function QuestionInput({
   disabled,
   feedback = null,
 }: QuestionInputProps) {
+  const [zoom, setZoom] = useState<string | null>(null);
+
   if (kind === "fill_blank") {
     return (
       <div className="mt-4">
@@ -142,9 +149,18 @@ export function QuestionInput({
     onChange([...next].sort((a, b) => a - b));
   };
 
+  const hasImages = optionImages.some(Boolean);
+
   return (
-    <div className="stagger mt-5 space-y-2.5">
-      {multi ? <p className="type-meta">Có thể chọn nhiều phương án.</p> : null}
+    <div
+      className={cn(
+        "stagger mt-5",
+        hasImages ? "grid grid-cols-2 gap-2.5 sm:grid-cols-2" : "space-y-2.5",
+      )}
+    >
+      {multi ? (
+        <p className={cn("type-meta", hasImages && "col-span-2")}>Có thể chọn nhiều phương án.</p>
+      ) : null}
       {options.map((opt, i) => {
         const isRemoved = removed.includes(i);
         const active = selected.has(i);
@@ -156,7 +172,8 @@ export function QuestionInput({
             disabled={disabled || isRemoved}
             onClick={() => toggle(i)}
             className={cn(
-              "group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border-2 p-3.5 text-left transition-all duration-200 sm:p-4",
+              "group relative flex w-full overflow-hidden rounded-2xl border-2 p-3.5 text-left transition-all duration-200 sm:p-4",
+              hasImages ? "flex-col items-start gap-2" : "items-center gap-3",
               state === "correct"
                 ? "border-success bg-success/12"
                 : state === "wrong"
@@ -191,6 +208,32 @@ export function QuestionInput({
                 LETTER(i)
               )}
             </span>
+            {hasImages && questionImageSrc(optionImages[i] || null) ? (
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={`Phóng to ảnh phương án ${LETTER(i)}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setZoom(questionImageSrc(optionImages[i] || null));
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setZoom(questionImageSrc(optionImages[i] || null));
+                  }
+                }}
+                className="relative z-10 block w-full overflow-hidden rounded-xl border border-border bg-secondary"
+              >
+                <img
+                  src={questionImageSrc(optionImages[i] || null)!}
+                  alt={`Ảnh phương án ${LETTER(i)}`}
+                  loading="lazy"
+                  className="h-28 w-full object-contain sm:h-36"
+                />
+              </span>
+            ) : null}
             <span className="relative z-10 min-w-0 flex-1 text-[0.95rem] font-medium leading-snug">
               {opt}
             </span>
@@ -203,6 +246,18 @@ export function QuestionInput({
           </button>
         );
       })}
+
+      {zoom ? (
+        <div
+          role="dialog"
+          aria-label="Ảnh phương án phóng to"
+          onClick={() => setZoom(null)}
+          className="fixed inset-0 z-[100] grid place-items-center bg-background/90 p-4 backdrop-blur-sm"
+        >
+          <img src={zoom} alt="Ảnh phương án phóng to" className="max-h-[85vh] max-w-full rounded-2xl" />
+          <p className="type-meta mt-3">Chạm vào bất kỳ đâu để đóng</p>
+        </div>
+      ) : null}
     </div>
   );
 }
