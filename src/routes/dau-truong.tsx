@@ -127,7 +127,7 @@ function ArenaLobby() {
       alive = false;
       window.clearInterval(id);
     };
-  }, [token, loadHome]);
+  }, [token, loadHome, saveIdentity]);
 
   // Có lời mời mới -> nạp lại ngay, không phải chờ vòng hỏi lại 6 giây.
   useArenaInviteChannel(home?.profile.employeeId, () => {
