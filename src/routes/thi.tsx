@@ -44,6 +44,7 @@ import {
   abandonExam,
   checkAnswer,
   requestFiftyFifty,
+  reportEvent,
   startExam,
   submitExam,
   loadProgress,
@@ -152,12 +153,14 @@ const EXAM_TOUR_STEPS: TourStep[] = [
   },
 ];
 
-const MAX_VIOLATIONS = 3;
+/** Số sự kiện hành vi tối đa gửi lên máy chủ trong một phiên thi. */
+const MAX_EVENTS = 20;
 
 function ExamPage() {
   const navigate = useNavigate();
   const runSubmit = useServerFn(submitExam);
   const runFifty = useServerFn(requestFiftyFifty);
+  const runReportEvent = useServerFn(reportEvent);
   const runCheck = useServerFn(checkAnswer);
   const runAbandon = useServerFn(abandonExam);
   const runStart = useServerFn(startExam);
@@ -396,7 +399,7 @@ function ExamPage() {
       document.removeEventListener("paste", block);
       document.removeEventListener("keydown", blockKeys);
     };
-  }, [session, result, finish]);
+  }, [session, result, runReportEvent]);
 
   useEffect(() => {
     if (!session || result) return;
