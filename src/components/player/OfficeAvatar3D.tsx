@@ -39,7 +39,7 @@ function Character({ palette, female }: { palette: Palette; female: boolean }) {
     const g = root.current;
     if (!g) return;
     const t = state.clock.getElapsedTime();
-    g.position.y = Math.sin(t * 1.1) * 0.012;
+    g.position.y = Math.sin(t * 1.1) * 0.01;
     g.rotation.y = MathUtils.lerp(g.rotation.y, Math.sin(t * 0.35) * 0.22, 0.05);
   });
 
@@ -48,7 +48,7 @@ function Character({ palette, female }: { palette: Palette; female: boolean }) {
   const matSkin = { color: palette.skin, roughness: 0.55 };
 
   return (
-    <group ref={root} position={[0, -0.92, 0]}>
+    <group ref={root}>
       {/* Giày */}
       {[-0.16, 0.16].map((x) => (
         <mesh key={x} position={[x, 0.05, 0.05]} castShadow receiveShadow>
@@ -223,8 +223,8 @@ export default function OfficeAvatar3D({
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: bust ? [0, 0.99, 1.15] : [0, 0.28, 2.35], fov: 30 }}
-        onCreated={({ camera }) => camera.lookAt(0, bust ? 0.95 : 0.05, 0)}
+        camera={{ position: bust ? [0, 1.9, 1.35] : [0, 1.2, 4.6], fov: 30 }}
+        onCreated={({ camera }) => camera.lookAt(0, bust ? 1.86 : 1.0, 0)}
         gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
       >
         <ambientLight intensity={0.5} />
@@ -232,7 +232,7 @@ export default function OfficeAvatar3D({
         <directionalLight position={[-2.4, 1.6, -1.6]} intensity={0.6} color="#cfe4ff" />
         <Suspense fallback={null}>
           <Character palette={palette} female={female} />
-          <ContactShadows position={[0, -0.93, 0]} opacity={0.34} scale={3.2} blur={2.4} far={2} />
+          <ContactShadows position={[0, 0.01, 0]} opacity={0.34} scale={3.2} blur={2.4} far={2} />
           <Environment preset="studio" />
         </Suspense>
       </Canvas>
