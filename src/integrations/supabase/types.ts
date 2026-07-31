@@ -425,6 +425,7 @@ export type Database = {
           created_at: string
           description: string
           disqualify_threshold: number
+          double_points_after: number
           duration_minutes: number
           end_time: string | null
           id: string
@@ -443,6 +444,8 @@ export type Database = {
           start_time: string | null
           status: string
           streak_bonus: boolean
+          streak_max_bonus: number
+          streak_step: number
           strict_mode: boolean
           title: string
           updated_at: string
@@ -454,6 +457,7 @@ export type Database = {
           created_at?: string
           description?: string
           disqualify_threshold?: number
+          double_points_after?: number
           duration_minutes?: number
           end_time?: string | null
           id?: string
@@ -472,6 +476,8 @@ export type Database = {
           start_time?: string | null
           status?: string
           streak_bonus?: boolean
+          streak_max_bonus?: number
+          streak_step?: number
           strict_mode?: boolean
           title: string
           updated_at?: string
@@ -483,6 +489,7 @@ export type Database = {
           created_at?: string
           description?: string
           disqualify_threshold?: number
+          double_points_after?: number
           duration_minutes?: number
           end_time?: string | null
           id?: string
@@ -501,6 +508,8 @@ export type Database = {
           start_time?: string | null
           status?: string
           streak_bonus?: boolean
+          streak_max_bonus?: number
+          streak_step?: number
           strict_mode?: boolean
           title?: string
           updated_at?: string

@@ -121,11 +121,8 @@ function HomePage() {
               aria-hidden
             >
               <BookOpen className="animate-book-flip size-7 text-primary/70 drop-shadow-sm sm:size-9" />
-              <span
-                className="animate-plane-orbit absolute grid place-items-center"
-                style={{ "--orbit": "2.4rem" } as React.CSSProperties}
-              >
-                <Plane className="size-4 text-accent drop-shadow-sm sm:size-5" />
+              <span className="animate-plane-flyby absolute grid place-items-center">
+                <Plane className="size-4 -rotate-[135deg] text-accent drop-shadow-sm sm:size-5" />
               </span>
             </div>
 

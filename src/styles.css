@@ -1143,17 +1143,28 @@
 }
 
 /* Máy bay bay vòng + sách lật nhẹ ở hero */
-@keyframes plane-orbit {
+@keyframes plane-flyby {
   0% {
-    transform: rotate(0deg) translateX(var(--orbit, 7rem)) rotate(0deg);
+    transform: translate(260%, -70%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(0%, 15%);
+  }
+  85% {
+    opacity: 1;
   }
   100% {
-    transform: rotate(360deg) translateX(var(--orbit, 7rem)) rotate(-360deg);
+    transform: translate(-260%, -60%);
+    opacity: 0;
   }
 }
 
-@utility animate-plane-orbit {
-  animation: plane-orbit 14s linear infinite;
+@utility animate-plane-flyby {
+  animation: plane-flyby 9s ease-in-out infinite;
 }
 
 @keyframes book-flip {
@@ -1174,7 +1185,7 @@
   .firework-dot,
   .champagne-bubble,
   .cork-pop,
-  .animate-plane-orbit,
+  .animate-plane-flyby,
   .animate-book-flip {
     animation: none;
   }

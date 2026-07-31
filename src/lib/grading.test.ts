@@ -6,6 +6,8 @@ import {
   permuteByOrder,
   pickByBlueprint,
   type QuestionRow,
+  DEFAULT_SCORE_RULES,
+  scoreForAnswer,
 } from "@/lib/grading";
 import type { AnswerValue, Difficulty, QuestionKind } from "@/lib/questionKinds";
 
@@ -330,5 +332,40 @@ describe("ảnh phương án – hoán vị theo thứ tự trộn", () => {
 
   it("chỉ số ngoài dải trả về giá trị mặc định", () => {
     expect(permuteByOrder(["a", "b"], [1, 9, -1], "")).toEqual(["b", "", ""]);
+  });
+});
+
+describe("scoreForAnswer", () => {
+  const rules = { ...DEFAULT_SCORE_RULES };
+
+  it("câu sai không có điểm khi bỏ trống", () => {
+    expect(scoreForAnswer(2, false, false, 0, rules)).toBe(0);
+  });
+
+  it("trừ điểm khi trả lời sai và bật trừ điểm", () => {
+    expect(scoreForAnswer(2, false, true, 0, { ...rules, negativeMarking: 0.5 })).toBe(-1);
+  });
+
+  it("hai câu đúng đầu chuỗi chưa được thưởng", () => {
+    expect(scoreForAnswer(1, true, true, 1, rules)).toBe(1);
+    expect(scoreForAnswer(1, true, true, 2, rules)).toBe(1);
+  });
+
+  it("thưởng luỹ tiến từ câu đúng thứ ba", () => {
+    expect(scoreForAnswer(1, true, true, 3, rules)).toBe(2);
+    expect(scoreForAnswer(1, true, true, 4, rules)).toBe(3);
+    expect(scoreForAnswer(1, true, true, 5, rules)).toBe(4);
+  });
+
+  it("không vượt trần điểm thưởng", () => {
+    expect(scoreForAnswer(1, true, true, 20, { ...rules, streakMaxBonus: 5 })).toBe(6);
+  });
+
+  it("nhân đôi điểm khi đạt ngưỡng chuỗi", () => {
+    expect(scoreForAnswer(2, true, true, 5, { ...rules, streakBonus: false, doublePointsAfter: 5 })).toBe(4);
+  });
+
+  it("tắt thưởng chuỗi thì chỉ còn điểm gốc", () => {
+    expect(scoreForAnswer(3, true, true, 9, { ...rules, streakBonus: false })).toBe(3);
   });
 });

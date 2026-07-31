@@ -6,7 +6,6 @@ import { toast } from "sonner";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
-import { CsvImportDialog } from "@/components/admin/CsvImportDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { normalizeKey } from "@/lib/csv";
@@ -22,6 +21,7 @@ import {
 import type { Difficulty } from "@/lib/questionKinds";
 import { clearDraft, draftKey, isDraftMeaningful, loadDraft, saveDraft } from "@/lib/questionDraft";
 
+import { QuestionImportDialog } from "@/components/admin/questions/QuestionImportDialog";
 import { QuestionFilters } from "./questions/QuestionFilters";
 import { QuestionForm } from "./questions/QuestionForm";
 import { QuestionList } from "./questions/QuestionList";
@@ -30,7 +30,6 @@ import { useQuestionMutations } from "./questions/useQuestionMutations";
 import {
   emptyForm,
   type ArchiveFilter,
-  type CsvQuestion,
   type QuestionFormState,
   type QuestionRow,
 } from "./questions/types";
@@ -207,24 +206,6 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     () => new Set(questions.map((q) => normalizeKey(q.question))),
     [questions],
   );
-
-  async function importCsv(rows: CsvQuestion[]) {
-    const { error } = await supabase
-      .from("questions")
-      .insert(rows.map((r) => ({ ...r, quiz_id: quizId })));
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    await logAudit({
-      action: "import",
-      entity: "question",
-      entityLabel: `${rows.length} câu hỏi (CSV)`,
-      details: { count: rows.length, quiz_id: quizId },
-    });
-    toast.success(`Đã nhập ${rows.length} câu hỏi.`);
-    void qc.invalidateQueries({ queryKey: ["admin-questions", quizId] });
-  }
 
   /** Tải ảnh lên kho lưu trữ và gán vào câu hỏi đang soạn. */
   const attachImage = useCallback(
@@ -421,46 +402,11 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         }
         actions={
           <>
-            <CsvImportDialog<CsvQuestion>
-              title="Nhập câu hỏi từ CSV"
-              description="Cột bắt buộc: cau_hoi, phuong_an_a…d, dap_an (A/B/C/D). Hệ thống kiểm tra định dạng và bỏ qua câu hỏi trùng."
-              templateFileName="mau-cau-hoi.csv"
-              templateHeaders={[
-                "cau_hoi",
-                "phuong_an_a",
-                "phuong_an_b",
-                "phuong_an_c",
-                "phuong_an_d",
-                "dap_an",
-              ]}
-              templateSample={[
-                ["Sân bay Đà Nẵng có mã ICAO là gì?", "VVDN", "VVNB", "VVTS", "VVCR", "A"],
-              ]}
+            <QuestionImportDialog
+              quizId={quizId}
               existingKeys={existingKeys}
-              keyOf={(v) => v.question}
-              renderPreview={(v) =>
-                `${v.question} — Đáp án ${String.fromCharCode(65 + v.correct_index)}`
-              }
               disabled={!quizId || !canEdit}
-              mapRow={(row) => {
-                const question = (row["cau_hoi"] ?? row["question"] ?? "").trim();
-                const options = ["a", "b", "c", "d"].map((k) =>
-                  (row[`phuong_an_${k}`] ?? row[`option_${k}`] ?? row[k] ?? "").trim(),
-                );
-                const answer = (row["dap_an"] ?? row["answer"] ?? "").trim().toUpperCase();
-                if (question.length < 5)
-                  return { ok: false as const, message: "Nội dung câu hỏi quá ngắn." };
-                if (options.some((o) => !o))
-                  return { ok: false as const, message: "Thiếu phương án trả lời." };
-                if (new Set(options.map((o) => o.toLowerCase())).size !== 4)
-                  return { ok: false as const, message: "Các phương án bị trùng nhau." };
-                let idx = ["A", "B", "C", "D"].indexOf(answer);
-                if (idx < 0 && /^[1-4]$/.test(answer)) idx = Number(answer) - 1;
-                if (idx < 0)
-                  return { ok: false as const, message: "Đáp án phải là A, B, C hoặc D." };
-                return { ok: true as const, value: { question, options, correct_index: idx } };
-              }}
-              onImport={importCsv}
+              onImported={() => void qc.invalidateQueries({ queryKey: ["admin-questions", quizId] })}
             />
             <input
               ref={fileRef}

@@ -17,6 +17,10 @@ export type QuizRow = {
   allow_fifty_fifty: boolean;
   allow_skip: boolean;
   streak_bonus: boolean;
+  instant_feedback: boolean;
+  streak_step: number;
+  streak_max_bonus: number;
+  double_points_after: number;
   show_question_map: boolean;
   negative_marking: number;
   blueprint: { easy?: number; medium?: number; hard?: number; tags?: Record<string, number> } | null;
