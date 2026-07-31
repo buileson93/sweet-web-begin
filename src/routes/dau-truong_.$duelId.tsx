@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ClassPicker } from "@/components/arena/ClassPicker";
 import { DuelFighter } from "@/components/arena/DuelFighter";
 import { BattleDice } from "@/components/arena/BattleDice";
+import { RankedBadge } from "@/components/arena/RankedBadge";
 import { ConnectionBadge } from "@/components/arena/ConnectionBadge";
 import { NetStatsWidget } from "@/components/arena/NetStatsWidget";
 import { DiagnosticsDialog } from "@/components/arena/DiagnosticsDialog";
@@ -167,6 +168,7 @@ function DuelRoom() {
           <span>
             Câu {Math.min(state.currentRound + 1, state.roundCount)}/{state.roundCount}
           </span>
+          <RankedBadge isRanked={state.isRanked} note={state.rankedNote} />
           <ConnectionBadge status={connectionStatus} latency={latency} />
           <NetStatsWidget stats={stats} onOpenLog={() => setDiagOpen(true)} />
         </div>
@@ -566,7 +568,17 @@ function FinishPanel({ state, meId, onRematch }: { state: DuelState; meId?: stri
               ⚔️ {l.damageDealt} sát thương · Đúng {l.correct}/{state.roundCount}
             </p>
             <p className="text-xs text-muted-foreground">
-              Elo {l.eloBefore} → <strong>{l.eloAfter}</strong>
+              {f.isRanked ? (
+                <>
+                  Elo {l.eloBefore} → <strong>{l.eloAfter}</strong>{" "}
+                  <span className={l.eloAfter > l.eloBefore ? "text-emerald-600" : l.eloAfter < l.eloBefore ? "text-rose-600" : ""}>
+                    ({l.eloAfter - l.eloBefore >= 0 ? "+" : ""}
+                    {l.eloAfter - l.eloBefore})
+                  </span>
+                </>
+              ) : (
+                <>Elo giữ nguyên {l.eloBefore}</>
+              )}
             </p>
           </div>
         ))}
@@ -577,9 +589,9 @@ function FinishPanel({ state, meId, onRematch }: { state: DuelState; meId?: stri
           Huy hiệu mới: {mine.newBadges.map((b) => `${b.icon} ${b.name}`).join(", ")}
         </p>
       ) : null}
-      {!f.isRanked && f.rankedNote ? (
-        <p className="text-xs text-muted-foreground">{f.rankedNote}</p>
-      ) : null}
+      <div className="flex justify-center">
+        <RankedBadge isRanked={f.isRanked} note={f.rankedNote} showReason />
+      </div>
       <div className="flex flex-wrap justify-center gap-2">
         <Button onClick={() => void onRematch()} className="rounded-full">
           <RotateCcw className="mr-2 size-4" /> Tái đấu cùng bộ đề
