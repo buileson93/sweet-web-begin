@@ -15,6 +15,9 @@ const navItems = [
   { to: "/quan-tri", label: "Quản trị", icon: Settings2 },
 ] as const;
 
+/** Menu dưới cùng trên di động chỉ giữ 4 mục để vừa một hàng. */
+const mobileNavItems = navItems.filter((item) => item.to !== "/huong-dan");
+
 
 /**
  * Khung ứng dụng kiểu "game hub": thanh điều hướng biểu tượng bên trái (desktop),
@@ -73,7 +76,7 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
         >
 
           <ul className="grid grid-cols-4">
-            {navItems.map((item) => (
+            {mobileNavItems.map((item) => (
               <li key={item.to}>
                 <Link
                   to={item.to}

@@ -206,12 +206,16 @@ function Character({ palette, female }: { palette: Palette; female: boolean }) {
 export default function OfficeAvatar3D({
   seed = "vatm",
   female = false,
+  /** `bust` chỉ lấy phần đầu–vai (dùng cho ảnh đại diện tròn). */
+  framing = "full",
   className,
 }: {
   seed?: string;
   female?: boolean;
+  framing?: "full" | "bust";
   className?: string;
 }) {
+  const bust = framing === "bust";
   const palette = useMemo(() => paletteFor(seed), [seed]);
 
   return (
@@ -219,7 +223,8 @@ export default function OfficeAvatar3D({
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: [0, 0.28, 2.35], fov: 30 }}
+        camera={{ position: bust ? [0, 0.99, 1.15] : [0, 0.28, 2.35], fov: 30 }}
+        onCreated={({ camera }) => camera.lookAt(0, bust ? 0.95 : 0.05, 0)}
         gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
       >
         <ambientLight intensity={0.5} />

@@ -4,6 +4,7 @@ import { UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const AvatarView3D = lazy(() => import("@/components/player/AvatarView3D"));
+const OfficeAvatar3D = lazy(() => import("@/components/player/OfficeAvatar3D"));
 
 export type AvatarBubbleSize = "xs" | "sm" | "md" | "lg" | "xl";
 
@@ -49,6 +50,8 @@ export function AvatarBubble({
   const initial = (name ?? "").trim().slice(0, 1).toUpperCase();
   const use3D = live && Boolean(avatarUrl);
   const useImage = !use3D && Boolean(avatarImage) && !broken;
+  // Chưa có avatar riêng: dựng nhân vật công sở 3D mặc định.
+  const useOffice = live && !use3D && !useImage;
 
   return (
     <span className={cn("relative inline-flex shrink-0", className)}>
@@ -62,6 +65,10 @@ export function AvatarBubble({
         {use3D ? (
           <Suspense fallback={<span className="size-full animate-pulse bg-secondary" />}>
             <AvatarView3D url={avatarUrl as string} className="size-full" />
+          </Suspense>
+        ) : useOffice ? (
+          <Suspense fallback={<span className="size-full animate-pulse bg-secondary" />}>
+            <OfficeAvatar3D seed={name ?? "vatm"} framing="bust" className="size-full" />
           </Suspense>
         ) : useImage ? (
           <img
