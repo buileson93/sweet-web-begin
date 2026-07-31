@@ -653,6 +653,16 @@ export async function ensureBotAnswer(duel: DuelRow, roundIndex: number) {
   const streak = await currentStreak(duel.id, bot.employee_id, roundIndex, decision.isCorrect);
   const points = roundPoints(decision.isCorrect, decision.msTaken, limitMs, streak);
 
+  // Trợ lý máy cũng biết dùng kỹ năng (khoảng 35% số lượt, nếu đã hồi xong).
+  let botSkill = "";
+  if (Math.random() < 0.35) {
+    const uses = await skillUsesOf(duel.id, bot.employee_id);
+    const ready = SKILLS.filter(
+      (s) => skillCooldownLeft(uses.filter((u) => u.skill === s.id).map((u) => u.round), roundIndex) === 0,
+    );
+    if (ready.length) botSkill = ready[Math.floor(Math.random() * ready.length)].id;
+  }
+
   const { error } = await supabaseAdmin.from("duel_answers").insert({
     duel_id: duel.id,
     employee_id: bot.employee_id,
@@ -661,7 +671,9 @@ export async function ensureBotAnswer(duel: DuelRow, roundIndex: number) {
     is_correct: decision.isCorrect,
     ms_taken: decision.msTaken,
     points,
+    skill: botSkill,
   });
+
   if (error) return;
 
   await supabaseAdmin
