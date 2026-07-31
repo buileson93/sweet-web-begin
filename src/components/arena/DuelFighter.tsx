@@ -61,14 +61,17 @@ export function DuelFighter({
   return (
     <div
       className={cn(
-        "relative flex min-w-0 flex-1 flex-col gap-2 overflow-visible rounded-2xl border bg-card p-3 transition",
+        "relative flex min-w-0 flex-1 flex-col gap-2 overflow-visible rounded-xl border bg-card p-3 transition",
         mine ? "border-primary/50" : "border-border",
         player?.left && "opacity-50",
         shakeClass,
       )}
     >
       {shake > 0 ? (
-        <span className="pointer-events-none absolute inset-0 rounded-2xl bg-rose-500/25 animate-flash-hit" />
+        <>
+          <span className="pointer-events-none absolute inset-0 rounded-xl bg-destructive/25 animate-flash-hit" />
+          <span className={cn("pointer-events-none absolute inset-y-4 z-20 w-20 animate-slash-hit", mine ? "-right-3" : "-left-3")} />
+        </>
       ) : null}
       <div className="pointer-events-none absolute inset-x-0 -top-2 z-10 flex flex-col items-center">
         {fx.map((f) => (
@@ -90,7 +93,8 @@ export function DuelFighter({
           avatarUrl={player?.avatarUrl}
           avatarImage={player?.avatarImage}
           level={player?.level}
-          size="sm"
+          size="md"
+          className={cn(shake > 0 && "animate-avatar-recoil")}
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">

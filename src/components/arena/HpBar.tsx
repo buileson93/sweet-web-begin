@@ -32,7 +32,7 @@ export function HpBar({
     return () => window.clearTimeout(id);
   }, [percent]);
 
-  const tone = percent > 60 ? "bg-emerald-500" : percent > 30 ? "bg-amber-500" : "bg-rose-500";
+  const tone = percent >= 60 ? "bg-emerald-500" : percent >= 20 ? "bg-amber-500" : "bg-rose-500";
 
   return (
     <div className={cn("space-y-1", className)}>
@@ -52,7 +52,7 @@ export function HpBar({
           className={cn(
             "absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ease-out",
             tone,
-            percent <= 30 && percent > 0 && "animate-pulse",
+            percent < 20 && percent > 0 && "animate-pulse",
           )}
           style={{ width: `${percent}%` }}
         />
