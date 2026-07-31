@@ -130,7 +130,7 @@ function HomePage() {
           </div>
         </div>
 
-        <div data-tour="leaderboard" className="flex flex-col gap-4 lg:col-span-5">
+        <div data-tour="leaderboard" className="flex min-w-0 flex-col gap-4 lg:col-span-5">
           <div
             className="panel-pastel animate-pop relative overflow-hidden rounded-[2rem] p-6"
             style={{ animationDelay: "0.16s" }}
