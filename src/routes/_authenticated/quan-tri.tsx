@@ -83,6 +83,8 @@ const GROUPS: { group: string; items: Section[] }[] = [
       { value: "quizzes", label: "Cuộc thi", hint: "Tạo, mở/đóng phòng thi", icon: ListChecks },
       { value: "questions", label: "Ngân hàng câu hỏi", hint: "Soạn và nhập câu hỏi", icon: FileQuestion },
       { value: "units", label: "Đơn vị", hint: "Danh mục đơn vị dự thi", icon: Building2 },
+      { value: "assets", label: "Kho ảnh", hint: "Thư viện ảnh bìa dùng chung", icon: Images },
+
     ],
   },
   {
