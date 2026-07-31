@@ -21,6 +21,9 @@ import { classById, type ClassId } from "./classes";
 
 export const SPRITE_FRAME = 192;
 
+/** Tệp .asset.json chỉ cần trường url; ép kiểu để build không phụ thuộc suy luận JSON. */
+const assetUrl = (mod: unknown): string => (mod as { url: string }).url;
+
 export type SpriteAction = "idle" | "attack" | "hurt";
 
 export type SpriteClip = {
@@ -33,19 +36,19 @@ export type SpriteClip = {
 
 const SHEETS: Record<ClassId, Record<SpriteAction, SpriteClip>> = {
   kiem_si: {
-    idle: { url: kiemSiIdle.url, frames: 2, durationMs: 1200, loop: true },
-    attack: { url: kiemSiAttack.url, frames: 6, durationMs: 600, loop: false },
-    hurt: { url: kiemSiHurt.url, frames: 6, durationMs: 700, loop: false },
+    idle: { url: assetUrl(kiemSiIdle), frames: 2, durationMs: 1200, loop: true },
+    attack: { url: assetUrl(kiemSiAttack), frames: 6, durationMs: 600, loop: false },
+    hurt: { url: assetUrl(kiemSiHurt), frames: 6, durationMs: 700, loop: false },
   },
   phap_su: {
-    idle: { url: phapSuIdle.url, frames: 2, durationMs: 1200, loop: true },
-    attack: { url: phapSuAttack.url, frames: 7, durationMs: 700, loop: false },
-    hurt: { url: phapSuHurt.url, frames: 6, durationMs: 700, loop: false },
+    idle: { url: assetUrl(phapSuIdle), frames: 2, durationMs: 1200, loop: true },
+    attack: { url: assetUrl(phapSuAttack), frames: 7, durationMs: 700, loop: false },
+    hurt: { url: assetUrl(phapSuHurt), frames: 6, durationMs: 700, loop: false },
   },
   ve_binh: {
-    idle: { url: veBinhIdle.url, frames: 2, durationMs: 1400, loop: true },
-    attack: { url: veBinhAttack.url, frames: 6, durationMs: 640, loop: false },
-    hurt: { url: veBinhHurt.url, frames: 6, durationMs: 700, loop: false },
+    idle: { url: assetUrl(veBinhIdle), frames: 2, durationMs: 1400, loop: true },
+    attack: { url: assetUrl(veBinhAttack), frames: 6, durationMs: 640, loop: false },
+    hurt: { url: assetUrl(veBinhHurt), frames: 6, durationMs: 700, loop: false },
   },
 };
 

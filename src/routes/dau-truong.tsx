@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { CredentialInput } from "@/components/CredentialInput";
 import { InviteDialog } from "@/components/arena/InviteDialog";
 import { ShareChallenge } from "@/components/arena/ShareChallenge";
+import { BusyDuelDialog } from "@/components/arena/BusyDuelDialog";
 import { ClassPicker, useWarriorClass } from "@/components/arena/ClassPicker";
 import { PracticePanel } from "@/components/arena/PracticePanel";
 import { useArenaInviteChannel } from "@/hooks/useArenaInviteChannel";
@@ -42,6 +43,7 @@ import {
   arenaSignIn,
 } from "@/lib/arena.functions";
 import { clearArenaToken, getArenaToken, saveArenaToken } from "@/lib/arena/client";
+import { parseBusyError, type BusyInfo } from "@/lib/arena/rooms";
 import type { ArenaProfile } from "@/lib/arena/types";
 import { getDeviceId } from "@/lib/deviceId";
 import { cn } from "@/lib/utils";
@@ -91,6 +93,7 @@ function ArenaLobby() {
   const [ending, setEnding] = useState(false);
   const [searching, setSearching] = useState(false);
   const [dismissedInvites, setDismissedInvites] = useState<string[]>([]);
+  const [busyDuel, setBusyDuel] = useState<BusyInfo | null>(null);
   const waitedRef = useRef(0);
 
 
@@ -182,7 +185,10 @@ function ArenaLobby() {
       } catch (e) {
         if (!alive) return;
         setSearching(false);
-        toast.error(e instanceof Error ? e.message : "Không tìm được trận.");
+        const raw = e instanceof Error ? e.message : "Không tìm được trận.";
+        const info = parseBusyError(raw);
+        if (info) setBusyDuel(info);
+        else toast.error(raw);
       }
     };
     void attempt();
@@ -260,6 +266,16 @@ function ArenaLobby() {
             </Link>
           </Button>
         }
+      />
+
+      <BusyDuelDialog
+        busy={busyDuel}
+        onClose={() => setBusyDuel(null)}
+        onLeave={async () => {
+          await endActive({ data: { token } });
+          setPresence((p) => (p ? { ...p, active: null } : p));
+        }}
+        onLeft={() => setSearching(true)}
       />
 
       {profile ? <ProfileStrip profile={profile} /> : null}

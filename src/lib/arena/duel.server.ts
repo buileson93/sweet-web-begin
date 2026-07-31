@@ -16,6 +16,14 @@ import {
   vnDayStart,
 } from "@/lib/arena/rules";
 import { pickBestRoom, type Candidate } from "@/lib/arena/matchmaking";
+import {
+  BUSY_PREFIX,
+  encodeBusyError,
+  planInviteRoom,
+  rankedReasonFromNote,
+  type ActiveSeat,
+  type SeatStatus,
+} from "@/lib/arena/rooms";
 import { eloDelta, roundPoints } from "@/lib/arena/scoring";
 import {
   HP_START,
@@ -147,16 +155,27 @@ async function pickDuelQuestions(quizId: string | null, count: number) {
   return { ids: picked.map((q) => q.id), orders };
 }
 
-async function assertFree(employeeId: string) {
+/** Chỗ ngồi còn mở của một người, kèm số người trong phòng. */
+async function activeSeat(employeeId: string): Promise<ActiveSeat> {
   const { data } = await supabaseAdmin
     .from("duel_players")
-    .select("duel_id")
+    .select("duel_id, duel_status")
     .eq("employee_id", employeeId)
     .is("left_at", null)
     .in("duel_status", ["waiting", "countdown", "playing"])
     .maybeSingle();
-  if (data)
-    throw new Error("Bạn đang ở trong một trận khác. Hãy kết thúc hoặc rời trận đó trước.");
+  if (!data) return null;
+  const seats = await loadPlayers(data.duel_id);
+  return {
+    duelId: data.duel_id,
+    status: data.duel_status as SeatStatus,
+    seats: seats.filter((p) => !p.left_at).length,
+  };
+}
+
+async function assertFree(employeeId: string) {
+  const seat = await activeSeat(employeeId);
+  if (seat) throw new Error(encodeBusyError(seat));
 }
 
 export async function createDuel(input: {
@@ -252,8 +271,14 @@ export async function joinDuel(input: {
     device_hash: (input.deviceHash ?? "").slice(0, 80),
   });
   if (error) {
-    if (error.code === "23505")
-      throw new Error("Bạn đang ở trong một trận khác. Hãy kết thúc hoặc rời trận đó trước.");
+    if (error.code === "23505") {
+      const seat = await activeSeat(input.employeeId);
+      throw new Error(
+        seat
+          ? encodeBusyError(seat)
+          : "Bạn đang ở trong một trận khác. Hãy kết thúc hoặc rời trận đó trước.",
+      );
+    }
     throw new Error(error.message);
   }
   if (input.classId)
@@ -368,20 +393,13 @@ export async function ensureInviteRoom(input: {
   deviceHash?: string;
   classId?: string | null;
 }): Promise<{ duelId: string; reused: boolean }> {
-  const { data: mine } = await supabaseAdmin
-    .from("duel_players")
-    .select("duel_id, duel_status")
-    .eq("employee_id", input.employeeId)
-    .is("left_at", null)
-    .in("duel_status", ["waiting", "countdown", "playing"])
-    .maybeSingle();
+  const seat = await activeSeat(input.employeeId);
+  const plan = planInviteRoom(seat);
 
-  if (mine) {
-    if (mine.duel_status !== "waiting")
-      throw new Error("Bạn đang trong một ván so tài. Hãy kết thúc ván đó trước khi mời người mới.");
-    const seats = await loadPlayers(mine.duel_id);
-    if (seats.length >= 2)
-      throw new Error("Phòng hiện tại đã đủ hai người. Hãy chơi xong rồi tạo phòng mới nhé.");
+  if (plan.action === "blocked") throw new Error(`${BUSY_PREFIX}:${plan.busy.duelId}:${plan.busy.status}|${plan.busy.message}`);
+
+  if (plan.action === "reuse") {
+    const mine = { duel_id: plan.duelId };
     if (input.classId)
       await supabaseAdmin
         .from("duel_players")
@@ -1178,7 +1196,9 @@ export async function finishDuel(duelId: string, technicalLoserId?: string) {
     reason: decision.reason,
     reasonLabel: technicalLoserId ? "Đối thủ rời ván so tài" : winReasonLabel(decision.reason),
     isRanked: duel.is_ranked,
-    rankedNote: duel.note ?? "",
+    rankedNote: duel.is_ranked
+      ? ""
+      : rankedReasonFromNote(duel.note ?? "", duel.is_bot === true),
     lines: finishLines,
   };
 
@@ -1348,6 +1368,9 @@ export async function getDuelState(input: {
     roundCount: duel.round_count,
     secondsPerRound: duel.seconds_per_round,
     isRanked: duel.is_ranked,
+    rankedNote: duel.is_ranked
+      ? ""
+      : rankedReasonFromNote(duel.note ?? "", duel.is_bot === true),
     isBot: duel.is_bot === true,
     hpStart: duel.hp_start ?? HP_START,
     currentRound: duel.current_round,

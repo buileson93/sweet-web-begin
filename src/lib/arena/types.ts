@@ -47,6 +47,8 @@ export type DuelState = {
   roundCount: number;
   secondsPerRound: number;
   isRanked: boolean;
+  /** Vì sao ván này không tính Elo (rỗng khi có tính). */
+  rankedNote: string;
   /** Ván luyện tập với trợ lý máy. */
   isBot: boolean;
   /** Máu khởi điểm của mỗi bên. */
