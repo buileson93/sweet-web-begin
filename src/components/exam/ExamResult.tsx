@@ -139,6 +139,23 @@ export function ExamResult({
             </div>
           </div>
 
+          {result.xp ? (
+            <LevelBar
+              className="mt-4 border-primary-foreground/15 bg-primary-foreground/5 text-primary-foreground"
+              data={{
+                level: result.xp.level,
+                title: result.xp.title,
+                into: result.xp.into,
+                need: result.xp.need,
+                percent: result.xp.percent,
+                gained: result.xp.gained,
+                leveledUp: result.xp.leveledUp,
+              }}
+            />
+          ) : null}
+
+
+
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <Button
               className="h-10 flex-1 rounded-xl sm:flex-none"
