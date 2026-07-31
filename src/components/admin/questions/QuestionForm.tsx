@@ -83,6 +83,7 @@ export function QuestionForm({
   existing: { id: string; question: string }[];
   form: QuestionFormState;
   setForm: React.Dispatch<React.SetStateAction<QuestionFormState>>;
+  quizId: string;
   uploadStage: "idle" | "compressing" | "uploading";
   uploadInfo: string | null;
   onAttachImage: (file: File) => void;
