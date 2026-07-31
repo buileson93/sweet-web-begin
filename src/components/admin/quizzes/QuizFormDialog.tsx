@@ -35,6 +35,8 @@ const emptyForm = {
   description: "",
   intro_markdown: "",
   cover_url: "",
+  cover_fit: "contain" as "contain" | "cover",
+  peek_rewards: "",
   start_time: "",
   end_time: "",
   is_active: true,
@@ -87,6 +89,8 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
       description: editing.description ?? "",
       intro_markdown: editing.intro_markdown ?? "",
       cover_url: editing.cover_url ?? "",
+      cover_fit: ((editing.cover_fit as "contain" | "cover") ?? "contain"),
+      peek_rewards: (editing.peek_rewards ?? []).join("\n"),
       start_time: toLocalInputValue(editing.start_time),
       end_time: toLocalInputValue(editing.end_time),
       is_active: editing.is_active,
@@ -177,6 +181,12 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
         description: form.description.trim(),
         intro_markdown: form.intro_markdown.trim(),
         cover_url: form.cover_url.trim(),
+        cover_fit: form.cover_fit,
+        peek_rewards: form.peek_rewards
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .slice(0, 6),
         start_time: fromLocalInputValue(form.start_time),
         end_time: fromLocalInputValue(form.end_time),
         is_active: form.is_active,
@@ -312,7 +322,25 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
                 placeholder="Hiển thị trước khi thí sinh bấm bắt đầu, kèm ô cam kết làm bài trung thực."
               />
             </div>
-            <QuizCoverPicker value={form.cover_url} onChange={(v) => setForm((f) => ({ ...f, cover_url: v }))} />
+            <QuizCoverPicker
+              value={form.cover_url}
+              onChange={(v) => setForm((f) => ({ ...f, cover_url: v }))}
+              fit={form.cover_fit}
+              onFitChange={(v) => setForm((f) => ({ ...f, cover_fit: v }))}
+            />
+
+            <div className="space-y-2">
+              <Label>Quyền lợi hiển thị ở thẻ giới thiệu nhanh</Label>
+              <Textarea
+                rows={4}
+                value={form.peek_rewards}
+                onChange={(e) => setForm({ ...form, peek_rewards: e.target.value })}
+                placeholder={"Mỗi dòng một quyền lợi, tối đa 6 dòng.\nVí dụ: Thưởng chuỗi combo, nhân đôi điểm"}
+              />
+              <p className="text-xs text-muted-foreground">
+                Bỏ trống để dùng danh sách mặc định. Số câu, thời lượng và ngưỡng đạt lấy tự động từ cấu hình trên.
+              </p>
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">

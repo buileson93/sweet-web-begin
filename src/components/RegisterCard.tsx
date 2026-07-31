@@ -52,6 +52,8 @@ export type RegisterQuiz = {
   intro_markdown?: string | null;
   /** Ngưỡng đạt tính theo phần trăm. */
   pass_percent?: number | null;
+  /** Quyền lợi hiển thị ở thẻ giới thiệu nhanh, do quản trị viên cấu hình. */
+  peek_rewards?: string[] | null;
 };
 
 type Props = {
@@ -95,11 +97,16 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
 
   useEffect(() => () => { if (peekTimer.current) clearTimeout(peekTimer.current); }, []);
 
-  /** Giữ chuột trên một mục ~550ms mới bung thẻ giới thiệu, tránh nhấp nháy. */
+  /** Giữ chuột trên một mục ~500ms mới bung thẻ giới thiệu, và đặt cạnh danh sách để không che nội dung. */
   const showPeek = (q: RegisterQuiz, status: ReturnType<typeof quizStatus>, el: HTMLElement) => {
     if (peekTimer.current) clearTimeout(peekTimer.current);
-    const rect = el.getBoundingClientRect();
+    const itemRect = el.getBoundingClientRect();
+    const listRect = (el.closest("[role='listbox']") as HTMLElement | null)?.getBoundingClientRect() ?? itemRect;
     peekTimer.current = setTimeout(() => {
+      const width = 288;
+      const gap = 12;
+      const fitsRight = listRect.right + gap + width <= window.innerWidth - 8;
+      const x = fitsRight ? listRect.right + gap : Math.max(8, listRect.left - gap - width);
       setPeek({
         id: q.id,
         title: q.title,
@@ -107,10 +114,11 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
         question_count: q.question_count,
         duration_minutes: q.duration_minutes,
         pass_percent: q.pass_percent ?? null,
-        x: rect.right + 12,
-        y: Math.max(12, rect.top - 40),
+        rewards: q.peek_rewards ?? null,
+        x,
+        y: Math.max(12, itemRect.top - 32),
       });
-    }, 550);
+    }, 500);
   };
 
   const hidePeek = () => {

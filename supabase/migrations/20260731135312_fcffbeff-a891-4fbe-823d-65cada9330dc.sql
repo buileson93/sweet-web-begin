@@ -1,0 +1,1 @@
+GRANT SELECT (cover_fit, peek_rewards) ON public.quizzes TO anon, authenticated;

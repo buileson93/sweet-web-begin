@@ -24,6 +24,8 @@ export type QuizRow = {
   show_question_map: boolean;
   negative_marking: number;
   cover_url: string | null;
+  cover_fit: string | null;
+  peek_rewards: string[] | null;
   blueprint: { easy?: number; medium?: number; hard?: number; tags?: Record<string, number> } | null;
 };
 

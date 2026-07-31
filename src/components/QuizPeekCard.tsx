@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Award, Flame, ListChecks, Repeat, Target, Timer, Trophy, Zap } from "lucide-react";
 
@@ -13,35 +14,63 @@ export type QuizPeek = {
   question_count: number;
   duration_minutes: number;
   pass_percent?: number | null;
+  /** Quyền lợi do quản trị viên cấu hình; rỗng thì dùng danh sách mặc định. */
+  rewards?: string[] | null;
   x: number;
   y: number;
 };
 
+const DEFAULT_REWARDS = [
+  "Chấm điểm ngay sau mỗi câu",
+  "Thưởng chuỗi combo, nhân đôi điểm",
+  "Ghi danh bảng xếp hạng khi đạt",
+  "Săn danh hiệu combo & chuyên cần",
+];
+
+const REWARD_ICONS = [Zap, Flame, Trophy, Award, Target, ListChecks];
+
 /** Thẻ giới thiệu nhanh cuộc thi, hiện khi rê chuột giữ lâu — giống màn chọn nhân vật. */
 export function QuizPeekCard({ peek }: { peek: QuizPeek | null }) {
-  if (!peek || typeof document === "undefined") return null;
-  const theme = quizTheme(peek.title);
+  // Giữ lại nội dung cũ trong lúc chạy hiệu ứng ẩn để thẻ mờ dần thay vì biến mất đột ngột.
+  const [shown, setShown] = useState<QuizPeek | null>(peek);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current);
+    if (peek) {
+      setShown(peek);
+      return;
+    }
+    timer.current = setTimeout(() => setShown(null), 200);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, [peek]);
+
+  if (!shown || typeof document === "undefined") return null;
+  const theme = quizTheme(shown.title);
   const width = 288;
-  const left = Math.min(Math.max(12, peek.x), (typeof window !== "undefined" ? window.innerWidth : 1024) - width - 12);
-  const top = Math.max(12, peek.y);
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 768;
+  const left = Math.min(Math.max(12, shown.x), Math.max(12, vw - width - 12));
+  const top = Math.min(Math.max(12, shown.y), Math.max(12, vh - 340));
 
   const stats = [
-    { Icon: ListChecks, label: "Số câu", value: `${peek.question_count}` },
-    { Icon: Timer, label: "Thời lượng", value: `${peek.duration_minutes} phút` },
-    { Icon: Target, label: "Ngưỡng đạt", value: `${peek.pass_percent ?? 50}%` },
+    { Icon: ListChecks, label: "Số câu", value: `${shown.question_count}` },
+    { Icon: Timer, label: "Thời lượng", value: `${shown.duration_minutes} phút` },
+    { Icon: Target, label: "Ngưỡng đạt", value: `${shown.pass_percent ?? 50}%` },
     { Icon: Repeat, label: "Lượt thi", value: "Không giới hạn" },
   ];
 
-  const rewards = [
-    { Icon: Zap, text: "Chấm điểm ngay sau mỗi câu" },
-    { Icon: Flame, text: "Thưởng chuỗi combo, nhân đôi điểm" },
-    { Icon: Trophy, text: "Ghi danh bảng xếp hạng khi đạt" },
-    { Icon: Award, text: "Săn danh hiệu combo & chuyên cần" },
-  ];
+  const rewardLines = (shown.rewards ?? []).filter(Boolean);
+  const rewards = (rewardLines.length ? rewardLines : DEFAULT_REWARDS)
+    .slice(0, 6)
+    .map((text, i) => ({ text, Icon: REWARD_ICONS[i % REWARD_ICONS.length] }));
 
   return createPortal(
     <div
-      className="animate-pop pointer-events-none fixed z-[95] w-72 overflow-hidden rounded-2xl border border-border bg-card/95 shadow-2xl backdrop-blur"
+      className="peek-card pointer-events-none fixed z-[95] w-72 overflow-hidden rounded-2xl border border-border bg-card/97 shadow-2xl backdrop-blur"
+      data-open={peek ? "1" : "0"}
       style={{ left, top }}
       role="tooltip"
     >
@@ -51,7 +80,7 @@ export function QuizPeekCard({ peek }: { peek: QuizPeek | null }) {
           <theme.Icon className="size-5" strokeWidth={2.4} />
         </span>
         <div className="min-w-0">
-          <p className="line-clamp-2 font-heading text-sm font-extrabold leading-tight">{peek.title}</p>
+          <p className="line-clamp-2 font-heading text-sm font-extrabold leading-tight">{shown.title}</p>
           <p className={cn("type-meta mt-0.5 font-semibold", theme.text)}>{theme.label}</p>
         </div>
       </div>
@@ -80,7 +109,7 @@ export function QuizPeekCard({ peek }: { peek: QuizPeek | null }) {
 
       <div className="flex items-center justify-between border-t border-border px-3 py-2">
         <span className="type-meta font-semibold text-muted-foreground">Trạng thái</span>
-        <QuizStatusBadge status={peek.status} />
+        <QuizStatusBadge status={shown.status} />
       </div>
     </div>,
     document.body,
