@@ -61,10 +61,14 @@ export function useQuestionMutations({
         .map((p) => ({ left: p.left.trim(), right: p.right.trim() }))
         .filter((p) => p.left && p.right);
 
+      const optionImages = form.option_images
+        .slice(0, options.length)
+        .map((img, i) => (options[i] ? img : ""));
       const payload = {
         quiz_id: quizId,
         question: form.question.trim(),
         options: form.kind === "matching" ? [] : options,
+        option_images: form.kind === "matching" ? [] : optionImages,
         correct_index: form.kind === "multi" || form.kind === "fill_blank" ? 0 : form.correct_index,
         correct_indices: form.kind === "multi" ? form.correct_indices : [],
         accepted_answers: form.kind === "fill_blank" ? accepted : [],
@@ -96,13 +100,21 @@ export function useQuestionMutations({
         questionId = data.id;
       }
 
-      // Ảnh mới tải lên đang nằm trong thư mục tạm: chuyển sang thư mục chính
-      // thức của câu hỏi sau khi câu hỏi đã lưu thành công.
+      // Chuyển ảnh minh hoạ và ảnh phương án từ tmp sang thư mục chính thức
       if (payload.image_url && isTempImagePath(payload.image_url) && questionId) {
         try {
           await commitQuestionImage({ data: { path: payload.image_url, quizId, questionId } });
         } catch {
-          toast.warning("Đã lưu câu hỏi nhưng chưa chuyển được ảnh vào kho chính thức.");
+          toast.warning("Đã lưu câu hỏi nhưng chưa chuyển được ảnh minh hoạ vào kho chính thức.");
+        }
+      }
+      for (const imgPath of payload.option_images ?? []) {
+        if (imgPath && isTempImagePath(imgPath) && questionId) {
+          try {
+            await commitQuestionImage({ data: { path: imgPath, quizId, questionId } });
+          } catch {
+            toast.warning("Chưa chuyển được một ảnh phương án vào kho chính thức.");
+          }
         }
       }
 
@@ -126,6 +138,8 @@ export function useQuestionMutations({
       const { error } = await supabase.from("questions").delete().eq("id", row.id);
       if (error) throw error;
       if (row.image_url) await removeQuestionImage(row.image_url);
+      for (const imgPath of row.option_images ?? [])
+        if (imgPath) await removeQuestionImage(imgPath);
       await logAudit({
         action: "delete",
         entity: "question",
@@ -185,6 +199,7 @@ export function useQuestionMutations({
           explanation: row.explanation ?? "",
           is_archived: row.is_archived ?? false,
           image_url: null,
+          option_images: [],
         })
         .select("id")
         .single();
