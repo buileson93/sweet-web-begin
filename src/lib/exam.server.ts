@@ -28,6 +28,6 @@ export {
   getExamProgress,
 } from "@/lib/exam/submit.server";
 
-export { useFiftyFifty, reportExamEvent } from "@/lib/exam/helpers.server";
+export { useFiftyFifty, useDoublePoints, reportExamEvent } from "@/lib/exam/helpers.server";
 
 export { getExamHistoryFor } from "@/lib/exam/history.server";
