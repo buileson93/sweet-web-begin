@@ -1,6 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Building2, Download, Inbox } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
@@ -65,6 +76,25 @@ export function UnitStats() {
       .sort((a, b) => b.avgPercent - a.avgPercent);
   }, [query.data]);
 
+  const distribution = useMemo(() => {
+    const buckets = [0, 0, 0, 0, 0];
+    for (const r of query.data ?? []) {
+      if (r.disqualified || !r.total) continue;
+      const pct = (r.score / r.total) * 100;
+      const i = pct < 50 ? 0 : pct < 65 ? 1 : pct < 80 ? 2 : pct < 90 ? 3 : 4;
+      buckets[i] += 1;
+    }
+    return [
+      { range: "Dưới 50%", count: buckets[0], fail: true },
+      { range: "50–64%", count: buckets[1], fail: false },
+      { range: "65–79%", count: buckets[2], fail: false },
+      { range: "80–89%", count: buckets[3], fail: false },
+      { range: "90–100%", count: buckets[4], fail: false },
+    ];
+  }, [query.data]);
+
+  const chartRows = useMemo(() => rows.slice(0, 12), [rows]);
+
   async function exportExcel() {
     const XLSX = await import("xlsx");
     const data = [
@@ -118,7 +148,55 @@ export function UnitStats() {
           />
         }
       >
-        <div className="card-elevated overflow-x-auto">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="card-elevated p-4">
+            <p className="type-eyebrow mb-3 text-muted-foreground">Điểm trung bình & tỉ lệ đạt theo đơn vị</p>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartRows} margin={{ left: -20, right: 8, top: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="unit" tick={{ fontSize: 10 }} interval={0} angle={-25} textAnchor="end" height={70} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
+                  <Tooltip
+                    formatter={(v: number, n: string) => [`${v}%`, n]}
+                    contentStyle={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--card)" }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="avgPercent" name="Điểm TB" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="passRate" name="Tỉ lệ đạt" fill="var(--accent)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {rows.length > chartRows.length ? (
+              <p className="type-meta mt-2">Biểu đồ hiển thị 12 đơn vị có điểm cao nhất.</p>
+            ) : null}
+          </div>
+
+          <div className="card-elevated p-4">
+            <p className="type-eyebrow mb-3 text-muted-foreground">Phân bố điểm (số lượt thi)</p>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={distribution} margin={{ left: -20, right: 8, top: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="range" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip
+                    formatter={(v: number) => [`${v} lượt`, "Số lượt"]}
+                    contentStyle={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--card)" }}
+                  />
+                  <Bar dataKey="count" name="Số lượt" radius={[6, 6, 0, 0]}>
+                    {distribution.map((d) => (
+                      <Cell key={d.range} fill={d.fail ? "var(--destructive)" : "var(--primary)"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="type-meta mt-2">Dưới 50% được xem là chưa đạt và không vào bảng xếp hạng.</p>
+          </div>
+        </div>
+
+        <div className="card-elevated mt-4 overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <thead className="bg-secondary text-secondary-foreground">
               <tr className="text-left">
