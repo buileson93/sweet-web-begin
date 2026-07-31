@@ -311,6 +311,8 @@ function AdminPage() {
                   </>
                 )}
                 {current === "units" && <UnitManager canEdit={canEdit} />}
+                {current === "assets" && <AssetLibrary canEdit={canEdit} />}
+
                 {current === "employees" && <EmployeeManager canEdit={canManageSystem} />}
                 {current === "live" && <LiveMonitor />}
                 {current === "results" && <ResultManager canEdit={canEdit} />}
