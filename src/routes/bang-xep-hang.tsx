@@ -5,6 +5,7 @@ import { Download, FileSpreadsheet, Medal, Radio, Search, SearchX, Trophy } from
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
+import { AwardsBoard } from "@/components/AwardsBoard";
 import { EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ function LeaderboardPage() {
     queryFn: async () => {
       let query = supabase
         .from("results")
-        .select("id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id")
+        .select("id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, best_streak")
         .eq("disqualified", false)
         .order("score", { ascending: false })
         .order("time_seconds", { ascending: true })
@@ -79,6 +80,23 @@ function LeaderboardPage() {
         (!kw || r.candidate_name.toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw)),
     );
   }, [all, keyword]);
+
+  // Vinh danh tính trên toàn bộ kết quả của kỳ thi đang chọn (không lọc theo từ khoá).
+  const awardRows = useMemo(
+    () =>
+      all.map((r) => ({
+        id: r.id,
+        candidate_name: r.candidate_name,
+        unit: r.unit,
+        score: r.score,
+        total: r.total,
+        time_seconds: r.time_seconds,
+        points: r.points ?? 0,
+        best_streak: r.best_streak ?? 0,
+        submitted_at: r.submitted_at,
+      })),
+    [all],
+  );
 
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const pageRows = useMemo(() => rows.slice((page - 1) * pageSize, page * pageSize), [rows, page]);
@@ -144,6 +162,13 @@ function LeaderboardPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="mt-5">
+        <h2 className="font-heading text-sm font-extrabold uppercase tracking-widest text-muted-foreground">
+          Vinh danh các hạng mục
+        </h2>
+        <AwardsBoard className="mt-3" rows={awardRows} />
       </div>
 
       <div className="mt-5">
