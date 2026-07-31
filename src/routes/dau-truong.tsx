@@ -670,7 +670,7 @@ function ProfileStrip({ profile }: { profile: ArenaProfile }) {
   return (
     <div className="rounded-2xl border bg-card/80 p-4 shadow-sm backdrop-blur">
       <div className="flex flex-wrap items-center gap-3">
-        <ArenaSelfAvatar name={profile.displayName} fallback={profile.avatar} />
+        <ArenaSelfAvatar profile={profile} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{profile.displayName}</p>
           <p className="truncate text-xs text-muted-foreground">{profile.unit}</p>
