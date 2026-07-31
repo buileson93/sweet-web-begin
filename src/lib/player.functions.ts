@@ -36,9 +36,9 @@ export const savePlayerAvatar = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => avatarSchema.parse(input))
   .handler(async ({ data }): Promise<PlayerProfile> => {
     const { verifyEmployee } = await import("@/lib/employees.server");
-    const verified = await verifyEmployee({ name: data.name, credential: data.credential });
-    const employee = (verified as { employee?: { id: string } | null })?.employee;
+    const employee = await verifyEmployee({ name: data.name, credential: data.credential });
     if (!employee?.id) throw new Error("Không xác thực được nhân viên.");
+
     const { writePlayerAvatar } = await import("@/lib/player.server");
     return writePlayerAvatar({
       employeeId: employee.id,
