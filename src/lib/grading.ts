@@ -285,3 +285,48 @@ export function pickByBlueprint(
   if (shuffleQuestions) return shuffle(result);
   return result.sort((a, b) => a.order_index - b.order_index || a.id.localeCompare(b.id));
 }
+
+/** Cấu hình tính điểm hấp dẫn của một cuộc thi. */
+export type ScoreRules = {
+  /** Bật thưởng chuỗi đúng liên tiếp. */
+  streakBonus: boolean;
+  /** Điểm cộng thêm cho mỗi câu đúng liên tiếp kể từ câu thứ 3. */
+  streakStep: number;
+  /** Trần điểm thưởng chuỗi cho mỗi câu. */
+  streakMaxBonus: number;
+  /** Số câu đúng liên tiếp để nhân đôi điểm câu đó; 0 = tắt. */
+  doublePointsAfter: number;
+  /** Trừ điểm khi trả lời sai (theo tỉ lệ điểm câu hỏi). */
+  negativeMarking: number;
+};
+
+export const DEFAULT_SCORE_RULES: ScoreRules = {
+  streakBonus: true,
+  streakStep: 1,
+  streakMaxBonus: 5,
+  doublePointsAfter: 0,
+  negativeMarking: 0,
+};
+
+/**
+ * Điểm nhận được cho MỘT câu, đã tính thưởng chuỗi luỹ tiến và nhân đôi.
+ * @param streak số câu đúng liên tiếp TÍNH CẢ câu này (1 nếu là câu đầu chuỗi).
+ */
+export function scoreForAnswer(
+  basePoints: number,
+  correct: boolean,
+  answered: boolean,
+  streak: number,
+  rules: ScoreRules,
+): number {
+  const base = Math.max(1, basePoints || 1);
+  if (!correct) return answered ? -Math.max(0, rules.negativeMarking) * base : 0;
+
+  const doubled =
+    rules.doublePointsAfter > 0 && streak >= rules.doublePointsAfter ? base * 2 : base;
+
+  if (!rules.streakBonus || streak < 3) return doubled;
+  const step = Math.max(0, rules.streakStep);
+  const bonus = Math.min(Math.max(0, rules.streakMaxBonus), (streak - 2) * step);
+  return doubled + bonus;
+}
