@@ -11,6 +11,7 @@ import {
   FileQuestion,
   ListChecks,
   LogOut,
+  MonitorSmartphone,
   PieChart,
   RadioTower,
   ScrollText,
