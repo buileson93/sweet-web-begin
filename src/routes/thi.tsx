@@ -602,9 +602,10 @@ function ExamPage() {
         {violations > 0 && (
           <div className="mb-3 flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
             <AlertTriangle className="size-4 shrink-0" />
-            Cảnh báo rời màn hình: {violations}/{MAX_VIOLATIONS}
+            Bạn đã rời khỏi màn hình thi {violations} lần — hành vi này được ghi nhận.
           </div>
         )}
+
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_200px]">
           <section
