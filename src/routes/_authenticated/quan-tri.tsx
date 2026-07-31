@@ -11,8 +11,11 @@ import {
   FileQuestion,
   ListChecks,
   LogOut,
+  PieChart,
+  RadioTower,
   ScrollText,
   ShieldAlert,
+
   ShieldCheck,
   Trophy,
 } from "lucide-react";
@@ -27,6 +30,9 @@ import { ReminderManager } from "@/components/admin/ReminderManager";
 import { AuditLogManager } from "@/components/admin/AuditLogManager";
 import { RoleManager } from "@/components/admin/RoleManager";
 import { BackupManager } from "@/components/admin/BackupManager";
+import { LiveMonitor } from "@/components/admin/LiveMonitor";
+import { UnitStats } from "@/components/admin/UnitStats";
+
 import { SiteHeader } from "@/components/SiteHeader";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
@@ -87,11 +93,14 @@ const GROUPS: { group: string; items: Section[] }[] = [
   {
     group: "Báo cáo",
     items: [
+      { value: "live", label: "Theo dõi trực tiếp", hint: "Ai đang làm bài ngay lúc này", icon: RadioTower },
       { value: "results", label: "Kết quả", hint: "Bài thi đã nộp", icon: BarChart3 },
+      { value: "unit-stats", label: "Thống kê đơn vị", hint: "Điểm trung bình, tỉ lệ đạt", icon: PieChart },
       { value: "history", label: "Thành tích", hint: "Lịch sử theo nhân viên", icon: Trophy },
       { value: "audit", label: "Lịch sử thao tác", hint: "Nhật ký quản trị", icon: ScrollText },
     ],
   },
+
   {
     group: "Hệ thống",
     items: [
@@ -291,7 +300,10 @@ function AdminPage() {
                 {current === "questions" && <QuestionManager canEdit={canEdit} />}
                 {current === "units" && <UnitManager canEdit={canEdit} />}
                 {current === "employees" && <EmployeeManager canEdit={canManageSystem} />}
+                {current === "live" && <LiveMonitor />}
                 {current === "results" && <ResultManager canEdit={canEdit} />}
+                {current === "unit-stats" && <UnitStats />}
+
                 {current === "history" && <EmployeeHistoryManager />}
                 {current === "reminders" && <ReminderManager />}
                 {current === "audit" && <AuditLogManager />}
