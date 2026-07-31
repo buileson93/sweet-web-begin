@@ -25,9 +25,16 @@ export function useExamAnswers(opts: {
   const [fiftyBusy, setFiftyBusy] = useState(false);
   /** Phản hồi tức thì cho từng câu (chỉ ở chế độ chốt đáp án một lần). */
   const [feedback, setFeedback] = useState<Record<string, "correct" | "wrong">>({});
+  /** Đáp án đúng + giải thích do máy chủ trả về sau khi chốt (chế độ chấm ngay). */
+  const [feedbackInfo, setFeedbackInfo] = useState<
+    Record<string, { correctText: string; explanation: string }>
+  >({});
+  /** Sự kiện hiệu ứng đúng/sai (like bay lên hoặc mặt buồn). */
+  const [answerFx, setAnswerFx] = useState<{ id: number; correct: boolean } | null>(null);
   const [combo, setCombo] = useState(0);
   /** Sự kiện kích hoạt hiệu ứng combo (mỗi lần trả lời đúng liên tiếp). */
   const [comboEvent, setComboEvent] = useState<{ id: number; combo: number } | null>(null);
+
 
   const fiftyLeft = 2 - Object.keys(fifty).length;
   const requestFifty = useCallback(async () => {
@@ -63,19 +70,36 @@ export function useExamAnswers(opts: {
             value,
           },
         });
-        setFeedback((f) => ({ ...f, [String(idx)]: res.correct ? "correct" : "wrong" }));
+        // Phòng trường hợp máy chủ trả về dữ liệu rỗng: báo lỗi rõ ràng thay vì vỡ giao diện.
+        if (!res || typeof res.correct !== "boolean") {
+          throw new Error("Máy chủ không trả về kết quả chấm. Vui lòng thử lại.");
+        }
+        const isCorrect = res.correct;
+        setFeedback((f) => ({ ...f, [String(idx)]: isCorrect ? "correct" : "wrong" }));
+        setFeedbackInfo((f) => ({
+          ...f,
+          [String(idx)]: {
+            correctText: res.correctText ?? "",
+            explanation: res.explanation ?? "",
+          },
+        }));
+        setAnswerFx({ id: Date.now() + idx, correct: isCorrect });
         setCombo((c) => {
-          const next = res.correct ? c + 1 : 0;
-          if (res.correct && next >= COMBO_MIN) {
+          const next = isCorrect ? c + 1 : 0;
+          if (isCorrect && next >= COMBO_MIN) {
             setComboEvent({ id: Date.now() + idx, combo: next });
           } else {
             setComboEvent(null);
           }
           return next;
         });
-        setTimeout(() => {
-          setCurrent((c) => (c < session.questions.length - 1 ? c + 1 : c));
-        }, 1100);
+        setTimeout(
+          () => {
+            setCurrent((c) => (c < session.questions.length - 1 ? c + 1 : c));
+          },
+          // Trả lời sai thì dừng lâu hơn để kịp đọc đáp án đúng.
+          isCorrect ? 1100 : 2600,
+        );
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Không chấm được câu này.");
       }
@@ -88,6 +112,8 @@ export function useExamAnswers(opts: {
   const resetHelpers = useCallback(() => {
     setFifty({});
     setFeedback({});
+    setFeedbackInfo({});
+    setAnswerFx(null);
     setCombo(0);
     setComboEvent(null);
   }, []);
@@ -98,6 +124,8 @@ export function useExamAnswers(opts: {
     fiftyLeft,
     requestFifty,
     feedback,
+    feedbackInfo,
+    answerFx,
     combo,
     comboEvent,
     instant,
@@ -105,4 +133,5 @@ export function useExamAnswers(opts: {
     handleAnswer,
     resetHelpers,
   };
+
 }

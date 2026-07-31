@@ -15,6 +15,7 @@ import { QuestionCard } from "@/components/exam/QuestionCard";
 import { QuestionMap } from "@/components/exam/QuestionMap";
 import { AmbientFx } from "@/components/exam/AmbientFx";
 import { ComboFx } from "@/components/exam/ComboFx";
+import { AnswerFx } from "@/components/exam/AnswerFx";
 
 import { abandonExam, startExam, submitExam } from "@/lib/exam.functions";
 import type { SubmitExamResult } from "@/lib/exam.server";
@@ -147,6 +148,8 @@ function ExamPage() {
     fiftyLeft,
     requestFifty,
     feedback,
+    feedbackInfo,
+    answerFx,
     combo,
     comboEvent,
     instant,
@@ -234,6 +237,7 @@ function ExamPage() {
     <div className="no-select relative min-h-[100dvh] bg-background pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8">
       <AmbientFx />
       <ComboFx event={comboEvent} />
+      <AnswerFx event={answerFx} />
       {sending && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/85 backdrop-blur-sm">
           <div className="card-elevated flex flex-col items-center gap-2 rounded-2xl px-7 py-5 text-center">
@@ -282,6 +286,7 @@ function ExamPage() {
             removed={fifty[String(current)] ?? []}
             disabled={locked(current)}
             feedback={feedback[String(current)] ?? null}
+            feedbackInfo={feedbackInfo[String(current)] ?? null}
             instant={instant}
             fiftyBusy={fiftyBusy}
             fiftyLeft={fiftyLeft}
