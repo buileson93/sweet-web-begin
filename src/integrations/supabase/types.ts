@@ -185,6 +185,41 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_events: {
+        Row: {
+          created_at: string
+          detail: Json
+          id: string
+          kind: string
+          session_id: string | null
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind: string
+          session_id?: string | null
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind?: string
+          session_id?: string | null
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "exam_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_sessions: {
         Row: {
           answers: Json
@@ -196,6 +231,7 @@ export type Database = {
           expires_at: string
           helpers: Json
           id: string
+          integrity_score: number
           option_orders: Json
           points: number
           question_ids: string[]
@@ -216,6 +252,7 @@ export type Database = {
           expires_at: string
           helpers?: Json
           id?: string
+          integrity_score?: number
           option_orders?: Json
           points?: number
           question_ids: string[]
@@ -236,6 +273,7 @@ export type Database = {
           expires_at?: string
           helpers?: Json
           id?: string
+          integrity_score?: number
           option_orders?: Json
           points?: number
           question_ids?: string[]
@@ -347,6 +385,7 @@ export type Database = {
           blueprint: Json
           created_at: string
           description: string
+          disqualify_threshold: number
           duration_minutes: number
           end_time: string | null
           id: string
@@ -363,6 +402,7 @@ export type Database = {
           shuffle_questions: boolean
           start_time: string | null
           streak_bonus: boolean
+          strict_mode: boolean
           title: string
           updated_at: string
         }
@@ -372,6 +412,7 @@ export type Database = {
           blueprint?: Json
           created_at?: string
           description?: string
+          disqualify_threshold?: number
           duration_minutes?: number
           end_time?: string | null
           id?: string
@@ -388,6 +429,7 @@ export type Database = {
           shuffle_questions?: boolean
           start_time?: string | null
           streak_bonus?: boolean
+          strict_mode?: boolean
           title: string
           updated_at?: string
         }
@@ -397,6 +439,7 @@ export type Database = {
           blueprint?: Json
           created_at?: string
           description?: string
+          disqualify_threshold?: number
           duration_minutes?: number
           end_time?: string | null
           id?: string
@@ -413,6 +456,7 @@ export type Database = {
           shuffle_questions?: boolean
           start_time?: string | null
           streak_bonus?: boolean
+          strict_mode?: boolean
           title?: string
           updated_at?: string
         }
@@ -428,12 +472,15 @@ export type Database = {
           disqualify_reason: string | null
           employee_id: string | null
           id: string
+          integrity_score: number | null
           late_submit: boolean
           max_points: number
           passed: boolean
           points: number
           quiz_id: string | null
           quiz_title: string
+          restored_at: string | null
+          restored_by: string | null
           score: number
           session_id: string | null
           submitted_at: string
@@ -450,12 +497,15 @@ export type Database = {
           disqualify_reason?: string | null
           employee_id?: string | null
           id?: string
+          integrity_score?: number | null
           late_submit?: boolean
           max_points?: number
           passed?: boolean
           points?: number
           quiz_id?: string | null
           quiz_title?: string
+          restored_at?: string | null
+          restored_by?: string | null
           score?: number
           session_id?: string | null
           submitted_at?: string
@@ -472,12 +522,15 @@ export type Database = {
           disqualify_reason?: string | null
           employee_id?: string | null
           id?: string
+          integrity_score?: number | null
           late_submit?: boolean
           max_points?: number
           passed?: boolean
           points?: number
           quiz_id?: string | null
           quiz_title?: string
+          restored_at?: string | null
+          restored_by?: string | null
           score?: number
           session_id?: string | null
           submitted_at?: string
