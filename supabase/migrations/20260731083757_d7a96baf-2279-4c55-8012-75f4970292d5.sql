@@ -1,0 +1,1 @@
+ALTER PUBLICATION supabase_realtime SET TABLE public.results (id, quiz_id, quiz_title, candidate_name, unit, score, total, points, max_points, best_streak, passed, time_seconds, disqualified, submitted_at);
