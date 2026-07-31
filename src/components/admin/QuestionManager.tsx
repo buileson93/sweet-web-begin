@@ -424,6 +424,22 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={difficultyFilter}
+              onValueChange={(v) => setDifficultyFilter(v as "all" | Difficulty)}
+            >
+              <SelectTrigger className="rounded-full sm:w-40">
+                <SelectValue placeholder="Độ khó" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Mọi độ khó</SelectItem>
+                {DIFFICULTIES.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <div className="relative sm:w-56">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
