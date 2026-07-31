@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
+import { ClassSprite } from "@/components/arena/ClassSprite";
 import { CLASSES, classById, DEFAULT_CLASS, type ClassId } from "@/lib/arena/classes";
 import { cn } from "@/lib/utils";
 
@@ -66,10 +67,20 @@ export function ClassPicker({
                   : "border-border bg-background",
               )}
             >
-              <span className="text-2xl" aria-hidden>
-                {c.icon}
-              </span>
-              <p className="mt-1 text-sm font-bold">{c.name}</p>
+              <div className="flex items-center gap-1">
+                <ClassSprite
+                  classId={c.id}
+                  action={active ? "attack" : "idle"}
+                  size={72}
+                  className="-my-2 shrink-0"
+                />
+                <div className="min-w-0">
+                  <span className="text-xl" aria-hidden>
+                    {c.icon}
+                  </span>
+                  <p className="text-sm font-bold">{c.name}</p>
+                </div>
+              </div>
               <p className="text-[11px] leading-snug text-muted-foreground">{c.tagline}</p>
               <div className="mt-2 flex flex-wrap gap-1 text-[10px]">
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">

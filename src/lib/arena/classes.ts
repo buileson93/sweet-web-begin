@@ -6,9 +6,14 @@
  * - Mỗi lớp có ưu / nhược riêng về công và thủ.
  * - Có vòng khắc chế kiểu bao–búa–kéo: lớp khắc chế đối phương được cộng
  *   thêm sát thương, lớp bị khắc chế bị trừ bớt.
+ *
+ * Tính chất (theo phản hồi người dùng):
+ * - Kiếm sĩ  : công thủ toàn diện, không nổi trội mặt nào.
+ * - Pháp sư  : sát thương cao nhất, đổi lại nhận đòn đau hơn.
+ * - Vệ binh  : chịu đòn tốt nhất, ra đòn nhẹ hơn.
  */
 
-export type ClassId = "chien_binh" | "phap_su" | "cung_thu";
+export type ClassId = "kiem_si" | "phap_su" | "ve_binh";
 
 export type ClassDef = {
   id: ClassId;
@@ -33,15 +38,15 @@ export const COUNTER_BONUS = 0.2;
 
 export const CLASSES: ClassDef[] = [
   {
-    id: "chien_binh",
-    name: "Chiến binh",
-    icon: "🛡️",
-    tagline: "Giáp dày, lì đòn, càng về cuối càng đáng sợ.",
-    attackMul: 0.95,
-    defenseMul: 0.82,
-    beats: "cung_thu",
-    strength: "Chịu đòn tốt nhất",
-    weakness: "Ra đòn nhẹ hơn",
+    id: "kiem_si",
+    name: "Kiếm sĩ",
+    icon: "⚔️",
+    tagline: "Công thủ toàn diện, ổn định trong mọi thế trận.",
+    attackMul: 1.06,
+    defenseMul: 0.96,
+    beats: "phap_su",
+    strength: "Công thủ toàn diện",
+    weakness: "Không nổi trội mặt nào",
     accent: "primary",
   },
   {
@@ -51,31 +56,31 @@ export const CLASSES: ClassDef[] = [
     tagline: "Sát thương phép bùng nổ, nhưng thân mỏng.",
     attackMul: 1.18,
     defenseMul: 1.12,
-    beats: "chien_binh",
+    beats: "ve_binh",
     strength: "Sát thương cao nhất",
     weakness: "Nhận đòn đau hơn",
     accent: "warning",
   },
   {
-    id: "cung_thu",
-    name: "Cung thủ",
-    icon: "🏹",
-    tagline: "Nhanh và chuẩn, cân bằng giữa công và thủ.",
-    attackMul: 1.06,
-    defenseMul: 0.96,
-    beats: "phap_su",
-    strength: "Công thủ toàn diện",
-    weakness: "Không nổi trội mặt nào",
+    id: "ve_binh",
+    name: "Vệ binh",
+    icon: "🛡️",
+    tagline: "Lì đòn, sống sót tới cuối để lật kèo.",
+    attackMul: 0.95,
+    defenseMul: 0.82,
+    beats: "kiem_si",
+    strength: "Chịu đòn tốt nhất",
+    weakness: "Ra đòn nhẹ hơn",
     accent: "danger",
   },
 ];
 
-export const DEFAULT_CLASS: ClassId = "cung_thu";
+export const DEFAULT_CLASS: ClassId = "kiem_si";
 
 /** Mã lớp cũ (bản thử nghiệm) quy về 3 lớp chính thức. */
 const LEGACY_ALIASES: Record<string, ClassId> = {
-  kiem_si: "cung_thu",
-  ve_binh: "chien_binh",
+  cung_thu: "kiem_si",
+  chien_binh: "ve_binh",
 };
 
 export function classById(id: string | null | undefined): ClassDef {

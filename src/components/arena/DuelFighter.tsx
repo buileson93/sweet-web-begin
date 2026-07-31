@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ClassChip } from "@/components/arena/ClassPicker";
+import { ClassSprite } from "@/components/arena/ClassSprite";
 import { HpBar } from "@/components/arena/HpBar";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
 import type { DuelPlayerView } from "@/lib/arena/types";
@@ -26,8 +27,23 @@ export function DuelFighter({
   const hp = player?.hp ?? hpStart;
   const [fx, setFx] = useState<Fx[]>([]);
   const [shake, setShake] = useState(0);
+  const [pose, setPose] = useState<"idle" | "attack" | "hurt">("idle");
   const prevHp = useRef(hp);
+  const prevDealt = useRef(player?.damageDealt ?? 0);
   const seq = useRef(0);
+
+  // Ra đòn: khi tổng sát thương gây ra tăng lên.
+  const dealt = player?.damageDealt ?? 0;
+  useEffect(() => {
+    if (dealt <= prevDealt.current) {
+      prevDealt.current = dealt;
+      return;
+    }
+    prevDealt.current = dealt;
+    setPose("attack");
+    const t = window.setTimeout(() => setPose("idle"), 800);
+    return () => window.clearTimeout(t);
+  }, [dealt]);
 
   useEffect(() => {
     const diff = prevHp.current - hp;
@@ -37,11 +53,14 @@ export function DuelFighter({
     const item: Fx = { id: seq.current, text: `-${diff}`, tone: "hit" };
     setFx((f) => [...f, item]);
     setShake(diff);
+    setPose("hurt");
     const t1 = window.setTimeout(() => setFx((f) => f.filter((x) => x.id !== item.id)), 1100);
     const t2 = window.setTimeout(() => setShake(0), 600);
+    const t3 = window.setTimeout(() => setPose("idle"), 800);
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
+      window.clearTimeout(t3);
     };
   }, [hp]);
 
@@ -111,6 +130,16 @@ export function DuelFighter({
             đã chốt
           </span>
         ) : null}
+      </div>
+      <div className="relative flex h-24 items-end justify-center overflow-hidden rounded-lg bg-gradient-to-b from-primary/5 to-muted/40">
+        <span className="pointer-events-none absolute bottom-2 h-3 w-16 rounded-[50%] bg-foreground/15 blur-[2px]" />
+        <ClassSprite
+          classId={player?.classId}
+          action={pose}
+          flip={!mine}
+          size={128}
+          className="-mb-1"
+        />
       </div>
       <HpBar hp={hp} hpStart={hpStart} mine={mine} />
       <p className="text-[11px] text-muted-foreground">
