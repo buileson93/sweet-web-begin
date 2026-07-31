@@ -1,5 +1,11 @@
 // Logic chấm điểm thuần tuý — tách khỏi exam.server.ts để test được mà không cần Supabase.
-import { normalizeText, type AnswerValue, type Blueprint, type Difficulty, type QuestionKind } from "@/lib/questionKinds";
+import {
+  normalizeText,
+  type AnswerValue,
+  type Blueprint,
+  type Difficulty,
+  type QuestionKind,
+} from "@/lib/questionKinds";
 
 /** Tỷ lệ điểm tối thiểu để được công nhận "Đạt" khi cuộc thi không cấu hình riêng. */
 export const PASS_RATIO = 0.5;
@@ -52,13 +58,19 @@ export function baseOptions(row: QuestionRow): string[] {
 }
 
 /** Chấm một câu. `order` là ánh xạ vị trí hiển thị -> vị trí gốc. */
-export function gradeOne(row: QuestionRow, order: number[], value: AnswerValue | undefined): boolean {
+export function gradeOne(
+  row: QuestionRow,
+  order: number[],
+  value: AnswerValue | undefined,
+): boolean {
   if (value === undefined || value === null) return false;
   switch (row.kind) {
     case "multi": {
       if (!Array.isArray(value)) return false;
       const chosen = new Set(
-        (value as number[]).filter((i) => Number.isInteger(i) && i >= 0 && i < order.length).map((i) => order[i]),
+        (value as number[])
+          .filter((i) => Number.isInteger(i) && i >= 0 && i < order.length)
+          .map((i) => order[i]),
       );
       const expected = new Set(row.correct_indices ?? []);
       if (chosen.size === 0 || chosen.size !== expected.size) return false;
@@ -77,7 +89,12 @@ export function gradeOne(row: QuestionRow, order: number[], value: AnswerValue |
       if (pairs.length === 0) return false;
       return pairs.every((_, leftIndex) => {
         const display = (value as Record<string, number>)[String(leftIndex)];
-        return Number.isInteger(display) && display >= 0 && display < order.length && order[display] === leftIndex;
+        return (
+          Number.isInteger(display) &&
+          display >= 0 &&
+          display < order.length &&
+          order[display] === leftIndex
+        );
       });
     }
     case "ordering": {
@@ -101,7 +118,10 @@ export function gradeOne(row: QuestionRow, order: number[], value: AnswerValue |
 export function correctTextOf(row: QuestionRow): string {
   switch (row.kind) {
     case "multi":
-      return (row.correct_indices ?? []).map((i) => row.options[i]).filter(Boolean).join(" · ");
+      return (row.correct_indices ?? [])
+        .map((i) => row.options[i])
+        .filter(Boolean)
+        .join(" · ");
     case "fill_blank":
       return (row.accepted_answers ?? []).join(" / ");
     case "matching":
@@ -110,19 +130,31 @@ export function correctTextOf(row: QuestionRow): string {
         .join(" · ");
     case "ordering": {
       const expected = row.correct_order?.length ? row.correct_order : row.options.map((_, i) => i);
-      return expected.map((i) => row.options[i]).filter(Boolean).join(" → ");
+      return expected
+        .map((i) => row.options[i])
+        .filter(Boolean)
+        .join(" → ");
     }
     default:
       return row.options[row.correct_index] ?? "";
   }
 }
 
-export function chosenTextOf(row: QuestionRow, order: number[], value: AnswerValue | undefined): string {
+export function chosenTextOf(
+  row: QuestionRow,
+  order: number[],
+  value: AnswerValue | undefined,
+): string {
   const display = baseOptions(row);
   if (value === undefined || value === null) return "";
   switch (row.kind) {
     case "multi":
-      return Array.isArray(value) ? (value as number[]).map((i) => display[order[i]]).filter(Boolean).join(" · ") : "";
+      return Array.isArray(value)
+        ? (value as number[])
+            .map((i) => display[order[i]])
+            .filter(Boolean)
+            .join(" · ")
+        : "";
     case "fill_blank":
       return typeof value === "string" ? value : "";
     case "matching": {
@@ -137,14 +169,23 @@ export function chosenTextOf(row: QuestionRow, order: number[], value: AnswerVal
         .join(" · ");
     }
     case "ordering":
-      return Array.isArray(value) ? (value as number[]).map((i) => display[order[i]]).filter(Boolean).join(" → ") : "";
+      return Array.isArray(value)
+        ? (value as number[])
+            .map((i) => display[order[i]])
+            .filter(Boolean)
+            .join(" → ")
+        : "";
     default:
       return typeof value === "number" ? (display[order[value]] ?? "") : "";
   }
 }
 
 /** Bốc đề theo công thức: ưu tiên tỉ lệ độ khó, phần còn lại lấy ngẫu nhiên. */
-export function pickByBlueprint(pool: QuestionRow[], wanted: number, blueprint: Blueprint): QuestionRow[] {
+export function pickByBlueprint(
+  pool: QuestionRow[],
+  wanted: number,
+  blueprint: Blueprint,
+): QuestionRow[] {
   const picked: QuestionRow[] = [];
   const used = new Set<string>();
   const takeFrom = (rows: QuestionRow[], count: number) => {
@@ -159,11 +200,23 @@ export function pickByBlueprint(pool: QuestionRow[], wanted: number, blueprint: 
 
   for (const level of ["easy", "medium", "hard"] as Difficulty[]) {
     const count = Number(blueprint?.[level] ?? 0);
-    if (count > 0) takeFrom(pool.filter((r) => r.difficulty === level), count);
+    if (count > 0)
+      takeFrom(
+        pool.filter((r) => r.difficulty === level),
+        count,
+      );
   }
   for (const [tag, count] of Object.entries(blueprint?.tags ?? {})) {
-    if (Number(count) > 0) takeFrom(pool.filter((r) => (r.tags ?? []).includes(tag)), Number(count));
+    if (Number(count) > 0)
+      takeFrom(
+        pool.filter((r) => (r.tags ?? []).includes(tag)),
+        Number(count),
+      );
   }
-  if (picked.length < wanted) takeFrom(pool.filter((r) => !used.has(r.id)), wanted - picked.length);
+  if (picked.length < wanted)
+    takeFrom(
+      pool.filter((r) => !used.has(r.id)),
+      wanted - picked.length,
+    );
   return shuffle(picked).slice(0, wanted);
 }

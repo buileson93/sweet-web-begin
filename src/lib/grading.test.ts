@@ -36,7 +36,8 @@ describe("gradeOne – single", () => {
   it("không trả lời", () => expect(gradeOne(row, order, undefined)).toBe(false));
   it("index âm", () => expect(gradeOne(row, order, -1)).toBe(false));
   it("index vượt dải", () => expect(gradeOne(row, order, 9)).toBe(false));
-  it("sai kiểu dữ liệu", () => expect(gradeOne(row, order, "2" as unknown as AnswerValue)).toBe(false));
+  it("sai kiểu dữ liệu", () =>
+    expect(gradeOne(row, order, "2" as unknown as AnswerValue)).toBe(false));
   it("tôn trọng thứ tự trộn", () => {
     // Hiển thị vị trí 0 tương ứng phương án gốc số 2
     expect(gradeOne(row, [2, 0, 1, 3], 0)).toBe(true);
@@ -87,7 +88,8 @@ describe("gradeOne – fill_blank", () => {
   it("trả lời sai", () => expect(gradeOne(row, order, "Đà Nẵng")).toBe(false));
   it("không trả lời", () => expect(gradeOne(row, order, undefined)).toBe(false));
   it("chuỗi rỗng", () => expect(gradeOne(row, order, "   ")).toBe(false));
-  it("sai kiểu dữ liệu", () => expect(gradeOne(row, order, 0 as unknown as AnswerValue)).toBe(false));
+  it("sai kiểu dữ liệu", () =>
+    expect(gradeOne(row, order, 0 as unknown as AnswerValue)).toBe(false));
 });
 
 describe("gradeOne – matching", () => {
@@ -124,7 +126,8 @@ describe("gradeOne – ordering", () => {
   it("đảo 2 phần tử là SAI", () => expect(gradeOne(row, order, [1, 0, 2, 3])).toBe(false));
   it("thiếu phần tử là SAI", () => expect(gradeOne(row, order, [0, 1, 2])).toBe(false));
   it("không trả lời", () => expect(gradeOne(row, order, undefined)).toBe(false));
-  it("sai kiểu dữ liệu", () => expect(gradeOne(row, order, "0,1,2,3" as unknown as AnswerValue)).toBe(false));
+  it("sai kiểu dữ liệu", () =>
+    expect(gradeOne(row, order, "0,1,2,3" as unknown as AnswerValue)).toBe(false));
 });
 
 // ===== pickByBlueprint =====
@@ -140,25 +143,49 @@ function pool(spec: [Difficulty, number][]): QuestionRow[] {
 
 describe("pickByBlueprint", () => {
   it("bốc đúng số lượng yêu cầu", () => {
-    const picked = pickByBlueprint(pool([["easy", 10], ["medium", 10], ["hard", 10]]), 12, {});
+    const picked = pickByBlueprint(
+      pool([
+        ["easy", 10],
+        ["medium", 10],
+        ["hard", 10],
+      ]),
+      12,
+      {},
+    );
     expect(picked).toHaveLength(12);
   });
 
   it("không trùng id", () => {
-    const picked = pickByBlueprint(pool([["easy", 10], ["medium", 10], ["hard", 10]]), 20, {
-      easy: 5,
-      medium: 5,
-      hard: 5,
-    });
+    const picked = pickByBlueprint(
+      pool([
+        ["easy", 10],
+        ["medium", 10],
+        ["hard", 10],
+      ]),
+      20,
+      {
+        easy: 5,
+        medium: 5,
+        hard: 5,
+      },
+    );
     expect(new Set(picked.map((r) => r.id)).size).toBe(picked.length);
   });
 
   it("tôn trọng tỉ lệ easy/medium/hard khi pool đủ", () => {
-    const picked = pickByBlueprint(pool([["easy", 10], ["medium", 10], ["hard", 10]]), 9, {
-      easy: 4,
-      medium: 3,
-      hard: 2,
-    });
+    const picked = pickByBlueprint(
+      pool([
+        ["easy", 10],
+        ["medium", 10],
+        ["hard", 10],
+      ]),
+      9,
+      {
+        easy: 4,
+        medium: 3,
+        hard: 2,
+      },
+    );
     const count = (d: Difficulty) => picked.filter((r) => r.difficulty === d).length;
     expect(picked).toHaveLength(9);
     expect(count("easy")).toBe(4);
@@ -167,7 +194,14 @@ describe("pickByBlueprint", () => {
   });
 
   it("lấp phần thiếu bằng câu ngẫu nhiên khi pool theo độ khó không đủ", () => {
-    const picked = pickByBlueprint(pool([["easy", 1], ["medium", 10]]), 6, { easy: 4, hard: 2 });
+    const picked = pickByBlueprint(
+      pool([
+        ["easy", 1],
+        ["medium", 10],
+      ]),
+      6,
+      { easy: 4, hard: 2 },
+    );
     expect(picked).toHaveLength(6);
     expect(picked.filter((r) => r.difficulty === "easy")).toHaveLength(1);
     expect(picked.filter((r) => r.difficulty === "medium")).toHaveLength(5);
