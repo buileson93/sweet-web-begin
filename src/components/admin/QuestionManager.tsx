@@ -45,11 +45,16 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const [quizId, setQuizId] = useState("");
   const [keyword, setKeyword] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | Difficulty>("all");
+  const [archiveFilter, setArchiveFilter] = useState<ArchiveFilter>("active");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<QuestionRow | null>(null);
-  const [form, setForm] = useState({ ...emptyForm });
+  const [preview, setPreview] = useState<QuestionRow | null>(null);
+  const [form, setForm] = useState<QuestionFormState>({ ...emptyForm });
+  const [draftAvailable, setDraftAvailable] = useState(false);
+  const pendingDraft = useRef<QuestionFormState | null>(null);
+
 
   const PAGE_SIZE = 20;
 
