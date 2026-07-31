@@ -67,7 +67,8 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
     (delta: Record<string, AnswerValue>) => {
       if (!sessionId || typeof window === "undefined") return;
       try {
-        if (Object.keys(delta).length === 0) window.sessionStorage.removeItem(pendingKey(sessionId));
+        if (Object.keys(delta).length === 0)
+          window.sessionStorage.removeItem(pendingKey(sessionId));
         else window.sessionStorage.setItem(pendingKey(sessionId), JSON.stringify(delta));
       } catch {
         /* bỏ qua khi trình duyệt chặn lưu trữ */

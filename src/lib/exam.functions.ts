@@ -93,8 +93,6 @@ export const checkAnswer = createServerFn({ method: "POST" })
     return checkExamAnswer(data);
   });
 
-
-
 export const getServerTime = createServerFn({ method: "GET" }).handler(async () => ({
   now: new Date().toISOString(),
 }));
