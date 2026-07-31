@@ -1,15 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { CheckCircle2, Eye, RadioTower, RefreshCw, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle2, ChevronDown, Eye, Loader2, RadioTower, RefreshCw, Users } from "lucide-react";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getSessionDetail, listLiveSessions, type LiveSession, type SessionDetail } from "@/lib/monitor.functions";
+import {
+  getSessionDetail,
+  listLiveSessions,
+  type LivePage,
+  type LiveSession,
+  type SessionDetail,
+} from "@/lib/monitor.functions";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 25;
 
 function remaining(expiresAt: string) {
   const ms = new Date(expiresAt).getTime() - Date.now();
@@ -19,28 +27,66 @@ function remaining(expiresAt: string) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/** Tab đang hiển thị hay không — ẩn tab thì ngừng làm mới để đỡ tải máy chủ. */
+function useTabVisible() {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const onChange = () => setVisible(document.visibilityState === "visible");
+    onChange();
+    document.addEventListener("visibilitychange", onChange);
+    return () => document.removeEventListener("visibilitychange", onChange);
+  }, []);
+  return visible;
+}
+
 export function LiveMonitor() {
   const fetchLive = useServerFn(listLiveSessions);
   const fetchDetail = useServerFn(getSessionDetail);
   const [auto, setAuto] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const visible = useTabVisible();
+
+  // Giữ dữ liệu đã tải để khi máy chủ báo "không đổi" thì không phải dựng lại bảng.
+  const cacheRef = useRef<{ version: string; rows: LiveSession[] } | null>(null);
+  const [syncedAt, setSyncedAt] = useState<Date | null>(null);
+  const [changedAt, setChangedAt] = useState<Date | null>(null);
 
   const detailQuery = useQuery({
     queryKey: ["admin-session-detail", openId],
     enabled: Boolean(openId),
-    refetchInterval: openId ? 15_000 : false,
+    refetchInterval: openId && visible ? 15_000 : false,
     queryFn: () => fetchDetail({ data: { sessionId: openId! } }) as Promise<SessionDetail>,
   });
 
   const query = useQuery({
-    queryKey: ["admin-live-sessions"],
-    queryFn: () => fetchLive({ data: undefined }) as Promise<LiveSession[]>,
-    refetchInterval: auto ? 10_000 : false,
+    queryKey: ["admin-live-sessions", limit],
+    refetchInterval: auto && visible ? 10_000 : false,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const page = (await fetchLive({
+        data: { limit, offset: 0, knownVersion: cacheRef.current?.version },
+      })) as LivePage;
+      const rows = page.changed ? page.rows : (cacheRef.current?.rows ?? []);
+      cacheRef.current = { version: page.version, rows };
+      setSyncedAt(new Date());
+      if (page.changed) setChangedAt(new Date());
+      return { ...page, rows };
+    },
   });
 
-  const rows = query.data ?? [];
-  const active = rows.filter((r) => !r.submittedAt && new Date(r.expiresAt).getTime() > Date.now());
-  const submitted = rows.filter((r) => r.submittedAt);
+  const page = query.data;
+  const rows = page?.rows ?? [];
+  const activeCount = page?.activeCount ?? 0;
+  const submittedCount = page?.submittedCount ?? 0;
+  const syncLabel = query.isFetching
+    ? "Đang đồng bộ…"
+    : query.isError
+      ? "Mất kết nối"
+      : syncedAt
+        ? `Đồng bộ lúc ${syncedAt.toLocaleTimeString("vi-VN")}${changedAt && changedAt === syncedAt ? " · có thay đổi" : " · không đổi"}`
+        : "Chưa đồng bộ";
+
 
   return (
     <AdminSection
