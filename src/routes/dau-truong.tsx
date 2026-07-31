@@ -20,6 +20,9 @@ import {
 import { toast } from "sonner";
 
 import { CredentialInput } from "@/components/CredentialInput";
+import { InviteDialog } from "@/components/arena/InviteDialog";
+import { PracticePanel } from "@/components/arena/PracticePanel";
+import { useArenaInviteChannel } from "@/hooks/useArenaInviteChannel";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
 import { usePlayerIdentity } from "@/hooks/usePlayerIdentity";
 import { Button } from "@/components/ui/button";
@@ -83,6 +86,7 @@ function ArenaLobby() {
   const [busy, setBusy] = useState(false);
   const [ending, setEnding] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [dismissedInvites, setDismissedInvites] = useState<string[]>([]);
   const waitedRef = useRef(0);
 
 
@@ -112,6 +116,14 @@ function ArenaLobby() {
       window.clearInterval(id);
     };
   }, [token, loadHome]);
+
+  // Có lời mời mới -> nạp lại ngay, không phải chờ vòng hỏi lại 6 giây.
+  useArenaInviteChannel(home?.profile.employeeId, () => {
+    if (!token) return;
+    void loadHome({ data: { token } })
+      .then(setHome)
+      .catch(() => undefined);
+  });
 
   // Nhịp tim 20 giây: máy chủ xác nhận ai đang trực tuyến, đồng thời báo ván đang dang dở.
   useEffect(() => {
@@ -297,6 +309,35 @@ function ArenaLobby() {
           </Button>
         )}
       </div>
+
+      <PracticePanel
+        token={token}
+        disabled={Boolean(presence?.active) || searching}
+        onStarted={(duelId) => void navigate({ to: "/dau-truong/$duelId", params: { duelId } })}
+      />
+
+      <InviteDialog
+        invite={
+          (home?.invites.incoming ?? []).find((i) => !dismissedInvites.includes(i.id)) ?? null
+        }
+        onAccept={async (inviteId) => {
+          try {
+            const res = await respond({
+              data: { token, inviteId, accept: true, deviceHash: getDeviceId() },
+            });
+            setDismissedInvites((prev) => [...prev, inviteId]);
+            if (res.duelId)
+              void navigate({ to: "/dau-truong/$duelId", params: { duelId: res.duelId } });
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Không nhận được lời mời.");
+            setDismissedInvites((prev) => [...prev, inviteId]);
+          }
+        }}
+        onDecline={async (inviteId) => {
+          setDismissedInvites((prev) => [...prev, inviteId]);
+          await respond({ data: { token, inviteId, accept: false } }).catch(() => undefined);
+        }}
+      />
 
       <OnlineList
         token={token}

@@ -1,0 +1,1 @@
+ALTER VIEW public.arena_leaderboard SET (security_invoker = on);

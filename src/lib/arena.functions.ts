@@ -222,3 +222,35 @@ export const arenaReplay = createServerFn({ method: "POST" })
     const { getDuelReplay } = await import("@/lib/arena/stats.server");
     return getDuelReplay(data.duelId);
   });
+
+/** Danh sách bộ đề và các mức trợ lý luyện tập để chọn trước khi so tài. */
+export const arenaOptions = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ token }).parse(input))
+  .handler(async ({ data }) => {
+    await auth(data.token);
+    const { listArenaQuizzes, listBotTiers } = await import("@/lib/arena/bot.server");
+    return { quizzes: await listArenaQuizzes(), tiers: listBotTiers() };
+  });
+
+/** Mở ván luyện tập với trợ lý máy. */
+export const arenaPlayBot = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        token,
+        tier: z.enum(["de", "vua", "kho"]).optional(),
+        quizId: z.string().uuid().nullable().optional(),
+        deviceHash: z.string().max(80).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const employeeId = await auth(data.token);
+    const { startBotDuel } = await import("@/lib/arena/bot.server");
+    return startBotDuel({
+      employeeId,
+      tier: data.tier,
+      quizId: data.quizId ?? null,
+      deviceHash: data.deviceHash,
+    });
+  });

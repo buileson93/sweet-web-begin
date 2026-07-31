@@ -41,6 +41,8 @@ export type DuelState = {
   roundCount: number;
   secondsPerRound: number;
   isRanked: boolean;
+  /** Ván luyện tập với trợ lý máy. */
+  isBot: boolean;
   /** Máu khởi điểm của mỗi bên. */
   hpStart: number;
   currentRound: number;
@@ -62,6 +64,8 @@ export type RoundResult = {
   explanation: string;
   /** Không ai gây sát thương (cả hai cùng sai). */
   neutral: boolean;
+  /** Hai viên xúc xắc quyết định sát thương gốc của câu này. */
+  dice: number[];
   lines: {
     employeeId: string;
     isCorrect: boolean;
@@ -116,4 +120,4 @@ export type ArenaProfile = {
 };
 
 export const DUEL_COLUMNS =
-  "id, quiz_id, status, round_count, seconds_per_round, is_ranked, hp_start, current_round, round_served_at, question_ids, option_orders, version, started_at, finished_at, winner_employee_id, note";
+  "id, quiz_id, status, round_count, seconds_per_round, is_ranked, hp_start, current_round, round_served_at, question_ids, option_orders, version, started_at, finished_at, winner_employee_id, note, is_bot";

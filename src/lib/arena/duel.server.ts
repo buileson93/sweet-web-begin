@@ -4,7 +4,8 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { logArenaAudit } from "@/lib/arena/audit.server";
-import { broadcastDuel } from "@/lib/arena/broadcast.server";
+import { broadcastDuel, broadcastToEmployee } from "@/lib/arena/broadcast.server";
+import { botDecision, isBotEmployee, tierOf } from "@/lib/arena/bot";
 import { buildRoundPayload } from "@/lib/arena/payload";
 import {
   ANSWER_RATE_LIMIT_MS,
@@ -60,6 +61,7 @@ type DuelRow = {
   finished_at: string | null;
   winner_employee_id: string | null;
   note: string;
+  is_bot: boolean;
 };
 
 const nowIso = () => new Date().toISOString();
@@ -153,6 +155,8 @@ export async function createDuel(input: {
   secondsPerRound?: number;
   isRanked?: boolean;
   deviceHash?: string;
+  isBot?: boolean;
+  note?: string;
 }): Promise<{ duelId: string }> {
   const settings = await requireSettings();
   const player = await mustPlayer(input.employeeId);
@@ -170,7 +174,9 @@ export async function createDuel(input: {
       status: "waiting",
       round_count: roundCount,
       seconds_per_round: seconds,
-      is_ranked: input.isRanked !== false,
+      is_ranked: input.isRanked !== false && input.isBot !== true,
+      is_bot: input.isBot === true,
+      note: input.note ?? "",
       question_ids: ids,
       option_orders: orders as never,
       created_by: input.employeeId,
@@ -357,6 +363,15 @@ export async function inviteToDuel(input: {
     .select("id")
     .single();
   if (error) throw new Error(error.message);
+
+  // Báo ngay cho đồng nghiệp được mời (kênh riêng của họ) để hiện hộp thoại nhận lời.
+  await broadcastToEmployee(input.toEmployeeId, "invite.new", {
+    inviteId: data.id,
+    duelId,
+    fromEmployeeId: input.employeeId,
+    fromName: player.display_name,
+    expiresAt: new Date(Date.now() + 120_000).toISOString(),
+  });
   return { inviteId: data.id, duelId };
 }
 
@@ -382,6 +397,10 @@ export async function respondInvite(input: {
   if (!input.accept) {
     await supabaseAdmin.from("duel_invites").update({ status: "declined" }).eq("id", invite.id);
     await broadcastDuel(invite.duel_id, "lobby.update", { declined: true });
+    await broadcastToEmployee(invite.from_employee_id, "invite.declined", {
+      inviteId: invite.id,
+      duelId: invite.duel_id,
+    });
     return { ok: true, duelId: null as string | null };
   }
 
@@ -391,6 +410,10 @@ export async function respondInvite(input: {
     deviceHash: input.deviceHash,
   });
   await supabaseAdmin.from("duel_invites").update({ status: "accepted" }).eq("id", invite.id);
+  await broadcastToEmployee(invite.from_employee_id, "invite.accepted", {
+    inviteId: invite.id,
+    duelId: invite.duel_id,
+  });
   return { ok: true, duelId: invite.duel_id as string | null };
 }
 
@@ -574,6 +597,9 @@ export async function answerRound(input: {
     employeeId: input.employeeId,
   });
 
+  // Ván luyện tập: trợ lý máy trả lời ngay sau người thật để chốt câu.
+  if (duel.is_bot) await ensureBotAnswer(duel, input.roundIndex);
+
   const { count } = await supabaseAdmin
     .from("duel_answers")
     .select("id", { count: "exact", head: true })
@@ -583,6 +609,57 @@ export async function answerRound(input: {
   if ((count ?? 0) >= active) await closeRound(duel.id, input.roundIndex);
 
   return { accepted: true, points, isCorrect };
+}
+
+/**
+ * Trợ lý máy trả lời câu hiện tại (nếu chưa trả lời). Đáp án đúng/sai và tốc độ
+ * do `botDecision` quyết định theo mức độ ghi trong `note` của ván.
+ */
+export async function ensureBotAnswer(duel: DuelRow, roundIndex: number) {
+  if (!duel.is_bot) return;
+  const players = await loadPlayers(duel.id);
+  const bot = players.find((p) => isBotEmployee(p.employee_id));
+  if (!bot) return;
+
+  const { data: existing } = await supabaseAdmin
+    .from("duel_answers")
+    .select("id")
+    .eq("duel_id", duel.id)
+    .eq("round_index", roundIndex)
+    .eq("employee_id", bot.employee_id)
+    .maybeSingle();
+  if (existing) return;
+
+  const tier = tierOf(duel.note?.startsWith("bot:") ? duel.note.slice(4) : undefined);
+  const limitMs = duel.seconds_per_round * 1000;
+  const decision = botDecision(tier, limitMs);
+  const streak = await currentStreak(duel.id, bot.employee_id, roundIndex, decision.isCorrect);
+  const points = roundPoints(decision.isCorrect, decision.msTaken, limitMs, streak);
+
+  const { error } = await supabaseAdmin.from("duel_answers").insert({
+    duel_id: duel.id,
+    employee_id: bot.employee_id,
+    round_index: roundIndex,
+    value: null as never,
+    is_correct: decision.isCorrect,
+    ms_taken: decision.msTaken,
+    points,
+  });
+  if (error) return;
+
+  await supabaseAdmin
+    .from("duel_players")
+    .update({
+      score: bot.score + points,
+      correct: bot.correct + (decision.isCorrect ? 1 : 0),
+      total_ms: bot.total_ms + decision.msTaken,
+    })
+    .eq("id", bot.id);
+
+  await broadcastDuel(duel.id, "round.opponent_answered", {
+    roundIndex,
+    employeeId: bot.employee_id,
+  });
 }
 
 async function currentStreak(
@@ -661,6 +738,7 @@ export async function closeRound(duelId: string, roundIndex: number) {
     correctText: q ? correctTextOf(q.row) : "",
     explanation: q?.row.explanation ?? "",
     neutral: combat.neutral,
+    dice: combat.dice,
     lines: players.map((p) => {
       const a = answers.find((x) => x.employee_id === p.employee_id);
       const c = combat.lines.find((x) => x.employeeId === p.employee_id);
@@ -982,6 +1060,7 @@ export async function getDuelState(input: {
     roundCount: duel.round_count,
     secondsPerRound: duel.seconds_per_round,
     isRanked: duel.is_ranked,
+    isBot: duel.is_bot === true,
     hpStart: duel.hp_start ?? HP_START,
     currentRound: duel.current_round,
     roundServedAt: duel.round_served_at,

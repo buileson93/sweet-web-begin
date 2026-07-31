@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Loader2, LogOut, Swords, Wifi, WifiOff, X } from "lucide-react";
+import { Check, Dices, Link2, Loader2, LogOut, Swords, Wifi, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { DuelFighter } from "@/components/arena/DuelFighter";
@@ -211,6 +211,23 @@ function WaitingPanel({
         {me?.ready ? <Check className="mr-2 size-4" /> : null}
         {me?.ready ? "Đã sẵn sàng" : "Sẵn sàng"}
       </Button>
+      {state.players.length < 2 ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            const link = `${window.location.origin}/dau-truong/${state.duelId}`;
+            try {
+              await navigator.clipboard.writeText(link);
+              toast.success("Đã sao chép liên kết vào phòng. Gửi cho đồng nghiệp là vào ngay!");
+            } catch {
+              toast.message(link);
+            }
+          }}
+        >
+          <Link2 className="mr-2 size-4" /> Sao chép liên kết mời
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -313,6 +330,13 @@ function ResultPanel({ state, meId }: { state: DuelState; meId?: string }) {
             ? `${mine?.firstCorrect ? "Nhanh tay nhất! " : ""}Gây ${dealt} sát thương ⚔️`
             : `Bị trừ ${taken} máu 💔`}
       </p>
+      {r.dice?.length ? (
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Dices className="size-4 text-primary" />
+          Xúc xắc: <strong className="text-foreground">{r.dice.join(" + ")}</strong> ={" "}
+          <strong className="text-foreground">{r.dice.reduce((a, b) => a + b, 0)}</strong> sát thương gốc
+        </p>
+      ) : null}
       <p className="text-sm">
         Đáp án đúng: <strong>{r.correctText}</strong>
       </p>
