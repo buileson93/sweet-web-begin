@@ -34,13 +34,14 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
                   key={item.to}
                   to={item.to}
                   aria-label={item.label}
+                  title={item.label}
                   className="nav-rail-item"
                   activeProps={{ className: cn("nav-rail-item", "nav-rail-item-active") }}
                   activeOptions={{ exact: item.to === "/" }}
                 >
                   <item.icon className="relative" strokeWidth={1.75} absoluteStrokeWidth />
-                  <span className="nav-rail-label">{item.label}</span>
                 </Link>
+
               ))}
             </nav>
 
