@@ -46,9 +46,20 @@ import {
   requestFiftyFifty,
   startExam,
   submitExam,
+  loadProgress,
 } from "@/lib/exam.functions";
 import type { StartExamResult, SubmitExamResult } from "@/lib/exam.server";
-import { EXAM_CURRENT_KEY, examKey, readExamEntry, restoreExamSession } from "@/lib/examSession";
+import {
+  EXAM_CURRENT_KEY,
+  examKey,
+  mergeAnswers,
+  readExamEntry,
+  restoreExamSession,
+} from "@/lib/examSession";
+import { useExamAutosave, seqKey } from "@/hooks/useExamAutosave";
+
+/** Khoá lưu đáp án tạm trên máy (giữ bài khi F5 hoặc mất mạng). */
+const localAnswersKey = (sessionId: string) => "exam:answers:" + sessionId;
 
 import { isAnswered, KIND_LABEL, type AnswerValue } from "@/lib/questionKinds";
 import { formatSeconds } from "@/lib/format";
@@ -150,6 +161,7 @@ function ExamPage() {
   const runCheck = useServerFn(checkAnswer);
   const runAbandon = useServerFn(abandonExam);
   const runStart = useServerFn(startExam);
+  const runLoadProgress = useServerFn(loadProgress);
 
   const [session, setSession] = useState<StartExamResult | null>(null);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
@@ -172,6 +184,9 @@ function ExamPage() {
   /** Hết giờ: chỉ cho phép gọi nộp bài TỰ ĐỘNG đúng một lần, kể cả khi lần gọi trước lỗi. */
   const timeUpRef = useRef(false);
   const [timeUp, setTimeUp] = useState(false);
+  /** Seq autosave lấy từ máy chủ sau khi khôi phục bài làm. */
+  const [serverSeq, setServerSeq] = useState(0);
+  const autosaveAckRef = useRef<{ answers: Record<string, AnswerValue>; seq: number } | null>(null);
 
   useEffect(() => {
     const restored = restoreExamSession(
@@ -182,7 +197,52 @@ function ExamPage() {
       return;
     }
     setSession(restored);
-  }, [navigate]);
+
+    // Khôi phục bài làm: hợp nhất đáp án lưu trên máy với đáp án đã autosave trên máy chủ,
+    // bên nào có seq lớn hơn thì thắng ở những câu bị trùng.
+    let localAnswers: Record<string, AnswerValue> = {};
+    let localSeq = 0;
+    try {
+      const raw = window.sessionStorage.getItem(localAnswersKey(restored.sessionId));
+      if (raw) localAnswers = JSON.parse(raw) as Record<string, AnswerValue>;
+      localSeq = Number(window.sessionStorage.getItem(seqKey(restored.sessionId)) ?? 0) || 0;
+    } catch {
+      /* bỏ qua khi dữ liệu hỏng */
+    }
+    if (Object.keys(localAnswers).length > 0) setAnswers(localAnswers);
+
+    void (async () => {
+      try {
+        const server = await runLoadProgress({
+          data: { sessionId: restored.sessionId, submitToken: restored.submitToken },
+        });
+        const merged = mergeAnswers<AnswerValue>(
+          localAnswers,
+          server.answers as Record<string, AnswerValue>,
+          localSeq,
+          server.seq,
+        );
+        setAnswers(merged.answers);
+        setServerSeq(merged.seq);
+        autosaveAckRef.current = {
+          answers: (server.answers as Record<string, AnswerValue>) ?? {},
+          seq: server.seq,
+        };
+      } catch {
+        /* mất mạng: vẫn thi tiếp bằng bản lưu trên máy */
+      }
+    })();
+  }, [navigate, runLoadProgress]);
+
+  // Lưu đáp án xuống sessionStorage mỗi khi thay đổi (chống mất bài khi F5).
+  useEffect(() => {
+    if (!session || result) return;
+    try {
+      window.sessionStorage.setItem(localAnswersKey(session.sessionId), JSON.stringify(answers));
+    } catch {
+      /* bỏ qua khi trình duyệt chặn lưu trữ */
+    }
+  }, [answers, session, result]);
 
   const finish = useCallback(
     async (opts?: { disqualified?: boolean; reason?: string }) => {
