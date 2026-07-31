@@ -92,7 +92,9 @@ export function QuestionCard({
         <p
           className={cn(
             "animate-rise mt-4 rounded-xl px-3 py-2 text-sm font-semibold",
-            feedback === "correct" ? "bg-success/12 text-success" : "bg-destructive/12 text-destructive",
+            feedback === "correct"
+              ? "bg-success/12 text-success"
+              : "bg-destructive/12 text-destructive",
           )}
         >
           {feedback === "correct" ? "Chính xác!" : "Chưa đúng."}

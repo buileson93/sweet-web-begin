@@ -27,7 +27,7 @@ export function useExamAnswers(opts: {
   const [combo, setCombo] = useState(0);
 
   const fiftyLeft = 2 - Object.keys(fifty).length;
-  const useFifty = useCallback(async () => {
+  const requestFifty = useCallback(async () => {
     if (!session) return;
     setFiftyBusy(true);
     try {
@@ -88,7 +88,7 @@ export function useExamAnswers(opts: {
     fifty,
     fiftyBusy,
     fiftyLeft,
-    useFifty,
+    requestFifty,
     feedback,
     combo,
     instant,

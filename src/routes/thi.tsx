@@ -142,7 +142,7 @@ function ExamPage() {
     fifty,
     fiftyBusy,
     fiftyLeft,
-    useFifty,
+    requestFifty,
     feedback,
     combo,
     instant,
@@ -279,7 +279,7 @@ function ExamPage() {
             fiftyBusy={fiftyBusy}
             fiftyLeft={fiftyLeft}
             fiftyUsed={Boolean(fifty[String(current)])}
-            onFifty={() => void useFifty()}
+            onFifty={() => void requestFifty()}
             onAnswer={(value) => void handleAnswer(current, value)}
             onPrev={() => setCurrent((c) => c - 1)}
             onNext={() => setCurrent((c) => Math.min(total - 1, c + 1))}

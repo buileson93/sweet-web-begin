@@ -70,7 +70,10 @@ export function useIntegrityWatch(opts: {
       else report("contextmenu");
     };
     const blockKeys = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && ["c", "v", "x", "p", "s", "u"].includes(e.key.toLowerCase())) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        ["c", "v", "x", "p", "s", "u"].includes(e.key.toLowerCase())
+      ) {
         e.preventDefault();
       }
     };

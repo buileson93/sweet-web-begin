@@ -1,8 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import {
-  DISQUALIFY_THRESHOLD_DEFAULT,
-  shouldDisqualify,
-} from "@/lib/integrity";
+import { DISQUALIFY_THRESHOLD_DEFAULT, shouldDisqualify } from "@/lib/integrity";
 import {
   PASS_PERCENT_DEFAULT,
   baseOptions,
