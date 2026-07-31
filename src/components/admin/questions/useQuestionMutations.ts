@@ -4,16 +4,25 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { isTempImagePath, removeQuestionImage } from "@/lib/questionImage";
-import { commitQuestionImage } from "@/lib/questionImages.functions";
+import {
+  commitQuestionImage,
+  duplicateQuestionImage,
+  relocateQuestionImages,
+} from "@/lib/questionImages.functions";
+import {
+  firstErrorMessage,
+  hasBlockingErrors,
+  parseAcceptedAnswers,
+  parseTimeLimit,
+  trimmedOptions,
+  validateQuestionDraft,
+} from "@/lib/questionValidation";
 import { readXlsxSheetData } from "@/lib/xlsxIo";
 import type { Difficulty } from "@/lib/questionKinds";
 
 import type { QuestionFormState, QuestionRow } from "./types";
 
-/**
- * Toàn bộ mutation của ngân hàng câu hỏi (lưu, xoá, xoá hàng loạt,
- * đổi độ khó hàng loạt, nhập Excel). Hành vi giữ nguyên như trước khi tách file.
- */
+/** Toàn bộ mutation của ngân hàng câu hỏi. */
 export function useQuestionMutations({
   quizId,
   questions,
@@ -32,31 +41,25 @@ export function useQuestionMutations({
   onSaved: () => void;
 }) {
   const qc = useQueryClient();
+  const ids = () => [...selected];
 
   const save = useMutation({
     mutationFn: async () => {
-      const options = form.options
-        .map((o) => o.trim())
-        .filter((o, i) => o || form.kind === "fill_blank" || i < 2);
-      const accepted = form.accepted_answers
-        .split("\n")
-        .map((a) => a.trim())
-        .filter(Boolean);
+      const result = validateQuestionDraft(
+        form,
+        questions.map((q) => ({ id: q.id, question: q.question })),
+        editing?.id ?? null,
+      );
+      if (hasBlockingErrors(result))
+        throw new Error(firstErrorMessage(result) ?? "Biểu mẫu chưa hợp lệ.");
+
+      const options = trimmedOptions(form.options).filter(
+        (o, i) => o || form.kind === "fill_blank" || i < 2,
+      );
+      const accepted = parseAcceptedAnswers(form.accepted_answers);
       const pairs = form.pairs
         .map((p) => ({ left: p.left.trim(), right: p.right.trim() }))
         .filter((p) => p.left && p.right);
-
-      if (form.question.trim().length < 5) throw new Error("Nội dung câu hỏi quá ngắn.");
-      if (form.kind === "fill_blank" && accepted.length === 0)
-        throw new Error("Cần ít nhất một đáp án được chấp nhận.");
-      if (form.kind === "matching" && pairs.length < 2)
-        throw new Error("Câu nối cặp cần ít nhất 2 cặp.");
-      if (["single", "true_false", "multi", "ordering"].includes(form.kind)) {
-        if (options.length < 2 || options.some((o) => !o))
-          throw new Error("Vui lòng nhập đủ nội dung các phương án.");
-      }
-      if (form.kind === "multi" && form.correct_indices.length === 0)
-        throw new Error("Chọn ít nhất một đáp án đúng.");
 
       const payload = {
         quiz_id: quizId,
@@ -71,6 +74,7 @@ export function useQuestionMutations({
         difficulty: form.difficulty,
         points: Number(form.points) || 1,
         order_index: Math.max(0, Number(form.order_index) || 0),
+        time_limit_seconds: parseTimeLimit(form.time_limit_seconds),
         tags: form.tags
           .split(",")
           .map((t) => t.trim())
@@ -96,9 +100,7 @@ export function useQuestionMutations({
       // thức của câu hỏi sau khi câu hỏi đã lưu thành công.
       if (payload.image_url && isTempImagePath(payload.image_url) && questionId) {
         try {
-          await commitQuestionImage({
-            data: { path: payload.image_url, quizId, questionId },
-          });
+          await commitQuestionImage({ data: { path: payload.image_url, quizId, questionId } });
         } catch {
           toast.warning("Đã lưu câu hỏi nhưng chưa chuyển được ảnh vào kho chính thức.");
         }
@@ -138,12 +140,100 @@ export function useQuestionMutations({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /** Đưa vào / lấy ra khỏi lưu trữ (thay cho xoá vĩnh viễn). */
+  const archive = useMutation({
+    mutationFn: async ({ row, archived }: { row: QuestionRow; archived: boolean }) => {
+      const { error } = await supabase
+        .from("questions")
+        .update({ is_archived: archived })
+        .eq("id", row.id);
+      if (error) throw error;
+      await logAudit({
+        action: "update",
+        entity: "question",
+        entityId: row.id,
+        entityLabel: `${archived ? "Lưu trữ" : "Khôi phục"}: ${row.question.slice(0, 100)}`,
+      });
+      return archived;
+    },
+    onSuccess: (archived) => {
+      toast.success(archived ? "Đã đưa vào lưu trữ." : "Đã đưa trở lại sử dụng.");
+      void qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  /** Nhân bản câu hỏi, kể cả ảnh (ảnh được copy sang đường dẫn riêng). */
+  const duplicate = useMutation({
+    mutationFn: async (row: QuestionRow) => {
+      const { data, error } = await supabase
+        .from("questions")
+        .insert({
+          quiz_id: row.quiz_id,
+          question: `${row.question} (bản sao)`,
+          options: row.options,
+          correct_index: row.correct_index,
+          correct_indices: row.correct_indices ?? [],
+          accepted_answers: row.accepted_answers ?? [],
+          pairs: row.pairs ?? [],
+          kind: row.kind ?? "single",
+          difficulty: row.difficulty ?? "medium",
+          points: row.points ?? 1,
+          order_index: (row.order_index ?? 0) + 1,
+          time_limit_seconds: row.time_limit_seconds,
+          tags: row.tags ?? [],
+          explanation: row.explanation ?? "",
+          is_archived: row.is_archived ?? false,
+          image_url: null,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      if (row.image_url) {
+        try {
+          await duplicateQuestionImage({
+            data: { path: row.image_url, quizId: row.quiz_id, questionId: data.id },
+          });
+        } catch {
+          toast.warning("Đã tạo bản sao nhưng chưa nhân bản được ảnh minh hoạ.");
+        }
+      }
+      await logAudit({
+        action: "create",
+        entity: "question",
+        entityId: data.id,
+        entityLabel: `Bản sao: ${row.question.slice(0, 100)}`,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Đã tạo bản sao câu hỏi.");
+      void qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  /** Cập nhật số thứ tự theo lô (dùng cho nút Lên/Xuống và ô nhập số). */
+  const reorder = useMutation({
+    mutationFn: async (updates: { id: string; order_index: number }[]) => {
+      for (const u of updates) {
+        const { error } = await supabase
+          .from("questions")
+          .update({ order_index: u.order_index })
+          .eq("id", u.id);
+        if (error) throw error;
+      }
+      return updates.length;
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin-questions"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   /** Xoá hàng loạt các câu hỏi đang được chọn. */
   const bulkRemove = useMutation({
     mutationFn: async () => {
-      const ids = [...selected];
-      const rows = questions.filter((q) => ids.includes(q.id));
-      const { error } = await supabase.from("questions").delete().in("id", ids);
+      const list = ids();
+      const rows = questions.filter((q) => list.includes(q.id));
+      const { error } = await supabase.from("questions").delete().in("id", list);
       if (error) throw error;
       await Promise.all(
         rows.filter((r) => r.image_url).map((r) => removeQuestionImage(r.image_url!)),
@@ -151,10 +241,10 @@ export function useQuestionMutations({
       await logAudit({
         action: "delete",
         entity: "question",
-        entityLabel: `${ids.length} câu hỏi (hàng loạt)`,
-        details: { count: ids.length, quiz_id: quizId },
+        entityLabel: `${list.length} câu hỏi (hàng loạt)`,
+        details: { count: list.length, quiz_id: quizId },
       });
-      return ids.length;
+      return list.length;
     },
     onSuccess: (n) => {
       toast.success(`Đã xoá ${n} câu hỏi.`);
@@ -167,22 +257,133 @@ export function useQuestionMutations({
   /** Đổi độ khó cho các câu hỏi đang được chọn. */
   const bulkDifficulty = useMutation({
     mutationFn: async (value: Difficulty) => {
-      const ids = [...selected];
+      const list = ids();
       const { error } = await supabase
         .from("questions")
         .update({ difficulty: value })
-        .in("id", ids);
+        .in("id", list);
       if (error) throw error;
       await logAudit({
         action: "update",
         entity: "question",
-        entityLabel: `Đổi độ khó ${ids.length} câu hỏi`,
-        details: { count: ids.length, difficulty: value },
+        entityLabel: `Đổi độ khó ${list.length} câu hỏi`,
+        details: { count: list.length, difficulty: value },
       });
-      return ids.length;
+      return list.length;
     },
     onSuccess: (n) => {
       toast.success(`Đã cập nhật độ khó cho ${n} câu hỏi.`);
+      setSelected(new Set());
+      void qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  /** Đổi điểm cho các câu hỏi đang được chọn. */
+  const bulkPoints = useMutation({
+    mutationFn: async (value: number) => {
+      const points = Math.max(1, Math.round(Number(value) || 1));
+      const list = ids();
+      const { error } = await supabase.from("questions").update({ points }).in("id", list);
+      if (error) throw error;
+      await logAudit({
+        action: "update",
+        entity: "question",
+        entityLabel: `Đổi điểm ${list.length} câu hỏi`,
+        details: { count: list.length, points },
+      });
+      return list.length;
+    },
+    onSuccess: (n) => {
+      toast.success(`Đã đổi điểm cho ${n} câu hỏi.`);
+      setSelected(new Set());
+      void qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  /** Gán thẻ chủ đề cho các câu hỏi đang được chọn. */
+  const bulkTags = useMutation({
+    mutationFn: async ({ tags, mode }: { tags: string; mode: "add" | "replace" }) => {
+      const parsed = tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const list = ids();
+      for (const id of list) {
+        const current = questions.find((q) => q.id === id)?.tags ?? [];
+        const next = mode === "replace" ? parsed : [...new Set([...current, ...parsed])];
+        const { error } = await supabase.from("questions").update({ tags: next }).eq("id", id);
+        if (error) throw error;
+      }
+      await logAudit({
+        action: "update",
+        entity: "question",
+        entityLabel: `Gán thẻ cho ${list.length} câu hỏi`,
+        details: { count: list.length, tags: parsed, mode },
+      });
+      return list.length;
+    },
+    onSuccess: (n) => {
+      toast.success(`Đã cập nhật thẻ cho ${n} câu hỏi.`);
+      setSelected(new Set());
+      void qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  /** Lưu trữ / khôi phục hàng loạt. */
+  const bulkArchive = useMutation({
+    mutationFn: async (archived: boolean) => {
+      const list = ids();
+      const { error } = await supabase
+        .from("questions")
+        .update({ is_archived: archived })
+        .in("id", list);
+      if (error) throw error;
+      await logAudit({
+        action: "update",
+        entity: "question",
+        entityLabel: `${archived ? "Lưu trữ" : "Khôi phục"} ${list.length} câu hỏi`,
+        details: { count: list.length, is_archived: archived },
+      });
+      return { n: list.length, archived };
+    },
+    onSuccess: ({ n, archived }) => {
+      toast.success(`Đã ${archived ? "lưu trữ" : "khôi phục"} ${n} câu hỏi.`);
+      setSelected(new Set());
+      void qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  /** Chuyển các câu hỏi đang chọn sang cuộc thi khác (kèm di chuyển ảnh). */
+  const bulkMoveQuiz = useMutation({
+    mutationFn: async (targetQuizId: string) => {
+      const list = ids();
+      const { error } = await supabase
+        .from("questions")
+        .update({ quiz_id: targetQuizId })
+        .in("id", list);
+      if (error) throw error;
+      const withImages = questions.filter((q) => list.includes(q.id) && q.image_url).map((q) => q.id);
+      if (withImages.length) {
+        try {
+          await relocateQuestionImages({ data: { questionIds: withImages, quizId: targetQuizId } });
+        } catch {
+          toast.warning("Đã chuyển câu hỏi nhưng chưa di chuyển được toàn bộ ảnh.");
+        }
+      }
+      await logAudit({
+        action: "update",
+        entity: "question",
+        entityLabel: `Chuyển ${list.length} câu hỏi sang cuộc thi khác`,
+        details: { count: list.length, from: quizId, to: targetQuizId },
+      });
+      return list.length;
+    },
+    onSuccess: (n) => {
+      toast.success(`Đã chuyển ${n} câu hỏi sang cuộc thi mới.`);
       setSelected(new Set());
       void qc.invalidateQueries();
     },
@@ -224,5 +425,18 @@ export function useQuestionMutations({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  return { save, remove, bulkRemove, bulkDifficulty, importFile };
+  return {
+    save,
+    remove,
+    archive,
+    duplicate,
+    reorder,
+    bulkRemove,
+    bulkDifficulty,
+    bulkPoints,
+    bulkTags,
+    bulkArchive,
+    bulkMoveQuiz,
+    importFile,
+  };
 }

@@ -1,34 +1,46 @@
-import { Loader2, Pencil, Trash2 } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowDown,
+  ArrowUp,
+  Copy,
+  Eye,
+  Pencil,
+  Timer,
+  Trash2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { questionImageSrc } from "@/lib/questionImage";
-import { DIFFICULTIES, type Difficulty } from "@/lib/questionKinds";
+import { DIFFICULTY_LABEL, KIND_LABEL, type Difficulty } from "@/lib/questionKinds";
 import { cn } from "@/lib/utils";
 
+import { BulkActionsBar, type BulkHandlers } from "./BulkActionsBar";
 import type { QuestionRow } from "./types";
 
-/** Danh sách câu hỏi kèm thao tác hàng loạt và phân trang. */
+/** Danh sách câu hỏi kèm thao tác hàng loạt, sắp thứ tự và phân trang. */
 export function QuestionList({
   paged,
   canEdit,
+  quizzes,
+  quizId,
   selected,
   allOnPageSelected,
   onToggleOne,
   onTogglePage,
   onClearSelection,
-  onBulkDifficulty,
-  onBulkRemove,
+  bulkHandlers,
   bulkRemoving,
+  bulkBusy,
   onEdit,
   onRemove,
+  onPreview,
+  onDuplicate,
+  onArchive,
+  onMove,
+  onSetOrder,
   pageSize,
   page,
   pageCount,
@@ -37,16 +49,23 @@ export function QuestionList({
 }: {
   paged: QuestionRow[];
   canEdit: boolean;
+  quizzes: { id: string; title: string }[];
+  quizId: string;
   selected: Set<string>;
   allOnPageSelected: boolean;
   onToggleOne: (id: string) => void;
   onTogglePage: () => void;
   onClearSelection: () => void;
-  onBulkDifficulty: (value: Difficulty) => void;
-  onBulkRemove: () => void;
+  bulkHandlers: BulkHandlers;
   bulkRemoving: boolean;
+  bulkBusy: boolean;
   onEdit: (row: QuestionRow) => void;
   onRemove: (row: QuestionRow) => void;
+  onPreview: (row: QuestionRow) => void;
+  onDuplicate: (row: QuestionRow) => void;
+  onArchive: (row: QuestionRow, archived: boolean) => void;
+  onMove: (row: QuestionRow, delta: -1 | 1) => void;
+  onSetOrder: (row: QuestionRow, value: number) => void;
   pageSize: number;
   page: number;
   pageCount: number;
@@ -55,60 +74,25 @@ export function QuestionList({
 }) {
   return (
     <div className="space-y-3">
-      {/* Thanh chọn nhiều + thao tác hàng loạt */}
       {canEdit ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-2.5">
-          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-            <Checkbox
-              checked={allOnPageSelected}
-              onCheckedChange={onTogglePage}
-              aria-label="Chọn cả trang"
-            />
-            Chọn cả trang
-          </label>
-          {selected.size > 0 ? (
-            <>
-              <span className="type-meta">Đã chọn {selected.size} câu</span>
-              <Select onValueChange={(v) => onBulkDifficulty(v as Difficulty)}>
-                <SelectTrigger className="h-8 w-40 rounded-full">
-                  <SelectValue placeholder="Đổi độ khó…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DIFFICULTIES.map((d) => (
-                    <SelectItem key={d.value} value={d.value}>
-                      {d.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-                disabled={bulkRemoving}
-                onClick={() => {
-                  if (confirm(`Xoá ${selected.size} câu hỏi đã chọn?`)) onBulkRemove();
-                }}
-              >
-                {bulkRemoving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Trash2 className="size-4" />
-                )}
-                Xoá đã chọn
-              </Button>
-              <Button size="sm" variant="ghost" className="rounded-full" onClick={onClearSelection}>
-                Bỏ chọn
-              </Button>
-            </>
-          ) : (
-            <span className="type-meta">Tích chọn để xoá hoặc đổi độ khó hàng loạt.</span>
-          )}
-        </div>
+        <BulkActionsBar
+          selectedCount={selected.size}
+          allOnPageSelected={allOnPageSelected}
+          onTogglePage={onTogglePage}
+          onClearSelection={onClearSelection}
+          quizzes={quizzes}
+          currentQuizId={quizId}
+          bulkRemoving={bulkRemoving}
+          busy={bulkBusy}
+          handlers={bulkHandlers}
+        />
       ) : null}
 
       {paged.map((q, idx) => (
-        <div key={q.id} className="card-elevated p-4">
+        <div
+          key={q.id}
+          className={cn("card-elevated p-4", q.is_archived && "opacity-70 ring-1 ring-warning/40")}
+        >
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-3">
               {canEdit ? (
@@ -119,21 +103,97 @@ export function QuestionList({
                   aria-label={`Chọn câu ${(page - 1) * pageSize + idx + 1}`}
                 />
               ) : null}
-              <p className="font-semibold leading-relaxed">
-                {(page - 1) * pageSize + idx + 1}. {q.question}
-              </p>
+              <div className="min-w-0">
+                <p className="font-semibold leading-relaxed">
+                  {(page - 1) * pageSize + idx + 1}. {q.question}
+                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <Badge>{KIND_LABEL[q.kind ?? "single"]}</Badge>
+                  <Badge>{DIFFICULTY_LABEL[(q.difficulty ?? "medium") as Difficulty]}</Badge>
+                  <Badge>{q.points ?? 1} điểm</Badge>
+                  {q.time_limit_seconds ? (
+                    <Badge tone="info">
+                      <Timer className="size-3" /> {q.time_limit_seconds}s
+                    </Badge>
+                  ) : null}
+                  {q.is_archived ? <Badge tone="warn">Đã lưu trữ</Badge> : null}
+                  {(q.tags ?? []).map((t) => (
+                    <Badge key={t}>#{t}</Badge>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className={cn("flex shrink-0 gap-1", !canEdit && "hidden")}>
+            <div className={cn("flex shrink-0 flex-wrap justify-end gap-1", !canEdit && "hidden")}>
+              {/* Sắp thứ tự: nút Lên/Xuống + ô nhập số thứ tự, lưu theo lô. */}
+              <div className="flex items-center gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Chuyển lên trên"
+                  disabled={idx === 0}
+                  onClick={() => onMove(q, -1)}
+                >
+                  <ArrowUp className="size-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Chuyển xuống dưới"
+                  disabled={idx === paged.length - 1}
+                  onClick={() => onMove(q, 1)}
+                >
+                  <ArrowDown className="size-4" />
+                </Button>
+                <Input
+                  type="number"
+                  min={0}
+                  defaultValue={q.order_index ?? 0}
+                  aria-label="Số thứ tự"
+                  className="h-8 w-16 rounded-full"
+                  onBlur={(e) => {
+                    const next = Math.max(0, Number(e.target.value) || 0);
+                    if (next !== (q.order_index ?? 0)) onSetOrder(q, next);
+                  }}
+                />
+              </div>
+              <Button size="icon" variant="ghost" aria-label="Xem trước" onClick={() => onPreview(q)}>
+                <Eye className="size-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label="Tạo bản sao"
+                onClick={() => onDuplicate(q)}
+              >
+                <Copy className="size-4" />
+              </Button>
               <Button size="icon" variant="ghost" aria-label="Sửa" onClick={() => onEdit(q)}>
                 <Pencil className="size-4" />
               </Button>
               <Button
                 size="icon"
                 variant="ghost"
-                aria-label="Xoá"
+                aria-label={q.is_archived ? "Đưa ra khỏi lưu trữ" : "Đưa vào lưu trữ"}
+                onClick={() => onArchive(q, !q.is_archived)}
+              >
+                {q.is_archived ? (
+                  <ArchiveRestore className="size-4" />
+                ) : (
+                  <Archive className="size-4" />
+                )}
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label="Xoá vĩnh viễn"
                 className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => {
-                  if (confirm("Xoá câu hỏi này?")) onRemove(q);
+                  if (
+                    confirm(
+                      "Xoá vĩnh viễn câu hỏi này? Nên dùng \"Đưa vào lưu trữ\" nếu chỉ muốn ngừng sử dụng.",
+                    )
+                  )
+                    onRemove(q);
                 }}
               >
                 <Trash2 className="size-4" />
@@ -195,5 +255,27 @@ export function QuestionList({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** Nhãn nhỏ mô tả thuộc tính câu hỏi. */
+function Badge({
+  children,
+  tone = "default",
+}: {
+  children: React.ReactNode;
+  tone?: "default" | "info" | "warn";
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+        tone === "info" && "bg-primary/10 text-primary",
+        tone === "warn" && "bg-warning/15 text-warning",
+        tone === "default" && "bg-secondary text-muted-foreground",
+      )}
+    >
+      {children}
+    </span>
   );
 }

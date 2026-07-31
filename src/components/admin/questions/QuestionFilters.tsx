@@ -10,13 +10,17 @@ import {
 } from "@/components/ui/select";
 import { DIFFICULTIES, type Difficulty } from "@/lib/questionKinds";
 
-/** Bộ lọc ngân hàng câu hỏi: cuộc thi, độ khó, từ khoá. */
+import type { ArchiveFilter } from "./types";
+
+/** Bộ lọc ngân hàng câu hỏi: cuộc thi, trạng thái lưu trữ, độ khó, từ khoá. */
 export function QuestionFilters({
   quizzes,
   quizId,
   onQuizChange,
   difficultyFilter,
   onDifficultyChange,
+  archiveFilter,
+  onArchiveChange,
   keyword,
   onKeywordChange,
 }: {
@@ -25,11 +29,13 @@ export function QuestionFilters({
   onQuizChange: (id: string) => void;
   difficultyFilter: "all" | Difficulty;
   onDifficultyChange: (value: "all" | Difficulty) => void;
+  archiveFilter: ArchiveFilter;
+  onArchiveChange: (value: ArchiveFilter) => void;
   keyword: string;
   onKeywordChange: (value: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row">
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
       <Select value={quizId} onValueChange={onQuizChange}>
         <SelectTrigger className="rounded-full sm:w-56">
           <SelectValue placeholder="Chọn cuộc thi" />
@@ -40,6 +46,16 @@ export function QuestionFilters({
               {q.title}
             </SelectItem>
           ))}
+        </SelectContent>
+      </Select>
+      <Select value={archiveFilter} onValueChange={(v) => onArchiveChange(v as ArchiveFilter)}>
+        <SelectTrigger className="rounded-full sm:w-40">
+          <SelectValue placeholder="Trạng thái" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="active">Đang dùng</SelectItem>
+          <SelectItem value="archived">Đã lưu trữ</SelectItem>
+          <SelectItem value="all">Tất cả</SelectItem>
         </SelectContent>
       </Select>
       <Select
