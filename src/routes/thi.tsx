@@ -78,11 +78,12 @@ function ExamPage() {
   });
 
   // Sau khi khôi phục xong, báo cho autosave biết máy chủ đã có sẵn những đáp án nào.
-  const ack = autosaveAckRef.current;
-  if (ack) {
+  useEffect(() => {
+    const ack = autosaveAckRef.current;
+    if (!ack) return;
     autosaveAckRef.current = null;
     markAcked(ack.answers, ack.seq);
-  }
+  }, [autosaveAckRef, markAcked, serverSeq]);
 
   const finish = useCallback(
     async (opts?: { disqualified?: boolean; reason?: string }) => {
