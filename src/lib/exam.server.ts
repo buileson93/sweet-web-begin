@@ -601,6 +601,8 @@ export async function getExamHistoryFor(input: {
   const questionById = new Map(((questionRows ?? []) as unknown as QuestionRow[]).map((q) => [q.id, q]));
   const resultBySession = new Map((resultRows ?? []).map((r) => [r.session_id, r]));
   const quizTitleById = new Map((quizRows ?? []).map((q) => [q.id, q.title]));
+  // Mức đạt (phần trăm) của từng cuộc thi để tính "Đạt/Chưa đạt" thống nhất với lúc chấm bài.
+  const passPercentById = new Map((quizRows ?? []).map((q) => [q.id, q.pass_percent]));
 
   const attempts: HistoryAttempt[] = list.map((s) => {
     const answers = (s.answers ?? {}) as Record<string, AnswerValue>;
