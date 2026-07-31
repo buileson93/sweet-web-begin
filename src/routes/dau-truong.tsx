@@ -419,7 +419,7 @@ function ArenaLobby() {
                 )}
               >
                 <span className="w-6 text-center font-bold text-muted-foreground">{i + 1}</span>
-                <AvatarBubble name={p.short_name} size="xs" live />
+                <AvatarBubble name={p.short_name ?? ""} size="xs" live />
                 <span className="min-w-0 flex-1 truncate font-medium">{p.short_name}</span>
                 <span className="text-xs text-muted-foreground">{p.unit}</span>
                 <span className="font-mono font-semibold text-primary">{p.elo}</span>
