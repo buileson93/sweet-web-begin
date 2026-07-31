@@ -21,6 +21,7 @@ import { Route as AuthenticatedNhatKyRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedQuanTriRouteImport } from './routes/_authenticated/quan-tri'
 import { Route as CuocThiQuizIdRouteImport } from './routes/cuoc-thi.$quizId'
 import { Route as ApiCronAutoSubmitRouteImport } from './routes/api/cron/auto-submit'
+import { Route as ApiPublicExamProgressRouteImport } from './routes/api/public/exam-progress'
 import { Route as ApiPublicAnhCauHoiSplatRouteImport } from './routes/api/public/anh-cau-hoi.$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -82,6 +83,11 @@ const ApiCronAutoSubmitRoute = ApiCronAutoSubmitRouteImport.update({
   path: '/api/cron/auto-submit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicExamProgressRoute = ApiPublicExamProgressRouteImport.update({
+  id: '/api/public/exam-progress',
+  path: '/api/public/exam-progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAnhCauHoiSplatRoute = ApiPublicAnhCauHoiSplatRouteImport.update({
   id: '/api/public/anh-cau-hoi/$',
   path: '/api/public/anh-cau-hoi/$',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
+  '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
 export interface FileRoutesByTo {
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
+  '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
 export interface FileRoutesById {
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/_authenticated/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
+  '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
 export interface FileRouteTypes {
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/api/cron/auto-submit'
+    | '/api/public/exam-progress'
     | '/api/public/anh-cau-hoi/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/api/cron/auto-submit'
+    | '/api/public/exam-progress'
     | '/api/public/anh-cau-hoi/$'
   id:
     | '__root__'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/_authenticated/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/api/cron/auto-submit'
+    | '/api/public/exam-progress'
     | '/api/public/anh-cau-hoi/$'
   fileRoutesById: FileRoutesById
 }
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   ThiRoute: typeof ThiRoute
   CuocThiQuizIdRoute: typeof CuocThiQuizIdRoute
   ApiCronAutoSubmitRoute: typeof ApiCronAutoSubmitRoute
+  ApiPublicExamProgressRoute: typeof ApiPublicExamProgressRoute
   ApiPublicAnhCauHoiSplatRoute: typeof ApiPublicAnhCauHoiSplatRoute
 }
 
@@ -277,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCronAutoSubmitRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/exam-progress': {
+      id: '/api/public/exam-progress'
+      path: '/api/public/exam-progress'
+      fullPath: '/api/public/exam-progress'
+      preLoaderRoute: typeof ApiPublicExamProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/anh-cau-hoi/$': {
       id: '/api/public/anh-cau-hoi/$'
       path: '/api/public/anh-cau-hoi/$'
@@ -312,6 +332,7 @@ const rootRouteChildren: RootRouteChildren = {
   ThiRoute: ThiRoute,
   CuocThiQuizIdRoute: CuocThiQuizIdRoute,
   ApiCronAutoSubmitRoute: ApiCronAutoSubmitRoute,
+  ApiPublicExamProgressRoute: ApiPublicExamProgressRoute,
   ApiPublicAnhCauHoiSplatRoute: ApiPublicAnhCauHoiSplatRoute,
 }
 export const routeTree = rootRouteImport

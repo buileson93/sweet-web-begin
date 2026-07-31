@@ -91,7 +91,7 @@ describe("mergeAnswers", () => {
   });
 
   it("hợp nhất các câu chỉ có ở một bên bất kể seq", () => {
-    const r = mergeAnswers({ "1": "a" }, { "2": [0, 1] }, 1, 9);
+    const r = mergeAnswers<unknown>({ "1": "a" }, { "2": [0, 1] }, 1, 9);
     expect(r.answers).toEqual({ "1": "a", "2": [0, 1] });
     expect(r.seq).toBe(9);
   });
