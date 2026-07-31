@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Loader2, LogOut, Swords, Wifi, WifiOff, X } from "lucide-react";
+import { Check, Dices, Link2, Loader2, LogOut, Swords, Wifi, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { DuelFighter } from "@/components/arena/DuelFighter";
