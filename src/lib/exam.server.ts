@@ -1,5 +1,13 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyEmployee } from "@/lib/employees.server";
+import {
+  DISQUALIFY_THRESHOLD_DEFAULT,
+  MAX_EVENTS_PER_SESSION,
+  isExamEventKind,
+  scoreEvent,
+  shouldDisqualify,
+  type ExamEventDetail,
+} from "@/lib/integrity";
 // Logic chấm điểm thuần tuý nằm ở @/lib/grading để test được mà không cần Supabase.
 import {
   PASS_PERCENT_DEFAULT,
