@@ -22,6 +22,29 @@ export function isPassed(score: number, total: number, passPercent: number): boo
   return percentOf(score, total) >= threshold;
 }
 
+/** Thời gian ân hạn khi nộp bài (ms): bù cho độ trễ mạng lúc bấm nộp đúng phút chót. */
+export const SUBMIT_GRACE_MS = 30_000;
+
+/**
+ * Tính mức độ nộp muộn so với thời điểm hết hạn.
+ * - `expired`: đã quá giờ làm bài.
+ * - `msLate`: số mili giây nộp muộn (0 nếu còn hạn).
+ * - `withinGrace`: còn nằm trong khoảng ân hạn SUBMIT_GRACE_MS.
+ * Mốc thời gian không hợp lệ được coi là ĐÃ HẾT HẠN và HẾT ân hạn (an toàn cho kỳ thi).
+ */
+export function lateness(
+  nowIso: string,
+  expiresAtIso: string,
+): { expired: boolean; msLate: number; withinGrace: boolean } {
+  const now = Date.parse(nowIso);
+  const expires = Date.parse(expiresAtIso);
+  if (Number.isNaN(now) || Number.isNaN(expires)) {
+    return { expired: true, msLate: Number.POSITIVE_INFINITY, withinGrace: false };
+  }
+  const msLate = Math.max(0, now - expires);
+  return { expired: msLate > 0, msLate, withinGrace: msLate <= SUBMIT_GRACE_MS };
+}
+
 export type QuestionRow = {
   id: string;
   question: string;

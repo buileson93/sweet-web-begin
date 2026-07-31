@@ -10,7 +10,9 @@ import {
   pairsOf,
   percentOf,
   isPassed,
+  lateness,
   pickByBlueprint,
+  SUBMIT_GRACE_MS,
   shuffle,
   type QuestionRow,
 } from "@/lib/grading";
@@ -265,12 +267,16 @@ export async function useFiftyFifty(input: {
 }): Promise<{ removed: number[] }> {
   const { data: session } = await supabaseAdmin
     .from("exam_sessions")
-    .select("id, quiz_id, question_ids, option_orders, status, submit_token, helpers")
+    .select("id, quiz_id, question_ids, option_orders, status, submit_token, helpers, expires_at")
     .eq("id", input.sessionId)
     .maybeSingle();
 
   if (!session || session.status !== "active" || session.submit_token !== input.submitToken) {
     throw new Error("Phiên thi không hợp lệ.");
+  }
+  // Khoá thời gian phía máy chủ: hết giờ thì không còn được dùng trợ giúp (không có ân hạn).
+  if (lateness(new Date().toISOString(), session.expires_at).expired) {
+    throw new Error("Đã hết giờ làm bài.");
   }
 
   const { data: quiz } = await supabaseAdmin
@@ -336,12 +342,16 @@ export async function checkExamAnswer(input: {
 }) {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
-    .select("id, question_ids, option_orders, status, submit_token, answers")
+    .select("id, question_ids, option_orders, status, submit_token, answers, expires_at")
     .eq("id", input.sessionId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!session || session.status !== "active" || session.submit_token !== input.submitToken) {
     throw new Error("Phiên thi không hợp lệ.");
+  }
+  // Hết giờ thì dừng ghi nhận đáp án ngay, không có ân hạn cho thao tác trong phòng thi.
+  if (lateness(new Date().toISOString(), session.expires_at).expired) {
+    throw new Error("Đã hết giờ làm bài.");
   }
   const qid = (session.question_ids as string[])[input.index];
   if (!qid) throw new Error("Câu hỏi không tồn tại.");
@@ -415,9 +425,14 @@ export async function submitExamSession(input: {
   }
 
   const replay = alreadyDone || session.status !== "active";
-  const answersToGrade = replay
-    ? ((session.answers as Record<string, AnswerValue>) ?? input.answers)
-    : { ...((session.answers as Record<string, AnswerValue>) ?? {}), ...input.answers };
+  const savedAnswers = (session.answers as Record<string, AnswerValue>) ?? {};
+  // Khoá thời gian phía máy chủ: quá expires_at + ân hạn thì KHÔNG tin đáp án gửi từ máy khách nữa,
+  // vì thí sinh có thể ngắt mạng, làm tiếp offline rồi mới nộp. Chỉ chấm những gì đã autosave
+  // lên máy chủ trước khi hết giờ. Trong ân hạn (độ trễ mạng lúc bấm nộp) thì vẫn gộp bình thường.
+  const late = lateness(new Date().toISOString(), session.expires_at);
+  const lateSubmit = !replay && late.expired && !late.withinGrace;
+  const answersToGrade =
+    replay || lateSubmit ? (savedAnswers ?? input.answers) : { ...savedAnswers, ...input.answers };
 
   // Tải song song để rút ngắn thời gian chấm bài.
   const [quizRes, rowsRes, historyRes, existingRes] = await Promise.all([
@@ -544,7 +559,8 @@ export async function submitExamSession(input: {
       passed,
       time_seconds: timeSeconds,
       disqualified,
-      disqualify_reason: input.disqualifyReason ?? null,
+      late_submit: lateSubmit,
+      disqualify_reason: lateSubmit ? "Nộp sau giờ" : (input.disqualifyReason ?? null),
       submitted_at: now.toISOString(),
     });
 
@@ -568,6 +584,47 @@ export async function submitExamSession(input: {
     improved: !disqualified && percentOf(finalScore, total) > previousBestPercent,
     review,
   };
+}
+
+/**
+ * Dọn các phiên thi bị bỏ dở: quá hạn hơn 1 phút mà vẫn đang "active".
+ * Chấm bằng ĐÁP ÁN ĐÃ LƯU trên máy chủ (submitExamSession sẽ tự bỏ qua đáp án máy khách vì đã quá ân hạn),
+ * ghi results, chuyển status sang "submitted" và cấp submit_token mới.
+ * An toàn khi chạy đồng thời: submitExamSession giành khoá bằng update ... eq("status", "active").
+ */
+export async function autoSubmitExpiredSessions(input?: {
+  limit?: number;
+}): Promise<{ found: number; submitted: number; failed: number }> {
+  const limit = Math.max(1, Math.min(100, input?.limit ?? 100));
+  const cutoff = new Date(Date.now() - 60_000).toISOString();
+
+  const { data, error } = await supabaseAdmin
+    .from("exam_sessions")
+    .select("id, submit_token")
+    .eq("status", "active")
+    .lt("expires_at", cutoff)
+    .order("expires_at", { ascending: true })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+
+  const sessions = data ?? [];
+  let submitted = 0;
+  let failed = 0;
+  for (const session of sessions) {
+    try {
+      await submitExamSession({
+        sessionId: session.id,
+        submitToken: session.submit_token,
+        answers: {},
+      });
+      submitted++;
+    } catch (err) {
+      // Một tiến trình khác có thể vừa chấm xong phiên này — bỏ qua, lần chạy sau sẽ không thấy nữa.
+      failed++;
+      console.error("autoSubmitExpiredSessions:", session.id, err);
+    }
+  }
+  return { found: sessions.length, submitted, failed };
 }
 
 export type HistoryQuestion = {
