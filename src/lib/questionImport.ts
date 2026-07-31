@@ -4,8 +4,8 @@
  */
 import type { CsvRow } from "@/lib/csv";
 import type { ParsedQuestion } from "@/lib/docxParse";
-import type { Difficulty, QuestionKind } from "@/lib/questionKinds";
-import { normalizeText, validateQuestionDraft } from "@/lib/questionValidation";
+import { normalizeText, type Difficulty, type QuestionKind } from "@/lib/questionKinds";
+import { validateQuestionDraft } from "@/lib/questionValidation";
 
 export type ImportDraft = {
   /** Dòng/thứ tự trong tệp nguồn, dùng để báo lỗi. */
