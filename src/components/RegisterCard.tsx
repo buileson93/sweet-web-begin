@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { CredentialInput } from "@/components/CredentialInput";
 import { HintTip } from "@/components/HintTip";
 import { AvatarCreatorDialog } from "@/components/player/AvatarCreatorDialog";
+import { AvatarBubble } from "@/components/player/AvatarBubble";
 
 import { IconTip } from "@/components/IconTip";
 import { Button } from "@/components/ui/button";
@@ -485,6 +486,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
 
         {verified ? (
           <div className="animate-pop flex items-start gap-2.5 rounded-xl border border-success/40 bg-success/10 p-3">
+            <AvatarBubble name={verified.fullName} size="sm" className="mt-0.5" />
             <BadgeCheck className="mt-0.5 size-4 shrink-0 text-success" />
             <div className="min-w-0 flex-1">
               <p className="truncate font-heading text-sm font-bold">{verified.fullName}</p>
