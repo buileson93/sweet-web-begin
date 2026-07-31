@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { readXlsxRows } from "@/lib/xlsxIo";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, Database, FileSpreadsheet, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -125,15 +126,7 @@ const TABLES: TableDef[] = [
 
 async function readFile(file: File): Promise<Row[]> {
   if (/\.(xlsx|xls)$/i.test(file.name)) {
-    const XLSX = await import("xlsx");
-    const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "", raw: false });
-    return raw.map((r) => {
-      const row: Row = {};
-      for (const [k, v] of Object.entries(r)) row[String(k).trim().toLowerCase()] = String(v ?? "").trim();
-      return row;
-    });
+    return (await readXlsxRows(await file.arrayBuffer())) as Row[];
   }
   return parseCsv(await file.text()).rows;
 }

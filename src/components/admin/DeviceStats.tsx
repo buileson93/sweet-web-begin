@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { downloadXlsx } from "@/lib/xlsxIo";
 import { useMemo, useState } from "react";
 import { Download, Inbox, Laptop, MonitorSmartphone, Smartphone, Tablet } from "lucide-react";
 import {
@@ -148,8 +149,6 @@ export function DeviceStats() {
   }, [rows]);
 
   async function exportExcel() {
-    const XLSX = await import("xlsx");
-    const wb = XLSX.utils.book_new();
     const sheets: [string, { name: string; count: number; visitors: number; percent: number }[]][] = [
       ["TrinhDuyet", byBrowser],
       ["HeDieuHanh", byOs],
@@ -158,14 +157,16 @@ export function DeviceStats() {
       ["TrangTruyCap", byPath],
       ["DiaChiIP", byIp],
     ];
-    for (const [name, data] of sheets) {
-      const ws = XLSX.utils.aoa_to_sheet([
-        ["Giá trị", "Lượt xem", "Phiên", "Tỉ lệ (%)"],
-        ...data.map((d) => [d.name, d.count, d.visitors, d.percent]),
-      ]);
-      XLSX.utils.book_append_sheet(wb, ws, name);
-    }
-    XLSX.writeFile(wb, "thong-ke-thiet-bi.xlsx");
+    await downloadXlsx(
+      sheets.map(([name, data]) => ({
+        name,
+        data: [
+          ["Giá trị", "Lượt xem", "Phiên", "Tỉ lệ (%)"],
+          ...data.map((d) => [d.name, d.count, d.visitors, d.percent]),
+        ] as (string | number)[][],
+      })),
+      "thong-ke-thiet-bi.xlsx",
+    );
   }
 
   return (

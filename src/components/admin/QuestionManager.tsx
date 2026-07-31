@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { downloadXlsx, readXlsxSheetData } from "@/lib/xlsxIo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Download,
@@ -320,11 +321,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
 
   const importFile = useMutation({
     mutationFn: async (file: File) => {
-      const XLSX = await import("xlsx");
-      const buffer = await file.arrayBuffer();
-      const wb = XLSX.read(buffer, { type: "array" });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, blankrows: false });
+      const rows = await readXlsxSheetData(await file.arrayBuffer());
       const body = rows.filter((r) => r.length >= 6 && String(r[0]).trim());
       const start = /câu hỏi|question/i.test(String(body[0]?.[0] ?? "")) ? 1 : 0;
       const payload = body.slice(start).map((r) => {
@@ -358,7 +355,6 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   });
 
   async function exportExcel() {
-    const XLSX = await import("xlsx");
     const rows = [
       ["Câu hỏi", "Phương án A", "Phương án B", "Phương án C", "Phương án D", "Đáp án"],
       ...questions.map((q) => [
@@ -367,10 +363,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         String.fromCharCode(65 + q.correct_index),
       ]),
     ];
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "CauHoi");
-    XLSX.writeFile(wb, "ngan-hang-cau-hoi.xlsx");
+    await downloadXlsx([{ name: "CauHoi", data: rows }], "ngan-hang-cau-hoi.xlsx");
   }
 
   const existingKeys = useMemo(
