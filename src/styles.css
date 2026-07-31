@@ -234,8 +234,23 @@
   margin-inline: auto;
   width: 100%;
   max-width: 72rem;
-  padding-inline: 1rem;
+  padding-inline: calc(1rem + env(safe-area-inset-left)) calc(1rem + env(safe-area-inset-right));
 }
+
+/* Vùng an toàn cho máy có tai thỏ / bo góc */
+@utility safe-x {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+@utility safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 
 @media (min-width: 640px) {
   .page-container {
