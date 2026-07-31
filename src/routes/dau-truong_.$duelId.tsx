@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Loader2, LogOut, Swords, Wifi, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { DuelFighter } from "@/components/arena/DuelFighter";
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -19,13 +20,13 @@ export const Route = createFileRoute("/dau-truong_/$duelId")({
   component: DuelRoom,
   head: () => ({
     meta: [
-      { title: "Phòng đấu 1vs1 — Hội thi trắc nghiệm VATM" },
+      { title: "Phòng so tài 1vs1 — Hội thi trắc nghiệm VATM" },
       {
         name: "description",
-        content: "Phòng thi đấu trực tiếp 1vs1: 10 câu tốc chiến, chấm điểm theo tốc độ và độ chính xác.",
+        content: "Phòng so tài trực tiếp 1vs1: ai trả lời đúng trước sẽ gây sát thương, bên nào hết máu trước thì thua.",
       },
-      { property: "og:title", content: "Phòng đấu 1vs1 — Hội thi trắc nghiệm VATM" },
-      { property: "og:description", content: "Trận tốc chiến 1vs1 đang diễn ra theo thời gian thực." },
+      { property: "og:title", content: "Phòng so tài 1vs1 — Hội thi trắc nghiệm VATM" },
+      { property: "og:description", content: "Ván so tài tốc chiến 1vs1 đang diễn ra theo thời gian thực." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -84,7 +85,7 @@ function DuelRoom() {
   return (
     <PageContainer className="space-y-4 py-4">
       <header className="flex items-center gap-3">
-        <ScoreChip player={me} mine />
+        <DuelFighter player={me} hpStart={state.hpStart} mine hitKey={me?.hp} />
         <div className="flex flex-col items-center text-xs text-muted-foreground">
           <Swords className="size-5 text-primary" />
           <span>
@@ -102,7 +103,7 @@ function DuelRoom() {
             )}
           </span>
         </div>
-        <ScoreChip player={foe} />
+        <DuelFighter player={foe} hpStart={state.hpStart} hitKey={foe?.hp} />
       </header>
 
       {state.status === "waiting" || state.status === "countdown" ? (
@@ -159,7 +160,7 @@ function DuelRoom() {
               void navigate({ to: "/dau-truong" });
             }}
           >
-            <LogOut className="mr-2 size-4" /> Rời trận
+            <LogOut className="mr-2 size-4" /> Rời ván so tài
           </Button>
         </div>
       ) : (
@@ -168,27 +169,6 @@ function DuelRoom() {
         </div>
       )}
     </PageContainer>
-  );
-}
-
-function ScoreChip({ player, mine }: { player?: DuelPlayerView; mine?: boolean }) {
-  return (
-    <div
-      className={cn(
-        "flex min-w-0 flex-1 items-center gap-2 rounded-2xl border bg-card p-2.5",
-        mine ? "border-primary/50" : "",
-        player?.left && "opacity-50",
-      )}
-    >
-      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-lg">
-        {player?.avatar || "🧑‍✈️"}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{player?.displayName ?? "Đang chờ…"}</p>
-        <p className="text-xs text-muted-foreground">Elo {player?.elo ?? "—"}</p>
-      </div>
-      <span className="font-mono text-xl font-bold text-primary">{player?.score ?? 0}</span>
-    </div>
   );
 }
 
@@ -216,7 +196,7 @@ function WaitingPanel({
   if (state.status === "countdown")
     return (
       <div className="grid place-items-center rounded-2xl border bg-card py-14">
-        <p className="text-sm text-muted-foreground">Trận bắt đầu sau</p>
+        <p className="text-sm text-muted-foreground">Ván so tài bắt đầu sau</p>
         <p className="animate-pulse text-7xl font-black text-primary">{left || "GO!"}</p>
       </div>
     );
@@ -306,19 +286,39 @@ function RoundPanel({
 function ResultPanel({ state, meId }: { state: DuelState; meId?: string }) {
   const r = state.lastResult!;
   const mine = r.lines.find((l) => l.employeeId === meId);
+  const foe = r.lines.find((l) => l.employeeId !== meId);
+  const dealt = mine?.damage ?? 0;
+  const taken = foe?.damage ?? 0;
+
   return (
     <div
       className={cn(
         "space-y-1 rounded-2xl border p-4",
-        mine?.isCorrect ? "border-emerald-500/50 bg-emerald-500/10" : "border-rose-500/50 bg-rose-500/10",
+        r.neutral
+          ? "border-border bg-muted/40"
+          : dealt > 0
+            ? "border-emerald-500/50 bg-emerald-500/10"
+            : "border-rose-500/50 bg-rose-500/10",
       )}
     >
       <p className="flex items-center gap-2 font-semibold">
-        {mine?.isCorrect ? <Check className="size-5 text-emerald-600" /> : <X className="size-5 text-rose-600" />}
-        {mine?.isCorrect ? `Chính xác! +${mine.points} điểm` : "Chưa chính xác"}
+        {mine?.isCorrect ? (
+          <Check className="size-5 text-emerald-600" />
+        ) : (
+          <X className="size-5 text-rose-600" />
+        )}
+        {r.neutral
+          ? "Cả hai cùng chưa đúng — không ai mất máu"
+          : dealt > 0
+            ? `${mine?.firstCorrect ? "Nhanh tay nhất! " : ""}Gây ${dealt} sát thương ⚔️`
+            : `Bị trừ ${taken} máu 💔`}
       </p>
       <p className="text-sm">
         Đáp án đúng: <strong>{r.correctText}</strong>
+      </p>
+      <p className="text-sm text-muted-foreground">
+        ❤️ Máu của bạn: <strong>{mine?.hp ?? state.hpStart}</strong> · Đối thủ:{" "}
+        <strong>{foe?.hp ?? state.hpStart}</strong>
       </p>
       {r.explanation ? <p className="text-sm text-muted-foreground">{r.explanation}</p> : null}
     </div>
@@ -335,14 +335,17 @@ function FinishPanel({ state, meId }: { state: DuelState; meId?: string }) {
       <p className="text-3xl font-black">
         {draw ? "🤝 Hoà!" : win ? "🏆 Chiến thắng!" : "😢 Thất bại"}
       </p>
+      <p className="text-sm text-muted-foreground">{f.reasonLabel}</p>
       <div className="grid gap-2 sm:grid-cols-2">
         {f.lines.map((l) => (
           <div key={l.employeeId} className="rounded-xl border bg-muted/40 p-3">
             <p className="truncate font-semibold">{l.displayName}</p>
-            <p className="font-mono text-2xl">{l.score}</p>
+            <p className="font-mono text-2xl">❤️ {l.hp}</p>
             <p className="text-xs text-muted-foreground">
-              Đúng {l.correct}/{state.roundCount} · Elo {l.eloBefore} →{" "}
-              <strong>{l.eloAfter}</strong>
+              ⚔️ {l.damageDealt} sát thương · Đúng {l.correct}/{state.roundCount}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Elo {l.eloBefore} → <strong>{l.eloAfter}</strong>
             </p>
           </div>
         ))}
@@ -356,6 +359,12 @@ function FinishPanel({ state, meId }: { state: DuelState; meId?: string }) {
       {!f.isRanked && f.rankedNote ? (
         <p className="text-xs text-muted-foreground">{f.rankedNote}</p>
       ) : null}
+      <Button asChild variant="outline" className="rounded-full">
+        <Link to="/dau-truong/xem-lai/$duelId" params={{ duelId: state.duelId }}>
+          Xem lại diễn biến
+        </Link>
+      </Button>
     </div>
   );
 }
+

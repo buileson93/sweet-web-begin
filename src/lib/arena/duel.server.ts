@@ -15,7 +15,13 @@ import {
   vnDayStart,
 } from "@/lib/arena/rules";
 import { pickBestRoom, type Candidate } from "@/lib/arena/matchmaking";
-import { decideWinner, eloDelta, roundPoints } from "@/lib/arena/scoring";
+import { eloDelta, roundPoints } from "@/lib/arena/scoring";
+import {
+  HP_START,
+  decideWinnerByHp,
+  resolveRoundCombat,
+  winReasonLabel,
+} from "@/lib/arena/combat";
 import { levelProgress } from "@/lib/xp";
 import { DUEL_COLUMNS, type DuelFinish, type DuelState, type RoundResult } from "@/lib/arena/types";
 import { QUESTION_COLUMNS } from "@/lib/exam/types";
@@ -44,6 +50,7 @@ type DuelRow = {
   round_count: number;
   seconds_per_round: number;
   is_ranked: boolean;
+  hp_start: number;
   current_round: number;
   round_served_at: string | null;
   question_ids: string[];
@@ -602,36 +609,75 @@ async function currentStreak(
   return streak;
 }
 
-/** Chốt một câu: công bố đáp án, cộng điểm, hẹn giờ sang câu tiếp. */
+/** Chốt một câu: công bố đáp án, tính sát thương, trừ máu, hẹn giờ sang câu tiếp. */
 export async function closeRound(duelId: string, roundIndex: number) {
   const duel = await loadDuel(duelId);
   if (duel.status !== "playing" || duel.current_round !== roundIndex) return;
 
   const q = await questionAt(duel, roundIndex);
   const players = await loadPlayers(duelId);
-  const { data: answers } = await supabaseAdmin
+  const { data: allAnswers } = await supabaseAdmin
     .from("duel_answers")
-    .select("employee_id, is_correct, ms_taken, points")
+    .select("id, employee_id, round_index, is_correct, ms_taken, points")
     .eq("duel_id", duelId)
-    .eq("round_index", roundIndex);
+    .lte("round_index", roundIndex);
+  const rows = allAnswers ?? [];
+  const answers = rows.filter((a) => a.round_index === roundIndex);
+
+  const limitMs = duel.seconds_per_round * 1000;
+  const combat = resolveRoundCombat(
+    players.map((p) => {
+      const a = answers.find((x) => x.employee_id === p.employee_id);
+      return {
+        employeeId: p.employee_id,
+        answered: !!a,
+        isCorrect: !!a?.is_correct,
+        msTaken: a?.ms_taken ?? limitMs,
+        streak: streakUpTo(rows, p.employee_id, roundIndex),
+        hpBefore: p.hp,
+      };
+    }),
+    limitMs,
+  );
+
+  // Ghi máu và sát thương xuống CSDL để máy chủ luôn là nguồn sự thật.
+  for (const l of combat.lines) {
+    const p = players.find((x) => x.employee_id === l.employeeId);
+    if (!p) continue;
+    await supabaseAdmin
+      .from("duel_players")
+      .update({ hp: l.hpAfter, damage_dealt: p.damage_dealt + l.damageDealt })
+      .eq("id", p.id);
+    const a = answers.find((x) => x.employee_id === l.employeeId);
+    if (a)
+      await supabaseAdmin
+        .from("duel_answers")
+        .update({ damage: l.damageDealt, first_correct: l.firstCorrect })
+        .eq("id", a.id);
+  }
 
   const result: RoundResult = {
     roundIndex,
     correctText: q ? correctTextOf(q.row) : "",
     explanation: q?.row.explanation ?? "",
+    neutral: combat.neutral,
     lines: players.map((p) => {
-      const a = (answers ?? []).find((x) => x.employee_id === p.employee_id);
+      const a = answers.find((x) => x.employee_id === p.employee_id);
+      const c = combat.lines.find((x) => x.employeeId === p.employee_id);
       return {
         employeeId: p.employee_id,
         isCorrect: a?.is_correct ?? false,
         msTaken: a?.ms_taken ?? 0,
         points: a?.points ?? 0,
         score: p.score,
+        damage: c?.damageDealt ?? 0,
+        hp: c?.hpAfter ?? p.hp,
+        firstCorrect: c?.firstCorrect ?? false,
       };
     }),
   };
 
-  const isLast = roundIndex + 1 >= duel.round_count;
+  const isLast = roundIndex + 1 >= duel.round_count || !!combat.knockedOutId;
   await supabaseAdmin
     .from("duels")
     .update({ last_result: result as never, version: duel.version + 1 })
@@ -639,8 +685,8 @@ export async function closeRound(duelId: string, roundIndex: number) {
   await broadcastDuel(duelId, "round.result", result);
 
   if (isLast) {
-    // Chờ đúng thời gian hiện đáp án rồi chốt trận; nếu tiến trình bị cắt,
-    // watchdog (tickDuels) vẫn kết thúc trận này.
+    // Chờ đúng thời gian hiện đáp án rồi chốt ván; nếu tiến trình bị cắt,
+    // watchdog (tickDuels) vẫn kết thúc ván này.
     await new Promise((r) => setTimeout(r, REVEAL_MS));
     await finishDuel(duelId);
   } else {
@@ -648,6 +694,22 @@ export async function closeRound(duelId: string, roundIndex: number) {
     await serveRound(next, roundIndex + 1, REVEAL_MS);
   }
 }
+
+/** Chuỗi câu đúng liên tiếp của một người, tính đến hết câu `roundIndex`. */
+function streakUpTo(
+  rows: { employee_id: string; round_index: number; is_correct: boolean }[],
+  employeeId: string,
+  roundIndex: number,
+) {
+  let streak = 0;
+  for (let i = roundIndex; i >= 0; i -= 1) {
+    const row = rows.find((r) => r.employee_id === employeeId && r.round_index === i);
+    if (!row || !row.is_correct) break;
+    streak += 1;
+  }
+  return streak;
+}
+
 
 
 /** Hết đếm ngược: chuyển sang thi đấu và phát câu đầu tiên. */
@@ -699,14 +761,15 @@ export async function finishDuel(duelId: string, technicalLoserId?: string) {
 
   const lines = players.map((p) => ({
     employeeId: p.employee_id,
-    score: p.score,
+    hp: p.hp,
+    damageDealt: p.damage_dealt,
     correct: p.correct,
     totalMs: p.total_ms,
   }));
-  let decision = decideWinner(lines);
+  let decision = decideWinnerByHp(lines);
   if (technicalLoserId) {
     const winner = players.find((p) => p.employee_id !== technicalLoserId);
-    decision = { winnerId: winner?.employee_id ?? null, reason: "score" };
+    decision = { winnerId: winner?.employee_id ?? null, reason: "ko" };
   }
 
   const profiles = await Promise.all(players.map((p) => mustPlayer(p.employee_id)));
@@ -767,6 +830,8 @@ export async function finishDuel(duelId: string, technicalLoserId?: string) {
       displayName: p.display_name,
       score: p.score,
       correct: p.correct,
+      hp: p.hp,
+      damageDealt: p.damage_dealt,
       eloBefore: me.elo,
       eloAfter,
       coins,
@@ -779,6 +844,7 @@ export async function finishDuel(duelId: string, technicalLoserId?: string) {
   const finish: DuelFinish = {
     winnerEmployeeId: decision.winnerId,
     reason: decision.reason,
+    reasonLabel: technicalLoserId ? "Đối thủ rời ván so tài" : winReasonLabel(decision.reason),
     isRanked: duel.is_ranked,
     rankedNote: duel.note ?? "",
     lines: finishLines,
@@ -879,10 +945,14 @@ export async function getDuelState(input: {
     .eq("duel_id", duel.id)
     .eq("round_index", duel.current_round);
 
-  const profiles = await supabaseAdmin
-    .from("players")
-    .select("employee_id, elo, avatar")
-    .in("employee_id", players.map((p) => p.employee_id));
+  const ids = players.map((p) => p.employee_id);
+  const [profiles, xpRows] = await Promise.all([
+    supabaseAdmin.from("players").select("employee_id, elo, avatar").in("employee_id", ids),
+    supabaseAdmin
+      .from("player_profiles")
+      .select("employee_id, xp, avatar_url, avatar_image")
+      .in("employee_id", ids),
+  ]);
 
   let question = null;
   if (duel.status === "playing") {
@@ -912,6 +982,7 @@ export async function getDuelState(input: {
     roundCount: duel.round_count,
     secondsPerRound: duel.seconds_per_round,
     isRanked: duel.is_ranked,
+    hpStart: duel.hp_start ?? HP_START,
     currentRound: duel.current_round,
     roundServedAt: duel.round_served_at,
     startedAt: duel.started_at,
@@ -919,6 +990,7 @@ export async function getDuelState(input: {
     quizTitle,
     players: players.map((p) => {
       const prof = (profiles.data ?? []).find((x) => x.employee_id === p.employee_id);
+      const xp = (xpRows.data ?? []).find((x) => x.employee_id === p.employee_id);
       return {
         employeeId: p.employee_id,
         displayName: p.display_name,
@@ -931,6 +1003,11 @@ export async function getDuelState(input: {
         left: !!p.left_at,
         answered: (answers ?? []).some((a) => a.employee_id === p.employee_id),
         avatar: prof?.avatar ?? "",
+        hp: p.hp,
+        damageDealt: p.damage_dealt,
+        avatarUrl: String(xp?.avatar_url ?? ""),
+        avatarImage: String(xp?.avatar_image ?? ""),
+        level: levelProgress(Number(xp?.xp ?? 0)).level,
       };
     }),
     question,

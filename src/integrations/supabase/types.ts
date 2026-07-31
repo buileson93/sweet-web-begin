@@ -200,8 +200,10 @@ export type Database = {
       duel_answers: {
         Row: {
           created_at: string
+          damage: number
           duel_id: string
           employee_id: string
+          first_correct: boolean
           id: string
           is_correct: boolean
           ms_taken: number
@@ -211,8 +213,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          damage?: number
           duel_id: string
           employee_id: string
+          first_correct?: boolean
           id?: string
           is_correct?: boolean
           ms_taken?: number
@@ -222,8 +226,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          damage?: number
           duel_id?: string
           employee_id?: string
+          first_correct?: boolean
           id?: string
           is_correct?: boolean
           ms_taken?: number
@@ -306,6 +312,7 @@ export type Database = {
       duel_players: {
         Row: {
           correct: number
+          damage_dealt: number
           device_hash: string
           display_name: string
           duel_id: string
@@ -313,6 +320,7 @@ export type Database = {
           elo_after: number | null
           elo_before: number
           employee_id: string
+          hp: number
           id: string
           joined_at: string
           left_at: string | null
@@ -325,6 +333,7 @@ export type Database = {
         }
         Insert: {
           correct?: number
+          damage_dealt?: number
           device_hash?: string
           display_name?: string
           duel_id: string
@@ -332,6 +341,7 @@ export type Database = {
           elo_after?: number | null
           elo_before?: number
           employee_id: string
+          hp?: number
           id?: string
           joined_at?: string
           left_at?: string | null
@@ -344,6 +354,7 @@ export type Database = {
         }
         Update: {
           correct?: number
+          damage_dealt?: number
           device_hash?: string
           display_name?: string
           duel_id?: string
@@ -351,6 +362,7 @@ export type Database = {
           elo_after?: number | null
           elo_before?: number
           employee_id?: string
+          hp?: number
           id?: string
           joined_at?: string
           left_at?: string | null
@@ -384,6 +396,7 @@ export type Database = {
           created_by: string | null
           current_round: number
           finished_at: string | null
+          hp_start: number
           id: string
           is_ranked: boolean
           last_result: Json | null
@@ -404,6 +417,7 @@ export type Database = {
           created_by?: string | null
           current_round?: number
           finished_at?: string | null
+          hp_start?: number
           id?: string
           is_ranked?: boolean
           last_result?: Json | null
@@ -424,6 +438,7 @@ export type Database = {
           created_by?: string | null
           current_round?: number
           finished_at?: string | null
+          hp_start?: number
           id?: string
           is_ranked?: boolean
           last_result?: Json | null
@@ -725,6 +740,7 @@ export type Database = {
           elo: number
           employee_id: string
           games: number
+          last_seen_at: string
           losses: number
           quests: Json
           ranked_locked_until: string | null
@@ -745,6 +761,7 @@ export type Database = {
           elo?: number
           employee_id: string
           games?: number
+          last_seen_at?: string
           losses?: number
           quests?: Json
           ranked_locked_until?: string | null
@@ -765,6 +782,7 @@ export type Database = {
           elo?: number
           employee_id?: string
           games?: number
+          last_seen_at?: string
           losses?: number
           quests?: Json
           ranked_locked_until?: string | null

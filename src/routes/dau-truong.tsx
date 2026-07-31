@@ -1,7 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Coins, Flame, Loader2, Search, Send, Swords, Trophy, User, X, Zap } from "lucide-react";
+import {
+  BarChart3,
+  Coins,
+  Flame,
+  Loader2,
+  LogOut,
+  PlayCircle,
+  Search,
+  Send,
+  Swords,
+  Trophy,
+  User,
+  Users,
+  X,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { CredentialInput } from "@/components/CredentialInput";
@@ -12,8 +27,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
 import {
+  arenaEndActive,
   arenaHome,
   arenaInvite,
+  arenaPresence,
   arenaQuickMatch,
   arenaRespondInvite,
   arenaSearchOpponents,
@@ -23,6 +40,7 @@ import { clearArenaToken, getArenaToken, saveArenaToken } from "@/lib/arena/clie
 import type { ArenaProfile } from "@/lib/arena/types";
 import { getDeviceId } from "@/lib/deviceId";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/dau-truong")({
   component: ArenaLobby,
@@ -46,6 +64,7 @@ export const Route = createFileRoute("/dau-truong")({
 });
 
 type Home = Awaited<ReturnType<typeof arenaHome>>;
+type Presence = Awaited<ReturnType<typeof arenaPresence>>;
 
 function ArenaLobby() {
   const navigate = useNavigate();
@@ -53,14 +72,19 @@ function ArenaLobby() {
   const loadHome = useServerFn(arenaHome);
   const quickMatch = useServerFn(arenaQuickMatch);
   const respond = useServerFn(arenaRespondInvite);
+  const beat = useServerFn(arenaPresence);
+  const endActive = useServerFn(arenaEndActive);
 
   const [token, setToken] = useState("");
   const [home, setHome] = useState<Home | null>(null);
+  const [presence, setPresence] = useState<Presence | null>(null);
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
   const [busy, setBusy] = useState(false);
+  const [ending, setEnding] = useState(false);
   const [searching, setSearching] = useState(false);
   const waitedRef = useRef(0);
+
 
   useEffect(() => {
     const saved = getArenaToken();
@@ -88,6 +112,27 @@ function ArenaLobby() {
       window.clearInterval(id);
     };
   }, [token, loadHome]);
+
+  // Nhịp tim 20 giây: máy chủ xác nhận ai đang trực tuyến, đồng thời báo ván đang dang dở.
+  useEffect(() => {
+    if (!token) return;
+    let alive = true;
+    const ping = async () => {
+      try {
+        const res = await beat({ data: { token } });
+        if (alive) setPresence(res);
+      } catch {
+        /* bỏ qua nhịp lỗi, lần sau thử lại */
+      }
+    };
+    void ping();
+    const id = window.setInterval(ping, 20_000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [token, beat]);
+
 
   // Tìm trận: hỏi lại mỗi 3 giây, càng chờ lâu càng nới rộng khoảng Elo.
   useEffect(() => {
@@ -176,16 +221,63 @@ function ArenaLobby() {
     <PageContainer className="space-y-6 py-6">
       <PageHero
         title="Đấu trường 1vs1"
-        description="Thách đấu đồng nghiệp, leo hạng Elo và sưu tầm huy hiệu."
+        description="So tài cùng đồng nghiệp, leo hạng Elo và sưu tầm huy hiệu."
+        aside={
+          <Button asChild variant="outline" className="rounded-full">
+            <Link to="/dau-truong/thong-ke">
+              <BarChart3 className="mr-2 size-4" /> Thống kê của tôi
+            </Link>
+          </Button>
+        }
       />
 
       {profile ? <ProfileStrip profile={profile} /> : null}
+
+      {presence?.active ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-400/60 bg-amber-500/10 p-4">
+          <PlayCircle className="size-5 text-amber-600" />
+          <p className="min-w-0 flex-1 text-sm font-medium">
+            Bạn đang trong một ván so tài với {presence.active.opponent}.
+          </p>
+          <Button
+            size="sm"
+            onClick={() =>
+              void navigate({
+                to: "/dau-truong/$duelId",
+                params: { duelId: presence.active!.duelId },
+              })
+            }
+          >
+            Vào tiếp
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={ending}
+            onClick={async () => {
+              setEnding(true);
+              try {
+                await endActive({ data: { token } });
+                setPresence({ ...presence, active: null });
+                toast.success("Đã kết thúc ván so tài dang dở.");
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Không kết thúc được.");
+              } finally {
+                setEnding(false);
+              }
+            }}
+          >
+            {ending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <LogOut className="mr-2 size-4" />}
+            Kết thúc
+          </Button>
+        </div>
+      ) : null}
 
       <div className="flex flex-col items-center gap-3">
         {searching ? (
           <div className="flex flex-col items-center gap-2">
             <Button size="lg" variant="secondary" onClick={() => setSearching(false)}>
-              <X className="mr-2 size-4" /> Huỷ tìm trận
+              <X className="mr-2 size-4" /> Huỷ tìm đối thủ
             </Button>
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" /> Đang tìm đối thủ cùng trình độ…
@@ -195,15 +287,23 @@ function ArenaLobby() {
           <Button
             size="lg"
             className="h-14 px-10 text-lg shadow-lg"
+            disabled={Boolean(presence?.active)}
             onClick={() => {
               waitedRef.current = 0;
               setSearching(true);
             }}
           >
-            <Zap className="mr-2 size-5" /> Tìm trận nhanh
+            <Zap className="mr-2 size-5" /> So tài nhanh
           </Button>
         )}
       </div>
+
+      <OnlineList
+        token={token}
+        players={presence?.online ?? []}
+        disabled={Boolean(presence?.active)}
+      />
+
 
       {home?.invites.incoming.length ? (
         <section className="space-y-2">
@@ -274,7 +374,7 @@ function ArenaLobby() {
         </section>
 
         <section className="space-y-2">
-          <SectionHeading title="Trận gần đây" />
+          <SectionHeading title="So tài gần đây" />
           <ul className="space-y-1.5">
             {(home?.history ?? []).map((h) => (
               <li
@@ -306,11 +406,16 @@ function ArenaLobby() {
                   {h.eloDelta >= 0 ? "+" : ""}
                   {h.eloDelta}
                 </span>
+                <Button asChild size="sm" variant="ghost" className="shrink-0">
+                  <Link to="/dau-truong/xem-lai/$duelId" params={{ duelId: h.duelId }}>
+                    Xem lại
+                  </Link>
+                </Button>
               </li>
             ))}
             {!home?.history.length ? (
               <li className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
-                Chưa có trận nào.
+                Chưa có ván so tài nào.
               </li>
             ) : null}
           </ul>
@@ -319,6 +424,95 @@ function ArenaLobby() {
     </PageContainer>
   );
 }
+
+/** Danh sách đồng nghiệp đang trực tuyến (máy chủ xác nhận qua nhịp tim). */
+function OnlineList({
+  token,
+  players,
+  disabled,
+}: {
+  token: string;
+  players: Awaited<ReturnType<typeof arenaPresence>>["online"];
+  disabled: boolean;
+}) {
+  const runInvite = useServerFn(arenaInvite);
+  const [sending, setSending] = useState("");
+
+  return (
+    <section className="space-y-2">
+      <SectionHeading
+        title={
+          <span className="flex items-center gap-2">
+            <Users className="size-4 text-primary" /> Đang trực tuyến ({players.length})
+          </span>
+        }
+      />
+      <ul className="grid gap-1.5 sm:grid-cols-2">
+        {players.map((p) => (
+          <li
+            key={p.employeeId}
+            className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2"
+          >
+            <span className="relative">
+              <AvatarBubble
+                name={p.displayName}
+                avatarUrl={p.avatarUrl}
+                avatarImage={p.avatarImage}
+                level={p.level}
+                size="sm"
+              />
+              <span
+                className={cn(
+                  "absolute -right-0.5 -top-0.5 size-3 rounded-full ring-2 ring-card",
+                  p.busy ? "bg-amber-500" : "bg-emerald-500",
+                )}
+                title={p.busy ? "Đang bận so tài" : "Sẵn sàng"}
+              />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">{p.displayName}</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {p.title} • Elo {p.elo}
+              </span>
+            </span>
+            <Button
+              size="sm"
+              variant={p.busy ? "outline" : "default"}
+              className="shrink-0 rounded-full"
+              disabled={disabled || p.busy || sending === p.employeeId}
+              onClick={async () => {
+                setSending(p.employeeId);
+                try {
+                  await runInvite({
+                    data: { token, toEmployeeId: p.employeeId, deviceHash: getDeviceId() },
+                  });
+                  toast.success(`Đã mời ${p.displayName} so tài.`);
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Không gửi được lời mời.");
+                } finally {
+                  setSending("");
+                }
+              }}
+            >
+              {sending === p.employeeId ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Swords className="mr-1 size-4" />
+              )}
+              {p.busy ? "Đang bận" : "So tài"}
+            </Button>
+          </li>
+        ))}
+        {!players.length ? (
+          <li className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground sm:col-span-2">
+            Chưa có đồng nghiệp nào trực tuyến. Hãy dùng “So tài nhanh” để ghép cặp tự động.
+          </li>
+        ) : null}
+      </ul>
+    </section>
+  );
+}
+
 
 /** Avatar 2D của chính mình trong đấu trường (đồng bộ với nhân vật đã tạo). */
 function ArenaSelfAvatar({ name, fallback }: { name: string; fallback?: string }) {

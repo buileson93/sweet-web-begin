@@ -177,3 +177,48 @@ export const arenaLeaderboardPublic = createServerFn({ method: "GET" }).handler(
   const { getArenaLeaderboard } = await import("@/lib/arena/lobby.server");
   return getArenaLeaderboard(100);
 });
+
+/** Nhịp tim trực tuyến + danh sách đồng nghiệp đang online + ván so tài đang dang dở. */
+export const arenaPresence = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ token }).parse(input))
+  .handler(async ({ data }) => {
+    const employeeId = await auth(data.token);
+    const { touchPresence, listOnlinePlayers, getActiveDuel } = await import(
+      "@/lib/arena/presence.server"
+    );
+    await touchPresence(employeeId);
+    const [online, active] = await Promise.all([
+      listOnlinePlayers({ employeeId }),
+      getActiveDuel(employeeId),
+    ]);
+    return { online, active };
+  });
+
+/** Kết thúc dứt điểm ván so tài đang dang dở (thoát trạng thái kẹt). */
+export const arenaEndActive = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ token }).parse(input))
+  .handler(async ({ data }) => {
+    const employeeId = await auth(data.token);
+    const { endActiveDuel } = await import("@/lib/arena/presence.server");
+    return endActiveDuel(employeeId);
+  });
+
+/** Thống kê cá nhân: biến động Elo, chuỗi thắng thua, lịch sử so tài. */
+export const arenaMyStats = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ token }).parse(input))
+  .handler(async ({ data }) => {
+    const employeeId = await auth(data.token);
+    const { getPlayerStats } = await import("@/lib/arena/stats.server");
+    return getPlayerStats(employeeId);
+  });
+
+/** Xem lại diễn biến một ván so tài đã kết thúc. */
+export const arenaReplay = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ token, duelId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await auth(data.token);
+    const { getDuelReplay } = await import("@/lib/arena/stats.server");
+    return getDuelReplay(data.duelId);
+  });

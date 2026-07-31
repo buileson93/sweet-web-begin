@@ -23,6 +23,13 @@ export type DuelPlayerView = {
   left: boolean;
   answered: boolean;
   avatar: string;
+  /** Máu còn lại trong ván so tài. */
+  hp: number;
+  /** Tổng sát thương đã gây ra. */
+  damageDealt: number;
+  avatarUrl: string;
+  avatarImage: string;
+  level: number;
 };
 
 export type DuelState = {
@@ -34,6 +41,8 @@ export type DuelState = {
   roundCount: number;
   secondsPerRound: number;
   isRanked: boolean;
+  /** Máu khởi điểm của mỗi bên. */
+  hpStart: number;
   currentRound: number;
   roundServedAt: string | null;
   startedAt: string | null;
@@ -51,18 +60,26 @@ export type RoundResult = {
   roundIndex: number;
   correctText: string;
   explanation: string;
+  /** Không ai gây sát thương (cả hai cùng sai). */
+  neutral: boolean;
   lines: {
     employeeId: string;
     isCorrect: boolean;
     msTaken: number;
     points: number;
     score: number;
+    /** Sát thương gây ra ở câu này. */
+    damage: number;
+    /** Máu còn lại sau câu này. */
+    hp: number;
+    firstCorrect: boolean;
   }[];
 };
 
 export type DuelFinish = {
   winnerEmployeeId: string | null;
-  reason: "score" | "correct" | "speed" | "draw";
+  reason: "ko" | "hp" | "damage" | "score" | "correct" | "speed" | "draw";
+  reasonLabel: string;
   isRanked: boolean;
   rankedNote: string;
   lines: {
@@ -70,6 +87,8 @@ export type DuelFinish = {
     displayName: string;
     score: number;
     correct: number;
+    hp: number;
+    damageDealt: number;
     eloBefore: number;
     eloAfter: number;
     coins: number;
@@ -97,4 +116,4 @@ export type ArenaProfile = {
 };
 
 export const DUEL_COLUMNS =
-  "id, quiz_id, status, round_count, seconds_per_round, is_ranked, current_round, round_served_at, question_ids, option_orders, version, started_at, finished_at, winner_employee_id, note";
+  "id, quiz_id, status, round_count, seconds_per_round, is_ranked, hp_start, current_round, round_served_at, question_ids, option_orders, version, started_at, finished_at, winner_employee_id, note";
