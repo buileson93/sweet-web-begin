@@ -103,7 +103,9 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
       ? `Cuộc thi này ${selectedStatus === "upcoming" ? "chưa đến giờ mở" : selectedStatus === "closed" ? "đã kết thúc" : "đang tạm dừng"}.`
       : !verified
         ? "Xác thực bằng họ tên kèm 4 số cuối điện thoại hoặc ngày sinh."
-        : "Sẵn sàng vào phòng thi.";
+        : needCommit && !committed
+          ? "Vui lòng đọc nội quy và tích ô cam kết."
+          : "Sẵn sàng vào phòng thi.";
 
   function resetVerified() {
     if (verified) setVerified(null);
