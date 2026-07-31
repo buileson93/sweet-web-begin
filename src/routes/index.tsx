@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowRight, BookOpen, CalendarPlus, Plane, Timer, Trophy } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { CountdownBadge } from "@/components/CountdownBadge";
 import { Podium } from "@/components/Podium";
 import { ProductTour, type TourStep } from "@/components/ProductTour";
 import { RegisterCard } from "@/components/RegisterCard";
@@ -64,7 +65,7 @@ function HomePage() {
       const { data, error } = await supabase
         .from("quizzes")
         .select("id, title, description, start_time, end_time, is_active, question_count, duration_minutes, intro_markdown")
-        .eq("status", "published")
+        .neq("status", "draft")
         .order("start_time", { ascending: true });
       if (error) throw error;
       return data;
@@ -120,10 +121,12 @@ function HomePage() {
               className="pointer-events-none absolute -top-1 right-0 grid size-20 place-items-center sm:size-28 lg:right-6"
               aria-hidden
             >
-              <BookOpen className="animate-book-flip size-7 text-primary/70 drop-shadow-sm sm:size-9" />
-              <span className="animate-plane-flyby absolute grid place-items-center">
-                <Plane className="size-4 -rotate-[135deg] text-accent drop-shadow-sm sm:size-5" />
+              <span className="plane-orbit">
+                <span className="plane-orbit-craft">
+                  <Plane className="size-4 text-accent drop-shadow-sm sm:size-5" strokeWidth={2.2} />
+                </span>
               </span>
+              <BookOpen className="animate-book-flip relative size-7 text-primary/70 drop-shadow-sm sm:size-9" />
             </div>
 
             <span className="type-eyebrow inline-flex max-w-[calc(100%-5.5rem)] items-center gap-2 rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
@@ -322,8 +325,11 @@ function HomePage() {
                       {q.title}
                     </h3>
                     <span className="relative mt-4 flex items-center justify-between border-t border-border pt-3">
-                      <span className="type-meta">
-                        {q.question_count} câu • {formatDateTime(q.start_time)}
+                      <span className="min-w-0">
+                        <span className="type-meta block truncate">
+                          {q.question_count} câu • {formatDateTime(q.start_time)}
+                        </span>
+                        {st === "upcoming" && <CountdownBadge target={q.start_time} className="mt-1.5" />}
                       </span>
                       <span className="grid size-9 place-items-center rounded-xl bg-secondary text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground">
                         <ArrowRight className="size-4" />
