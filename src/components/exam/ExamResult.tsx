@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 
 import { Celebration } from "@/components/Celebration";
+import { LevelBar } from "@/components/player/LevelBar";
+
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeResults } from "@/hooks/useRealtimeResults";
