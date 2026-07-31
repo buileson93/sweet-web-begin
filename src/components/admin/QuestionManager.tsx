@@ -10,7 +10,12 @@ import { CsvImportDialog } from "@/components/admin/CsvImportDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { normalizeKey } from "@/lib/csv";
-import { formatBytes, uploadQuestionImage } from "@/lib/questionImage";
+import {
+  SOFT_WARN_BYTES,
+  extractImageFromClipboard,
+  formatBytes,
+  uploadQuestionImage,
+} from "@/lib/questionImage";
 import type { Difficulty } from "@/lib/questionKinds";
 
 import { QuestionFilters } from "./questions/QuestionFilters";
@@ -22,7 +27,10 @@ import { emptyForm, type CsvQuestion, type QuestionRow } from "./questions/types
 export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadStage, setUploadStage] = useState<"idle" | "compressing" | "uploading">("idle");
+  const [uploadInfo, setUploadInfo] = useState<string | null>(null);
+  // Khoá chống trùng: ref cập nhật đồng bộ nên chặn được hai sự kiện liên tiếp.
+  const uploadingRef = useRef(false);
   const [quizId, setQuizId] = useState("");
   const [keyword, setKeyword] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | Difficulty>("all");
