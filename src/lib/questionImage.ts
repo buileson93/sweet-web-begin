@@ -1,11 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 
 import {
+  tempImagePath,
+} from "@/lib/questionImagePaths";
+import {
   HEIC_MESSAGE,
   isHeicFile,
   planResize,
   validateImageInput,
 } from "@/lib/imageProcessing";
+
+export { isTempImagePath, tempImagePath } from "@/lib/questionImagePaths";
 
 export {
   extractImageFromClipboard,
@@ -112,7 +117,9 @@ export async function uploadQuestionImage(
   onStage?.("compressing");
   const { blob, width, height, mime, ext } = await compressImage(file);
   onStage?.("uploading");
-  const path = `${quizId}/${crypto.randomUUID()}.${ext}`;
+  // Tải lên thư mục tạm; chỉ khi lưu câu hỏi thành công ảnh mới được chuyển
+  // sang thư mục chính thức. Ảnh tạm bị dọn tự động sau 24 giờ.
+  const path = tempImagePath(quizId, ext, crypto.randomUUID());
   const { error } = await supabase.storage
     .from(QUESTION_IMAGE_BUCKET)
     .upload(path, blob, { contentType: mime, cacheControl: "31536000", upsert: false });

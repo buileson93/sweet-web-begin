@@ -21,6 +21,7 @@ import { Route as AuthenticatedNhatKyRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedQuanTriRouteImport } from './routes/_authenticated/quan-tri'
 import { Route as CuocThiQuizIdRouteImport } from './routes/cuoc-thi.$quizId'
 import { Route as ApiCronAutoSubmitRouteImport } from './routes/api/cron/auto-submit'
+import { Route as ApiCronDonAnhRouteImport } from './routes/api/cron/don-anh'
 import { Route as ApiPublicExamProgressRouteImport } from './routes/api/public/exam-progress'
 import { Route as ApiPublicAnhCauHoiSplatRouteImport } from './routes/api/public/anh-cau-hoi.$'
 
@@ -83,6 +84,11 @@ const ApiCronAutoSubmitRoute = ApiCronAutoSubmitRouteImport.update({
   path: '/api/cron/auto-submit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronDonAnhRoute = ApiCronDonAnhRouteImport.update({
+  id: '/api/cron/don-anh',
+  path: '/api/cron/don-anh',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicExamProgressRoute = ApiPublicExamProgressRouteImport.update({
   id: '/api/public/exam-progress',
   path: '/api/public/exam-progress',
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
+  '/api/cron/don-anh': typeof ApiCronDonAnhRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
+  '/api/cron/don-anh': typeof ApiCronDonAnhRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/_authenticated/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
+  '/api/cron/don-anh': typeof ApiCronDonAnhRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/api/cron/auto-submit'
+    | '/api/cron/don-anh'
     | '/api/public/exam-progress'
     | '/api/public/anh-cau-hoi/$'
   fileRoutesByTo: FileRoutesByTo
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/api/cron/auto-submit'
+    | '/api/cron/don-anh'
     | '/api/public/exam-progress'
     | '/api/public/anh-cau-hoi/$'
   id:
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/_authenticated/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/api/cron/auto-submit'
+    | '/api/cron/don-anh'
     | '/api/public/exam-progress'
     | '/api/public/anh-cau-hoi/$'
   fileRoutesById: FileRoutesById
@@ -200,6 +212,7 @@ export interface RootRouteChildren {
   ThiRoute: typeof ThiRoute
   CuocThiQuizIdRoute: typeof CuocThiQuizIdRoute
   ApiCronAutoSubmitRoute: typeof ApiCronAutoSubmitRoute
+  ApiCronDonAnhRoute: typeof ApiCronDonAnhRoute
   ApiPublicExamProgressRoute: typeof ApiPublicExamProgressRoute
   ApiPublicAnhCauHoiSplatRoute: typeof ApiPublicAnhCauHoiSplatRoute
 }
@@ -290,6 +303,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCronAutoSubmitRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cron/don-anh': {
+      id: '/api/cron/don-anh'
+      path: '/api/cron/don-anh'
+      fullPath: '/api/cron/don-anh'
+      preLoaderRoute: typeof ApiCronDonAnhRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/exam-progress': {
       id: '/api/public/exam-progress'
       path: '/api/public/exam-progress'
@@ -332,6 +352,7 @@ const rootRouteChildren: RootRouteChildren = {
   ThiRoute: ThiRoute,
   CuocThiQuizIdRoute: CuocThiQuizIdRoute,
   ApiCronAutoSubmitRoute: ApiCronAutoSubmitRoute,
+  ApiCronDonAnhRoute: ApiCronDonAnhRoute,
   ApiPublicExamProgressRoute: ApiPublicExamProgressRoute,
   ApiPublicAnhCauHoiSplatRoute: ApiPublicAnhCauHoiSplatRoute,
 }
