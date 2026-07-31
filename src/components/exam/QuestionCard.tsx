@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Send, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Frown, Send, ThumbsUp, Wand2 } from "lucide-react";
 
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ export function QuestionCard({
   removed,
   disabled,
   feedback,
+  feedbackInfo,
   instant,
   fiftyBusy,
   fiftyLeft,
@@ -35,6 +36,8 @@ export function QuestionCard({
   removed: number[];
   disabled: boolean;
   feedback: "correct" | "wrong" | null;
+  /** Đáp án đúng + giải thích do máy chủ trả về (chế độ chấm ngay). */
+  feedbackInfo?: { correctText: string; explanation: string } | null;
   instant: boolean;
   fiftyBusy: boolean;
   fiftyLeft: number;
