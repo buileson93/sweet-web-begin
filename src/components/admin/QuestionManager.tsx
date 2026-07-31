@@ -114,8 +114,46 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
 
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-    return questions.filter((q) => !kw || q.question.toLowerCase().includes(kw));
-  }, [questions, keyword]);
+    return questions.filter(
+      (q) =>
+        (!kw || q.question.toLowerCase().includes(kw)) &&
+        (difficultyFilter === "all" || (q.difficulty ?? "medium") === difficultyFilter),
+    );
+  }, [questions, keyword, difficultyFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const paged = useMemo(
+    () => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filtered, safePage],
+  );
+
+  // Đổi bộ lọc thì quay lại trang đầu và bỏ chọn.
+  useEffect(() => {
+    setPage(1);
+    setSelected(new Set());
+  }, [quizId, keyword, difficultyFilter]);
+
+  const allOnPageSelected = paged.length > 0 && paged.every((q) => selected.has(q.id));
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function togglePage() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allOnPageSelected) paged.forEach((q) => next.delete(q.id));
+      else paged.forEach((q) => next.add(q.id));
+      return next;
+    });
+  }
+
 
   const save = useMutation({
     mutationFn: async () => {
