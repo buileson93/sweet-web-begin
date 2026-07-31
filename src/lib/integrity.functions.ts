@@ -68,7 +68,12 @@ export const restoreResult = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (roleError) throw new Error("Không kiểm tra được quyền quản trị.");
+    if (!isAdmin) throw new Error("Chỉ quản trị viên mới được phục hồi bài thi.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: row, error: readError } = await supabaseAdmin
