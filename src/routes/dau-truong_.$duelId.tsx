@@ -74,12 +74,14 @@ function DuelRoom() {
   const roundRef = useRef(-1);
   const announced = useRef(-1);
   const [dice, setDice] = useState<number[]>([]);
+  const expiringRef = useRef(false);
 
   // Mỗi câu mới thì xoá lựa chọn cũ.
   useEffect(() => {
     if (!state) return;
     if (state.currentRound !== roundRef.current) {
       roundRef.current = state.currentRound;
+      expiringRef.current = false;
       setValue(undefined);
       setLocked(false);
       setSkill(null);
@@ -198,7 +200,14 @@ function DuelRoom() {
             }
           }}
           onExpire={() =>
-            void closeExpired({ data: { token, duelId, roundIndex: state.currentRound } }).then(() => refresh(true))
+            expiringRef.current
+              ? undefined
+              : (() => {
+                  expiringRef.current = true;
+                  void closeExpired({ data: { token, duelId, roundIndex: state.currentRound } })
+                    .then(() => refresh(true))
+                    .catch(() => { expiringRef.current = false; });
+                })()
           }
         />
       ) : null}

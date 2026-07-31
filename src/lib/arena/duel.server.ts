@@ -859,8 +859,11 @@ export async function closeRound(duelId: string, roundIndex: number) {
     await new Promise((r) => setTimeout(r, REVEAL_MS));
     await finishDuel(duelId);
   } else {
+    // Giữ nguyên câu hiện tại trong thời gian công bố kết quả để cả hai máy
+    // nhìn thấy xúc xắc, sát thương và đáp án trước khi phát câu kế tiếp.
+    await new Promise((r) => setTimeout(r, REVEAL_MS));
     const next = await loadDuel(duelId);
-    await serveRound(next, roundIndex + 1, REVEAL_MS);
+    await serveRound(next, roundIndex + 1, 0);
   }
 }
 
