@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
 import { mapStartExamError } from "@/lib/attempts";
+import { deviceCooldownMessage } from "@/lib/deviceLock";
 import { verifyEmployee } from "@/lib/employees.server";
 import {
   PASS_PERCENT_DEFAULT,
