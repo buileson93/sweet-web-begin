@@ -1,10 +1,9 @@
-import { lazy, Suspense, useState } from "react";
+import { useState } from "react";
 import { UserRound } from "lucide-react";
 
+import { Avatar2D } from "@/components/player/Avatar2D";
+import { isAvatar2d } from "@/lib/avatar2d";
 import { cn } from "@/lib/utils";
-
-const AvatarView3D = lazy(() => import("@/components/player/AvatarView3D"));
-const OfficeAvatar3D = lazy(() => import("@/components/player/OfficeAvatar3D"));
 
 export type AvatarBubbleSize = "xs" | "sm" | "md" | "lg" | "xl";
 
@@ -26,8 +25,7 @@ const RING: Record<AvatarBubbleSize, string> = {
 
 /**
  * Ảnh đại diện dạng vòng tròn với nhiều cỡ hiển thị.
- * Có mô hình 3D thì dựng 3D (khi bật `live`), nếu không thì dùng ảnh chân dung,
- * cuối cùng mới rơi về chữ cái đầu của họ tên.
+ * Ưu tiên nhân vật 2D đã chọn, kế đến ảnh chân dung, cuối cùng là chữ cái đầu.
  */
 export function AvatarBubble({
   name,
@@ -42,16 +40,16 @@ export function AvatarBubble({
   avatarUrl?: string;
   avatarImage?: string;
   size?: AvatarBubbleSize;
+  /** Giữ lại để tương thích: bật thì luôn dựng nhân vật mặc định khi chưa có avatar. */
   live?: boolean;
   level?: number;
   className?: string;
 }) {
   const [broken, setBroken] = useState(false);
   const initial = (name ?? "").trim().slice(0, 1).toUpperCase();
-  const use3D = live && Boolean(avatarUrl);
-  const useImage = !use3D && Boolean(avatarImage) && !broken;
-  // Chưa có avatar riêng: dựng nhân vật công sở 3D mặc định.
-  const useOffice = live && !use3D && !useImage;
+  const useSpec = isAvatar2d(avatarUrl);
+  const useImage = !useSpec && Boolean(avatarImage) && !broken;
+  const useDefault = !useSpec && !useImage && (live || Boolean(name));
 
   return (
     <span className={cn("relative inline-flex shrink-0", className)}>
@@ -62,14 +60,8 @@ export function AvatarBubble({
           RING[size],
         )}
       >
-        {use3D ? (
-          <Suspense fallback={<span className="size-full animate-pulse bg-secondary" />}>
-            <AvatarView3D url={avatarUrl as string} className="size-full" />
-          </Suspense>
-        ) : useOffice ? (
-          <Suspense fallback={<span className="size-full animate-pulse bg-secondary" />}>
-            <OfficeAvatar3D seed={name ?? "vatm"} framing="bust" className="size-full" />
-          </Suspense>
+        {useSpec ? (
+          <Avatar2D value={avatarUrl} name={name} className="size-full" />
         ) : useImage ? (
           <img
             src={avatarImage}
@@ -78,6 +70,8 @@ export function AvatarBubble({
             onError={() => setBroken(true)}
             className="size-full object-cover"
           />
+        ) : useDefault ? (
+          <Avatar2D name={name} className="size-full" />
         ) : initial ? (
           <span className="font-heading font-extrabold text-muted-foreground">{initial}</span>
         ) : (
