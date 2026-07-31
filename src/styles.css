@@ -625,6 +625,38 @@
   box-shadow: 0 3px 0 0 color-mix(in oklab, var(--primary) 14%, transparent), var(--shadow-soft);
 }
 
+/* Ảnh chìm chủ đề trên thẻ cuộc thi: mờ nhạt, trượt vào từ phải khi rê chuột */
+.quiz-card-art {
+  opacity: 0.06;
+  filter: grayscale(1);
+  transform: translate3d(14%, 6%, 0) scale(0.96);
+  transform-origin: bottom right;
+  transition: opacity 0.45s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), filter 0.45s ease;
+  -webkit-mask-image: linear-gradient(to left, black 40%, transparent 100%);
+  mask-image: linear-gradient(to left, black 40%, transparent 100%);
+}
+
+.quiz-card:hover .quiz-card-art,
+.quiz-card:focus-visible .quiz-card-art {
+  opacity: 0.16;
+  filter: grayscale(0.2);
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.quiz-card > *:not(.quiz-card-art) {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz-card-art {
+    transition: opacity 0.2s ease;
+    transform: none;
+  }
+}
+
+
+
 /* Nút chính kiểu game */
 @utility game-button {
   position: relative;
