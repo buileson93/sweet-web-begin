@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      arena_settings: {
+        Row: {
+          default_rounds: number
+          default_seconds: number
+          enabled: boolean
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          default_rounds?: number
+          default_seconds?: number
+          enabled?: boolean
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          default_rounds?: number
+          default_seconds?: number
+          enabled?: boolean
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -47,6 +71,30 @@ export type Database = {
           entity_label?: string
           id?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      badges: {
+        Row: {
+          code: string
+          description: string
+          icon: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          description?: string
+          icon?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          description?: string
+          icon?: string
+          name?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -148,6 +196,258 @@ export type Database = {
           visitor_key?: string
         }
         Relationships: []
+      }
+      duel_answers: {
+        Row: {
+          created_at: string
+          duel_id: string
+          employee_id: string
+          id: string
+          is_correct: boolean
+          ms_taken: number
+          points: number
+          round_index: number
+          value: Json | null
+        }
+        Insert: {
+          created_at?: string
+          duel_id: string
+          employee_id: string
+          id?: string
+          is_correct?: boolean
+          ms_taken?: number
+          points?: number
+          round_index: number
+          value?: Json | null
+        }
+        Update: {
+          created_at?: string
+          duel_id?: string
+          employee_id?: string
+          id?: string
+          is_correct?: boolean
+          ms_taken?: number
+          points?: number
+          round_index?: number
+          value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duel_answers_duel_id_fkey"
+            columns: ["duel_id"]
+            isOneToOne: false
+            referencedRelation: "duels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duel_answers_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      duel_invites: {
+        Row: {
+          created_at: string
+          duel_id: string
+          expires_at: string
+          from_employee_id: string
+          from_name: string
+          id: string
+          status: string
+          to_employee_id: string
+        }
+        Insert: {
+          created_at?: string
+          duel_id: string
+          expires_at?: string
+          from_employee_id: string
+          from_name?: string
+          id?: string
+          status?: string
+          to_employee_id: string
+        }
+        Update: {
+          created_at?: string
+          duel_id?: string
+          expires_at?: string
+          from_employee_id?: string
+          from_name?: string
+          id?: string
+          status?: string
+          to_employee_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duel_invites_duel_id_fkey"
+            columns: ["duel_id"]
+            isOneToOne: false
+            referencedRelation: "duels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duel_invites_from_employee_id_fkey"
+            columns: ["from_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duel_invites_to_employee_id_fkey"
+            columns: ["to_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      duel_players: {
+        Row: {
+          correct: number
+          device_hash: string
+          display_name: string
+          duel_id: string
+          duel_status: string
+          elo_after: number | null
+          elo_before: number
+          employee_id: string
+          id: string
+          joined_at: string
+          left_at: string | null
+          ready: boolean
+          score: number
+          seat: number
+          total_ms: number
+          unit: string
+          used_fifty_fifty: boolean
+        }
+        Insert: {
+          correct?: number
+          device_hash?: string
+          display_name?: string
+          duel_id: string
+          duel_status?: string
+          elo_after?: number | null
+          elo_before?: number
+          employee_id: string
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          ready?: boolean
+          score?: number
+          seat?: number
+          total_ms?: number
+          unit?: string
+          used_fifty_fifty?: boolean
+        }
+        Update: {
+          correct?: number
+          device_hash?: string
+          display_name?: string
+          duel_id?: string
+          duel_status?: string
+          elo_after?: number | null
+          elo_before?: number
+          employee_id?: string
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          ready?: boolean
+          score?: number
+          seat?: number
+          total_ms?: number
+          unit?: string
+          used_fifty_fifty?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duel_players_duel_id_fkey"
+            columns: ["duel_id"]
+            isOneToOne: false
+            referencedRelation: "duels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duel_players_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      duels: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_round: number
+          finished_at: string | null
+          id: string
+          is_ranked: boolean
+          last_result: Json | null
+          note: string
+          option_orders: Json
+          question_ids: string[]
+          quiz_id: string | null
+          round_count: number
+          round_served_at: string | null
+          seconds_per_round: number
+          started_at: string | null
+          status: string
+          version: number
+          winner_employee_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_round?: number
+          finished_at?: string | null
+          id?: string
+          is_ranked?: boolean
+          last_result?: Json | null
+          note?: string
+          option_orders?: Json
+          question_ids?: string[]
+          quiz_id?: string | null
+          round_count?: number
+          round_served_at?: string | null
+          seconds_per_round?: number
+          started_at?: string | null
+          status?: string
+          version?: number
+          winner_employee_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_round?: number
+          finished_at?: string | null
+          id?: string
+          is_ranked?: boolean
+          last_result?: Json | null
+          note?: string
+          option_orders?: Json
+          question_ids?: string[]
+          quiz_id?: string | null
+          round_count?: number
+          round_served_at?: string | null
+          seconds_per_round?: number
+          started_at?: string | null
+          status?: string
+          version?: number
+          winner_employee_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duels_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employee_login_attempts: {
         Row: {
@@ -328,6 +628,42 @@ export type Database = {
           },
         ]
       }
+      player_badges: {
+        Row: {
+          badge_code: string
+          earned_at: string
+          employee_id: string
+          id: string
+        }
+        Insert: {
+          badge_code: string
+          earned_at?: string
+          employee_id: string
+          id?: string
+        }
+        Update: {
+          badge_code?: string
+          earned_at?: string
+          employee_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_badges_badge_code_fkey"
+            columns: ["badge_code"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "player_badges_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_profiles: {
         Row: {
           avatar_image: string
@@ -375,6 +711,77 @@ export type Database = {
           xp?: number
         }
         Relationships: []
+      }
+      players: {
+        Row: {
+          abandons: number
+          avatar: string
+          best_streak: number
+          blocked: boolean
+          coins: number
+          created_at: string
+          display_name: string
+          draws: number
+          elo: number
+          employee_id: string
+          games: number
+          losses: number
+          quests: Json
+          ranked_locked_until: string | null
+          streak: number
+          unit: string
+          updated_at: string
+          wins: number
+        }
+        Insert: {
+          abandons?: number
+          avatar?: string
+          best_streak?: number
+          blocked?: boolean
+          coins?: number
+          created_at?: string
+          display_name?: string
+          draws?: number
+          elo?: number
+          employee_id: string
+          games?: number
+          losses?: number
+          quests?: Json
+          ranked_locked_until?: string | null
+          streak?: number
+          unit?: string
+          updated_at?: string
+          wins?: number
+        }
+        Update: {
+          abandons?: number
+          avatar?: string
+          best_streak?: number
+          blocked?: boolean
+          coins?: number
+          created_at?: string
+          display_name?: string
+          draws?: number
+          elo?: number
+          employee_id?: string
+          games?: number
+          losses?: number
+          quests?: Json
+          ranked_locked_until?: string | null
+          streak?: number
+          unit?: string
+          updated_at?: string
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       questions: {
         Row: {
@@ -742,6 +1149,36 @@ export type Database = {
           },
         ]
       }
+      seasons: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          ends_at: string
+          id: string
+          name: string
+          standings: Json
+          started_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          ends_at: string
+          id?: string
+          name: string
+          standings?: Json
+          started_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          ends_at?: string
+          id?: string
+          name?: string
+          standings?: Json
+          started_at?: string
+        }
+        Relationships: []
+      }
       units: {
         Row: {
           created_at: string
@@ -786,7 +1223,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      arena_leaderboard: {
+        Row: {
+          best_streak: number | null
+          draws: number | null
+          elo: number | null
+          games: number | null
+          losses: number | null
+          rank: number | null
+          short_name: string | null
+          unit: string | null
+          wins: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       award_player_xp: {

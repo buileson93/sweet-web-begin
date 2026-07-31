@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { BookOpenCheck, Home, Settings2, Trophy, UserRoundCog } from "lucide-react";
+import { BookOpenCheck, Home, Settings2, Swords, Trophy, UserRoundCog } from "lucide-react";
 
 import { BrandMark } from "@/components/BrandLogo";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/", label: "Trang chủ", icon: Home },
+  { to: "/dau-truong", label: "Đấu trường", icon: Swords },
   { to: "/bang-xep-hang", label: "Bảng xếp hạng", icon: Trophy },
   { to: "/nhan-vat", label: "Nhân vật", icon: UserRoundCog },
   { to: "/huong-dan", label: "Hướng dẫn", icon: BookOpenCheck },
@@ -16,7 +17,9 @@ const navItems = [
 ] as const;
 
 /** Menu dưới cùng trên di động chỉ giữ 4 mục để vừa một hàng. */
-const mobileNavItems = navItems.filter((item) => item.to !== "/huong-dan");
+const mobileNavItems = navItems.filter(
+  (item) => item.to !== "/huong-dan" && item.to !== "/quan-tri",
+);
 
 
 /**
@@ -80,7 +83,7 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
               <li key={item.to}>
                 <Link
                   to={item.to}
-                  {...(item.to === "/quan-tri" ? { search: {} } : {})}
+                  
                   aria-label={item.label}
                   className="flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors active:scale-95"
                   activeProps={{ className: "text-primary" }}
