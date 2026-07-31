@@ -164,14 +164,42 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
   }
 
   return (
-    <div className="card-elevated rounded-2xl p-5 text-card-foreground sm:p-6">
-      <div className="min-w-0">
-        <h2 className="type-h3">Vào phòng thi</h2>
-        <p className="type-meta mt-0.5">
-          Xác thực nhanh bằng danh bạ nhân viên ·{" "}
-          <span className="font-semibold text-foreground">thi lại không giới hạn</span>
-        </p>
+    <div className="card-elevated relative overflow-hidden rounded-2xl text-card-foreground">
+      {/* Dải tiêu đề nổi bật cho thẻ đăng ký vào phòng thi */}
+      <div className="surface-hero relative overflow-hidden px-5 py-4 sm:px-6">
+        <Plane
+          aria-hidden
+          className="animate-float absolute -right-3 -top-2 size-24 rotate-12 text-primary-foreground/10"
+          strokeWidth={1.4}
+        />
+        <div className="relative flex items-center gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl surface-gold shadow-[var(--shadow-gold)]">
+            <LogIn className="size-5" strokeWidth={2.4} />
+          </span>
+          <div className="min-w-0">
+            <h2 className="type-h3 text-primary-foreground">Vào phòng thi</h2>
+            <p className="type-meta text-primary-foreground/75">Xác thực nhanh bằng danh bạ nhân viên</p>
+          </div>
+        </div>
+        <div className="relative mt-3 flex flex-wrap gap-1.5">
+          {[
+            { Icon: ShieldCheck, text: "Một thiết bị · một nhân viên" },
+            { Icon: Zap, text: "Chấm điểm ngay" },
+            { Icon: Repeat, text: "Thi lại không giới hạn" },
+          ].map(({ Icon, text }) => (
+            <span
+              key={text}
+              className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/12 px-2.5 py-1 text-[0.7rem] font-semibold text-primary-foreground/90 backdrop-blur"
+            >
+              <Icon className="size-3.5" strokeWidth={2.4} />
+              {text}
+            </span>
+          ))}
+        </div>
       </div>
+
+      <div className="p-5 sm:p-6">
+
 
 
       <div className="mt-4 space-y-3.5">
