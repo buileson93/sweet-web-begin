@@ -60,6 +60,7 @@ type Visit = {
   referrer_host: string;
   visitor_key: string;
   path: string;
+  ip: string;
   created_at: string;
 };
 
@@ -92,7 +93,7 @@ export function DeviceStats() {
       let q = supabase
         .from("device_visits")
         .select(
-          "browser, browser_version, os, os_version, device_type, screen_w, screen_h, viewport_w, language, timezone, is_pwa, is_touch, referrer_host, visitor_key, path, created_at",
+          "browser, browser_version, os, os_version, device_type, screen_w, screen_h, viewport_w, language, timezone, is_pwa, is_touch, referrer_host, visitor_key, path, ip, created_at",
         )
         .order("created_at", { ascending: false })
         .limit(10000);
@@ -113,6 +114,8 @@ export function DeviceStats() {
   const byDevice = useMemo(() => tally(rows, (r) => DEVICE_LABEL[r.device_type] ?? r.device_type), [rows]);
   const byScreen = useMemo(() => tally(rows, (r) => screenBucket(r.screen_w, r.screen_h)).slice(0, 10), [rows]);
   const byPath = useMemo(() => tally(rows, (r) => r.path || "/").slice(0, 10), [rows]);
+  const byIp = useMemo(() => tally(rows, (r) => r.ip || "Không rõ").slice(0, 20), [rows]);
+  const recent = useMemo(() => rows.slice(0, 50), [rows]);
 
   const trend = useMemo(() => {
     const map = new Map<string, { views: number; visitors: Set<string> }>();
@@ -153,6 +156,7 @@ export function DeviceStats() {
       ["LoaiThietBi", byDevice],
       ["ManHinh", byScreen],
       ["TrangTruyCap", byPath],
+      ["DiaChiIP", byIp],
     ];
     for (const [name, data] of sheets) {
       const ws = XLSX.utils.aoa_to_sheet([
@@ -308,6 +312,7 @@ export function DeviceStats() {
             { title: "Chi tiết hệ điều hành", data: byOs, head: "Hệ điều hành" },
             { title: "Độ phân giải màn hình", data: byScreen, head: "Kích thước" },
             { title: "Trang được xem nhiều", data: byPath, head: "Đường dẫn" },
+            { title: "Địa chỉ IP truy cập nhiều", data: byIp, head: "Địa chỉ IP" },
           ].map((t) => (
             <div key={t.title} className="card-elevated overflow-x-auto">
               <p className="type-eyebrow px-4 pt-4 text-muted-foreground">{t.title}</p>
@@ -340,6 +345,35 @@ export function DeviceStats() {
               </table>
             </div>
           ))}
+        </div>
+
+        {/* Lượt truy cập gần nhất kèm địa chỉ IP */}
+        <div className="card-elevated mt-4 overflow-x-auto">
+          <p className="type-eyebrow px-4 pt-4 text-muted-foreground">Lượt truy cập gần nhất</p>
+          <table className="mt-2 w-full min-w-[640px] text-sm">
+            <thead className="bg-secondary text-secondary-foreground">
+              <tr className="text-left">
+                <th className="px-4 py-2 font-semibold">Thời gian</th>
+                <th className="px-4 py-2 font-semibold">Địa chỉ IP</th>
+                <th className="px-4 py-2 font-semibold">Thiết bị</th>
+                <th className="px-4 py-2 font-semibold">Trình duyệt</th>
+                <th className="px-4 py-2 font-semibold">Đường dẫn</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recent.map((r, i) => (
+                <tr key={`${r.visitor_key}-${r.created_at}-${i}`} className="border-t border-border transition-colors hover:bg-secondary/40">
+                  <td className="whitespace-nowrap px-4 py-2 font-mono text-xs text-muted-foreground">
+                    {new Date(r.created_at).toLocaleString("vi-VN")}
+                  </td>
+                  <td className="px-4 py-2 font-mono">{r.ip || "Không rõ"}</td>
+                  <td className="px-4 py-2">{DEVICE_LABEL[r.device_type] ?? r.device_type}</td>
+                  <td className="px-4 py-2">{[r.browser, r.browser_version].filter(Boolean).join(" ")}</td>
+                  <td className="max-w-[220px] truncate px-4 py-2 text-muted-foreground">{r.path || "/"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {/* Tóm tắt nhanh theo loại thiết bị */}
