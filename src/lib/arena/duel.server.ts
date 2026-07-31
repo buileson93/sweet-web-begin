@@ -171,7 +171,11 @@ export async function createDuel(input: {
   await assertFree(input.employeeId);
 
   const roundCount = Math.min(20, Math.max(3, input.roundCount ?? settings.default_rounds));
-  const seconds = Math.min(60, Math.max(5, input.secondsPerRound ?? settings.default_seconds));
+  const seconds = Math.min(
+    MAX_ROUND_SECONDS,
+    Math.max(5, input.secondsPerRound ?? settings.default_seconds),
+  );
+
   const { ids, orders } = await pickDuelQuestions(input.quizId ?? null, roundCount);
 
   const { data: duel, error } = await supabaseAdmin
