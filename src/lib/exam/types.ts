@@ -60,7 +60,20 @@ export type ReviewItem = {
   points: number;
 };
 
+/** Kinh nghiệm nhận được sau một lượt thi (null nếu không xác định được nhân viên). */
+export type XpAward = {
+  gained: number;
+  xp: number;
+  level: number;
+  leveledUp: boolean;
+  title: string;
+  into: number;
+  need: number;
+  percent: number;
+};
+
 export type SubmitExamResult = {
+
   score: number;
   total: number;
   points: number;
