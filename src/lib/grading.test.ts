@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { gradeOne, pickByBlueprint, type QuestionRow } from "@/lib/grading";
+import {
+  gradeOne,
+  optionImagesOf,
+  permuteByOrder,
+  pickByBlueprint,
+  type QuestionRow,
+} from "@/lib/grading";
 import type { AnswerValue, Difficulty, QuestionKind } from "@/lib/questionKinds";
 
 // Tạo một câu hỏi mẫu để test, cho phép ghi đè từng trường.
@@ -11,6 +17,7 @@ function makeRow(over: Partial<QuestionRow> & { kind: QuestionKind }): QuestionR
     options: ["A", "B", "C", "D"],
     correct_index: 0,
     image_url: null,
+    option_images: [],
     correct_indices: [],
     accepted_answers: [],
     pairs: null,
@@ -270,5 +277,58 @@ describe("pickByBlueprint – shuffleQuestions", () => {
       expect(picked.filter((r) => r.difficulty === "medium")).toHaveLength(3);
       expect(picked.filter((r) => r.difficulty === "hard")).toHaveLength(2);
     }
+  });
+});
+
+describe("ảnh phương án – hoán vị theo thứ tự trộn", () => {
+  const row = makeRow({
+    kind: "single",
+    correct_index: 2,
+    option_images: ["a.webp", "", "c.webp", "d.webp"],
+  });
+
+  it("bù đủ số phần tử bằng chuỗi rỗng", () => {
+    const thin = makeRow({ kind: "single", option_images: ["x.webp"] });
+    expect(optionImagesOf(thin)).toEqual(["x.webp", "", "", ""]);
+  });
+
+  it("bỏ qua phần tử thừa", () => {
+    const fat = makeRow({ kind: "single", option_images: ["1", "2", "3", "4", "5", "6"] });
+    expect(optionImagesOf(fat)).toEqual(["1", "2", "3", "4"]);
+  });
+
+  it("null cũng cho ra mảng rỗng đúng độ dài", () => {
+    const none = makeRow({ kind: "single", option_images: null });
+    expect(optionImagesOf(none)).toEqual(["", "", "", ""]);
+  });
+
+  it("ảnh đi kèm đúng phương án sau khi trộn", () => {
+    const order = [2, 0, 3, 1];
+    const options = permuteByOrder(row.options, order, "");
+    const images = permuteByOrder(optionImagesOf(row), order, "");
+    expect(options).toEqual(["C", "A", "D", "B"]);
+    expect(images).toEqual(["c.webp", "a.webp", "d.webp", ""]);
+    // Đáp án đúng (gốc index 2 = "C") nằm ở vị trí hiển thị 0 và giữ đúng ảnh của nó.
+    expect(images[options.indexOf("C")]).toBe("c.webp");
+  });
+
+  it("mọi hoán vị đều giữ cặp (phương án, ảnh)", () => {
+    const orders = [
+      [0, 1, 2, 3],
+      [3, 2, 1, 0],
+      [1, 3, 0, 2],
+    ];
+    const base = optionImagesOf(row);
+    for (const order of orders) {
+      const options = permuteByOrder(row.options, order, "");
+      const images = permuteByOrder(base, order, "");
+      options.forEach((opt, i) => {
+        expect(images[i]).toBe(base[row.options.indexOf(opt)]);
+      });
+    }
+  });
+
+  it("chỉ số ngoài dải trả về giá trị mặc định", () => {
+    expect(permuteByOrder(["a", "b"], [1, 9, -1], "")).toEqual(["b", "", ""]);
   });
 });
