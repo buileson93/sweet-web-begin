@@ -33,6 +33,7 @@ import { RoleManager } from "@/components/admin/RoleManager";
 import { BackupManager } from "@/components/admin/BackupManager";
 import { LiveMonitor } from "@/components/admin/LiveMonitor";
 import { UnitStats } from "@/components/admin/UnitStats";
+import { DeviceStats } from "@/components/admin/DeviceStats";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui-kit";
