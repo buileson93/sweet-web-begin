@@ -70,7 +70,16 @@ export function QuizCoverPicker({ value, onChange, fit = "contain", onFitChange 
         )}
       </div>
 
+      {/* Kho ảnh dùng chung: chọn nhanh ảnh đã có sẵn của đội thiết kế */}
+      <details className="rounded-xl border border-border bg-secondary/30 p-3">
+        <summary className="cursor-pointer text-sm font-semibold">Chọn từ kho ảnh dùng chung</summary>
+        <div className="pt-3">
+          <AssetLibrary compact selected={value} onPick={(path) => onChange(path)} />
+        </div>
+      </details>
+
       {/* Xem trước đúng tỉ lệ khung ngang của thẻ cuộc thi */}
+
       <div className="relative aspect-[12/5] w-full max-w-sm overflow-hidden rounded-xl border border-border bg-secondary/40">
         <img
           src={resolveQuizCover(value)}
