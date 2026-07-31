@@ -357,13 +357,23 @@ describe("scoreForAnswer", () => {
     expect(scoreForAnswer(1, true, true, 5, rules)).toBe(4);
   });
 
-  it("không vượt trần điểm thưởng", () => {
+  it("không vượt trần điểm thưởng khi có đặt trần", () => {
     expect(scoreForAnswer(1, true, true, 20, { ...rules, streakMaxBonus: 5 })).toBe(6);
+  });
+
+  it("combo luỹ tiến vô tận khi không đặt trần", () => {
+    expect(scoreForAnswer(1, true, true, 20, { ...rules, streakMaxBonus: 0 })).toBe(19);
+  });
+
+  it("vật phẩm X2 nhân đôi cả điểm thưởng combo", () => {
+    expect(scoreForAnswer(1, true, true, 5, rules, { x2: true })).toBe(8);
+    expect(scoreForAnswer(1, true, true, 1, rules, { x2: true })).toBe(2);
   });
 
   it("nhân đôi điểm khi đạt ngưỡng chuỗi", () => {
     expect(scoreForAnswer(2, true, true, 5, { ...rules, streakBonus: false, doublePointsAfter: 5 })).toBe(4);
   });
+
 
   it("tắt thưởng chuỗi thì chỉ còn điểm gốc", () => {
     expect(scoreForAnswer(3, true, true, 9, { ...rules, streakBonus: false })).toBe(3);
