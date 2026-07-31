@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { readXlsxRows } from "@/lib/xlsxIo";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, Database, FileSpreadsheet, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
