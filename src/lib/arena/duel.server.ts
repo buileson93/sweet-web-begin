@@ -24,6 +24,8 @@ import {
   winReasonLabel,
 } from "@/lib/arena/combat";
 import { SKILLS, skillById, skillCooldownLeft, type SkillId } from "@/lib/arena/skills";
+import { classById, CLASSES, type ClassId } from "@/lib/arena/classes";
+import { evaluateArenaBadges, newlyEarned } from "@/lib/arena/achievements";
 import { levelProgress } from "@/lib/xp";
 
 import { DUEL_COLUMNS, type DuelFinish, type DuelState, type RoundResult } from "@/lib/arena/types";
@@ -166,6 +168,7 @@ export async function createDuel(input: {
   deviceHash?: string;
   isBot?: boolean;
   note?: string;
+  classId?: string | null;
 }): Promise<{ duelId: string }> {
   const settings = await requireSettings();
   const player = await mustPlayer(input.employeeId);
@@ -198,7 +201,12 @@ export async function createDuel(input: {
     .single();
   if (error) throw new Error(error.message);
 
-  await joinDuel({ duelId: duel.id, employeeId: input.employeeId, deviceHash: input.deviceHash });
+  await joinDuel({
+    duelId: duel.id,
+    employeeId: input.employeeId,
+    deviceHash: input.deviceHash,
+    classId: input.classId ?? null,
+  });
   await logArenaAudit("create", duel.id, `${player.display_name} tạo trận`, {
     roundCount,
     seconds,
@@ -220,6 +228,7 @@ export async function joinDuel(input: {
   duelId: string;
   employeeId: string;
   deviceHash?: string;
+  classId?: string | null;
 }) {
   const duel = await loadDuel(input.duelId);
   const players = await loadPlayers(duel.id);
@@ -229,6 +238,8 @@ export async function joinDuel(input: {
   await assertFree(input.employeeId);
 
   const player = await mustPlayer(input.employeeId);
+  // Lớp chiến binh: ưu tiên lựa chọn của lần này, không có thì dùng lớp yêu thích đã lưu.
+  const chosen = classById(input.classId ?? player.preferred_class).id;
   const { error } = await supabaseAdmin.from("duel_players").insert({
     duel_id: duel.id,
     employee_id: input.employeeId,
@@ -236,6 +247,8 @@ export async function joinDuel(input: {
     display_name: player.display_name,
     unit: player.unit,
     elo_before: player.elo,
+    class_id: chosen,
+    lowest_hp: duel.hp_start,
     device_hash: (input.deviceHash ?? "").slice(0, 80),
   });
   if (error) {
@@ -243,6 +256,11 @@ export async function joinDuel(input: {
       throw new Error("Bạn đang ở trong một trận khác. Hãy kết thúc hoặc rời trận đó trước.");
     throw new Error(error.message);
   }
+  if (input.classId)
+    await supabaseAdmin
+      .from("players")
+      .update({ preferred_class: chosen })
+      .eq("employee_id", input.employeeId);
   await bumpVersion(duel.id);
   await broadcastDuel(duel.id, "lobby.update", { duelId: duel.id });
   return { ok: true };
@@ -265,6 +283,7 @@ export async function quickMatch(input: {
   employeeId: string;
   waitedSeconds?: number;
   deviceHash?: string;
+  classId?: string | null;
 }): Promise<{ duelId: string; created: boolean }> {
   await requireSettings();
   const player = await mustPlayer(input.employeeId);
@@ -319,7 +338,12 @@ export async function quickMatch(input: {
     const best = pickBestRoom(seeker, pool, waited);
     if (!best) break;
     try {
-      await joinDuel({ duelId: best.duelId, employeeId: input.employeeId, deviceHash: input.deviceHash });
+      await joinDuel({
+        duelId: best.duelId,
+        employeeId: input.employeeId,
+        deviceHash: input.deviceHash,
+        classId: input.classId ?? null,
+      });
       return { duelId: best.duelId, created: false };
     } catch {
       pool = pool.filter((c) => c.duelId !== best.duelId); // phòng vừa bị chiếm — thử phòng khác
@@ -329,6 +353,7 @@ export async function quickMatch(input: {
   const { duelId } = await createDuel({
     employeeId: input.employeeId,
     deviceHash: input.deviceHash,
+    classId: input.classId ?? null,
   });
   return { duelId, created: true };
 }
@@ -783,6 +808,7 @@ export async function closeRound(duelId: string, roundIndex: number) {
         streak: streakUpTo(rows, p.employee_id, roundIndex),
         hpBefore: p.hp,
         skill: (skillById(a?.skill)?.id ?? null) as SkillId | null,
+        classId: classById(p.class_id).id as ClassId,
       };
     }),
     limitMs,
@@ -798,7 +824,13 @@ export async function closeRound(duelId: string, roundIndex: number) {
     missMap.set(l.employeeId, misses);
     await supabaseAdmin
       .from("duel_players")
-      .update({ hp: l.hpAfter, damage_dealt: p.damage_dealt + l.damageDealt, misses })
+      .update({
+        hp: l.hpAfter,
+        damage_dealt: p.damage_dealt + l.damageDealt,
+        misses,
+        lowest_hp: Math.min(p.lowest_hp ?? duel.hp_start, l.hpAfter),
+        biggest_hit: Math.max(p.biggest_hit ?? 0, l.damageDealt),
+      })
       .eq("id", p.id);
     if (a)
       await supabaseAdmin
@@ -1027,6 +1059,7 @@ export async function finishDuel(duelId: string, technicalLoserId?: string) {
         best_streak: Math.max(me.best_streak, streak),
         coins: me.coins + coins,
         abandons: me.abandons + (technicalLoserId === p.employee_id ? 1 : 0),
+        bot_wins: (me.bot_wins ?? 0) + (duel.is_bot && isWinner ? 1 : 0),
         updated_at: nowIso(),
       })
       .eq("employee_id", p.employee_id);
@@ -1046,6 +1079,13 @@ export async function finishDuel(duelId: string, technicalLoserId?: string) {
       correct: p.correct,
       roundCount: duel.round_count,
       duelId,
+      arena: {
+        hpLeft: p.hp,
+        hpStart: duel.hp_start,
+        lowestHp: p.lowest_hp ?? duel.hp_start,
+        biggestHit: p.biggest_hit ?? 0,
+        botWins: (me.bot_wins ?? 0) + (duel.is_bot && isWinner ? 1 : 0),
+      },
     });
 
     finishLines.push({
@@ -1121,6 +1161,14 @@ async function grantBadges(input: {
   correct: number;
   roundCount: number;
   duelId: string;
+  /** Số liệu riêng của Đấu trường để xét thành tựu 1vs1. */
+  arena: {
+    hpLeft: number;
+    hpStart: number;
+    lowestHp: number;
+    biggestHit: number;
+    botWins: number;
+  };
 }) {
   const codes: string[] = [];
   if (input.games === 1) codes.push("first_duel");
@@ -1137,6 +1185,27 @@ async function grantBadges(input: {
     .eq("is_correct", true)
     .lt("ms_taken", 3000);
   if ((fast ?? 0) >= 5) codes.push("fast_5");
+
+  // Thành tựu riêng của Đấu trường 1vs1.
+  const { data: owned } = await supabaseAdmin
+    .from("player_badges")
+    .select("badge_code")
+    .eq("employee_id", input.employeeId);
+  const arenaCodes = newlyEarned(
+    (owned ?? []).map((b) => String(b.badge_code)),
+    evaluateArenaBadges({
+      duels: input.games,
+      wins: input.wins,
+      streak: input.streak,
+      botWins: input.arena.botWins,
+      wonThisDuel: input.isWinner,
+      hpLeft: input.arena.hpLeft,
+      hpStart: input.arena.hpStart,
+      lowestHp: input.arena.lowestHp,
+      biggestHit: input.arena.biggestHit,
+    }),
+  );
+  codes.push(...arenaCodes);
 
   if (!codes.length) return [];
   await supabaseAdmin
@@ -1238,6 +1307,8 @@ export async function getDuelState(input: {
         avatarUrl: String(xp?.avatar_url ?? ""),
         avatarImage: String(xp?.avatar_image ?? ""),
         level: levelProgress(Number(xp?.xp ?? 0)).level,
+        classId: classById(p.class_id).id,
+        lowestHp: p.lowest_hp ?? duel.hp_start,
         skillUses: (skillRows ?? [])
           .filter((r) => r.employee_id === p.employee_id)
           .map((r) => ({ skill: String(r.skill), round: r.round_index })),

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { ClassChip } from "@/components/arena/ClassPicker";
 import { HpBar } from "@/components/arena/HpBar";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
 import type { DuelPlayerView } from "@/lib/arena/types";
@@ -103,6 +104,7 @@ export function DuelFighter({
           <p className="truncate text-[11px] text-muted-foreground">
             {player ? `${levelTitle(player.level)} · Elo ${player.elo}` : "—"}
           </p>
+          {player ? <ClassChip classId={player.classId} className="mt-0.5" /> : null}
         </div>
         {player?.answered ? (
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">

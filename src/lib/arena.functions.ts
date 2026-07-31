@@ -57,13 +57,19 @@ export const arenaQuickMatch = createServerFn({ method: "POST" })
         token,
         waitedSeconds: z.number().int().min(0).max(600).optional(),
         deviceHash: z.string().max(80).optional(),
+        classId: z.string().max(20).optional(),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
     const employeeId = await auth(data.token);
     const { quickMatch } = await import("@/lib/arena/duel.server");
-    return quickMatch({ employeeId, waitedSeconds: data.waitedSeconds, deviceHash: data.deviceHash });
+    return quickMatch({
+      employeeId,
+      waitedSeconds: data.waitedSeconds,
+      deviceHash: data.deviceHash,
+      classId: data.classId ?? null,
+    });
   });
 
 export const arenaSearchOpponents = createServerFn({ method: "POST" })
@@ -152,12 +158,24 @@ export const arenaLeave = createServerFn({ method: "POST" })
 
 export const arenaJoinDuel = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
-    z.object({ token, duelId: z.string().uuid(), deviceHash: z.string().max(80).optional() }).parse(input),
+    z
+      .object({
+        token,
+        duelId: z.string().uuid(),
+        deviceHash: z.string().max(80).optional(),
+        classId: z.string().max(20).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data }) => {
     const employeeId = await auth(data.token);
     const { joinDuel } = await import("@/lib/arena/duel.server");
-    return joinDuel({ employeeId, duelId: data.duelId, deviceHash: data.deviceHash });
+    return joinDuel({
+      employeeId,
+      duelId: data.duelId,
+      deviceHash: data.deviceHash,
+      classId: data.classId ?? null,
+    });
   });
 
 export const arenaCloseExpiredRound = createServerFn({ method: "POST" })
@@ -273,6 +291,7 @@ export const arenaPlayBot = createServerFn({ method: "POST" })
         tier: z.enum(["de", "vua", "kho"]).optional(),
         quizId: z.string().uuid().nullable().optional(),
         deviceHash: z.string().max(80).optional(),
+        classId: z.string().max(20).optional(),
       })
       .parse(input),
   )
@@ -284,6 +303,7 @@ export const arenaPlayBot = createServerFn({ method: "POST" })
       tier: data.tier,
       quizId: data.quizId ?? null,
       deviceHash: data.deviceHash,
+      classId: data.classId ?? null,
     });
   });
 
@@ -295,6 +315,7 @@ export const arenaCreateRoom = createServerFn({ method: "POST" })
         token,
         quizId: z.string().uuid().nullable().optional(),
         deviceHash: z.string().max(80).optional(),
+        classId: z.string().max(20).optional(),
       })
       .parse(input),
   )
@@ -305,6 +326,7 @@ export const arenaCreateRoom = createServerFn({ method: "POST" })
       employeeId,
       quizId: data.quizId ?? null,
       deviceHash: data.deviceHash,
+      classId: data.classId ?? null,
       note: "Phòng mời qua link",
     });
   });

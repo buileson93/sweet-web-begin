@@ -10,6 +10,7 @@
  * - Ai hết máu trước thì thua (hạ gục). Hết câu mà cả hai còn máu thì so máu còn lại.
  */
 
+import { applyClassDamage, type ClassId } from "@/lib/arena/classes";
 import { applyAttackSkill, applyDefenseSkill, type SkillId } from "@/lib/arena/skills";
 
 /** Máu khởi điểm của mỗi đấu thủ. */
@@ -71,6 +72,8 @@ export type CombatInput = {
   hpBefore: number;
   /** Kỹ năng đã kích hoạt cho câu này (nếu có). */
   skill?: SkillId | null;
+  /** Lớp chiến binh đã chọn trước trận. */
+  classId?: ClassId | null;
 };
 
 export type CombatLine = {
@@ -86,7 +89,7 @@ export type CombatLine = {
 
 export type SkillNote = {
   employeeId: string;
-  skill: SkillId;
+  skill: SkillId | null;
   label: string;
 };
 
@@ -104,6 +107,8 @@ export type CombatOutcome = {
   baseDamage: number;
   /** Diễn giải hiệu ứng kỹ năng đã kích hoạt trong câu. */
   skillNotes: SkillNote[];
+  /** Kết quả khắc chế lớp chiến binh của đòn đánh này. */
+  counter: "counter" | "countered" | "even";
 };
 
 /** Phân xử sát thương của MỘT câu giữa hai đấu thủ. */
@@ -139,7 +144,12 @@ export function resolveRoundCombat(
   if (defender?.skill && defend.label)
     skillNotes.push({ employeeId: defender.employeeId, skill: defender.skill, label: defend.label });
 
-  const finalDamage = defend.damage;
+  // Ưu / nhược của lớp chiến binh và vòng khắc chế bao–búa–kéo.
+  const cls = applyClassDamage(striker?.classId, defender?.classId, defend.damage);
+  if (striker && cls.label)
+    skillNotes.push({ employeeId: striker.employeeId, skill: null, label: cls.label });
+
+  const finalDamage = cls.damage;
 
   const lines: CombatLine[] = inputs.map((i) => {
     const isStriker = !!striker && striker.employeeId === i.employeeId;
@@ -162,6 +172,7 @@ export function resolveRoundCombat(
     dice: roll.dice,
     baseDamage,
     skillNotes,
+    counter: cls.verdict,
   };
 }
 

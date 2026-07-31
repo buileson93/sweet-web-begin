@@ -314,6 +314,8 @@ export type Database = {
       }
       duel_players: {
         Row: {
+          biggest_hit: number
+          class_id: string
           correct: number
           damage_dealt: number
           device_hash: string
@@ -327,6 +329,7 @@ export type Database = {
           id: string
           joined_at: string
           left_at: string | null
+          lowest_hp: number
           misses: number
           ready: boolean
           score: number
@@ -336,6 +339,8 @@ export type Database = {
           used_fifty_fifty: boolean
         }
         Insert: {
+          biggest_hit?: number
+          class_id?: string
           correct?: number
           damage_dealt?: number
           device_hash?: string
@@ -349,6 +354,7 @@ export type Database = {
           id?: string
           joined_at?: string
           left_at?: string | null
+          lowest_hp?: number
           misses?: number
           ready?: boolean
           score?: number
@@ -358,6 +364,8 @@ export type Database = {
           used_fifty_fifty?: boolean
         }
         Update: {
+          biggest_hit?: number
+          class_id?: string
           correct?: number
           damage_dealt?: number
           device_hash?: string
@@ -371,6 +379,7 @@ export type Database = {
           id?: string
           joined_at?: string
           left_at?: string | null
+          lowest_hp?: number
           misses?: number
           ready?: boolean
           score?: number
@@ -742,6 +751,7 @@ export type Database = {
           avatar: string
           best_streak: number
           blocked: boolean
+          bot_wins: number
           coins: number
           created_at: string
           display_name: string
@@ -751,6 +761,7 @@ export type Database = {
           games: number
           last_seen_at: string
           losses: number
+          preferred_class: string
           quests: Json
           ranked_locked_until: string | null
           streak: number
@@ -763,6 +774,7 @@ export type Database = {
           avatar?: string
           best_streak?: number
           blocked?: boolean
+          bot_wins?: number
           coins?: number
           created_at?: string
           display_name?: string
@@ -772,6 +784,7 @@ export type Database = {
           games?: number
           last_seen_at?: string
           losses?: number
+          preferred_class?: string
           quests?: Json
           ranked_locked_until?: string | null
           streak?: number
@@ -784,6 +797,7 @@ export type Database = {
           avatar?: string
           best_streak?: number
           blocked?: boolean
+          bot_wins?: number
           coins?: number
           created_at?: string
           display_name?: string
@@ -793,6 +807,7 @@ export type Database = {
           games?: number
           last_seen_at?: string
           losses?: number
+          preferred_class?: string
           quests?: Json
           ranked_locked_until?: string | null
           streak?: number

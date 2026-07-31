@@ -23,10 +23,12 @@ type Options = Awaited<ReturnType<typeof arenaOptions>>;
  */
 export function PracticePanel({
   token,
+  classId,
   disabled,
   onStarted,
 }: {
   token: string;
+  classId?: string;
   disabled?: boolean;
   onStarted: (duelId: string) => void;
 }) {
@@ -58,6 +60,7 @@ export function PracticePanel({
           tier,
           quizId: quizId === "all" ? null : quizId,
           deviceHash: getDeviceId(),
+          ...(classId ? { classId } : {}),
         },
       });
       onStarted(res.duelId);

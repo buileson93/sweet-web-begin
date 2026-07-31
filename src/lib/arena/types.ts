@@ -30,6 +30,10 @@ export type DuelPlayerView = {
   avatarUrl: string;
   avatarImage: string;
   level: number;
+  /** Lớp chiến binh đã chọn cho ván này. */
+  classId: string;
+  /** Mức máu thấp nhất từng chạm trong ván. */
+  lowestHp: number;
   /** Các lượt câu đã kích hoạt kỹ năng (dùng để tính thời gian hồi). */
   skillUses: { skill: string; round: number }[];
 };
@@ -78,7 +82,7 @@ export type RoundResult = {
   /** Cả hai cùng không kịp trả lời — câu bị bỏ trống do hết giờ. */
   timedOut?: boolean;
   /** Diễn giải hiệu ứng kỹ năng đã kích hoạt trong câu. */
-  skillNotes?: { employeeId: string; skill: string; label: string }[];
+  skillNotes?: { employeeId: string; skill: string | null; label: string }[];
   lines: {
     employeeId: string;
     isCorrect: boolean;
