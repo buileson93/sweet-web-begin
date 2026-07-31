@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 
-import { supabase } from "@/integrations/supabase/client";
 import { collectDeviceVisit } from "@/lib/deviceInfo";
+import { recordDeviceVisit } from "@/lib/visits.functions";
+
 
 /**
  * Ghi nhận thông tin thiết bị/trình duyệt cho thống kê quản trị.
