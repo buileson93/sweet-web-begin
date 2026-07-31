@@ -6,6 +6,8 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { AwardsBoard } from "@/components/AwardsBoard";
+import { LevelBoard } from "@/components/player/LevelBoard";
+
 import { EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 
 import { Button } from "@/components/ui/button";
