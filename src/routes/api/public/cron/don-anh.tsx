@@ -15,14 +15,14 @@ import { createFileRoute } from "@tanstack/react-router";
  *      '0 3 * * *',
  *      $$
  *      select net.http_post(
- *        url := 'https://<địa-chỉ-ứng-dụng>/api/cron/don-anh',
+ *        url := 'https://<địa-chỉ-ứng-dụng>/api/public/cron/don-anh',
  *        headers := '{"Content-Type":"application/json","x-cron-secret":"<GIÁ_TRỊ_CRON_SECRET>"}'::jsonb,
  *        body := '{}'::jsonb
  *      ) as request_id;
  *      $$
  *    );
  */
-export const Route = createFileRoute("/api/cron/don-anh")({
+export const Route = createFileRoute("/api/public/cron/don-anh")({
   server: {
     handlers: {
       POST: async ({ request }) => {

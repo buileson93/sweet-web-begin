@@ -15,7 +15,7 @@ import { createFileRoute } from "@tanstack/react-router";
  *      '＊/5 * * * *',
  *      $$
  *      select net.http_post(
- *        url := 'https://<địa-chỉ-ứng-dụng>/api/cron/auto-submit',
+ *        url := 'https://<địa-chỉ-ứng-dụng>/api/public/cron/auto-submit',
  *        headers := '{"Content-Type":"application/json","x-cron-secret":"<GIÁ_TRỊ_CRON_SECRET>"}'::jsonb,
  *        body := '{}'::jsonb
  *      ) as request_id;
@@ -24,9 +24,9 @@ import { createFileRoute } from "@tanstack/react-router";
  *
  * 2) Hoặc dùng cron ngoài (GitHub Actions, cron-job.org, máy chủ nội bộ), mỗi 5 phút:
  *
- *    curl -X POST https://<địa-chỉ-ứng-dụng>/api/cron/auto-submit -H "x-cron-secret: $CRON_SECRET"
+ *    curl -X POST https://<địa-chỉ-ứng-dụng>/api/public/cron/auto-submit -H "x-cron-secret: $CRON_SECRET"
  */
-export const Route = createFileRoute("/api/cron/auto-submit")({
+export const Route = createFileRoute("/api/public/cron/auto-submit")({
   server: {
     handlers: {
       POST: async ({ request }) => {
