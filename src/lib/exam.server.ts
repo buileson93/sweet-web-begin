@@ -59,9 +59,6 @@ export type ReviewItem = {
   points: number;
 };
 
-/** Tỷ lệ điểm tối thiểu để được công nhận "Đạt" khi cuộc thi không cấu hình riêng. */
-export const PASS_RATIO = 0.5;
-
 export type SubmitExamResult = {
   score: number;
   total: number;
@@ -79,23 +76,6 @@ export type SubmitExamResult = {
   review: ReviewItem[];
 };
 
-type QuestionRow = {
-  id: string;
-  question: string;
-  options: string[];
-  correct_index: number;
-  image_url: string | null;
-  kind: QuestionKind;
-  correct_indices: number[];
-  accepted_answers: string[];
-  pairs: unknown;
-  correct_order: number[];
-  difficulty: Difficulty;
-  tags: string[];
-  points: number;
-  explanation: string;
-  time_limit_seconds: number | null;
-};
 
 const QUESTION_COLUMNS =
   "id, question, options, correct_index, image_url, kind, correct_indices, accepted_answers, pairs, correct_order, difficulty, tags, points, explanation, time_limit_seconds";
