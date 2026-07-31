@@ -679,7 +679,35 @@ export async function ensureBotAnswer(duel: DuelRow, roundIndex: number) {
   });
 }
 
+/** Các lượt câu mà một đấu thủ đã kích hoạt kỹ năng trong ván. */
+export async function skillUsesOf(duelId: string, employeeId: string) {
+  const { data } = await supabaseAdmin
+    .from("duel_answers")
+    .select("round_index, skill")
+    .eq("duel_id", duelId)
+    .eq("employee_id", employeeId)
+    .neq("skill", "");
+  return (data ?? []).map((r) => ({ skill: String(r.skill), round: r.round_index }));
+}
+
+/** Chỉ chấp nhận kỹ năng hợp lệ và đã hồi xong; ngược lại coi như không dùng. */
+async function validateSkill(
+  duelId: string,
+  employeeId: string,
+  roundIndex: number,
+  requested?: string | null,
+): Promise<SkillId | null> {
+  const def = skillById(requested);
+  if (!def) return null;
+  const uses = await skillUsesOf(duelId, employeeId);
+  const rounds = uses.filter((u) => u.skill === def.id).map((u) => u.round);
+  if (skillCooldownLeft(rounds, roundIndex) > 0)
+    throw new Error(`Kỹ năng ${def.name} chưa hồi xong.`);
+  return def.id;
+}
+
 async function currentStreak(
+
   duelId: string,
   employeeId: string,
   roundIndex: number,
