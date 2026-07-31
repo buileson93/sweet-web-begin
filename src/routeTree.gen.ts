@@ -25,6 +25,7 @@ import { Route as CuocThiQuizIdRouteImport } from './routes/cuoc-thi.$quizId'
 import { Route as DauTruongDuelIdRouteImport } from './routes/dau-truong_.$duelId'
 import { Route as DauTruongThongKeRouteImport } from './routes/dau-truong_.thong-ke'
 import { Route as ApiPublicExamProgressRouteImport } from './routes/api/public/exam-progress'
+import { Route as DauTruongXemLaiDuelIdRouteImport } from './routes/dau-truong_.xem-lai.$duelId'
 import { Route as ApiPublicAnhBiaSplatRouteImport } from './routes/api/public/anh-bia.$'
 import { Route as ApiPublicAnhCauHoiSplatRouteImport } from './routes/api/public/anh-cau-hoi.$'
 import { Route as ApiPublicCronAutoSubmitRouteImport } from './routes/api/public/cron/auto-submit'
@@ -110,6 +111,11 @@ const ApiPublicExamProgressRoute = ApiPublicExamProgressRouteImport.update({
   path: '/api/public/exam-progress',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DauTruongXemLaiDuelIdRoute = DauTruongXemLaiDuelIdRouteImport.update({
+  id: '/dau-truong_/xem-lai/$duelId',
+  path: '/dau-truong/xem-lai/$duelId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAnhBiaSplatRoute = ApiPublicAnhBiaSplatRouteImport.update({
   id: '/api/public/anh-bia/$',
   path: '/api/public/anh-bia/$',
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/dau-truong/$duelId': typeof DauTruongDuelIdRoute
   '/dau-truong/thong-ke': typeof DauTruongThongKeRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
+  '/dau-truong/xem-lai/$duelId': typeof DauTruongXemLaiDuelIdRoute
   '/api/public/anh-bia/$': typeof ApiPublicAnhBiaSplatRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
   '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/dau-truong/$duelId': typeof DauTruongDuelIdRoute
   '/dau-truong/thong-ke': typeof DauTruongThongKeRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
+  '/dau-truong/xem-lai/$duelId': typeof DauTruongXemLaiDuelIdRoute
   '/api/public/anh-bia/$': typeof ApiPublicAnhBiaSplatRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
   '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
@@ -198,6 +206,7 @@ export interface FileRoutesById {
   '/dau-truong_/$duelId': typeof DauTruongDuelIdRoute
   '/dau-truong_/thong-ke': typeof DauTruongThongKeRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
+  '/dau-truong_/xem-lai/$duelId': typeof DauTruongXemLaiDuelIdRoute
   '/api/public/anh-bia/$': typeof ApiPublicAnhBiaSplatRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
   '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
@@ -222,6 +231,7 @@ export interface FileRouteTypes {
     | '/dau-truong/$duelId'
     | '/dau-truong/thong-ke'
     | '/api/public/exam-progress'
+    | '/dau-truong/xem-lai/$duelId'
     | '/api/public/anh-bia/$'
     | '/api/public/anh-cau-hoi/$'
     | '/api/public/cron/auto-submit'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/dau-truong/$duelId'
     | '/dau-truong/thong-ke'
     | '/api/public/exam-progress'
+    | '/dau-truong/xem-lai/$duelId'
     | '/api/public/anh-bia/$'
     | '/api/public/anh-cau-hoi/$'
     | '/api/public/cron/auto-submit'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/dau-truong_/$duelId'
     | '/dau-truong_/thong-ke'
     | '/api/public/exam-progress'
+    | '/dau-truong_/xem-lai/$duelId'
     | '/api/public/anh-bia/$'
     | '/api/public/anh-cau-hoi/$'
     | '/api/public/cron/auto-submit'
@@ -288,6 +300,7 @@ export interface RootRouteChildren {
   DauTruongDuelIdRoute: typeof DauTruongDuelIdRoute
   DauTruongThongKeRoute: typeof DauTruongThongKeRoute
   ApiPublicExamProgressRoute: typeof ApiPublicExamProgressRoute
+  DauTruongXemLaiDuelIdRoute: typeof DauTruongXemLaiDuelIdRoute
   ApiPublicAnhBiaSplatRoute: typeof ApiPublicAnhBiaSplatRoute
   ApiPublicAnhCauHoiSplatRoute: typeof ApiPublicAnhCauHoiSplatRoute
   ApiPublicCronAutoSubmitRoute: typeof ApiPublicCronAutoSubmitRoute
@@ -409,6 +422,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicExamProgressRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dau-truong_/xem-lai/$duelId': {
+      id: '/dau-truong_/xem-lai/$duelId'
+      path: '/dau-truong/xem-lai/$duelId'
+      fullPath: '/dau-truong/xem-lai/$duelId'
+      preLoaderRoute: typeof DauTruongXemLaiDuelIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/anh-bia/$': {
       id: '/api/public/anh-bia/$'
       path: '/api/public/anh-bia/$'
@@ -476,6 +496,7 @@ const rootRouteChildren: RootRouteChildren = {
   DauTruongDuelIdRoute: DauTruongDuelIdRoute,
   DauTruongThongKeRoute: DauTruongThongKeRoute,
   ApiPublicExamProgressRoute: ApiPublicExamProgressRoute,
+  DauTruongXemLaiDuelIdRoute: DauTruongXemLaiDuelIdRoute,
   ApiPublicAnhBiaSplatRoute: ApiPublicAnhBiaSplatRoute,
   ApiPublicAnhCauHoiSplatRoute: ApiPublicAnhCauHoiSplatRoute,
   ApiPublicCronAutoSubmitRoute: ApiPublicCronAutoSubmitRoute,
