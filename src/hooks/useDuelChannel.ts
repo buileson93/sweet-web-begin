@@ -21,6 +21,7 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
   const [connectionStatus, setConnectionStatus] = useState<DuelConnectionStatus>("syncing");
   const versionRef = useRef(-1);
   const busyRef = useRef(false);
+  const liveRef = useRef(false);
 
   const refresh = useCallback(
     async (force = false) => {
@@ -41,7 +42,7 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
           setState(res.state);
         }
         setLatency(Math.round(performance.now() - started));
-        setConnectionStatus(live ? "live" : "retrying");
+        setConnectionStatus(liveRef.current ? "live" : "retrying");
         setError(null);
       } catch (e) {
         setConnectionStatus(navigator.onLine ? "retrying" : "offline");
@@ -50,7 +51,7 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
         busyRef.current = false;
       }
     },
-    [duelId, token, enabled, live],
+    [duelId, token, enabled],
   );
 
   useEffect(() => {
@@ -67,6 +68,7 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
       )
       .subscribe((status) => {
         const connected = status === "SUBSCRIBED";
+        liveRef.current = connected;
         setLive(connected);
         setConnectionStatus(connected ? "live" : navigator.onLine ? "retrying" : "offline");
       });

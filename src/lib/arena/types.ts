@@ -52,6 +52,7 @@ export type DuelState = {
   startedAt: string | null;
   serverNow: string;
   quizTitle: string;
+  quizId: string | null;
   players: DuelPlayerView[];
   /** Chỉ có khi đang thi đấu. */
   question: DuelQuestion | null;
