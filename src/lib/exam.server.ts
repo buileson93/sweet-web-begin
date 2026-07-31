@@ -1,6 +1,22 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyEmployee } from "@/lib/employees.server";
-import { normalizeText, type AnswerValue, type Blueprint, type Difficulty, type QuestionKind } from "@/lib/questionKinds";
+// Logic chấm điểm thuần tuý nằm ở @/lib/grading để test được mà không cần Supabase.
+import {
+  PASS_RATIO,
+  baseOptions,
+  chosenTextOf,
+  correctTextOf,
+  gradeOne,
+  pairsOf,
+  percentOf,
+  pickByBlueprint,
+  shuffle,
+  type QuestionRow,
+} from "@/lib/grading";
+import { type AnswerValue, type Blueprint, type Difficulty, type QuestionKind } from "@/lib/questionKinds";
+
+export { PASS_RATIO };
+
 
 export type ExamQuestion = {
   id: string;
