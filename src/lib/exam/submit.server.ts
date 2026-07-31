@@ -15,7 +15,9 @@ import {
   type ScoreRules,
 } from "@/lib/grading";
 import { type AnswerValue } from "@/lib/questionKinds";
-import { QUESTION_COLUMNS, type ReviewItem, type SubmitExamResult } from "@/lib/exam/types";
+import { computeXpGain, levelFromXp, levelProgress, levelTitle } from "@/lib/xp";
+import { QUESTION_COLUMNS, type ReviewItem, type SubmitExamResult, type XpAward } from "@/lib/exam/types";
+
 
 /** Chấm ngay một câu (chế độ phản hồi tức thì): chốt đáp án, trả kết quả đúng/sai. */
 export async function checkExamAnswer(input: {
