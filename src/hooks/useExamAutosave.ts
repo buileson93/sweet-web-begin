@@ -77,8 +77,11 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
     [sessionId],
   );
 
+  /** Phiên đã bị máy chủ từ chối: không gửi autosave nữa. */
+  const deadRef = useRef(false);
+
   const flush = useCallback(async () => {
-    if (!enabled || !sessionId || !submitToken || inFlightRef.current) return;
+    if (!enabled || !sessionId || !submitToken || inFlightRef.current || deadRef.current) return;
     const delta = computeDelta();
     if (Object.keys(delta).length === 0) return;
 
