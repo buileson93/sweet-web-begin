@@ -243,7 +243,10 @@ export async function submitExamSession(input: {
     0,
   );
 
+  let xpAward: XpAward | null = null;
+
   if (!replay) {
+
     await supabaseAdmin
       .from("exam_sessions")
       .update({
