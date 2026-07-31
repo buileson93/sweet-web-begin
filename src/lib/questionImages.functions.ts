@@ -34,18 +34,18 @@ const optionCommitSchema = z.object({
 });
 
 /** Chuyển ảnh của từng phương án từ thư mục tạm sang thư mục chính thức. */
-export const commitOptionImagesFn = createServerFn({ method: "POST" })
+export const commitOptionImages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => optionCommitSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { assertImageEditor } = await import("@/lib/questionImageAuth.server");
     await assertImageEditor(context);
-    const { commitOptionImages } = await import("@/lib/questionImages.server");
-    return commitOptionImages(data.paths, data.quizId, data.questionId);
+    const { commitOptionImages: run } = await import("@/lib/questionImages.server");
+    return run(data.paths, data.quizId, data.questionId);
   });
 
 /** Nhân bản ảnh phương án cho câu hỏi bản sao. */
-export const duplicateOptionImagesFn = createServerFn({ method: "POST" })
+export const duplicateOptionImages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => optionCommitSchema.parse(input))
   .handler(async ({ data, context }) => {
