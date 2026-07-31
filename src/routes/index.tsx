@@ -24,10 +24,10 @@ export const Route = createFileRoute("/")({
         content:
           "Đấu trường tri thức trực tuyến của Công ty Quản lý bay miền Trung: chọn cuộc thi, làm bài tính giờ, chấm điểm tức thì và leo bảng xếp hạng.",
       },
-      { property: "og:title", content: "Đấu trường tri thức VATM" },
+      { property: "og:title", content: "Đấu trường tri thức VATM | Thi trắc nghiệm trực tuyến" },
       {
         property: "og:description",
-        content: "Chọn cuộc thi, làm bài có tính giờ và xem thứ hạng của bạn ngay sau khi nộp bài.",
+        content: "Đấu trường tri thức trực tuyến của Công ty Quản lý bay miền Trung: chọn cuộc thi, làm bài tính giờ, chấm điểm tức thì và leo bảng xếp hạng.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
