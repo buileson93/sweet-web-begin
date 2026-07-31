@@ -602,36 +602,75 @@ async function currentStreak(
   return streak;
 }
 
-/** Chốt một câu: công bố đáp án, cộng điểm, hẹn giờ sang câu tiếp. */
+/** Chốt một câu: công bố đáp án, tính sát thương, trừ máu, hẹn giờ sang câu tiếp. */
 export async function closeRound(duelId: string, roundIndex: number) {
   const duel = await loadDuel(duelId);
   if (duel.status !== "playing" || duel.current_round !== roundIndex) return;
 
   const q = await questionAt(duel, roundIndex);
   const players = await loadPlayers(duelId);
-  const { data: answers } = await supabaseAdmin
+  const { data: allAnswers } = await supabaseAdmin
     .from("duel_answers")
-    .select("employee_id, is_correct, ms_taken, points")
+    .select("id, employee_id, round_index, is_correct, ms_taken, points")
     .eq("duel_id", duelId)
-    .eq("round_index", roundIndex);
+    .lte("round_index", roundIndex);
+  const rows = allAnswers ?? [];
+  const answers = rows.filter((a) => a.round_index === roundIndex);
+
+  const limitMs = duel.seconds_per_round * 1000;
+  const combat = resolveRoundCombat(
+    players.map((p) => {
+      const a = answers.find((x) => x.employee_id === p.employee_id);
+      return {
+        employeeId: p.employee_id,
+        answered: !!a,
+        isCorrect: !!a?.is_correct,
+        msTaken: a?.ms_taken ?? limitMs,
+        streak: streakUpTo(rows, p.employee_id, roundIndex),
+        hpBefore: p.hp,
+      };
+    }),
+    limitMs,
+  );
+
+  // Ghi máu và sát thương xuống CSDL để máy chủ luôn là nguồn sự thật.
+  for (const l of combat.lines) {
+    const p = players.find((x) => x.employee_id === l.employeeId);
+    if (!p) continue;
+    await supabaseAdmin
+      .from("duel_players")
+      .update({ hp: l.hpAfter, damage_dealt: p.damage_dealt + l.damageDealt })
+      .eq("id", p.id);
+    const a = answers.find((x) => x.employee_id === l.employeeId);
+    if (a)
+      await supabaseAdmin
+        .from("duel_answers")
+        .update({ damage: l.damageDealt, first_correct: l.firstCorrect })
+        .eq("id", a.id);
+  }
 
   const result: RoundResult = {
     roundIndex,
     correctText: q ? correctTextOf(q.row) : "",
     explanation: q?.row.explanation ?? "",
+    neutral: combat.neutral,
     lines: players.map((p) => {
-      const a = (answers ?? []).find((x) => x.employee_id === p.employee_id);
+      const a = answers.find((x) => x.employee_id === p.employee_id);
+      const c = combat.lines.find((x) => x.employeeId === p.employee_id);
       return {
         employeeId: p.employee_id,
         isCorrect: a?.is_correct ?? false,
         msTaken: a?.ms_taken ?? 0,
         points: a?.points ?? 0,
         score: p.score,
+        damage: c?.damageDealt ?? 0,
+        hp: c?.hpAfter ?? p.hp,
+        firstCorrect: c?.firstCorrect ?? false,
       };
     }),
   };
 
-  const isLast = roundIndex + 1 >= duel.round_count;
+  const isLast = roundIndex + 1 >= duel.round_count || !!combat.knockedOutId;
   await supabaseAdmin
     .from("duels")
     .update({ last_result: result as never, version: duel.version + 1 })
@@ -639,8 +678,8 @@ export async function closeRound(duelId: string, roundIndex: number) {
   await broadcastDuel(duelId, "round.result", result);
 
   if (isLast) {
-    // Chờ đúng thời gian hiện đáp án rồi chốt trận; nếu tiến trình bị cắt,
-    // watchdog (tickDuels) vẫn kết thúc trận này.
+    // Chờ đúng thời gian hiện đáp án rồi chốt ván; nếu tiến trình bị cắt,
+    // watchdog (tickDuels) vẫn kết thúc ván này.
     await new Promise((r) => setTimeout(r, REVEAL_MS));
     await finishDuel(duelId);
   } else {
@@ -648,6 +687,22 @@ export async function closeRound(duelId: string, roundIndex: number) {
     await serveRound(next, roundIndex + 1, REVEAL_MS);
   }
 }
+
+/** Chuỗi câu đúng liên tiếp của một người, tính đến hết câu `roundIndex`. */
+function streakUpTo(
+  rows: { employee_id: string; round_index: number; is_correct: boolean }[],
+  employeeId: string,
+  roundIndex: number,
+) {
+  let streak = 0;
+  for (let i = roundIndex; i >= 0; i -= 1) {
+    const row = rows.find((r) => r.employee_id === employeeId && r.round_index === i);
+    if (!row || !row.is_correct) break;
+    streak += 1;
+  }
+  return streak;
+}
+
 
 
 /** Hết đếm ngược: chuyển sang thi đấu và phát câu đầu tiên. */
