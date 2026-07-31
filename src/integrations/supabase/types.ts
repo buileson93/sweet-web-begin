@@ -314,6 +314,7 @@ export type Database = {
           image_url: string | null
           is_archived: boolean
           kind: Database["public"]["Enums"]["question_kind"]
+          option_images: string[]
           options: string[]
           order_index: number
           pairs: Json
@@ -336,6 +337,7 @@ export type Database = {
           image_url?: string | null
           is_archived?: boolean
           kind?: Database["public"]["Enums"]["question_kind"]
+          option_images?: string[]
           options: string[]
           order_index?: number
           pairs?: Json
@@ -358,6 +360,7 @@ export type Database = {
           image_url?: string | null
           is_archived?: boolean
           kind?: Database["public"]["Enums"]["question_kind"]
+          option_images?: string[]
           options?: string[]
           order_index?: number
           pairs?: Json
