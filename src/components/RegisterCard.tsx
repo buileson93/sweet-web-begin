@@ -234,7 +234,6 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           </span>
           <div className="min-w-0">
             <h2 className="type-h3 text-primary-foreground">Vào phòng thi</h2>
-            <p className="type-meta text-primary-foreground/75">Xác thực nhanh bằng danh bạ nhân viên</p>
           </div>
         </div>
         {/* Đặc điểm phòng thi diễn tả bằng icon + tooltip, không dùng chữ */}
@@ -482,14 +481,25 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           {hint}
         </p>
 
-        <div className="flex items-center justify-center gap-3 border-t border-border pt-3">
-          <Link to="/lich-su" className="type-meta inline-flex items-center gap-1.5 hover:text-foreground">
-            <RefreshCw className="size-3.5" />
-            Lịch sử làm bài
-          </Link>
-          <Link to="/huong-dan" className="type-meta hover:text-foreground">
-            Luật chơi
-          </Link>
+        <div className="flex items-center justify-center gap-2 border-t border-border pt-3">
+          <IconTip label="Lịch sử làm bài của bạn">
+            <Link
+              to="/lich-su"
+              aria-label="Lịch sử làm bài"
+              className="grid size-9 place-items-center rounded-xl bg-secondary text-muted-foreground transition-all duration-200 hover:scale-110 hover:bg-primary hover:text-primary-foreground"
+            >
+              <History className="size-4.5" strokeWidth={2.4} />
+            </Link>
+          </IconTip>
+          <IconTip label="Luật chơi & hướng dẫn">
+            <Link
+              to="/huong-dan"
+              aria-label="Luật chơi"
+              className="grid size-9 place-items-center rounded-xl bg-secondary text-muted-foreground transition-all duration-200 hover:scale-110 hover:bg-primary hover:text-primary-foreground"
+            >
+              <BookOpen className="size-4.5" strokeWidth={2.4} />
+            </Link>
+          </IconTip>
         </div>
         </div>
       </div>
