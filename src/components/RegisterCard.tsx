@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getDeviceId } from "@/lib/deviceId";
 import { startExam } from "@/lib/exam.functions";
 import { saveExamEntry } from "@/lib/examSession";
 import { verifyEmployeeFn } from "@/lib/employees.functions";
@@ -143,6 +144,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           name: trimmed,
           credential: credential.trim(),
           extraCredential: extraCredential.trim() || undefined,
+          deviceId: getDeviceId(),
         },
       });
       saveExamEntry(sessionStorage, {
