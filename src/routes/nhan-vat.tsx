@@ -16,6 +16,8 @@ import {
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
+import { lazy, Suspense } from "react";
+
 import { AvatarBubble, type AvatarBubbleSize } from "@/components/player/AvatarBubble";
 import { AvatarCreatorDialog } from "@/components/player/AvatarCreatorDialog";
 import { LevelBar } from "@/components/player/LevelBar";
@@ -30,6 +32,8 @@ import type { ExamHistory } from "@/lib/exam.server";
 import { formatDateTime, formatSeconds } from "@/lib/format";
 import { getPlayerProfile, type PlayerProfile } from "@/lib/player.functions";
 import { cn } from "@/lib/utils";
+
+const OfficeAvatar3D = lazy(() => import("@/components/player/OfficeAvatar3D"));
 
 export const Route = createFileRoute("/nhan-vat")({
   head: () => ({
@@ -141,6 +145,14 @@ function CharacterPage() {
         <>
           <section className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
             <div className="card-elevated flex flex-col items-center gap-3 rounded-2xl p-5">
+              {profile.avatarUrl ? null : (
+                <Suspense fallback={<div className="h-64 w-full animate-pulse rounded-2xl bg-secondary" />}>
+                  <OfficeAvatar3D
+                    seed={profile.displayName}
+                    className="h-64 w-full rounded-2xl bg-gradient-to-b from-secondary/70 to-background"
+                  />
+                </Suspense>
+              )}
               <AvatarBubble
                 name={profile.displayName}
                 avatarUrl={profile.avatarUrl}
