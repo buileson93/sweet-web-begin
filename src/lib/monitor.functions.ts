@@ -4,8 +4,6 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const sessionDetailSchema = z.object({ sessionId: z.string().uuid() });
-
 export type LiveSession = {
   id: string;
   quizId: string;
@@ -92,12 +90,10 @@ export type SessionDetail = {
   answers: SessionAnswer[];
 };
 
-const LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
-
 /** Chi tiết một phiên thi: từng câu hỏi, đáp án thí sinh chọn và đáp án đúng. */
 export const getSessionDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => sessionDetailSchema.parse(input))
+  .inputValidator((input: unknown) => z.object({ sessionId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<SessionDetail> => {
     const roles = await Promise.all(
       (["admin", "staff", "editor"] as const).map((role) =>
@@ -108,6 +104,7 @@ export const getSessionDetail = createServerFn({ method: "POST" })
       throw new Error("Tài khoản không có quyền theo dõi kỳ thi.");
     }
 
+    const LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: session, error } = await supabaseAdmin
