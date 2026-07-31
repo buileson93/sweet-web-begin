@@ -181,21 +181,24 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
             <p className="type-meta text-primary-foreground/75">Xác thực nhanh bằng danh bạ nhân viên</p>
           </div>
         </div>
-        <div className="relative mt-3 flex flex-wrap gap-1.5">
+        {/* Đặc điểm phòng thi diễn tả bằng icon, không dùng chữ */}
+        <div className="relative mt-3 flex flex-wrap gap-2">
           {[
-            { Icon: ShieldCheck, text: "Một thiết bị · một nhân viên" },
-            { Icon: Zap, text: "Chấm điểm ngay" },
-            { Icon: Repeat, text: "Thi lại không giới hạn" },
-          ].map(({ Icon, text }) => (
+            { Icon: ShieldCheck, label: "Một thiết bị chỉ dành cho một nhân viên" },
+            { Icon: Zap, label: "Chấm điểm ngay khi chọn đáp án" },
+            { Icon: Repeat, label: "Thi lại không giới hạn" },
+          ].map(({ Icon, label }) => (
             <span
-              key={text}
-              className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/12 px-2.5 py-1 text-[0.7rem] font-semibold text-primary-foreground/90 backdrop-blur"
+              key={label}
+              title={label}
+              aria-label={label}
+              className="grid size-9 place-items-center rounded-xl bg-primary-foreground/12 text-primary-foreground/90 backdrop-blur transition-transform duration-200 hover:scale-110 hover:bg-primary-foreground/20"
             >
-              <Icon className="size-3.5" strokeWidth={2.4} />
-              {text}
+              <Icon className="size-4.5" strokeWidth={2.4} />
             </span>
           ))}
         </div>
+
       </div>
 
       <div className="p-5 sm:p-6">
