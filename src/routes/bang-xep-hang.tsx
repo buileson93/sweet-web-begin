@@ -169,6 +169,8 @@ function LeaderboardPage() {
           Vinh danh các hạng mục
         </h2>
         <AwardsBoard className="mt-3" rows={awardRows} />
+        <LevelBoard className="mt-3" />
+
       </div>
 
       <div className="mt-5">
