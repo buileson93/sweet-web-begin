@@ -190,6 +190,11 @@ function ArenaLobby() {
       saveArenaToken(res.token, res.profile.displayName);
       setToken(res.token);
       toast.success(`Chào ${res.profile.displayName}, sẵn sàng chiến!`);
+      const pendingDuel = window.sessionStorage.getItem("arena:pending-duel");
+      if (pendingDuel) {
+        window.sessionStorage.removeItem("arena:pending-duel");
+        void navigate({ to: "/dau-truong/$duelId", params: { duelId: pendingDuel } });
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Không xác thực được.");
     } finally {

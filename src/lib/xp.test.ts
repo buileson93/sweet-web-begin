@@ -3,33 +3,34 @@ import { describe, expect, it } from "vitest";
 import { computeXpGain, levelFromXp, levelProgress, levelTitle, xpThreshold } from "@/lib/xp";
 
 describe("xpThreshold", () => {
-  it("cấp 1 cần 100 XP để lên cấp 2", () => {
-    expect(xpThreshold(1)).toBe(100);
+  it("cấp 1 cần 2.500 XP để lên cấp 2", () => {
+    expect(xpThreshold(1)).toBe(2500);
   });
 
   it("luỹ tiến theo cấp", () => {
-    expect(xpThreshold(2)).toBe(250);
-    expect(xpThreshold(3)).toBe(450);
-    expect(xpThreshold(4)).toBe(700);
+    expect(xpThreshold(2)).toBe(7500);
+    expect(xpThreshold(3)).toBe(15000);
+    expect(xpThreshold(4)).toBe(25000);
+    expect(xpThreshold(9)).toBe(112500);
   });
 
   it("chống giá trị âm", () => {
-    expect(xpThreshold(0)).toBe(100);
-    expect(xpThreshold(-5)).toBe(100);
+    expect(xpThreshold(0)).toBe(2500);
+    expect(xpThreshold(-5)).toBe(2500);
   });
 });
 
 describe("levelFromXp", () => {
   it("bắt đầu ở cấp 1", () => {
     expect(levelFromXp(0)).toBe(1);
-    expect(levelFromXp(99)).toBe(1);
+    expect(levelFromXp(2499)).toBe(1);
   });
 
   it("đúng mốc là lên cấp", () => {
-    expect(levelFromXp(100)).toBe(2);
-    expect(levelFromXp(249)).toBe(2);
-    expect(levelFromXp(250)).toBe(3);
-    expect(levelFromXp(450)).toBe(4);
+    expect(levelFromXp(2500)).toBe(2);
+    expect(levelFromXp(7499)).toBe(2);
+    expect(levelFromXp(7500)).toBe(3);
+    expect(levelFromXp(15000)).toBe(4);
   });
 
   it("xử lý dữ liệu rác", () => {
@@ -40,16 +41,16 @@ describe("levelFromXp", () => {
 
 describe("levelProgress", () => {
   it("tính tiến độ trong cấp hiện tại", () => {
-    const p = levelProgress(150);
+    const p = levelProgress(5000);
     expect(p.level).toBe(2);
-    expect(p.into).toBe(50);
-    expect(p.need).toBe(150);
-    expect(p.percent).toBe(33);
+    expect(p.into).toBe(2500);
+    expect(p.need).toBe(5000);
+    expect(p.percent).toBe(50);
   });
 
   it("cấp 1 tính từ 0", () => {
-    const p = levelProgress(25);
-    expect(p).toMatchObject({ level: 1, into: 25, need: 100, percent: 25 });
+    const p = levelProgress(625);
+    expect(p).toMatchObject({ level: 1, into: 625, need: 2500, percent: 25 });
   });
 });
 

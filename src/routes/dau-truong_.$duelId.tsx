@@ -45,9 +45,12 @@ function DuelRoom() {
   const [joined, setJoined] = useState(false);
   useEffect(() => {
     const t = getArenaToken();
-    if (!t) void navigate({ to: "/dau-truong" });
+    if (!t) {
+      window.sessionStorage.setItem("arena:pending-duel", duelId);
+      void navigate({ to: "/dau-truong" });
+    }
     else setToken(t);
-  }, [navigate]);
+  }, [duelId, navigate]);
 
   const joinRoom = useServerFn(arenaJoinDuel);
   useEffect(() => {
@@ -93,8 +96,7 @@ function DuelRoom() {
     announced.current = r.roundIndex;
     if (r.dice?.length === 2) {
       setDice(r.dice);
-      const id = window.setTimeout(() => setDice([]), 2400);
-      return () => window.clearTimeout(id);
+      window.setTimeout(() => setDice([]), 2400);
     }
     const mineLine = r.lines.find((l) => l.employeeId === state.you);
     const foeLine = r.lines.find((l) => l.employeeId !== state.you);
@@ -110,7 +112,7 @@ function DuelRoom() {
       toast.warning(`🔥 Đối thủ chỉ còn ${foeHp} máu — dứt điểm thôi!`);
     if (myHp > 0 && myHp <= state.hpStart * 0.25)
       toast.warning(`🩸 Bạn chỉ còn ${myHp} máu — cẩn thận!`);
-  }, [state, foe?.employeeId]);
+  }, [state]);
 
   if (!token || !state)
     return (
