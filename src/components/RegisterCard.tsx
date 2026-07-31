@@ -188,7 +188,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                   <SelectValue placeholder="Chọn cuộc thi" />
                   {quizPulse > 0 ? <span className="tap-flash rounded-xl" aria-hidden /> : null}
                 </SelectTrigger>
-                <SelectContent className="max-w-[min(24rem,calc(100vw-2rem))]">
+                <SelectContent className="max-w-[calc(100vw-1.5rem)]">
                   {quizzes.map((q) => {
                     const st = quizStatus(q);
                     return (
