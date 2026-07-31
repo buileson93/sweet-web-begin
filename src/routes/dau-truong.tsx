@@ -64,6 +64,7 @@ export const Route = createFileRoute("/dau-truong")({
 });
 
 type Home = Awaited<ReturnType<typeof arenaHome>>;
+type Presence = Awaited<ReturnType<typeof arenaPresence>>;
 
 function ArenaLobby() {
   const navigate = useNavigate();
@@ -71,14 +72,19 @@ function ArenaLobby() {
   const loadHome = useServerFn(arenaHome);
   const quickMatch = useServerFn(arenaQuickMatch);
   const respond = useServerFn(arenaRespondInvite);
+  const beat = useServerFn(arenaPresence);
+  const endActive = useServerFn(arenaEndActive);
 
   const [token, setToken] = useState("");
   const [home, setHome] = useState<Home | null>(null);
+  const [presence, setPresence] = useState<Presence | null>(null);
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
   const [busy, setBusy] = useState(false);
+  const [ending, setEnding] = useState(false);
   const [searching, setSearching] = useState(false);
   const waitedRef = useRef(0);
+
 
   useEffect(() => {
     const saved = getArenaToken();
