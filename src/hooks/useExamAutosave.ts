@@ -102,13 +102,22 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
       }
       setSavedAt(new Date(res.savedAt ?? Date.now()));
       setStatus("saved");
-    } catch {
+    } catch (error) {
+      // Phiên đã đóng (hết giờ / mở lượt mới nơi khác): ngừng thử lại, tránh vòng lặp lỗi.
+      const message = error instanceof Error ? error.message : "";
+      if (/không hợp lệ|hết giờ/i.test(message)) {
+        deadRef.current = true;
+        if (timerRef.current) clearTimeout(timerRef.current);
+        setStatus("offline");
+        return;
+      }
       // Mất mạng hoặc máy chủ lỗi: giữ nguyên hàng đợi, thử lại theo backoff.
       attemptRef.current = Math.min(attemptRef.current + 1, BACKOFF_MS.length);
       setStatus("offline");
       const wait = BACKOFF_MS[attemptRef.current - 1] ?? BACKOFF_MS[BACKOFF_MS.length - 1];
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => void flush(), wait);
+
     } finally {
       inFlightRef.current = false;
     }
