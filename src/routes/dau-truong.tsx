@@ -46,6 +46,8 @@ import { clearArenaToken, getArenaToken, saveArenaToken } from "@/lib/arena/clie
 import { parseBusyError, type BusyInfo } from "@/lib/arena/rooms";
 import type { ArenaProfile } from "@/lib/arena/types";
 import { getDeviceId } from "@/lib/deviceId";
+import { allSpriteUrls } from "@/lib/arena/sprites";
+
 import { cn } from "@/lib/utils";
 
 
@@ -97,10 +99,26 @@ function ArenaLobby() {
   const waitedRef = useRef(0);
 
 
+  // Nạp sẵn toàn bộ sprite nhân vật ngay ở sảnh: vào trận không phải chờ tải ảnh.
+  useEffect(() => {
+    const imgs = allSpriteUrls().map((url) => {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url;
+      return img;
+    });
+    return () => {
+      imgs.forEach((img) => {
+        img.src = "";
+      });
+    };
+  }, []);
+
   useEffect(() => {
     const saved = getArenaToken();
     if (saved) setToken(saved);
   }, []);
+
 
   useEffect(() => {
     if (!token) return;
