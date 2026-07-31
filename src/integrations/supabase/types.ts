@@ -449,6 +449,7 @@ export type Database = {
           allow_fifty_fifty: boolean
           allow_skip: boolean
           blueprint: Json
+          cover_fit: string
           cover_url: string
           created_at: string
           description: string
@@ -464,6 +465,7 @@ export type Database = {
           max_attempts: number | null
           negative_marking: number
           pass_percent: number
+          peek_rewards: string[]
           question_count: number
           room_password: string | null
           show_question_map: boolean
@@ -482,6 +484,7 @@ export type Database = {
           allow_fifty_fifty?: boolean
           allow_skip?: boolean
           blueprint?: Json
+          cover_fit?: string
           cover_url?: string
           created_at?: string
           description?: string
@@ -497,6 +500,7 @@ export type Database = {
           max_attempts?: number | null
           negative_marking?: number
           pass_percent?: number
+          peek_rewards?: string[]
           question_count?: number
           room_password?: string | null
           show_question_map?: boolean
@@ -515,6 +519,7 @@ export type Database = {
           allow_fifty_fifty?: boolean
           allow_skip?: boolean
           blueprint?: Json
+          cover_fit?: string
           cover_url?: string
           created_at?: string
           description?: string
@@ -530,6 +535,7 @@ export type Database = {
           max_attempts?: number | null
           negative_marking?: number
           pass_percent?: number
+          peek_rewards?: string[]
           question_count?: number
           room_password?: string | null
           show_question_map?: boolean
