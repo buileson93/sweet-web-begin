@@ -4,7 +4,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { logArenaAudit } from "@/lib/arena/audit.server";
-import { broadcastDuel, broadcastToEmployee } from "@/lib/arena/broadcast.server";
+import { broadcastDuel, broadcastDuelBatch, broadcastToEmployee } from "@/lib/arena/broadcast.server";
 import { botDecision, isBotEmployee, tierOf } from "@/lib/arena/bot";
 import { buildRoundPayload } from "@/lib/arena/payload";
 import {
@@ -41,6 +41,8 @@ import type { Blueprint } from "@/lib/questionKinds";
 const COUNTDOWN_MS = 4_000;
 /** Thời gian hiển thị đáp án giữa hai câu (ms). */
 const REVEAL_MS = 3_000;
+/** Thời lượng hiệu ứng xúc xắc — do máy chủ quy định để hai bên khớp nhau. */
+const DICE_MS = 2_400;
 /** Độ trễ mạng được tha thứ khi gửi đáp án (ms). */
 const NETWORK_GRACE_MS = 1_500;
 /** Thời gian chờ đối thủ mất kết nối trước khi xử thua kỹ thuật (ms). */
@@ -836,13 +838,28 @@ export async function closeRound(duelId: string, roundIndex: number) {
       };
     }),
   };
+  // Mốc thời gian do máy chủ quyết định: cả hai bên đổ xúc xắc cùng lúc, cùng độ dài.
+  result.resolvedAt = nowIso();
+  result.revealMs = DICE_MS;
 
   const isLast = roundIndex + 1 >= duel.round_count || !!combat.knockedOutId || !!noShow;
   await supabaseAdmin
     .from("duels")
     .update({ last_result: result as never, version: duel.version + 2 })
     .eq("id", duelId);
-  await broadcastDuel(duelId, "round.result", result);
+  // Một lô duy nhất: kết quả câu + ảnh chụp máu, để client vẽ lại đúng một lần.
+  await broadcastDuelBatch(duelId, [
+    { event: "round.result", payload: result },
+    {
+      event: "hp.sync",
+      payload: {
+        roundIndex,
+        version: duel.version + 2,
+        hp: result.lines.map((l) => ({ employeeId: l.employeeId, hp: l.hp })),
+      },
+    },
+  ]);
+
 
   if (noShow) {
     await logArenaAudit(

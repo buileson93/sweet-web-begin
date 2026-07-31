@@ -60,7 +60,7 @@ function DuelRoom() {
       .catch((e) => toast.error(e instanceof Error ? e.message : "Không vào được phòng so tài."));
   }, [duelId, joinRoom, token]);
 
-  const { state, error, refresh, latency, connectionStatus } = useDuelChannel({ duelId, token, enabled: !!token && joined });
+  const { state, error, refresh, latency, connectionStatus, predict } = useDuelChannel({ duelId, token, enabled: !!token && joined });
 
   const sendReady = useServerFn(arenaReady);
   const sendAnswer = useServerFn(arenaAnswer);
@@ -97,8 +97,15 @@ function DuelRoom() {
     if (!state || !r || r.roundIndex === announced.current) return;
     announced.current = r.roundIndex;
     if (r.dice?.length === 2) {
-      setDice(r.dice);
-      window.setTimeout(() => setDice([]), 2400);
+      // Mốc do máy chủ cấp: hai bên thấy cùng kết quả và cùng thời điểm kết thúc.
+      const skew = Date.now() - Date.parse(state.serverNow);
+      const total = r.revealMs ?? 2400;
+      const startedAt = r.resolvedAt ? Date.parse(r.resolvedAt) + skew : Date.now();
+      const remain = startedAt + total - Date.now();
+      if (remain > 250) {
+        setDice(r.dice);
+        window.setTimeout(() => setDice([]), remain);
+      }
     }
     const mineLine = r.lines.find((l) => l.employeeId === state.you);
     const foeLine = r.lines.find((l) => l.employeeId !== state.you);
@@ -183,6 +190,13 @@ function DuelRoom() {
           onChange={setValue}
           onSubmit={async (v) => {
             setLocked(true);
+            // Dự đoán phía client: hiện ngay "đã chốt" rồi đối chiếu lại khi máy chủ xác nhận.
+            predict((prev) => ({
+              ...prev,
+              players: prev.players.map((p) =>
+                p.employeeId === prev.you ? { ...p, answered: true } : p,
+              ),
+            }));
             try {
               await sendAnswer({
                 data: {

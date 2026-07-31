@@ -71,6 +71,10 @@ export type RoundResult = {
   dice: number[];
   /** Sát thương gốc trước khi áp kỹ năng. */
   baseDamage?: number;
+  /** Thời điểm máy chủ chốt câu (ISO) — dùng để hai bên đổ xúc xắc cùng lúc. */
+  resolvedAt?: string;
+  /** Thời lượng hiệu ứng xúc xắc do máy chủ quy định (ms). */
+  revealMs?: number;
   /** Cả hai cùng không kịp trả lời — câu bị bỏ trống do hết giờ. */
   timedOut?: boolean;
   /** Diễn giải hiệu ứng kỹ năng đã kích hoạt trong câu. */
