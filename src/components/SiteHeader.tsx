@@ -27,14 +27,8 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "onDark"
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
-        <Link to="/" className="flex min-w-0 items-center gap-3">
+        <Link to="/" aria-label="Trang chủ" className="flex min-w-0 items-center gap-3">
           <BrandLogo />
-          <span className="hidden min-w-0 leading-tight sm:block">
-            <span className="block truncate font-heading text-sm font-bold">Hội thi trắc nghiệm trực tuyến</span>
-            <span className={cn("block text-xs", onDark ? "text-primary-foreground/70" : "text-muted-foreground")}>
-              Công ty Quản lý bay miền Trung
-            </span>
-          </span>
         </Link>
 
         <nav className="hidden items-center gap-1 text-sm font-medium md:flex">

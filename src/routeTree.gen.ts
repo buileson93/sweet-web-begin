@@ -21,6 +21,7 @@ import { Route as AuthenticatedNhatKyRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedQuanTriRouteImport } from './routes/_authenticated/quan-tri'
 import { Route as CuocThiQuizIdRouteImport } from './routes/cuoc-thi.$quizId'
 import { Route as ApiPublicExamProgressRouteImport } from './routes/api/public/exam-progress'
+import { Route as ApiPublicAnhBiaSplatRouteImport } from './routes/api/public/anh-bia.$'
 import { Route as ApiPublicAnhCauHoiSplatRouteImport } from './routes/api/public/anh-cau-hoi.$'
 import { Route as ApiPublicCronAutoSubmitRouteImport } from './routes/api/public/cron/auto-submit'
 import { Route as ApiPublicCronDonAnhRouteImport } from './routes/api/public/cron/don-anh'
@@ -84,6 +85,11 @@ const ApiPublicExamProgressRoute = ApiPublicExamProgressRouteImport.update({
   path: '/api/public/exam-progress',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAnhBiaSplatRoute = ApiPublicAnhBiaSplatRouteImport.update({
+  id: '/api/public/anh-bia/$',
+  path: '/api/public/anh-bia/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAnhCauHoiSplatRoute = ApiPublicAnhCauHoiSplatRouteImport.update({
   id: '/api/public/anh-cau-hoi/$',
   path: '/api/public/anh-cau-hoi/$',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
+  '/api/public/anh-bia/$': typeof ApiPublicAnhBiaSplatRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
   '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
   '/api/public/cron/don-anh': typeof ApiPublicCronDonAnhRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
+  '/api/public/anh-bia/$': typeof ApiPublicAnhBiaSplatRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
   '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
   '/api/public/cron/don-anh': typeof ApiPublicCronDonAnhRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/_authenticated/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
+  '/api/public/anh-bia/$': typeof ApiPublicAnhBiaSplatRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
   '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
   '/api/public/cron/don-anh': typeof ApiPublicCronDonAnhRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/api/public/exam-progress'
+    | '/api/public/anh-bia/$'
     | '/api/public/anh-cau-hoi/$'
     | '/api/public/cron/auto-submit'
     | '/api/public/cron/don-anh'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/api/public/exam-progress'
+    | '/api/public/anh-bia/$'
     | '/api/public/anh-cau-hoi/$'
     | '/api/public/cron/auto-submit'
     | '/api/public/cron/don-anh'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/_authenticated/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/api/public/exam-progress'
+    | '/api/public/anh-bia/$'
     | '/api/public/anh-cau-hoi/$'
     | '/api/public/cron/auto-submit'
     | '/api/public/cron/don-anh'
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   ThiRoute: typeof ThiRoute
   CuocThiQuizIdRoute: typeof CuocThiQuizIdRoute
   ApiPublicExamProgressRoute: typeof ApiPublicExamProgressRoute
+  ApiPublicAnhBiaSplatRoute: typeof ApiPublicAnhBiaSplatRoute
   ApiPublicAnhCauHoiSplatRoute: typeof ApiPublicAnhCauHoiSplatRoute
   ApiPublicCronAutoSubmitRoute: typeof ApiPublicCronAutoSubmitRoute
   ApiPublicCronDonAnhRoute: typeof ApiPublicCronDonAnhRoute
@@ -303,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicExamProgressRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/anh-bia/$': {
+      id: '/api/public/anh-bia/$'
+      path: '/api/public/anh-bia/$'
+      fullPath: '/api/public/anh-bia/$'
+      preLoaderRoute: typeof ApiPublicAnhBiaSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/anh-cau-hoi/$': {
       id: '/api/public/anh-cau-hoi/$'
       path: '/api/public/anh-cau-hoi/$'
@@ -352,6 +372,7 @@ const rootRouteChildren: RootRouteChildren = {
   ThiRoute: ThiRoute,
   CuocThiQuizIdRoute: CuocThiQuizIdRoute,
   ApiPublicExamProgressRoute: ApiPublicExamProgressRoute,
+  ApiPublicAnhBiaSplatRoute: ApiPublicAnhBiaSplatRoute,
   ApiPublicAnhCauHoiSplatRoute: ApiPublicAnhCauHoiSplatRoute,
   ApiPublicCronAutoSubmitRoute: ApiPublicCronAutoSubmitRoute,
   ApiPublicCronDonAnhRoute: ApiPublicCronDonAnhRoute,
