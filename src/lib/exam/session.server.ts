@@ -7,6 +7,8 @@ import {
   baseOptions,
   pairsOf,
   percentOf,
+  optionImagesOf,
+  permuteByOrder,
   pickByBlueprint,
   shuffle,
   type QuestionRow,
@@ -111,6 +113,7 @@ export async function startExamSession(input: {
   const optionOrders: number[][] = [];
   const questions: ExamQuestion[] = ordered.map((q) => {
     const display = baseOptions(q);
+    const displayImages = optionImagesOf(q);
     const indexes = display.map((_, i) => i);
     // Câu sắp xếp và nối cặp luôn trộn để tránh lộ thứ tự đúng.
     const mustShuffle = q.kind === "ordering" || q.kind === "matching";
@@ -120,7 +123,9 @@ export async function startExamSession(input: {
       id: q.id,
       kind: q.kind,
       question: q.question,
-      options: order.map((i) => display[i]),
+      options: permuteByOrder(display, order, ""),
+      // Ảnh phương án phải hoán vị CÙNG một phép trộn, nếu không sẽ hiển thị sai/lộ đáp án.
+      optionImages: permuteByOrder(displayImages, order, ""),
       matchLeft: q.kind === "matching" ? pairsOf(q).map((p) => p.left) : [],
       imageUrl: q.image_url ?? null,
       points: q.points || 1,
