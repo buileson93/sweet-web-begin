@@ -49,93 +49,120 @@ function Character({ palette, female }: { palette: Palette; female: boolean }) {
 
   return (
     <group ref={root}>
-      {/* Giày */}
-      {[-0.16, 0.16].map((x) => (
-        <mesh key={x} position={[x, 0.05, 0.05]} castShadow receiveShadow>
-          <boxGeometry args={[0.16, 0.09, 0.32]} />
-          <meshStandardMaterial color="#20242c" roughness={0.35} metalness={0.15} />
+      {/* Giày da */}
+      {[-0.13, 0.13].map((x) => (
+        <mesh key={x} position={[x, 0.045, 0.04]} castShadow receiveShadow>
+          <boxGeometry args={[0.14, 0.075, 0.27]} />
+          <meshStandardMaterial color="#1b1e24" roughness={0.3} metalness={0.2} />
         </mesh>
       ))}
       {/* Ống quần */}
-      {[-0.16, 0.16].map((x) => (
-        <mesh key={`leg-${x}`} position={[x, 0.44, 0]} castShadow>
-          <capsuleGeometry args={[0.095, 0.6, 6, 16]} />
-          <meshStandardMaterial color={palette.trousers} roughness={0.85} />
+      {[-0.13, 0.13].map((x) => (
+        <mesh key={`leg-${x}`} position={[x, 0.47, 0]} castShadow>
+          <capsuleGeometry args={[0.098, 0.62, 8, 20]} />
+          <meshStandardMaterial color={palette.trousers} roughness={0.88} />
         </mesh>
       ))}
-      {/* Thân quần */}
-      <mesh position={[0, 0.85, 0]} castShadow>
-        <boxGeometry args={[0.44, 0.22, 0.26]} />
-        <meshStandardMaterial color={palette.trousers} roughness={0.85} />
+      {/* Hông + thắt lưng */}
+      <mesh position={[0, 0.9, 0]} castShadow>
+        <boxGeometry args={[0.38, 0.24, 0.24]} />
+        <meshStandardMaterial color={palette.trousers} roughness={0.88} />
       </mesh>
-      {/* Thắt lưng */}
-      <mesh position={[0, 0.97, 0]} castShadow>
-        <boxGeometry args={[0.45, 0.06, 0.27]} />
-        <meshStandardMaterial color="#1a1a1d" roughness={0.4} metalness={0.25} />
+      <mesh position={[0, 1.0, 0]} castShadow>
+        <boxGeometry args={[0.39, 0.055, 0.25]} />
+        <meshStandardMaterial color="#17181c" roughness={0.35} metalness={0.3} />
+      </mesh>
+      <mesh position={[0, 1.0, 0.128]}>
+        <boxGeometry args={[0.055, 0.045, 0.012]} />
+        <meshStandardMaterial color="#cbb37a" roughness={0.25} metalness={0.75} />
       </mesh>
 
-      {/* Sơ mi (thân trong) */}
-      <mesh position={[0, 1.28, 0.02]} castShadow>
-        <boxGeometry args={[0.34, 0.62, 0.24]} />
+      {/* Sơ mi trắng lộ ở giữa ngực */}
+      <mesh position={[0, 1.32, 0.055]} castShadow>
+        <boxGeometry args={[0.2, 0.6, 0.16]} />
         <meshStandardMaterial {...matShirt} />
       </mesh>
+      {/* Cổ áo sơ mi */}
+      {[-1, 1].map((s) => (
+        <mesh key={`collar-${s}`} position={[s * 0.055, 1.585, 0.1]} rotation={[0.18, 0, s * 0.5]}>
+          <boxGeometry args={[0.06, 0.11, 0.02]} />
+          <meshStandardMaterial {...matShirt} />
+        </mesh>
+      ))}
       {/* Cà vạt */}
-      <mesh position={[0, 1.44, 0.14]} rotation={[0.08, 0, 0]}>
-        <boxGeometry args={[0.07, 0.11, 0.03]} />
-        <meshStandardMaterial color={palette.tie} roughness={0.5} />
+      <mesh position={[0, 1.545, 0.115]} rotation={[0.12, 0, 0]}>
+        <boxGeometry args={[0.055, 0.075, 0.035]} />
+        <meshStandardMaterial color={palette.tie} roughness={0.45} />
       </mesh>
-      <mesh position={[0, 1.22, 0.14]} rotation={[0.08, 0, 0]}>
-        <boxGeometry args={[0.09, 0.34, 0.025]} />
-        <meshStandardMaterial color={palette.tie} roughness={0.5} />
+      <mesh position={[0, 1.35, 0.125]} rotation={[0.12, 0, 0]}>
+        <boxGeometry args={[0.075, 0.33, 0.022]} />
+        <meshStandardMaterial color={palette.tie} roughness={0.45} />
       </mesh>
 
-      {/* Áo vest: hai vạt trước + lưng */}
-      <mesh position={[0, 1.3, -0.07]} castShadow>
-        <boxGeometry args={[0.5, 0.66, 0.14]} />
+      {/* Áo vest: khối thân dày, hai vạt trước ôm sát */}
+      <mesh position={[0, 1.31, -0.02]} castShadow>
+        <boxGeometry args={[0.42, 0.64, 0.24]} />
         <meshStandardMaterial {...matSuit} />
       </mesh>
       {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * 0.17, 1.3, 0.07]} rotation={[0, 0, s * 0.05]} castShadow>
-          <boxGeometry args={[0.17, 0.66, 0.16]} />
+        <mesh key={s} position={[s * 0.135, 1.31, 0.075]} rotation={[0, 0, s * 0.03]} castShadow>
+          <boxGeometry args={[0.155, 0.64, 0.17]} />
           <meshStandardMaterial {...matSuit} />
         </mesh>
       ))}
-      {/* Ve áo */}
+      {/* Ve áo chữ V */}
       {[-1, 1].map((s) => (
-        <mesh key={`lapel-${s}`} position={[s * 0.095, 1.46, 0.145]} rotation={[0, 0, s * 0.42]}>
-          <boxGeometry args={[0.07, 0.26, 0.02]} />
-          <meshStandardMaterial color={palette.suit} roughness={0.6} metalness={0.06} />
+        <mesh key={`lapel-${s}`} position={[s * 0.085, 1.5, 0.152]} rotation={[0, 0, s * 0.34]}>
+          <boxGeometry args={[0.085, 0.24, 0.022]} />
+          <meshStandardMaterial color={palette.suit} roughness={0.55} metalness={0.08} />
         </mesh>
       ))}
+      {/* Khăn túi ngực */}
+      <mesh position={[-0.155, 1.4, 0.155]} rotation={[0, 0, 0.06]}>
+        <boxGeometry args={[0.06, 0.035, 0.014]} />
+        <meshStandardMaterial color="#e9eef5" roughness={0.5} />
+      </mesh>
       {/* Vai */}
-      <mesh position={[0, 1.6, 0]} castShadow>
-        <boxGeometry args={[0.56, 0.12, 0.26]} />
+      <mesh position={[0, 1.6, -0.01]} castShadow>
+        <boxGeometry args={[0.5, 0.11, 0.25]} />
         <meshStandardMaterial {...matSuit} />
       </mesh>
 
       {/* Tay áo + bàn tay */}
       {[-1, 1].map((s) => (
-        <group key={`arm-${s}`} position={[s * 0.32, 1.5, 0]} rotation={[0, 0, s * -0.09]}>
-          <mesh position={[0, -0.22, 0]} castShadow>
-            <capsuleGeometry args={[0.075, 0.42, 6, 16]} />
+        <group key={`arm-${s}`} position={[s * 0.28, 1.55, 0]} rotation={[0, 0, s * -0.07]}>
+          <mesh position={[0, -0.24, 0]} castShadow>
+            <capsuleGeometry args={[0.072, 0.44, 8, 20]} />
             <meshStandardMaterial {...matSuit} />
           </mesh>
-          <mesh position={[0, -0.5, 0.01]} castShadow>
-            <sphereGeometry args={[0.068, 20, 20]} />
+          {/* Măng sét sơ mi */}
+          <mesh position={[0, -0.47, 0]}>
+            <cylinderGeometry args={[0.062, 0.062, 0.05, 18]} />
+            <meshStandardMaterial {...matShirt} />
+          </mesh>
+          <mesh position={[0, -0.54, 0.005]} castShadow>
+            <sphereGeometry args={[0.062, 20, 20]} />
             <meshStandardMaterial {...matSkin} />
           </mesh>
         </group>
       ))}
 
-      {/* Thẻ nhân viên đeo cổ */}
-      <mesh position={[0, 1.5, 0.13]} rotation={[0.1, 0, 0]}>
-        <torusGeometry args={[0.12, 0.008, 8, 32, Math.PI]} />
-        <meshStandardMaterial color="#3d6fb0" roughness={0.7} />
-      </mesh>
-      <mesh position={[0.12, 1.28, 0.16]} rotation={[0.08, 0, -0.12]} castShadow>
-        <boxGeometry args={[0.11, 0.15, 0.012]} />
+      {/* Dây đeo + thẻ nhân viên */}
+      {[-1, 1].map((s) => (
+        <mesh key={`lany-${s}`} position={[s * 0.062, 1.5, 0.075]} rotation={[0.16, 0, s * 0.2]}>
+          <boxGeometry args={[0.016, 0.2, 0.01]} />
+          <meshStandardMaterial color="#3d6fb0" roughness={0.75} />
+        </mesh>
+      ))}
+      <mesh position={[0.055, 1.31, 0.15]} rotation={[0.06, 0, -0.08]} castShadow>
+        <boxGeometry args={[0.1, 0.135, 0.01]} />
         <meshStandardMaterial color="#f4f6f9" roughness={0.35} metalness={0.1} />
       </mesh>
+      <mesh position={[0.055, 1.355, 0.157]} rotation={[0.06, 0, -0.08]}>
+        <boxGeometry args={[0.08, 0.03, 0.004]} />
+        <meshStandardMaterial color="#3d6fb0" roughness={0.5} />
+      </mesh>
+
 
       {/* Cổ + đầu */}
       <mesh position={[0, 1.71, 0]} castShadow>
