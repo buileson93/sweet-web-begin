@@ -97,16 +97,26 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
 
   useEffect(() => () => { if (peekTimer.current) clearTimeout(peekTimer.current); }, []);
 
+  /** Thiết bị cảm ứng / màn hình nhỏ: bỏ hẳn thẻ peek vì nó che mất danh sách. */
+  const peekAllowed = () =>
+    typeof window !== "undefined" &&
+    window.innerWidth >= 768 &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
   /** Giữ chuột trên một mục ~500ms mới bung thẻ giới thiệu, và đặt cạnh danh sách để không che nội dung. */
   const showPeek = (q: RegisterQuiz, status: ReturnType<typeof quizStatus>, el: HTMLElement) => {
     if (peekTimer.current) clearTimeout(peekTimer.current);
+    if (!peekAllowed()) return;
     const itemRect = el.getBoundingClientRect();
     const listRect = (el.closest("[role='listbox']") as HTMLElement | null)?.getBoundingClientRect() ?? itemRect;
     peekTimer.current = setTimeout(() => {
       const width = 288;
       const gap = 12;
       const fitsRight = listRect.right + gap + width <= window.innerWidth - 8;
-      const x = fitsRight ? listRect.right + gap : Math.max(8, listRect.left - gap - width);
+      const fitsLeft = listRect.left - gap - width >= 8;
+      if (!fitsRight && !fitsLeft) return; // không đủ chỗ thì thà không hiện còn hơn che danh sách
+      const x = fitsRight ? listRect.right + gap : listRect.left - gap - width;
+
       setPeek({
         id: q.id,
         title: q.title,
