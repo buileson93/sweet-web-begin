@@ -121,7 +121,7 @@ export async function submitExamSession(input: {
     supabaseAdmin
       .from("quizzes")
       .select(
-        "title, pass_percent, negative_marking, streak_bonus, strict_mode, disqualify_threshold",
+        "title, pass_percent, negative_marking, streak_bonus, streak_step, streak_max_bonus, double_points_after, strict_mode, disqualify_threshold",
       )
       .eq("id", session.quiz_id)
       .maybeSingle(),
@@ -148,6 +148,14 @@ export async function submitExamSession(input: {
   const byId = new Map(rows.map((r) => [r.id, r]));
   const orders = (session.option_orders as unknown as number[][]) ?? [];
 
+  const scoreRules: ScoreRules = {
+    streakBonus: quiz?.streak_bonus ?? true,
+    streakStep: Number(quiz?.streak_step ?? 1),
+    streakMaxBonus: Number(quiz?.streak_max_bonus ?? 5),
+    doublePointsAfter: Number(quiz?.double_points_after ?? 0),
+    negativeMarking: Number(quiz?.negative_marking ?? 0),
+  };
+
   let score = 0;
   let points = 0;
   let streak = 0;
@@ -169,12 +177,10 @@ export async function submitExamSession(input: {
       score++;
       streak++;
       bestStreak = Math.max(bestStreak, streak);
-      const bonus = quiz?.streak_bonus && streak >= 3 ? 1 : 0;
-      points += (row.points || 1) + bonus;
     } else {
       streak = 0;
-      if (answered) points -= Number(quiz?.negative_marking ?? 0) * (row.points || 1);
     }
+    points += scoreForAnswer(row.points || 1, correct, answered, streak, scoreRules);
 
     review.push({
       kind: row.kind,
