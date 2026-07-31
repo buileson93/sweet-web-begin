@@ -100,7 +100,7 @@ export type SubmitExamResult = {
 };
 
 const QUESTION_COLUMNS =
-  "id, question, options, correct_index, image_url, kind, correct_indices, accepted_answers, pairs, correct_order, difficulty, tags, points, explanation, time_limit_seconds";
+  "id, question, options, correct_index, image_url, kind, correct_indices, accepted_answers, pairs, correct_order, difficulty, tags, points, explanation, time_limit_seconds, order_index";
 
 const QUIZ_COLUMNS =
   "id, title, is_active, start_time, end_time, question_count, duration_minutes, shuffle_options, shuffle_questions, pass_percent, room_password, max_attempts, instant_feedback, allow_fifty_fifty, allow_skip, streak_bonus, show_question_map, negative_marking, blueprint";
@@ -172,7 +172,9 @@ export async function startExamSession(input: {
     .from("questions")
     .select(QUESTION_COLUMNS)
     .eq("quiz_id", quiz.id)
-    .eq("is_archived", false);
+    .eq("is_archived", false)
+    .order("order_index", { ascending: true })
+    .order("created_at", { ascending: true });
 
   if (poolError) throw new Error(poolError.message);
   const pool = (poolRaw ?? []) as unknown as QuestionRow[];
@@ -185,8 +187,8 @@ export async function startExamSession(input: {
   }
 
   const blueprint = (quiz.blueprint ?? {}) as Blueprint;
-  const picked = pickByBlueprint(pool, wanted, blueprint);
-  const ordered = quiz.shuffle_questions ? picked : picked;
+  // Cờ "Xáo trộn câu hỏi" quyết định thứ tự câu trong đề; tắt thì giữ order_index.
+  const ordered = pickByBlueprint(pool, wanted, blueprint, quiz.shuffle_questions !== false);
 
   const optionOrders: number[][] = [];
   const questions: ExamQuestion[] = ordered.map((q) => {
