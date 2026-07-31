@@ -27,6 +27,8 @@ import { QuizManager } from "@/components/admin/QuizManager";
 import { QuestionManager } from "@/components/admin/QuestionManager";
 import { ImageStorageStats } from "@/components/admin/ImageStorageStats";
 import { UnitManager } from "@/components/admin/UnitManager";
+import { AssetLibrary } from "@/components/admin/AssetLibrary";
+
 import { ResultManager } from "@/components/admin/ResultManager";
 import { EmployeeManager } from "@/components/admin/EmployeeManager";
 import { EmployeeHistoryManager } from "@/components/admin/EmployeeHistoryManager";
