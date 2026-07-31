@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { DuelFighter } from "@/components/arena/DuelFighter";
 import { BattleDice } from "@/components/arena/BattleDice";
 import { ConnectionBadge } from "@/components/arena/ConnectionBadge";
+import { NetStatsWidget } from "@/components/arena/NetStatsWidget";
+import { DiagnosticsDialog } from "@/components/arena/DiagnosticsDialog";
 import { SkillBar } from "@/components/arena/SkillBar";
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
@@ -60,7 +62,9 @@ function DuelRoom() {
       .catch((e) => toast.error(e instanceof Error ? e.message : "Không vào được phòng so tài."));
   }, [duelId, joinRoom, token]);
 
-  const { state, error, refresh, latency, connectionStatus, predict } = useDuelChannel({ duelId, token, enabled: !!token && joined });
+  const { state, error, refresh, latency, connectionStatus, predict, stats, diag, clock } =
+    useDuelChannel({ duelId, token, enabled: !!token && joined });
+  const [diagOpen, setDiagOpen] = useState(false);
 
   const sendReady = useServerFn(arenaReady);
   const sendAnswer = useServerFn(arenaAnswer);
@@ -98,9 +102,8 @@ function DuelRoom() {
     announced.current = r.roundIndex;
     if (r.dice?.length === 2) {
       // Mốc do máy chủ cấp: hai bên thấy cùng kết quả và cùng thời điểm kết thúc.
-      const skew = Date.now() - Date.parse(state.serverNow);
       const total = r.revealMs ?? 2400;
-      const startedAt = r.resolvedAt ? Date.parse(r.resolvedAt) + skew : Date.now();
+      const startedAt = clock.toClientTime(r.resolvedAt, Date.now());
       const remain = startedAt + total - Date.now();
       if (remain > 250) {
         setDice(r.dice);
@@ -154,6 +157,7 @@ function DuelRoom() {
             Câu {Math.min(state.currentRound + 1, state.roundCount)}/{state.roundCount}
           </span>
           <ConnectionBadge status={connectionStatus} latency={latency} />
+          <NetStatsWidget stats={stats} onOpenLog={() => setDiagOpen(true)} />
         </div>
         <DuelFighter
           player={foe}
@@ -167,6 +171,7 @@ function DuelRoom() {
       {state.status === "waiting" || state.status === "countdown" ? (
         <WaitingPanel
           state={state}
+          toClientTime={clock.toClientTime}
           onReady={async () => {
             try {
               await sendReady({ data: { token, duelId } });
@@ -182,6 +187,7 @@ function DuelRoom() {
       {state.status === "playing" && state.question ? (
         <RoundPanel
           state={state}
+          toClientTime={clock.toClientTime}
           value={value}
           locked={locked || !!me?.answered}
           skill={skill}
@@ -268,22 +274,23 @@ function WaitingPanel({
   state,
   me,
   onReady,
+  toClientTime,
 }: {
   state: DuelState;
+  toClientTime: (iso: string | null | undefined, fallback?: number) => number;
   me?: DuelPlayerView;
   onReady: () => void;
 }) {
   const [left, setLeft] = useState(0);
   useEffect(() => {
     if (state.status !== "countdown" || !state.startedAt) return;
-    const target = Date.parse(state.startedAt);
-    const skew = Date.now() - Date.parse(state.serverNow);
+    const target = toClientTime(state.startedAt);
     const id = window.setInterval(
-      () => setLeft(Math.max(0, Math.ceil((target + skew - Date.now()) / 1000))),
+      () => setLeft(Math.max(0, Math.ceil((target - Date.now()) / 1000))),
       200,
     );
     return () => window.clearInterval(id);
-  }, [state.status, state.startedAt, state.serverNow]);
+  }, [state.status, state.startedAt, toClientTime]);
 
   if (state.status === "countdown")
     return (
@@ -334,8 +341,10 @@ function RoundPanel({
   onChange,
   onSubmit,
   onExpire,
+  toClientTime,
 }: {
   state: DuelState;
+  toClientTime: (iso: string | null | undefined, fallback?: number) => number;
   value: AnswerValue | undefined;
   locked: boolean;
   skill: SkillId | null;
@@ -351,10 +360,9 @@ function RoundPanel({
   const expiredRound = useRef(-1);
   useEffect(() => {
     if (!state.roundServedAt) return;
-    const skew = Date.now() - Date.parse(state.serverNow);
-    const end = Date.parse(state.roundServedAt) + total;
+    const end = toClientTime(state.roundServedAt) + total;
     const update = () => {
-      const next = Math.max(0, end + skew - Date.now());
+      const next = Math.max(0, end - Date.now());
       setRemain(next);
       if (next <= 0 && expiredRound.current !== state.currentRound) {
         expiredRound.current = state.currentRound;
@@ -364,7 +372,7 @@ function RoundPanel({
     update();
     const id = window.setInterval(update, 100);
     return () => window.clearInterval(id);
-  }, [state.currentRound, state.roundServedAt, state.serverNow, total, onExpire]);
+  }, [state.currentRound, state.roundServedAt, toClientTime, total, onExpire]);
 
   const pct = useMemo(() => Math.round((remain / total) * 100), [remain, total]);
   const single = q.kind === "single" || q.kind === "true_false";
