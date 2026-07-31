@@ -40,9 +40,9 @@ import { useQuery } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeResults } from "@/hooks/useRealtimeResults";
-import { abandonExam, checkAnswer, requestFiftyFifty, submitExam } from "@/lib/exam.functions";
+import { abandonExam, checkAnswer, requestFiftyFifty, startExam, submitExam } from "@/lib/exam.functions";
 import type { StartExamResult, SubmitExamResult } from "@/lib/exam.server";
-import { restoreExamSession } from "@/lib/examSession";
+import { EXAM_CURRENT_KEY, examKey, readExamEntry, restoreExamSession } from "@/lib/examSession";
 
 import { isAnswered, KIND_LABEL, type AnswerValue } from "@/lib/questionKinds";
 import { formatSeconds } from "@/lib/format";
@@ -131,6 +131,7 @@ function ExamPage() {
   const runFifty = useServerFn(requestFiftyFifty);
   const runCheck = useServerFn(checkAnswer);
   const runAbandon = useServerFn(abandonExam);
+  const runStart = useServerFn(startExam);
 
   const [session, setSession] = useState<StartExamResult | null>(null);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
@@ -148,6 +149,7 @@ function ExamPage() {
   const [navOpen, setNavOpen] = useState(false);
   const [result, setResult] = useState<SubmitExamResult | null>(null);
   const [sending, setSending] = useState(false);
+  const [retaking, setRetaking] = useState(false);
   const submittedRef = useRef(false);
 
   useEffect(() => {
@@ -332,10 +334,46 @@ function ExamPage() {
     navigate({ to: "/" });
   }, [navigate, runAbandon, session]);
 
+  /** Thi lại ngay: mở phiên mới với đúng thông tin đã đăng ký, không phải nhập lại. */
+  const retake = useCallback(async () => {
+    const entry = readExamEntry(typeof window === "undefined" ? null : window.sessionStorage);
+    if (!entry) {
+      navigate({ to: "/" });
+      return;
+    }
+    setRetaking(true);
+    try {
+      const next = await runStart({
+        data: {
+          quizId: entry.quizId,
+          name: entry.name,
+          credential: entry.credential,
+          extraCredential: entry.extraCredential,
+        },
+      });
+      sessionStorage.setItem(examKey(next.sessionId), JSON.stringify(next));
+      sessionStorage.setItem(EXAM_CURRENT_KEY, next.sessionId);
+      submittedRef.current = false;
+      setResult(null);
+      setAnswers({});
+      setFifty({});
+      setFeedback({});
+      setCombo(0);
+      setCurrent(0);
+      setViolations(0);
+      setSession(next);
+      window.scrollTo({ top: 0 });
+      toast.success("Đã mở lượt thi mới. Chúc bạn làm bài tốt!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không thể thi lại lúc này.");
+      navigate({ to: "/" });
+    } finally {
+      setRetaking(false);
+    }
+  }, [navigate, runStart]);
 
+  if (result) return <ResultView result={result} onRetake={retake} retaking={retaking} />;
 
-
-  if (result) return <ResultView result={result} onHome={() => navigate({ to: "/" })} />;
 
   if (!session) {
     return (
@@ -671,7 +709,15 @@ function LiveRank({ result }: { result: SubmitExamResult }) {
   );
 }
 
-function ResultView({ result, onHome }: { result: SubmitExamResult; onHome: () => void }) {
+function ResultView({
+  result,
+  onRetake,
+  retaking,
+}: {
+  result: SubmitExamResult;
+  onRetake: () => void;
+  retaking?: boolean;
+}) {
   const percent = Math.round((result.score / Math.max(1, result.total)) * 100);
   const wrong = result.review.filter((r) => !r.correct);
   const [showAll, setShowAll] = useState(false);
@@ -737,8 +783,8 @@ function ResultView({ result, onHome }: { result: SubmitExamResult; onHome: () =
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-2">
-            <Button className="h-10 flex-1 rounded-xl sm:flex-none" onClick={onHome}>
-              <RefreshCw className="size-4" />
+            <Button className="h-10 flex-1 rounded-xl sm:flex-none" onClick={onRetake} disabled={retaking}>
+              {retaking ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
               {result.passed ? "Thi lại để lên điểm" : "Thi lại ngay"}
             </Button>
             <Button asChild variant="secondary" className="h-10 flex-1 rounded-xl sm:flex-none">

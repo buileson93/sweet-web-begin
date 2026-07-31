@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { startExam } from "@/lib/exam.functions";
+import { saveExamEntry } from "@/lib/examSession";
 import { verifyEmployeeFn } from "@/lib/employees.functions";
 import { formatDateTime, quizStatus, statusLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -135,6 +136,12 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           credential: credential.trim(),
           extraCredential: extraCredential.trim() || undefined,
         },
+      });
+      saveExamEntry(sessionStorage, {
+        quizId,
+        name: trimmed,
+        credential: credential.trim(),
+        extraCredential: extraCredential.trim() || undefined,
       });
       sessionStorage.setItem("exam:" + session.sessionId, JSON.stringify(session));
       sessionStorage.setItem("exam:current", session.sessionId);
