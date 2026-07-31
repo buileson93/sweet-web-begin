@@ -1,5 +1,8 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Json } from "@/integrations/supabase/types";
+import { mapStartExamError } from "@/lib/attempts";
 import { verifyEmployee } from "@/lib/employees.server";
+
 import {
   DISQUALIFY_THRESHOLD_DEFAULT,
   MAX_EVENTS_PER_SESSION,
@@ -153,7 +156,8 @@ export async function startExamSession(input: {
     throw new Error("Mật khẩu phòng thi không đúng.");
   }
 
-  // Khuyến khích thi lại nhiều lần: luôn cho phép, chỉ ghi nhận thành tích tốt nhất.
+  // Khuyến khích thi lại nhiều lần: chỉ ghi nhận thành tích tốt nhất.
+  // Việc đếm/khoá số lượt thi do hàm start_exam_session_tx đảm nhiệm (chống race condition).
   const { data: previous } = await supabaseAdmin
     .from("results")
     .select("score, total")
@@ -161,22 +165,11 @@ export async function startExamSession(input: {
     .eq("employee_id", employee.id)
     .eq("disqualified", false);
 
-  const attempts = previous?.length ?? 0;
   const bestPercent = (previous ?? []).reduce(
     (max, r) => Math.max(max, percentOf(r.score, r.total)),
     0,
   );
-  if (quiz.max_attempts && attempts >= quiz.max_attempts) {
-    throw new Error(`Cuộc thi này chỉ cho phép tối đa ${quiz.max_attempts} lượt thi.`);
-  }
 
-  // Khoá luồng làm bài: mọi phiên cũ chưa nộp của người này đều bị vô hiệu hoá.
-  await supabaseAdmin
-    .from("exam_sessions")
-    .update({ status: "abandoned", submitted_at: now.toISOString() })
-    .eq("employee_id", employee.id)
-    .eq("status", "active")
-    .is("submitted_at", null);
 
   const { data: poolRaw, error: poolError } = await supabaseAdmin
     .from("questions")
@@ -223,27 +216,33 @@ export async function startExamSession(input: {
 
   const expiresAt = new Date(now.getTime() + quiz.duration_minutes * 60_000);
 
-  const { data: session, error: sessionError } = await supabaseAdmin
-    .from("exam_sessions")
-    .insert({
-      quiz_id: quiz.id,
-      candidate_name: name,
-      birth_year: birthYear || undefined,
-      unit: unit || "Chưa cập nhật",
-      employee_id: employee.id,
-      question_ids: ordered.map((q) => q.id),
-      option_orders: optionOrders,
-      expires_at: expiresAt.toISOString(),
-    })
-    .select("id, submit_token")
-    .single();
+  // Một transaction duy nhất: khoá theo (cuộc thi, nhân viên) → kiểm tra lượt thi
+  // → huỷ phiên cũ → tạo phiên mới. Chạy song song cũng không tạo thừa lượt thi.
+  const maxAttempts = quiz.max_attempts ?? 0;
+  const { data: created, error: sessionError } = await supabaseAdmin.rpc(
+    "start_exam_session_tx",
+    {
+      p_quiz_id: quiz.id,
+      p_employee_id: employee.id,
+      p_max_attempts: maxAttempts,
+      p_question_ids: ordered.map((q) => q.id),
+      p_option_orders: optionOrders as unknown as Json,
+      p_expires_at: expiresAt.toISOString(),
+      p_candidate_name: name,
+      p_birth_year: birthYear || "",
+      p_unit: unit || "",
+    },
+  );
 
-  if (sessionError) throw new Error(sessionError.message);
+  if (sessionError) throw mapStartExamError(sessionError, maxAttempts);
+  const session = created?.[0];
+  if (!session) throw new Error("Không tạo được phiên thi. Vui lòng thử lại.");
 
   return {
-    sessionId: session.id,
-    submitToken: session.submit_token as string,
-    attempt: attempts + 1,
+    sessionId: session.session_id,
+    submitToken: session.submit_token,
+    attempt: session.attempts + 1,
+
     bestPercent,
     candidateName: name,
     unit: unit || "Chưa cập nhật",

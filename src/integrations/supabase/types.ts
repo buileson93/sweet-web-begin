@@ -616,6 +616,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      start_exam_session_tx: {
+        Args: {
+          p_birth_year: string
+          p_candidate_name: string
+          p_employee_id: string
+          p_expires_at: string
+          p_max_attempts: number
+          p_option_orders: Json
+          p_question_ids: string[]
+          p_quiz_id: string
+          p_unit: string
+        }
+        Returns: {
+          attempts: number
+          session_id: string
+          submit_token: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "staff" | "editor"
