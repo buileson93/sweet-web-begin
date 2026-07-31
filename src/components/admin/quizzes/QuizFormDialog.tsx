@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { QuizCoverPicker } from "@/components/admin/quizzes/QuizCoverPicker";
 import { QuizAudienceTab } from "@/components/admin/quizzes/QuizAudienceTab";
 import { QuizHealthPanel } from "@/components/admin/quizzes/QuizHealthPanel";
 import { QuizPreviewTab } from "@/components/admin/quizzes/QuizPreviewTab";
@@ -33,6 +34,7 @@ const emptyForm = {
   title: "",
   description: "",
   intro_markdown: "",
+  cover_url: "",
   start_time: "",
   end_time: "",
   is_active: true,
@@ -84,6 +86,7 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
       title: editing.title,
       description: editing.description ?? "",
       intro_markdown: editing.intro_markdown ?? "",
+      cover_url: editing.cover_url ?? "",
       start_time: toLocalInputValue(editing.start_time),
       end_time: toLocalInputValue(editing.end_time),
       is_active: editing.is_active,
@@ -173,6 +176,7 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
         title: form.title.trim(),
         description: form.description.trim(),
         intro_markdown: form.intro_markdown.trim(),
+        cover_url: form.cover_url.trim(),
         start_time: fromLocalInputValue(form.start_time),
         end_time: fromLocalInputValue(form.end_time),
         is_active: form.is_active,
@@ -308,6 +312,8 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
                 placeholder="Hiển thị trước khi thí sinh bấm bắt đầu, kèm ô cam kết làm bài trung thực."
               />
             </div>
+            <QuizCoverPicker value={form.cover_url} onChange={(v) => setForm((f) => ({ ...f, cover_url: v }))} />
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Bắt đầu</Label>
