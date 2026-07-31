@@ -332,10 +332,46 @@ function ExamPage() {
     navigate({ to: "/" });
   }, [navigate, runAbandon, session]);
 
+  /** Thi lại ngay: mở phiên mới với đúng thông tin đã đăng ký, không phải nhập lại. */
+  const retake = useCallback(async () => {
+    const entry = readExamEntry(typeof window === "undefined" ? null : window.sessionStorage);
+    if (!entry) {
+      navigate({ to: "/" });
+      return;
+    }
+    setRetaking(true);
+    try {
+      const next = await runStart({
+        data: {
+          quizId: entry.quizId,
+          name: entry.name,
+          credential: entry.credential,
+          extraCredential: entry.extraCredential,
+        },
+      });
+      sessionStorage.setItem(examKey(next.sessionId), JSON.stringify(next));
+      sessionStorage.setItem(EXAM_CURRENT_KEY, next.sessionId);
+      submittedRef.current = false;
+      setResult(null);
+      setAnswers({});
+      setFifty({});
+      setFeedback({});
+      setCombo(0);
+      setCurrent(0);
+      setViolations(0);
+      setSession(next);
+      window.scrollTo({ top: 0 });
+      toast.success("Đã mở lượt thi mới. Chúc bạn làm bài tốt!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không thể thi lại lúc này.");
+      navigate({ to: "/" });
+    } finally {
+      setRetaking(false);
+    }
+  }, [navigate, runStart]);
 
+  if (result) return <ResultView result={result} onRetake={retake} retaking={retaking} />;
 
-
-  if (result) return <ResultView result={result} onHome={() => navigate({ to: "/" })} />;
 
   if (!session) {
     return (
