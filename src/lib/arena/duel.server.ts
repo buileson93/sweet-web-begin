@@ -16,6 +16,13 @@ import {
   vnDayStart,
 } from "@/lib/arena/rules";
 import { pickBestRoom, type Candidate } from "@/lib/arena/matchmaking";
+import {
+  BUSY_PREFIX,
+  encodeBusyError,
+  planInviteRoom,
+  type ActiveSeat,
+  type SeatStatus,
+} from "@/lib/arena/rooms";
 import { eloDelta, roundPoints } from "@/lib/arena/scoring";
 import {
   HP_START,
