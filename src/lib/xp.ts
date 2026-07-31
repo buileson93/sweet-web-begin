@@ -7,7 +7,8 @@
 /** Tổng số kinh nghiệm cần tích luỹ để LÊN cấp `level + 1`. */
 export function xpThreshold(level: number): number {
   const l = Math.max(1, Math.floor(level));
-  return 100 * l + (50 * l * (l - 1)) / 2;
+  // Đường cong dài hạn: cấp càng cao càng khó; mốc cấp 10 là 112.500 XP.
+  return 1_250 * l * (l + 1);
 }
 
 /** Cấp độ hiện tại ứng với tổng kinh nghiệm. */

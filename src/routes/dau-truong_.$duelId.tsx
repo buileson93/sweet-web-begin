@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Dices, Link2, Loader2, LogOut, Swords, Wifi, WifiOff, X } from "lucide-react";
+import { Check, Dices, Link2, Loader2, LogOut, RotateCcw, Share2, Swords, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { DuelFighter } from "@/components/arena/DuelFighter";
+import { BattleDice } from "@/components/arena/BattleDice";
+import { ConnectionBadge } from "@/components/arena/ConnectionBadge";
 import { SkillBar } from "@/components/arena/SkillBar";
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PageContainer } from "@/components/ui-kit";
 import { useDuelChannel } from "@/hooks/useDuelChannel";
-import { arenaAnswer, arenaLeave, arenaReady } from "@/lib/arena.functions";
+import { arenaAnswer, arenaCloseExpiredRound, arenaJoinDuel, arenaLeave, arenaReady, arenaRematch } from "@/lib/arena.functions";
 import { getArenaToken } from "@/lib/arena/client";
+import { getDeviceId } from "@/lib/deviceId";
 import { skillById, type SkillId } from "@/lib/arena/skills";
 import type { DuelPlayerView, DuelState } from "@/lib/arena/types";
 import type { AnswerValue } from "@/lib/questionKinds";
@@ -39,29 +42,46 @@ function DuelRoom() {
   const { duelId } = Route.useParams();
   const navigate = useNavigate();
   const [token, setToken] = useState("");
+  const [joined, setJoined] = useState(false);
   useEffect(() => {
     const t = getArenaToken();
-    if (!t) void navigate({ to: "/dau-truong" });
+    if (!t) {
+      window.sessionStorage.setItem("arena:pending-duel", duelId);
+      void navigate({ to: "/dau-truong" });
+    }
     else setToken(t);
-  }, [navigate]);
+  }, [duelId, navigate]);
 
-  const { state, live, error, refresh } = useDuelChannel({ duelId, token, enabled: !!token });
+  const joinRoom = useServerFn(arenaJoinDuel);
+  useEffect(() => {
+    if (!token) return;
+    void joinRoom({ data: { token, duelId, deviceHash: getDeviceId() } })
+      .then(() => setJoined(true))
+      .catch((e) => toast.error(e instanceof Error ? e.message : "Không vào được phòng so tài."));
+  }, [duelId, joinRoom, token]);
+
+  const { state, error, refresh, latency, connectionStatus } = useDuelChannel({ duelId, token, enabled: !!token && joined });
 
   const sendReady = useServerFn(arenaReady);
   const sendAnswer = useServerFn(arenaAnswer);
   const sendLeave = useServerFn(arenaLeave);
+  const closeExpired = useServerFn(arenaCloseExpiredRound);
+  const rematch = useServerFn(arenaRematch);
 
   const [value, setValue] = useState<AnswerValue | undefined>();
   const [locked, setLocked] = useState(false);
   const [skill, setSkill] = useState<SkillId | null>(null);
   const roundRef = useRef(-1);
   const announced = useRef(-1);
+  const [dice, setDice] = useState<number[]>([]);
+  const expiringRef = useRef(false);
 
   // Mỗi câu mới thì xoá lựa chọn cũ.
   useEffect(() => {
     if (!state) return;
     if (state.currentRound !== roundRef.current) {
       roundRef.current = state.currentRound;
+      expiringRef.current = false;
       setValue(undefined);
       setLocked(false);
       setSkill(null);
@@ -76,6 +96,10 @@ function DuelRoom() {
     const r = state?.lastResult;
     if (!state || !r || r.roundIndex === announced.current) return;
     announced.current = r.roundIndex;
+    if (r.dice?.length === 2) {
+      setDice(r.dice);
+      window.setTimeout(() => setDice([]), 2400);
+    }
     const mineLine = r.lines.find((l) => l.employeeId === state.you);
     const foeLine = r.lines.find((l) => l.employeeId !== state.you);
     for (const n of r.skillNotes ?? []) toast.message(n.label);
@@ -117,22 +141,12 @@ function DuelRoom() {
           mine
           skill={state.lastResult?.lines.find((l) => l.employeeId === me?.employeeId)?.skill}
         />
-        <div className="flex flex-col items-center text-xs text-muted-foreground">
+        <div className="flex shrink-0 flex-col items-center gap-1 text-xs text-muted-foreground">
           <Swords className="size-5 text-primary" />
           <span>
             Câu {Math.min(state.currentRound + 1, state.roundCount)}/{state.roundCount}
           </span>
-          <span className="flex items-center gap-1">
-            {live ? (
-              <>
-                <Wifi className="size-3 text-emerald-500" /> trực tiếp
-              </>
-            ) : (
-              <>
-                <WifiOff className="size-3 text-amber-500" /> dự phòng
-              </>
-            )}
-          </span>
+          <ConnectionBadge status={connectionStatus} latency={latency} />
         </div>
         <DuelFighter
           player={foe}
@@ -140,6 +154,8 @@ function DuelRoom() {
           skill={state.lastResult?.lines.find((l) => l.employeeId === foe?.employeeId)?.skill}
         />
       </header>
+
+      <BattleDice dice={dice} />
 
       {state.status === "waiting" || state.status === "countdown" ? (
         <WaitingPanel
@@ -183,6 +199,16 @@ function DuelRoom() {
               toast.error(e instanceof Error ? e.message : "Không gửi được đáp án.");
             }
           }}
+          onExpire={() =>
+            expiringRef.current
+              ? undefined
+              : (() => {
+                  expiringRef.current = true;
+                  void closeExpired({ data: { token, duelId, roundIndex: state.currentRound } })
+                    .then(() => refresh(true))
+                    .catch(() => { expiringRef.current = false; });
+                })()
+          }
         />
       ) : null}
 
@@ -191,7 +217,15 @@ function DuelRoom() {
       ) : null}
 
       {state.status === "finished" && state.finish ? (
-        <FinishPanel state={state} meId={me?.employeeId} />
+        <FinishPanel
+          state={state}
+          meId={me?.employeeId}
+          onRematch={async () => {
+            const next = await rematch({ data: { token, duelId, deviceHash: getDeviceId() } });
+            toast.success("Đã gửi lời mời tái đấu.");
+            void navigate({ to: "/dau-truong/$duelId", params: { duelId: next.duelId } });
+          }}
+        />
       ) : null}
 
       {state.status !== "finished" ? (
@@ -285,6 +319,7 @@ function RoundPanel({
   onSkill,
   onChange,
   onSubmit,
+  onExpire,
 }: {
   state: DuelState;
   value: AnswerValue | undefined;
@@ -294,17 +329,28 @@ function RoundPanel({
   onSkill: (s: SkillId | null) => void;
   onChange: (v: AnswerValue) => void;
   onSubmit: (v: AnswerValue) => void;
+  onExpire: () => void;
 }) {
   const q = state.question!;
   const total = state.secondsPerRound * 1000;
   const [remain, setRemain] = useState(total);
+  const expiredRound = useRef(-1);
   useEffect(() => {
     if (!state.roundServedAt) return;
     const skew = Date.now() - Date.parse(state.serverNow);
     const end = Date.parse(state.roundServedAt) + total;
-    const id = window.setInterval(() => setRemain(Math.max(0, end + skew - Date.now())), 100);
+    const update = () => {
+      const next = Math.max(0, end + skew - Date.now());
+      setRemain(next);
+      if (next <= 0 && expiredRound.current !== state.currentRound) {
+        expiredRound.current = state.currentRound;
+        window.setTimeout(onExpire, 1600);
+      }
+    };
+    update();
+    const id = window.setInterval(update, 100);
     return () => window.clearInterval(id);
-  }, [state.roundServedAt, state.serverNow, total]);
+  }, [state.currentRound, state.roundServedAt, state.serverNow, total, onExpire]);
 
   const pct = useMemo(() => Math.round((remain / total) * 100), [remain, total]);
   const single = q.kind === "single" || q.kind === "true_false";
@@ -356,7 +402,7 @@ function RoundPanel({
         </Button>
       ) : null}
       {locked ? (
-        <p className="text-center text-sm text-muted-foreground">Đã chốt — chờ đối thủ…</p>
+        <p className="text-center text-sm text-muted-foreground">Đã chốt đáp án duy nhất của lượt này</p>
       ) : null}
     </div>
   );
@@ -423,7 +469,7 @@ function ResultPanel({ state, meId }: { state: DuelState; meId?: string }) {
   );
 }
 
-function FinishPanel({ state, meId }: { state: DuelState; meId?: string }) {
+function FinishPanel({ state, meId, onRematch }: { state: DuelState; meId?: string; onRematch: () => Promise<void> }) {
   const f = state.finish!;
   const win = f.winnerEmployeeId === meId;
   const draw = f.winnerEmployeeId === null;
@@ -457,11 +503,20 @@ function FinishPanel({ state, meId }: { state: DuelState; meId?: string }) {
       {!f.isRanked && f.rankedNote ? (
         <p className="text-xs text-muted-foreground">{f.rankedNote}</p>
       ) : null}
-      <Button asChild variant="outline" className="rounded-full">
-        <Link to="/dau-truong/xem-lai/$duelId" params={{ duelId: state.duelId }}>
-          Xem lại diễn biến
-        </Link>
-      </Button>
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button onClick={() => void onRematch()} className="rounded-full">
+          <RotateCcw className="mr-2 size-4" /> Tái đấu cùng bộ đề
+        </Button>
+        <Button variant="outline" className="rounded-full" onClick={() => void navigator.share?.({ title: "Thách đấu VATM", url: window.location.href }).catch(() => navigator.clipboard.writeText(window.location.href))}>
+          <Share2 className="mr-2 size-4" /> Chia sẻ
+        </Button>
+        <Button asChild variant="outline" className="rounded-full">
+          <Link to="/dau-truong/xem-lai/$duelId" params={{ duelId: state.duelId }}>Xem lại diễn biến</Link>
+        </Button>
+        <Button asChild variant="ghost" className="rounded-full">
+          <Link to="/dau-truong">Chọn lại bộ đề</Link>
+        </Button>
+      </div>
     </div>
   );
 }

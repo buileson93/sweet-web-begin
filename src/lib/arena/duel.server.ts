@@ -220,9 +220,9 @@ export async function joinDuel(input: {
   deviceHash?: string;
 }) {
   const duel = await loadDuel(input.duelId);
-  if (duel.status !== "waiting") throw new Error("Trận này đã bắt đầu hoặc đã kết thúc.");
   const players = await loadPlayers(duel.id);
   if (players.some((p) => p.employee_id === input.employeeId)) return { ok: true };
+  if (duel.status !== "waiting") throw new Error("Ván so tài này đã bắt đầu hoặc đã kết thúc.");
   if (players.length >= 2) throw new Error("Trận này đã đủ hai người.");
   await assertFree(input.employeeId);
 
@@ -748,6 +748,17 @@ export async function closeRound(duelId: string, roundIndex: number) {
   const duel = await loadDuel(duelId);
   if (duel.status !== "playing" || duel.current_round !== roundIndex) return;
 
+  // Chỉ một tiến trình được quyền chốt câu; tránh hai client hết giờ cùng lúc tính sát thương hai lần.
+  const { data: claimed } = await supabaseAdmin
+    .from("duels")
+    .update({ version: duel.version + 1 })
+    .eq("id", duelId)
+    .eq("version", duel.version)
+    .eq("current_round", roundIndex)
+    .select("id")
+    .maybeSingle();
+  if (!claimed) return;
+
   const q = await questionAt(duel, roundIndex);
   const players = await loadPlayers(duelId);
   const { data: allAnswers } = await supabaseAdmin
@@ -829,7 +840,7 @@ export async function closeRound(duelId: string, roundIndex: number) {
   const isLast = roundIndex + 1 >= duel.round_count || !!combat.knockedOutId || !!noShow;
   await supabaseAdmin
     .from("duels")
-    .update({ last_result: result as never, version: duel.version + 1 })
+    .update({ last_result: result as never, version: duel.version + 2 })
     .eq("id", duelId);
   await broadcastDuel(duelId, "round.result", result);
 
@@ -848,8 +859,11 @@ export async function closeRound(duelId: string, roundIndex: number) {
     await new Promise((r) => setTimeout(r, REVEAL_MS));
     await finishDuel(duelId);
   } else {
+    // Giữ nguyên câu hiện tại trong thời gian công bố kết quả để cả hai máy
+    // nhìn thấy xúc xắc, sát thương và đáp án trước khi phát câu kế tiếp.
+    await new Promise((r) => setTimeout(r, REVEAL_MS));
     const next = await loadDuel(duelId);
-    await serveRound(next, roundIndex + 1, REVEAL_MS);
+    await serveRound(next, roundIndex + 1, 0);
   }
 }
 
@@ -877,6 +891,38 @@ export async function startPlaying(duelId: string) {
   const duel = await loadDuel(duelId);
   if (duel.status !== "countdown") return;
   await serveRound(duel, 0, 0);
+}
+
+/** Client gọi đúng lúc đồng hồ về 0 để không phải chờ nhịp cron kế tiếp. */
+export async function closeExpiredRound(input: { employeeId: string; duelId: string; roundIndex: number }) {
+  const duel = await loadDuel(input.duelId);
+  const players = await loadPlayers(duel.id);
+  if (!players.some((p) => p.employee_id === input.employeeId)) throw new Error("Bạn không thuộc ván so tài này.");
+  if (duel.status !== "playing" || duel.current_round !== input.roundIndex || !duel.round_served_at)
+    return { closed: false };
+  const deadline = Date.parse(duel.round_served_at) + duel.seconds_per_round * 1000 + NETWORK_GRACE_MS;
+  if (Date.now() < deadline) return { closed: false };
+  await closeRound(duel.id, input.roundIndex);
+  return { closed: true };
+}
+
+/** Tạo phòng tái đấu và gửi lời mời trực tiếp cho đối thủ cũ. */
+export async function rematchDuel(input: { employeeId: string; duelId: string; quizId?: string | null; deviceHash?: string }) {
+  const old = await loadDuel(input.duelId);
+  if (old.status !== "finished") throw new Error("Chỉ có thể tái đấu sau khi ván đã kết thúc.");
+  const players = await loadPlayers(old.id);
+  if (!players.some((p) => p.employee_id === input.employeeId)) throw new Error("Bạn không thuộc ván so tài này.");
+  const opponent = players.find((p) => p.employee_id !== input.employeeId);
+  if (!opponent) throw new Error("Không tìm thấy đối thủ để tái đấu.");
+  const created = await createDuel({
+    employeeId: input.employeeId,
+    quizId: input.quizId === undefined ? old.quiz_id : input.quizId,
+    roundCount: old.round_count,
+    secondsPerRound: old.seconds_per_round,
+    deviceHash: input.deviceHash,
+  });
+  await inviteToDuel({ employeeId: input.employeeId, toEmployeeId: opponent.employee_id, duelId: created.duelId, deviceHash: input.deviceHash });
+  return created;
 }
 
 export async function leaveDuel(input: { employeeId: string; duelId: string }) {
@@ -1154,6 +1200,7 @@ export async function getDuelState(input: {
     startedAt: duel.started_at,
     serverNow: nowIso(),
     quizTitle,
+    quizId: duel.quiz_id,
     players: players.map((p) => {
       const prof = (profiles.data ?? []).find((x) => x.employee_id === p.employee_id);
       const xp = (xpRows.data ?? []).find((x) => x.employee_id === p.employee_id);

@@ -150,6 +150,36 @@ export const arenaLeave = createServerFn({ method: "POST" })
     return leaveDuel({ employeeId, duelId: data.duelId });
   });
 
+export const arenaJoinDuel = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ token, duelId: z.string().uuid(), deviceHash: z.string().max(80).optional() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const employeeId = await auth(data.token);
+    const { joinDuel } = await import("@/lib/arena/duel.server");
+    return joinDuel({ employeeId, duelId: data.duelId, deviceHash: data.deviceHash });
+  });
+
+export const arenaCloseExpiredRound = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ token, duelId: z.string().uuid(), roundIndex: z.number().int().min(0).max(50) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const employeeId = await auth(data.token);
+    const { closeExpiredRound } = await import("@/lib/arena/duel.server");
+    return closeExpiredRound({ employeeId, duelId: data.duelId, roundIndex: data.roundIndex });
+  });
+
+export const arenaRematch = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ token, duelId: z.string().uuid(), quizId: z.string().uuid().nullable().optional(), deviceHash: z.string().max(80).optional() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const employeeId = await auth(data.token);
+    const { rematchDuel } = await import("@/lib/arena/duel.server");
+    return rematchDuel({ employeeId, duelId: data.duelId, quizId: data.quizId, deviceHash: data.deviceHash });
+  });
+
 export const arenaState = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
