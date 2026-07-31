@@ -36,10 +36,11 @@ describe("lớp chiến binh", () => {
     expect(kiem).toBeGreaterThan(ve);
   });
 
-  it("vệ binh chịu đòn nhẹ hơn kiếm sĩ", () => {
-    const vaoVeBinh = applyClassDamage("phap_su", "ve_binh", 20).damage;
-    const vaoKiemSi = applyClassDamage("phap_su", "kiem_si", 20).damage;
-    expect(vaoVeBinh).toBeLessThan(vaoKiemSi);
+  it("vệ binh chịu đòn nhẹ hơn khi cùng một người đánh", () => {
+    const vaoVeBinh = applyClassDamage("kiem_si", "ve_binh", 20).damage;
+    const vaoPhapSu = applyClassDamage("kiem_si", "phap_su", 20).damage;
+    expect(vaoVeBinh).toBeLessThan(vaoPhapSu);
+    expect(classById("ve_binh").defenseMul).toBeLessThan(classById("kiem_si").defenseMul);
   });
 
   it("khắc chế cộng thêm sát thương so với đối đầu cùng lớp", () => {
