@@ -90,6 +90,7 @@ function DuelRoom() {
   const roundRef = useRef(-1);
   const announced = useRef(-1);
   const [dice, setDice] = useState<number[]>([]);
+  const [camShake, setCamShake] = useState(0);
   const expiringRef = useRef(false);
 
   // Mỗi câu mới thì xoá lựa chọn cũ.
@@ -121,6 +122,12 @@ function DuelRoom() {
         setDice(r.dice);
         window.setTimeout(() => setDice([]), remain);
       }
+    }
+    // Rung nhẹ toàn khung đấu theo mức sát thương của pha vừa rồi.
+    const punch = Math.max(0, ...r.lines.map((l) => l.damage ?? 0));
+    if (punch > 0) {
+      setCamShake(punch);
+      window.setTimeout(() => setCamShake(0), punch >= 16 ? 1200 : 500);
     }
     const mineLine = r.lines.find((l) => l.employeeId === state.you);
     const foeLine = r.lines.find((l) => l.employeeId !== state.you);
@@ -156,7 +163,12 @@ function DuelRoom() {
 
   return (
     <PageContainer className="space-y-4 py-4">
-      <header className="flex items-center gap-3">
+      <header
+        className={cn(
+          "flex items-center gap-3",
+          camShake >= 16 ? "animate-cam-shake-hard" : camShake > 0 ? "animate-cam-shake" : "",
+        )}
+      >
         <DuelFighter
           player={me}
           hpStart={state.hpStart}
@@ -233,7 +245,9 @@ function DuelRoom() {
                   skill,
                 },
               });
-              await refresh(true);
+              // Không chờ vòng đồng bộ: giao diện đã khoá lạc quan từ trước,
+              // trạng thái thật sẽ tới qua realtime hoặc lần đồng bộ ép ngay sau đây.
+              void refresh(true);
             } catch (e) {
               setLocked(false);
               toast.error(e instanceof Error ? e.message : "Không gửi được đáp án.");
