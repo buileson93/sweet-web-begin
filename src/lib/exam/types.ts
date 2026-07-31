@@ -89,6 +89,8 @@ export type SubmitExamResult = {
   previousBestPercent: number;
   improved: boolean;
   review: ReviewItem[];
+  xp: XpAward | null;
+
 };
 
 export type HistoryQuestion = {
