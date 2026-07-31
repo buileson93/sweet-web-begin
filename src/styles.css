@@ -251,9 +251,11 @@
 
 @utility type-h1 {
   font-family: var(--font-heading);
-  font-size: 1.875rem;
+  /* Co giãn theo bề ngang máy để hợp mọi cỡ điện thoại */
+  font-size: clamp(1.5rem, 7.4vw, 1.875rem);
   line-height: 1.15;
   font-weight: 800;
+
   letter-spacing: -0.02em;
 }
 
