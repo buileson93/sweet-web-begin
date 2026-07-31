@@ -4,7 +4,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { logArenaAudit } from "@/lib/arena/audit.server";
-import { broadcastDuel, broadcastToEmployee } from "@/lib/arena/broadcast.server";
+import { broadcastDuel, broadcastDuelBatch, broadcastToEmployee } from "@/lib/arena/broadcast.server";
 import { botDecision, isBotEmployee, tierOf } from "@/lib/arena/bot";
 import { buildRoundPayload } from "@/lib/arena/payload";
 import {
@@ -41,6 +41,8 @@ import type { Blueprint } from "@/lib/questionKinds";
 const COUNTDOWN_MS = 4_000;
 /** Thời gian hiển thị đáp án giữa hai câu (ms). */
 const REVEAL_MS = 3_000;
+/** Thời lượng hiệu ứng xúc xắc — do máy chủ quy định để hai bên khớp nhau. */
+const DICE_MS = 2_400;
 /** Độ trễ mạng được tha thứ khi gửi đáp án (ms). */
 const NETWORK_GRACE_MS = 1_500;
 /** Thời gian chờ đối thủ mất kết nối trước khi xử thua kỹ thuật (ms). */
