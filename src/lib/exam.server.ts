@@ -569,7 +569,27 @@ export async function submitExamSession(input: {
     replay && existing
       ? existing.time_seconds
       : Math.max(0, Math.round((endMoment.getTime() - startedAt.getTime()) / 1000));
-  const disqualified = replay && existing ? existing.disqualified : Boolean(input.disqualified);
+  // Tương thích ngược: vẫn nhận input.disqualified nhưng CHỈ ghi lại như một gợi ý,
+  // không dùng để quyết định kết quả (chặn request mạng không còn giúp thoát bị huỷ bài).
+  if (!replay && input.disqualified) {
+    await supabaseAdmin.from("exam_events").insert({
+      session_id: session.id,
+      kind: "tab_hidden",
+      weight: 0,
+      detail: { clientHint: true, reason: input.disqualifyReason ?? "" } as never,
+    });
+  }
+
+  // Quyết định huỷ bài dựa trên điểm liêm chính do MÁY CHỦ tích luỹ.
+  const integrityScore = Number(session.integrity_score ?? 0);
+  const strictMode = Boolean(quiz?.strict_mode);
+  const threshold = Number(quiz?.disqualify_threshold ?? DISQUALIFY_THRESHOLD_DEFAULT);
+  const disqualified =
+    replay && existing
+      ? existing.disqualified
+      : shouldDisqualify(integrityScore, threshold, strictMode);
+  /** Cờ cảnh báo cho quản trị khi không bật chế độ nghiêm ngặt nhưng điểm liêm chính đã chạm ngưỡng. */
+  const integrityFlagged = !disqualified && integrityScore >= threshold;
   const total = session.question_ids.length;
   const finalScore = disqualified ? 0 : score;
   const finalPoints = disqualified ? 0 : Math.max(0, Math.round(points));
