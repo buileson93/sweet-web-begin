@@ -4,8 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   AlertCircle,
   BadgeCheck,
+  BookOpen,
   CalendarClock,
   CircleDashed,
+  History as HistoryIcon,
   Clock,
   Loader2,
   LogIn,
