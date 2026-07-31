@@ -65,6 +65,7 @@ export function QuestionForm({
   existing,
   form,
   setForm,
+  quizId,
   uploadStage,
   uploadInfo,
   onAttachImage,
@@ -315,6 +316,7 @@ export function QuestionForm({
             setForm={setForm}
             errors={validation.errors}
             warnings={validation.warnings}
+            quizId={quizId}
           />
 
           <div className="grid gap-3 sm:grid-cols-2">

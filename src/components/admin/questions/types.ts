@@ -53,6 +53,8 @@ export type EditorProps = {
   /** Thông báo lỗi/cảnh báo gắn theo trường, hiện ngay dưới ô nhập. */
   errors?: Partial<Record<string, string>>;
   warnings?: Partial<Record<string, string>>;
+  /** Mã cuộc thi để tải ảnh phương án lên đúng phạm vi. */
+  quizId?: string;
 };
 
 export type CsvQuestion = { question: string; options: string[]; correct_index: number };
