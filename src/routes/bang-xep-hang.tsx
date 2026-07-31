@@ -71,8 +71,12 @@ function LeaderboardPage() {
   const all = resultsQuery.data ?? [];
   const rows = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
+    // Chỉ xếp hạng bài đạt từ 50% số câu trở lên; dưới ngưỡng này coi là chưa đạt.
     return all.filter(
-      (r) => !kw || r.candidate_name.toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
+      (r) =>
+        r.total > 0 &&
+        r.score / r.total >= 0.5 &&
+        (!kw || r.candidate_name.toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw)),
     );
   }, [all, keyword]);
 
@@ -136,7 +140,7 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta text-primary-foreground/75">
-              Xếp theo điểm; đồng điểm ưu tiên thời gian làm bài ngắn hơn.
+              Chỉ xếp hạng bài đạt từ 50% trở lên; đồng điểm ưu tiên thời gian làm bài ngắn hơn.
             </p>
           </div>
         </div>
@@ -237,8 +241,8 @@ function LeaderboardPage() {
                 ) : (
                   <EmptyState
                     icon={Trophy}
-                    title="Chưa có thí sinh nào nộp bài"
-                    description="Bảng xếp hạng sẽ hiển thị ngay khi có kết quả hợp lệ đầu tiên."
+                    title="Chưa có thí sinh nào đạt"
+                    description="Bảng xếp hạng chỉ ghi nhận bài thi đúng từ 50% số câu trở lên."
                   />
                 )
               }

@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { CheckCircle2, RadioTower, RefreshCw, Users } from "lucide-react";
+import { CheckCircle2, Eye, RadioTower, RefreshCw, Users } from "lucide-react";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
-import { listLiveSessions, type LiveSession } from "@/lib/monitor.functions";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getSessionDetail, listLiveSessions, type LiveSession, type SessionDetail } from "@/lib/monitor.functions";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +21,16 @@ function remaining(expiresAt: string) {
 
 export function LiveMonitor() {
   const fetchLive = useServerFn(listLiveSessions);
+  const fetchDetail = useServerFn(getSessionDetail);
   const [auto, setAuto] = useState(true);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const detailQuery = useQuery({
+    queryKey: ["admin-session-detail", openId],
+    enabled: Boolean(openId),
+    refetchInterval: openId ? 15_000 : false,
+    queryFn: () => fetchDetail({ data: { sessionId: openId! } }) as Promise<SessionDetail>,
+  });
 
   const query = useQuery({
     queryKey: ["admin-live-sessions"],
@@ -86,6 +97,7 @@ export function LiveMonitor() {
                 <th className="px-4 py-3 font-semibold">Còn lại</th>
                 <th className="px-4 py-3 font-semibold">Bắt đầu</th>
                 <th className="px-4 py-3 font-semibold">Trạng thái</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
@@ -130,6 +142,16 @@ export function LiveMonitor() {
                         {done ? "Đã nộp" : expired ? "Hết giờ" : "Đang thi"}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-full"
+                        onClick={() => setOpenId(r.id)}
+                      >
+                        <Eye className="size-4" /> Chi tiết
+                      </Button>
+                    </td>
                   </tr>
                 );
               })}
@@ -137,6 +159,72 @@ export function LiveMonitor() {
           </table>
         </div>
       </QueryState>
+
+      <Dialog open={Boolean(openId)} onOpenChange={(o) => setOpenId(o ? openId : null)}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{detailQuery.data?.candidateName ?? "Chi tiết bài thi"}</DialogTitle>
+            <DialogDescription>
+              {detailQuery.data
+                ? `${detailQuery.data.quizTitle} · ${detailQuery.data.unit || "chưa rõ đơn vị"} · bắt đầu ${formatDateTime(detailQuery.data.startedAt)}`
+                : "Đang tải tiến độ làm bài…"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailQuery.isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : detailQuery.isError ? (
+            <p className="text-sm text-destructive">{(detailQuery.error as Error).message}</p>
+          ) : detailQuery.data ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {[
+                  { label: "Đã trả lời", value: `${detailQuery.data.answers.filter((a) => a.answered).length}/${detailQuery.data.answers.length}` },
+                  { label: "Đúng", value: String(detailQuery.data.answers.filter((a) => a.isCorrect).length) },
+                  { label: "Chuỗi đúng dài nhất", value: String(detailQuery.data.bestStreak) },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-xl bg-secondary px-3 py-2">
+                    <p className="font-mono text-lg font-bold">{s.value}</p>
+                    <p className="type-meta">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <ol className="space-y-2">
+                {detailQuery.data.answers.map((a) => (
+                  <li
+                    key={a.questionId + a.index}
+                    className={cn(
+                      "rounded-xl border p-3 text-sm",
+                      !a.answered
+                        ? "border-border bg-secondary/40"
+                        : a.isCorrect
+                          ? "border-accent/40 bg-accent/10"
+                          : "border-destructive/40 bg-destructive/5",
+                    )}
+                  >
+                    <p className="font-semibold">
+                      Câu {a.index + 1}. {a.question}
+                    </p>
+                    <p className="mt-1 text-muted-foreground">
+                      Thí sinh chọn: <span className="text-foreground">{a.answerLabel}</span>
+                    </p>
+                    {!a.isCorrect ? (
+                      <p className="text-muted-foreground">
+                        Đáp án đúng: <span className="text-foreground">{a.correctLabel}</span>
+                      </p>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </AdminSection>
   );
 }
