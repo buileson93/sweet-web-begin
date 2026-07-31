@@ -1781,9 +1781,40 @@ body.fx-shaking {
 .animate-hit-hard { animation: hit-hard 0.6s ease-in-out; }
 .animate-skill-pulse { animation: skill-pulse 1.2s ease-in-out infinite; }
 
+/* ---- Đấu trường: hoạt ảnh liên tục + hiệu ứng va chạm ---- */
+@keyframes aura-pulse { 0%, 100% { opacity: 0.35; transform: scale(1); } 50% { opacity: 0.75; transform: scale(1.15); } }
+.animate-aura-pulse { animation: aura-pulse 2.4s ease-in-out infinite; }
+@keyframes aura-ring { 0% { opacity: 0.5; transform: scale(0.85); } 100% { opacity: 0; transform: scale(1.35); } }
+.animate-aura-ring { animation: aura-ring 2.8s ease-out infinite; }
+@keyframes idle-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.animate-idle-bob { animation: idle-bob 2.6s ease-in-out infinite; }
+@keyframes ground-dust { 0% { opacity: 0; transform: translateY(0) scale(0.6); } 40% { opacity: 0.5; } 100% { opacity: 0; transform: translateY(-14px) scale(1.2); } }
+.animate-ground-dust { animation: ground-dust 2.2s ease-out infinite; }
+@keyframes sprite-flash { 0% { filter: brightness(3.2) saturate(0.2); } 55% { filter: brightness(1.5); } 100% { filter: none; } }
+.animate-sprite-flash { animation: sprite-flash 0.42s ease-out; }
+@keyframes impact-spark { 0% { opacity: 0; transform: scale(0.4) rotate(0deg); } 20% { opacity: 1; transform: scale(1.05) rotate(12deg); } 100% { opacity: 0; transform: scale(1.7) rotate(28deg); } }
+.animate-impact-spark { animation: impact-spark 0.5s ease-out forwards; }
+@keyframes trail-right { 0% { opacity: 0; transform: translateX(-30%) scaleX(0.4); } 25% { opacity: 0.9; } 100% { opacity: 0; transform: translateX(70%) scaleX(1.3); } }
+@keyframes trail-left { 0% { opacity: 0; transform: translateX(30%) scaleX(0.4); } 25% { opacity: 0.9; } 100% { opacity: 0; transform: translateX(-70%) scaleX(1.3); } }
+.animate-trail-right { animation: trail-right 0.55s ease-out forwards; }
+.animate-trail-left { animation: trail-left 0.55s ease-out forwards; }
+@keyframes cam-shake {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  15% { transform: translate3d(-4px, 2px, 0) rotate(-0.4deg); }
+  35% { transform: translate3d(5px, -2px, 0) rotate(0.5deg); }
+  55% { transform: translate3d(-3px, 1px, 0); }
+  75% { transform: translate3d(2px, -1px, 0); }
+}
+.animate-cam-shake { animation: cam-shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97); will-change: transform; }
+.animate-cam-shake-hard { animation: cam-shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) 2; will-change: transform; }
+
+
 @media (prefers-reduced-motion: reduce) {
   .animate-hit-soft, .animate-hit-mid, .animate-hit-hard, .animate-skill-pulse, .animate-dice-roll, .animate-slash-hit, .animate-avatar-recoil,
-  .animate-lunge-right, .animate-lunge-left, .animate-recoil-right, .animate-recoil-left { animation: none; }
+  .animate-lunge-right, .animate-lunge-left, .animate-recoil-right, .animate-recoil-left,
+  .animate-aura-pulse, .animate-aura-ring, .animate-idle-bob, .animate-ground-dust, .animate-sprite-flash,
+  .animate-impact-spark, .animate-trail-right, .animate-trail-left,
+  .animate-cam-shake, .animate-cam-shake-hard { animation: none; }
 }
 
 /* ---- Đấu trường: lớp đồ hoạ tông xanh hàng không ---- */
