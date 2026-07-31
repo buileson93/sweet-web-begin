@@ -75,7 +75,7 @@ export type LevelTier = {
 
 /** 10 cấp bậc dựng sẵn, mỗi cấp là một phần thưởng danh hiệu. */
 export const LEVEL_TIERS: LevelTier[] = [
-  { level: 1, title: "Tân binh sân đỗ", reward: "Mở khoá hồ sơ nhân vật 3D", tone: "bg-muted text-muted-foreground" },
+  { level: 1, title: "Tân binh sân đỗ", reward: "Mở khoá hồ sơ nhân vật", tone: "bg-muted text-muted-foreground" },
   { level: 2, title: "Học viên tập sự", reward: "Huy hiệu đồng trên bảng xếp hạng", tone: "bg-amber-100 text-amber-800" },
   { level: 3, title: "Nhân viên chăm chỉ", reward: "Khung ảnh đại diện màu đồng", tone: "bg-amber-200 text-amber-900" },
   { level: 4, title: "Kỹ thuật viên tin cậy", reward: "Hiệu ứng chuỗi đúng nâng cao", tone: "bg-sky-100 text-sky-800" },

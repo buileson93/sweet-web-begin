@@ -1,5 +1,5 @@
 /**
- * Hồ sơ người chơi: kinh nghiệm, cấp độ, ảnh đại diện 3D.
+ * Hồ sơ người chơi: kinh nghiệm, cấp độ, ảnh đại diện.
  * Chỉ chạy phía máy chủ (dùng service role qua RPC security definer).
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -82,7 +82,7 @@ export async function readTopPlayers(limit = 20): Promise<PlayerProfile[]> {
   return (data ?? []).map((row) => shape(row as never));
 }
 
-/** Lưu ảnh đại diện 3D (đã xác thực nhân viên ở lớp gọi). */
+/** Lưu ảnh đại diện (đã xác thực nhân viên ở lớp gọi). */
 export async function writePlayerAvatar(input: {
   employeeId: string;
   avatarUrl: string;

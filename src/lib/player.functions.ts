@@ -24,12 +24,18 @@ export const getTopPlayers = createServerFn({ method: "POST" })
 const avatarSchema = z.object({
   name: z.string().min(2).max(120),
   credential: z.string().min(4).max(20),
-  avatarUrl: z.string().url().max(500).refine((u) => u.startsWith("https://"), "Đường dẫn phải là https"),
+  avatarUrl: z
+    .string()
+    .max(500)
+    .refine(
+      (u) => u.startsWith("2d:") || u.startsWith("https://"),
+      "Ảnh đại diện phải là nhân vật 2D hoặc đường dẫn https",
+    ),
   avatarImage: z.string().max(500).default(""),
 });
 
 /**
- * Lưu ảnh đại diện 3D. Phải xác thực lại nhân viên bằng danh bạ để
+ * Lưu ảnh đại diện. Phải xác thực lại nhân viên bằng danh bạ để
  * không ai đổi được avatar của người khác.
  */
 export const savePlayerAvatar = createServerFn({ method: "POST" })

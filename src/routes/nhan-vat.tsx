@@ -16,10 +16,10 @@ import {
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
-import { lazy, Suspense } from "react";
 
+import { Avatar2D } from "@/components/player/Avatar2D";
 import { AvatarBubble, type AvatarBubbleSize } from "@/components/player/AvatarBubble";
-import { AvatarCreatorDialog } from "@/components/player/AvatarCreatorDialog";
+import { AvatarPickerDialog } from "@/components/player/AvatarPickerDialog";
 import { LevelBar } from "@/components/player/LevelBar";
 import { LevelLadder } from "@/components/player/LevelLadder";
 import { EmptyState } from "@/components/ui-kit";
@@ -33,7 +33,6 @@ import { formatDateTime, formatSeconds } from "@/lib/format";
 import { getPlayerProfile, type PlayerProfile } from "@/lib/player.functions";
 import { cn } from "@/lib/utils";
 
-const OfficeAvatar3D = lazy(() => import("@/components/player/OfficeAvatar3D"));
 
 export const Route = createFileRoute("/nhan-vat")({
   head: () => ({
@@ -42,10 +41,10 @@ export const Route = createFileRoute("/nhan-vat")({
       {
         name: "description",
         content:
-          "Chăm chút nhân vật 3D, xem cấp độ, kinh nghiệm và toàn bộ lịch sử làm bài của bạn tại hội thi trắc nghiệm nội bộ.",
+          "Chăm chút nhân vật, xem cấp độ, kinh nghiệm và toàn bộ lịch sử làm bài của bạn tại hội thi trắc nghiệm nội bộ.",
       },
       { property: "og:title", content: "Nhân vật của tôi" },
-      { property: "og:description", content: "Tuỳ chỉnh nhân vật 3D, theo dõi cấp độ và lịch sử làm bài." },
+      { property: "og:description", content: "Tuỳ chỉnh nhân vật, theo dõi cấp độ và lịch sử làm bài." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -105,7 +104,7 @@ function CharacterPage() {
         <Sparkles aria-hidden className="animate-float pointer-events-none absolute -right-4 -top-4 size-32 text-primary-foreground/10" />
         <h1 className="type-h2 text-primary-foreground">Nhân vật của tôi</h1>
         <p className="type-muted mt-1 max-w-xl text-primary-foreground/80">
-          Chăm chút nhân vật 3D, theo dõi cấp độ kinh nghiệm và xem lại toàn bộ lịch sử làm bài.
+          Chăm chút nhân vật, theo dõi cấp độ kinh nghiệm và xem lại toàn bộ lịch sử làm bài.
         </p>
       </header>
 
@@ -145,14 +144,14 @@ function CharacterPage() {
         <>
           <section className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
             <div className="card-elevated flex flex-col items-center gap-3 rounded-2xl p-5">
-              {profile.avatarUrl ? null : (
-                <Suspense fallback={<div className="h-64 w-full animate-pulse rounded-2xl bg-secondary" />}>
-                  <OfficeAvatar3D
-                    seed={profile.displayName}
-                    className="h-64 w-full rounded-2xl bg-gradient-to-b from-secondary/70 to-background"
-                  />
-                </Suspense>
-              )}
+              <div className="grid h-56 w-full place-items-center rounded-2xl bg-gradient-to-b from-secondary/70 to-background p-4">
+                <Avatar2D
+                  value={profile.avatarUrl}
+                  name={profile.displayName}
+                  className="h-full w-auto max-w-full"
+                />
+              </div>
+
               <AvatarBubble
                 name={profile.displayName}
                 avatarUrl={profile.avatarUrl}
@@ -166,7 +165,7 @@ function CharacterPage() {
                 </p>
                 <p className="type-meta">{profile.unit || "Chưa rõ đơn vị"}</p>
               </div>
-              <AvatarCreatorDialog
+              <AvatarPickerDialog
                 name={name.trim()}
                 credential={credential.trim()}
                 currentUrl={profile.avatarUrl}
