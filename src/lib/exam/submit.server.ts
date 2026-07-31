@@ -155,10 +155,18 @@ export async function submitExamSession(input: {
   const scoreRules: ScoreRules = {
     streakBonus: quiz?.streak_bonus ?? true,
     streakStep: Number(quiz?.streak_step ?? 1),
-    streakMaxBonus: Number(quiz?.streak_max_bonus ?? 5),
+    // 0 = combo luỹ tiến vô tận (không đặt trần điểm thưởng).
+    streakMaxBonus: Number(quiz?.streak_max_bonus ?? 0),
     doublePointsAfter: Number(quiz?.double_points_after ?? 0),
     negativeMarking: Number(quiz?.negative_marking ?? 0),
   };
+
+  /** Chỉ số câu đã dùng vật phẩm X2 (nhân đôi điểm câu đó). */
+  const x2Set = new Set(
+    Array.isArray((session.helpers as Record<string, unknown> | null)?.x2)
+      ? (((session.helpers as Record<string, unknown>).x2 as unknown[]).map(Number) as number[])
+      : [],
+  );
 
   let score = 0;
   let points = 0;
@@ -184,7 +192,9 @@ export async function submitExamSession(input: {
     } else {
       streak = 0;
     }
-    points += scoreForAnswer(row.points || 1, correct, answered, streak, scoreRules);
+    points += scoreForAnswer(row.points || 1, correct, answered, streak, scoreRules, {
+      x2: x2Set.has(idx),
+    });
 
     review.push({
       kind: row.kind,
