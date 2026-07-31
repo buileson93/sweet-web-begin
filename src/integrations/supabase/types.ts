@@ -50,6 +50,33 @@ export type Database = {
         }
         Relationships: []
       }
+      device_locks: {
+        Row: {
+          candidate_name: string
+          created_at: string
+          device_id: string
+          employee_id: string
+          last_used_at: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_name?: string
+          created_at?: string
+          device_id: string
+          employee_id: string
+          last_used_at?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_name?: string
+          created_at?: string
+          device_id?: string
+          employee_id?: string
+          last_used_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       device_visits: {
         Row: {
           browser: string
@@ -663,6 +690,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_exam_device: {
+        Args: {
+          p_candidate_name: string
+          p_cooldown_minutes?: number
+          p_device_id: string
+          p_employee_id: string
+        }
+        Returns: {
+          allowed: boolean
+          holder_name: string
+          wait_seconds: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
