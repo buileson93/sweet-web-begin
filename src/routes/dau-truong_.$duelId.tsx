@@ -90,6 +90,7 @@ function DuelRoom() {
   const roundRef = useRef(-1);
   const announced = useRef(-1);
   const [dice, setDice] = useState<number[]>([]);
+  const [camShake, setCamShake] = useState(0);
   const expiringRef = useRef(false);
 
   // Mỗi câu mới thì xoá lựa chọn cũ.
@@ -121,6 +122,12 @@ function DuelRoom() {
         setDice(r.dice);
         window.setTimeout(() => setDice([]), remain);
       }
+    }
+    // Rung nhẹ toàn khung đấu theo mức sát thương của pha vừa rồi.
+    const punch = Math.max(0, ...r.lines.map((l) => l.damage ?? 0));
+    if (punch > 0) {
+      setCamShake(punch);
+      window.setTimeout(() => setCamShake(0), punch >= 16 ? 1200 : 500);
     }
     const mineLine = r.lines.find((l) => l.employeeId === state.you);
     const foeLine = r.lines.find((l) => l.employeeId !== state.you);
@@ -156,7 +163,12 @@ function DuelRoom() {
 
   return (
     <PageContainer className="space-y-4 py-4">
-      <header className="flex items-center gap-3">
+      <header
+        className={cn(
+          "flex items-center gap-3",
+          camShake >= 16 ? "animate-cam-shake-hard" : camShake > 0 ? "animate-cam-shake" : "",
+        )}
+      >
         <DuelFighter
           player={me}
           hpStart={state.hpStart}
@@ -233,7 +245,9 @@ function DuelRoom() {
                   skill,
                 },
               });
-              await refresh(true);
+              // Không chờ vòng đồng bộ: giao diện đã khoá lạc quan từ trước,
+              // trạng thái thật sẽ tới qua realtime hoặc lần đồng bộ ép ngay sau đây.
+              void refresh(true);
             } catch (e) {
               setLocked(false);
               toast.error(e instanceof Error ? e.message : "Không gửi được đáp án.");
@@ -423,7 +437,8 @@ function RoundPanel({
       setRemain(next);
       if (next <= 0 && expiredRound.current !== state.currentRound) {
         expiredRound.current = state.currentRound;
-        window.setTimeout(onExpire, 1600);
+        // Hết giờ: khoá giao diện ngay tại máy, chỉ chờ máy chủ chốt lượt (không chờ mới phản hồi).
+        window.setTimeout(onExpire, 400);
       }
     };
     update();
@@ -433,13 +448,21 @@ function RoundPanel({
 
   const pct = useMemo(() => Math.round((remain / total) * 100), [remain, total]);
   const single = q.kind === "single" || q.kind === "true_false";
+  // Dự đoán phía client: hết giờ là khoá liền, không đợi máy chủ trả lời.
+  const timeUp = remain <= 0;
+  const frozen = locked || timeUp;
 
   return (
     <div className="space-y-3 rounded-2xl border bg-card p-4">
       <div className="space-y-1">
         <Progress value={pct} className={cn(pct < 30 && "[&>div]:bg-destructive")} />
-        <p className="text-right font-mono text-xs text-muted-foreground">
-          {(remain / 1000).toFixed(1)}s
+        <p
+          className={cn(
+            "text-right font-mono text-xs",
+            timeUp ? "font-bold text-destructive" : "text-muted-foreground",
+          )}
+        >
+          {timeUp ? "⏱️ Hết giờ — đang chốt lượt…" : `${(remain / 1000).toFixed(1)}s`}
         </p>
       </div>
       <div className="space-y-1">
@@ -450,7 +473,7 @@ function RoundPanel({
           uses={skillUses}
           currentRound={state.currentRound}
           selected={skill}
-          disabled={locked}
+          disabled={frozen}
           onSelect={onSkill}
         />
       </div>
@@ -469,14 +492,14 @@ function RoundPanel({
         optionImages={q.optionImages}
         matchLeft={q.matchLeft}
         value={value}
-        disabled={locked}
+        disabled={frozen}
         onChange={(v) => {
           onChange(v);
           if (single) onSubmit(v);
         }}
       />
       {!single ? (
-        <Button className="w-full" disabled={locked || value === undefined} onClick={() => onSubmit(value!)}>
+        <Button className="w-full" disabled={frozen || value === undefined} onClick={() => onSubmit(value!)}>
           Chốt đáp án
         </Button>
       ) : null}
