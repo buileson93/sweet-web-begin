@@ -139,9 +139,12 @@ function HomePage() {
               </span>
               Đấu trường tri thức VATM
             </span>
-            <h1 className="type-h1 mt-3 max-w-[20ch] text-pretty uppercase [hyphens:none] sm:pr-28">
-              <span className="block sm:whitespace-nowrap">Chinh phục bầu trời</span>
-              <span className="block text-primary sm:whitespace-nowrap">kiến thức</span>
+            <h1 className="hero-title type-h1 group mt-3 max-w-[20ch] cursor-default text-pretty uppercase [hyphens:none] sm:pr-28">
+              <span className="hero-line block sm:whitespace-nowrap">Chinh phục bầu trời</span>
+              <span className="hero-line hero-line-accent block sm:whitespace-nowrap">
+                kiến thức
+                <span className="hero-underline" aria-hidden />
+              </span>
             </h1>
 
             <p className="type-lead mt-2 max-w-xl text-balance text-muted-foreground">
@@ -306,7 +309,7 @@ function HomePage() {
                   >
                     {/* Ảnh ngang chủ đề: trượt ra từ mép phải khi rê chuột, luôn nằm dưới lớp chữ */}
                     <img
-                      src={resolveQuizCover(q.cover_url, q.id)}
+                      src={resolveQuizCover(q.cover_url, q.id, q.title)}
                       alt=""
                       aria-hidden
                       loading="lazy"

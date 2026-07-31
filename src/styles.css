@@ -1614,3 +1614,61 @@ body.fx-shaking {
 @media (prefers-reduced-motion: reduce) {
   .animate-fx-like, .animate-fx-sad { animation-duration: 0.01ms; }
 }
+
+
+/* ===== Tiêu đề hero: điểm nhấn gradient + hiệu ứng khi rê chuột ===== */
+.hero-title .hero-line {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), letter-spacing 0.4s ease;
+}
+
+.hero-title:hover .hero-line {
+  transform: translate3d(2px, -1px, 0);
+  letter-spacing: 0.01em;
+}
+
+.hero-title .hero-line-accent {
+  position: relative;
+  display: inline-block;
+  background-image: linear-gradient(
+    100deg,
+    var(--primary) 0%,
+    color-mix(in oklab, var(--accent) 70%, var(--primary)) 45%,
+    var(--primary) 100%
+  );
+  background-size: 220% 100%;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transition: background-position 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease;
+}
+
+.hero-title:hover .hero-line-accent {
+  background-position: 100% 50%;
+  filter: drop-shadow(0 6px 18px color-mix(in oklab, var(--primary) 32%, transparent));
+}
+
+.hero-title .hero-underline {
+  position: absolute;
+  left: 0;
+  bottom: -0.12em;
+  height: 0.14em;
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), color-mix(in oklab, var(--accent) 80%, var(--primary)));
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-title:hover .hero-underline {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-title .hero-line,
+  .hero-title .hero-line-accent,
+  .hero-title .hero-underline {
+    transition: none;
+  }
+}

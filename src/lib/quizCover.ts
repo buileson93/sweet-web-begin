@@ -1,12 +1,19 @@
 import bookCover from "@/assets/quiz-cover-book.png";
+import energyCover from "@/assets/quiz-cover-energy.png";
+import lawCover from "@/assets/quiz-cover-law.png";
+import skillCover from "@/assets/quiz-cover-skill.png";
 import planeCover from "@/assets/quiz-cover-plane.png";
 import towerCover from "@/assets/quiz-cover-tower.png";
+import { quizTheme } from "@/lib/quizTheme";
 
 /** Kho ảnh chìm dựng sẵn theo chủ đề hàng không / tri thức. */
 export const COVER_PRESETS = [
   { id: "preset:tower", label: "Đài kiểm soát", src: towerCover },
   { id: "preset:plane", label: "Máy bay & mây", src: planeCover },
   { id: "preset:book", label: "Sách & tri thức", src: bookCover },
+  { id: "preset:energy", label: "Tiết kiệm điện", src: energyCover },
+  { id: "preset:law", label: "Luật hàng không", src: lawCover },
+  { id: "preset:skill", label: "Năng định chuyên môn", src: skillCover },
 ] as const;
 
 export const QUIZ_COVER_BUCKET = "quiz-covers";
@@ -23,7 +30,7 @@ export function coverSeedIndex(seed: string, size: number): number {
  * Đổi giá trị cover_url trong CSDL thành đường dẫn ảnh dùng được ở trình duyệt.
  * Rỗng → chọn ảnh dựng sẵn theo mã cuộc thi để thẻ nào cũng có ảnh chìm.
  */
-export function resolveQuizCover(coverUrl: string | null | undefined, seed = ""): string {
+export function resolveQuizCover(coverUrl: string | null | undefined, seed = "", title = ""): string {
   const value = (coverUrl ?? "").trim();
   if (value.startsWith("preset:")) {
     const found = COVER_PRESETS.find((p) => p.id === value);
@@ -32,6 +39,10 @@ export function resolveQuizCover(coverUrl: string | null | undefined, seed = "")
     return value;
   } else if (value) {
     return `/api/public/anh-bia/${value.split("/").map(encodeURIComponent).join("/")}`;
+  }
+  if (title) {
+    const themed = COVER_PRESETS.find((p) => p.id === quizTheme(title).presetId);
+    if (themed) return themed.src;
   }
   return COVER_PRESETS[coverSeedIndex(seed, COVER_PRESETS.length)].src;
 }
