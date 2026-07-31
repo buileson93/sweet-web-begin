@@ -1,11 +1,28 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { BadgeCheck, CalendarClock, Loader2, LogIn, Plane, Play, RefreshCw, Repeat, ShieldCheck, Zap } from "lucide-react";
+import {
+  AlertCircle,
+  BadgeCheck,
+  CalendarClock,
+  CircleDashed,
+  Clock,
+  Loader2,
+  LogIn,
+  Plane,
+  Play,
+  RefreshCw,
+  Repeat,
+  ShieldCheck,
+  Trophy,
+  User,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { CredentialInput } from "@/components/CredentialInput";
 import { HintTip } from "@/components/HintTip";
+import { IconTip } from "@/components/IconTip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -107,6 +124,45 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
         : needCommit && !committed
           ? "Vui lòng đọc nội quy và tích ô cam kết."
           : "Sẵn sàng vào phòng thi.";
+
+  /** Xem trước trực tiếp 3 bước: cuộc thi → họ tên → xác thực. */
+  const steps = useMemo(() => {
+    const quizTone = !quizId ? "idle" : selectedStatus === "open" ? "ok" : "error";
+    const quizTip = !quizId
+      ? "Chưa chọn cuộc thi — hãy chọn một cuộc thi đang mở."
+      : selectedStatus === "open"
+        ? `Cuộc thi: ${selected?.title ?? ""}`
+        : `Cuộc thi "${selected?.title ?? ""}" ${selectedStatus === "upcoming" ? "chưa đến giờ mở" : selectedStatus === "closed" ? "đã kết thúc" : "đang tạm dừng"}.`;
+
+    const nameTone = !trimmed ? "idle" : nameError ? "error" : "ok";
+    const credTone = verified ? "ok" : credential ? (credentialError ? "error" : "idle") : "idle";
+
+    return [
+      {
+        key: "quiz",
+        Icon: quizTone === "ok" ? Trophy : quizTone === "error" ? Clock : CircleDashed,
+        tone: quizTone,
+        value: selected ? selected.title : "Chọn cuộc thi",
+        tip: quizTip,
+      },
+      {
+        key: "name",
+        Icon: nameTone === "error" ? AlertCircle : User,
+        tone: nameTone,
+        value: trimmed || "Họ và tên",
+        tip: nameError ?? `Họ tên dự thi: ${trimmed}`,
+      },
+      {
+        key: "cred",
+        Icon: credTone === "ok" ? BadgeCheck : credTone === "error" ? AlertCircle : ShieldCheck,
+        tone: credTone,
+        value: verified ? "Đã xác thực" : credential ? "Chờ xác thực" : "Xác thực",
+        tip: verified
+          ? `Đã xác thực: ${verified.fullName}${verified.unitName ? " · " + verified.unitName : ""}`
+          : (credentialError ?? "Bấm nút xác thực để đối chiếu với danh bạ nhân viên."),
+      },
+    ] as const;
+  }, [credential, credentialError, nameError, quizId, selected, selectedStatus, trimmed, verified]);
 
   function resetVerified() {
     if (verified) setVerified(null);
