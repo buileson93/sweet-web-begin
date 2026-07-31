@@ -823,7 +823,7 @@ export async function closeRound(duelId: string, roundIndex: number) {
 
   if (noShow) {
     await logArenaAudit(
-      "timeout",
+      "update",
       duelId,
       `${noShow.display_name} bỏ trống ${MAX_CONSECUTIVE_MISSES} câu liên tiếp — xử thua kỹ thuật`,
       { roundIndex },
