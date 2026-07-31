@@ -145,14 +145,14 @@ function CharacterPage() {
         <>
           <section className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
             <div className="card-elevated flex flex-col items-center gap-3 rounded-2xl p-5">
-              {profile.avatarUrl ? null : (
-                <Suspense fallback={<div className="h-64 w-full animate-pulse rounded-2xl bg-secondary" />}>
-                  <OfficeAvatar3D
-                    seed={profile.displayName}
-                    className="h-64 w-full rounded-2xl bg-gradient-to-b from-secondary/70 to-background"
-                  />
-                </Suspense>
-              )}
+              <div className="grid h-56 w-full place-items-center rounded-2xl bg-gradient-to-b from-secondary/70 to-background p-4">
+                <Avatar2D
+                  value={profile.avatarUrl}
+                  name={profile.displayName}
+                  className="h-full w-auto max-w-full"
+                />
+              </div>
+
               <AvatarBubble
                 name={profile.displayName}
                 avatarUrl={profile.avatarUrl}
