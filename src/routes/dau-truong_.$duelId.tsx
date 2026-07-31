@@ -437,7 +437,8 @@ function RoundPanel({
       setRemain(next);
       if (next <= 0 && expiredRound.current !== state.currentRound) {
         expiredRound.current = state.currentRound;
-        window.setTimeout(onExpire, 1600);
+        // Hết giờ: khoá giao diện ngay tại máy, chỉ chờ máy chủ chốt lượt (không chờ mới phản hồi).
+        window.setTimeout(onExpire, 400);
       }
     };
     update();
@@ -447,13 +448,21 @@ function RoundPanel({
 
   const pct = useMemo(() => Math.round((remain / total) * 100), [remain, total]);
   const single = q.kind === "single" || q.kind === "true_false";
+  // Dự đoán phía client: hết giờ là khoá liền, không đợi máy chủ trả lời.
+  const timeUp = remain <= 0;
+  const frozen = locked || timeUp;
 
   return (
     <div className="space-y-3 rounded-2xl border bg-card p-4">
       <div className="space-y-1">
         <Progress value={pct} className={cn(pct < 30 && "[&>div]:bg-destructive")} />
-        <p className="text-right font-mono text-xs text-muted-foreground">
-          {(remain / 1000).toFixed(1)}s
+        <p
+          className={cn(
+            "text-right font-mono text-xs",
+            timeUp ? "font-bold text-destructive" : "text-muted-foreground",
+          )}
+        >
+          {timeUp ? "⏱️ Hết giờ — đang chốt lượt…" : `${(remain / 1000).toFixed(1)}s`}
         </p>
       </div>
       <div className="space-y-1">
@@ -464,7 +473,7 @@ function RoundPanel({
           uses={skillUses}
           currentRound={state.currentRound}
           selected={skill}
-          disabled={locked}
+          disabled={frozen}
           onSelect={onSkill}
         />
       </div>
@@ -483,14 +492,14 @@ function RoundPanel({
         optionImages={q.optionImages}
         matchLeft={q.matchLeft}
         value={value}
-        disabled={locked}
+        disabled={frozen}
         onChange={(v) => {
           onChange(v);
           if (single) onSubmit(v);
         }}
       />
       {!single ? (
-        <Button className="w-full" disabled={locked || value === undefined} onClick={() => onSubmit(value!)}>
+        <Button className="w-full" disabled={frozen || value === undefined} onClick={() => onSubmit(value!)}>
           Chốt đáp án
         </Button>
       ) : null}
