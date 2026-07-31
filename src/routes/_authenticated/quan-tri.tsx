@@ -300,7 +300,10 @@ function AdminPage() {
                 {current === "questions" && <QuestionManager canEdit={canEdit} />}
                 {current === "units" && <UnitManager canEdit={canEdit} />}
                 {current === "employees" && <EmployeeManager canEdit={canManageSystem} />}
+                {current === "live" && <LiveMonitor />}
                 {current === "results" && <ResultManager canEdit={canEdit} />}
+                {current === "unit-stats" && <UnitStats />}
+
                 {current === "history" && <EmployeeHistoryManager />}
                 {current === "reminders" && <ReminderManager />}
                 {current === "audit" && <AuditLogManager />}
