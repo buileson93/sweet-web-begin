@@ -45,6 +45,11 @@ const REVEAL_MS = 3_000;
 const NETWORK_GRACE_MS = 1_500;
 /** Thời gian chờ đối thủ mất kết nối trước khi xử thua kỹ thuật (ms). */
 export const DISCONNECT_GRACE_MS = 20_000;
+/** Trần thời gian mỗi câu trong ván so tài (giây) — tốc chiến, không để ai câu giờ. */
+export const MAX_ROUND_SECONDS = 15;
+/** Bỏ trống liên tiếp bấy nhiêu câu thì bị xử thua kỹ thuật. */
+export const MAX_CONSECUTIVE_MISSES = 3;
+
 
 type DuelRow = {
   id: string;
