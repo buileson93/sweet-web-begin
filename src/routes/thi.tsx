@@ -318,31 +318,58 @@ function ExamPage() {
     return () => clearInterval(t);
   }, [session, result, finish]);
 
-  // Chống gian lận: rời khỏi màn hình thi
+  // Ghi nhận hành vi: chỉ BÁO CÁO cho máy chủ, tuyệt đối không tự huỷ bài phía máy khách.
   useEffect(() => {
     if (!session || result) return;
-    const onLeave = (reason: string) => {
-      if (submittedRef.current) return;
+    const isTouch =
+      typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches === true;
+    let sent = 0;
+    let hiddenAt = 0;
+    let lastSentAt = 0;
+
+    const report = (kind: string, detail: Record<string, unknown> = {}) => {
+      if (submittedRef.current || sent >= MAX_EVENTS) return;
+      const now = Date.now();
+      if (now - lastSentAt < 800) return; // debounce
+      lastSentAt = now;
+      sent += 1;
+      void runReportEvent({
+        data: {
+          sessionId: session.sessionId,
+          submitToken: session.submitToken,
+          kind,
+          detail,
+        },
+      }).catch(() => undefined);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+        return;
+      }
+      const hiddenMs = hiddenAt ? Date.now() - hiddenAt : 0;
+      hiddenAt = 0;
+      // Dưới 3 giây (thông báo đẩy, cuộc gọi chớp nhoáng, xoay màn hình) thì bỏ qua hoàn toàn.
+      if (hiddenMs < 3_000) return;
+      report("tab_hidden", { hiddenMs });
       setViolations((v) => {
         const next = v + 1;
-        if (next >= MAX_VIOLATIONS) {
-          toast.error("Bạn đã rời màn hình thi quá số lần cho phép. Bài thi bị huỷ.");
-          void finish({ disqualified: true, reason: `${reason} (${next} lần)` });
-        } else {
-          toast.warning(`Cảnh báo ${next}/${MAX_VIOLATIONS}: không rời khỏi màn hình thi.`);
-        }
+        toast.warning(`Bạn đã rời khỏi màn hình thi ${next} lần — hành vi này được ghi nhận.`);
         return next;
       });
     };
-    const onHidden = () => {
-      if (document.visibilityState !== "hidden") return;
-      onLeave("Rời màn hình thi");
-    };
     const onBlur = () => {
-      if (document.visibilityState === "hidden") return; // đã tính ở trên
-      onLeave("Chuyển sang cửa sổ khác");
+      // Trên thiết bị cảm ứng, blur xảy ra liên tục (bàn phím ảo, thanh địa chỉ) — không ghi nhận.
+      if (isTouch || document.visibilityState === "hidden") return;
+      report("window_blur", { documentVisible: document.visibilityState === "visible" });
     };
-    const block = (e: Event) => e.preventDefault();
+    const block = (e: Event) => {
+      e.preventDefault();
+      if (e.type === "copy" || e.type === "cut") report("copy");
+      else if (e.type === "paste") report("paste");
+      else report("contextmenu");
+    };
     const blockKeys = (e: KeyboardEvent) => {
       if (
         (e.ctrlKey || e.metaKey) &&
@@ -351,13 +378,15 @@ function ExamPage() {
         e.preventDefault();
       }
     };
-    document.addEventListener("visibilitychange", onHidden);
+    document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);
     document.addEventListener("contextmenu", block);
     document.addEventListener("copy", block);
     document.addEventListener("cut", block);
     document.addEventListener("paste", block);
     document.addEventListener("keydown", blockKeys);
+    const onHidden = onVisibility;
+
     return () => {
       document.removeEventListener("visibilitychange", onHidden);
       window.removeEventListener("blur", onBlur);
