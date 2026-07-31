@@ -1,8 +1,9 @@
+import { useEffect, useRef, useState } from "react";
 import { Heart } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-/** Thanh máu của một đấu thủ trong ván so tài. */
+/** Thanh máu của một đấu thủ: có vệt "máu vừa mất" trượt theo kiểu game turn-based. */
 export function HpBar({
   hp,
   hpStart,
@@ -17,17 +18,26 @@ export function HpBar({
   const max = Math.max(1, hpStart);
   const value = Math.max(0, Math.min(max, hp));
   const percent = Math.round((value / max) * 100);
-  const tone =
-    percent > 60
-      ? "bg-emerald-500"
-      : percent > 30
-        ? "bg-amber-500"
-        : "bg-rose-500";
+  const [ghost, setGhost] = useState(percent);
+  const prev = useRef(percent);
+
+  useEffect(() => {
+    if (percent >= prev.current) {
+      prev.current = percent;
+      setGhost(percent);
+      return;
+    }
+    prev.current = percent;
+    const id = window.setTimeout(() => setGhost(percent), 420);
+    return () => window.clearTimeout(id);
+  }, [percent]);
+
+  const tone = percent > 60 ? "bg-emerald-500" : percent > 30 ? "bg-amber-500" : "bg-rose-500";
 
   return (
     <div className={cn("space-y-1", className)}>
       <div
-        className="relative h-3 w-full overflow-hidden rounded-full bg-muted"
+        className="relative h-3.5 w-full overflow-hidden rounded-full border border-border/60 bg-muted shadow-inner"
         role="meter"
         aria-valuenow={value}
         aria-valuemin={0}
@@ -35,8 +45,12 @@ export function HpBar({
         aria-label={mine ? "Máu của bạn" : "Máu của đối thủ"}
       >
         <div
+          className="absolute inset-y-0 left-0 rounded-full bg-rose-300/70 transition-[width] duration-700 ease-out dark:bg-rose-400/40"
+          style={{ width: `${ghost}%` }}
+        />
+        <div
           className={cn(
-            "h-full rounded-full transition-[width] duration-700 ease-out",
+            "absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ease-out",
             tone,
             percent <= 30 && percent > 0 && "animate-pulse",
           )}
