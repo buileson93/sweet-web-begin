@@ -89,9 +89,9 @@ export async function readDocxQuestions(file: File): Promise<DocxImportResult> {
   return { drafts, images };
 }
 
-function base64ToBytes(base64: string): Uint8Array {
+function base64ToBytes(base64: string): ArrayBuffer {
   const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+  return bytes.buffer;
 }
