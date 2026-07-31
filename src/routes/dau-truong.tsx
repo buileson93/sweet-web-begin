@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 import { CredentialInput } from "@/components/CredentialInput";
 import { InviteDialog } from "@/components/arena/InviteDialog";
+import { ShareChallenge } from "@/components/arena/ShareChallenge";
 import { PracticePanel } from "@/components/arena/PracticePanel";
 import { useArenaInviteChannel } from "@/hooks/useArenaInviteChannel";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
@@ -314,6 +315,8 @@ function ArenaLobby() {
           </Button>
         )}
       </div>
+
+      <ShareChallenge token={token} />
 
       <PracticePanel
         token={token}
