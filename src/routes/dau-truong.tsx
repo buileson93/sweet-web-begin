@@ -221,7 +221,7 @@ function ArenaLobby() {
           title="Đấu trường 1vs1"
           description="10 câu tốc chiến, ai nhanh và đúng hơn thì thắng."
         />
-        <div className="mx-auto mt-6 w-full max-w-md rounded-2xl border bg-card/80 p-5 shadow-lg backdrop-blur">
+        <div className="arena-panel arena-radar mx-auto mt-6 w-full max-w-md p-5">
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="arena-name" className="flex items-center gap-2">
@@ -236,7 +236,7 @@ function ArenaLobby() {
               />
             </div>
             <CredentialInput value={credential} onChange={setCredential} onEnter={handleSignIn} />
-            <Button className="w-full" onClick={handleSignIn} disabled={busy}>
+            <Button className="cta-glow w-full rounded-full" onClick={handleSignIn} disabled={busy}>
               {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Swords className="mr-2 size-4" />}
               Vào đấu trường
             </Button>
@@ -315,7 +315,7 @@ function ArenaLobby() {
         ) : (
           <Button
             size="lg"
-            className="h-14 px-10 text-lg shadow-lg"
+            className="cta-glow pulse-ready h-14 rounded-full px-10 text-lg"
             disabled={Boolean(presence?.active)}
             onClick={() => {
               waitedRef.current = 0;
@@ -682,19 +682,19 @@ function ProfileStrip({ profile }: { profile: ArenaProfile }) {
     { icon: Coins, label: "Xu", value: profile.coins },
   ];
   return (
-    <div className="rounded-2xl border bg-card/80 p-4 shadow-sm backdrop-blur">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="arena-panel arena-radar p-4">
+      <div className="relative flex flex-wrap items-center gap-3">
         <ArenaSelfAvatar profile={profile} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{profile.displayName}</p>
+          <p className="truncate text-base font-semibold">{profile.displayName}</p>
           <p className="truncate text-xs text-muted-foreground">{profile.unit}</p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid w-full grid-cols-4 gap-2 sm:w-auto">
           {items.map((it) => (
-            <div key={it.label} className="rounded-xl bg-muted/50 px-3 py-1.5 text-center">
-              <it.icon className="mx-auto size-4 text-primary" />
-              <p className="text-sm font-semibold">{it.value}</p>
-              <p className="text-[10px] uppercase text-muted-foreground">{it.label}</p>
+            <div key={it.label} className="stat-chip">
+              <it.icon className="size-4 text-primary" />
+              <p className="text-sm font-bold tabular-nums">{it.value}</p>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{it.label}</p>
             </div>
           ))}
         </div>
