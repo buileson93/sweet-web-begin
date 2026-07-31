@@ -7,7 +7,7 @@ export type ExamEventRow = {
   id: string;
   kind: string;
   weight: number;
-  detail: Record<string, unknown>;
+  detail: { hiddenMs?: number; documentVisible?: boolean; clientHint?: boolean; reason?: string };
   createdAt: string;
 };
 
@@ -47,7 +47,7 @@ export const listExamEvents = createServerFn({ method: "POST" })
       id: r.id,
       kind: r.kind,
       weight: r.weight,
-      detail: (r.detail ?? {}) as Record<string, unknown>,
+      detail: (r.detail ?? {}) as ExamEventRow["detail"],
       createdAt: r.created_at,
     }));
   });
