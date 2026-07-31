@@ -23,6 +23,7 @@ export type QuizRow = {
   double_points_after: number;
   show_question_map: boolean;
   negative_marking: number;
+  cover_url: string | null;
   blueprint: { easy?: number; medium?: number; hard?: number; tags?: Record<string, number> } | null;
 };
 

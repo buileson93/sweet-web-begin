@@ -1,0 +1,1 @@
+GRANT SELECT (cover_url) ON public.quizzes TO anon, authenticated;
