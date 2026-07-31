@@ -78,8 +78,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       const { data, error } = await supabase
         .from("questions")
         .select(
-          "id, quiz_id, question, options, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, order_index, tags, explanation, image_url",
+          "id, quiz_id, question, options, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, order_index, time_limit_seconds, is_archived, tags, explanation, image_url",
         )
+
         .eq("quiz_id", quizId)
         // Sắp theo số thứ tự để admin thấy đúng trật tự đề khi tắt xáo trộn.
         .order("order_index", { ascending: true })
