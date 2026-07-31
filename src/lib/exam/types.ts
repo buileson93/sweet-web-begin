@@ -9,6 +9,8 @@ export type ExamQuestion = {
   /** Cột trái của câu nối cặp. */
   matchLeft: string[];
   imageUrl: string | null;
+  /** Ảnh riêng của từng phương án, ĐÃ hoán vị cùng thứ tự với `options`. */
+  optionImages: string[];
   points: number;
   difficulty: Difficulty;
   timeLimitSeconds: number | null;
@@ -108,7 +110,7 @@ export type ExamHistory = {
 
 /** Cột truy vấn dùng chung cho câu hỏi và cuộc thi. */
 export const QUESTION_COLUMNS =
-  "id, question, options, correct_index, image_url, kind, correct_indices, accepted_answers, pairs, correct_order, difficulty, tags, points, explanation, time_limit_seconds, order_index";
+  "id, question, options, correct_index, image_url, option_images, kind, correct_indices, accepted_answers, pairs, correct_order, difficulty, tags, points, explanation, time_limit_seconds, order_index";
 
 export const QUIZ_COLUMNS =
   "id, title, is_active, status, intro_markdown, start_time, end_time, question_count, duration_minutes, shuffle_options, shuffle_questions, pass_percent, room_password, max_attempts, instant_feedback, allow_fifty_fifty, allow_skip, streak_bonus, show_question_map, negative_marking, blueprint";

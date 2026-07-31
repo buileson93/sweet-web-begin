@@ -79,6 +79,7 @@ export function QuestionCard({
         <QuestionInput
           kind={question.kind}
           options={question.options}
+          optionImages={question.optionImages}
           matchLeft={question.matchLeft}
           value={value}
           removed={removed}

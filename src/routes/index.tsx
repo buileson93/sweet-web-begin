@@ -115,7 +115,27 @@ function HomePage() {
       <section className="grid gap-6 lg:grid-cols-12 lg:items-start">
         <div className="flex min-w-0 flex-col gap-5 lg:col-span-7">
           <div className="animate-pop relative min-w-0">
-...
+            {/* Máy bay bay vòng quanh cuốn sách tri thức — hiện trên mọi kích thước màn hình */}
+            <div
+              className="pointer-events-none absolute -top-1 right-0 grid size-20 place-items-center sm:size-28 lg:right-6"
+              aria-hidden
+            >
+              <BookOpen className="animate-book-flip size-7 text-primary/70 drop-shadow-sm sm:size-9" />
+              <span
+                className="animate-plane-orbit absolute grid place-items-center"
+                style={{ "--orbit": "2.4rem" } as React.CSSProperties}
+              >
+                <Plane className="size-4 text-accent drop-shadow-sm sm:size-5" />
+              </span>
+            </div>
+
+            <span className="type-eyebrow inline-flex max-w-[calc(100%-5.5rem)] items-center gap-2 rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
+              <span className="relative flex size-2 shrink-0">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
+              </span>
+              Đấu trường tri thức VATM
+            </span>
             <h1 className="type-h1 mt-3 max-w-[20ch] text-pretty uppercase [hyphens:none] sm:pr-28">
               <span className="block sm:whitespace-nowrap">Chinh phục bầu trời</span>
               <span className="block text-primary sm:whitespace-nowrap">kiến thức</span>

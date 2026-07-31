@@ -51,6 +51,8 @@ export type QuestionRow = {
   options: string[];
   correct_index: number;
   image_url: string | null;
+  /** Ảnh riêng của từng phương án, cùng chỉ số với `options`; chuỗi rỗng = không có ảnh. */
+  option_images: string[] | null;
   kind: QuestionKind;
   correct_indices: number[];
   accepted_answers: string[];
@@ -92,6 +94,24 @@ export function baseOptions(row: QuestionRow): string[] {
   if (row.kind === "matching") return pairsOf(row).map((p) => p.right);
   if (row.kind === "true_false") return row.options.length >= 2 ? row.options : ["Đúng", "Sai"];
   return row.options;
+}
+
+/**
+ * Danh sách ảnh phương án theo ĐÚNG chỉ số của `baseOptions(row)`.
+ * Thiếu phần tử thì bù chuỗi rỗng, thừa thì cắt bớt.
+ */
+export function optionImagesOf(row: QuestionRow): string[] {
+  const count = baseOptions(row).length;
+  const raw = Array.isArray(row.option_images) ? row.option_images : [];
+  return Array.from({ length: count }, (_, i) => String(raw[i] ?? ""));
+}
+
+/**
+ * Hoán vị một mảng theo `order` (ánh xạ vị trí hiển thị -> vị trí gốc).
+ * Dùng để ảnh phương án luôn đi kèm đúng phương án sau khi trộn.
+ */
+export function permuteByOrder<T>(items: T[], order: number[], fallback: T): T[] {
+  return order.map((i) => (i >= 0 && i < items.length ? items[i] : fallback));
 }
 
 /** Chấm một câu. `order` là ánh xạ vị trí hiển thị -> vị trí gốc. */

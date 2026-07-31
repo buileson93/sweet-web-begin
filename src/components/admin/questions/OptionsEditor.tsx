@@ -1,5 +1,7 @@
 import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
 
+import { OptionImageButton } from "./OptionImageButton";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +14,7 @@ import type { EditorProps } from "./types";
  * Bộ soạn phương án dùng chung cho câu một đáp án, nhiều đáp án,
  * đúng-sai và sắp xếp thứ tự.
  */
-export function OptionsEditor({ form, setForm, errors, warnings }: EditorProps) {
+export function OptionsEditor({ form, setForm, errors, warnings, quizId }: EditorProps) {
   const ordering = form.kind === "ordering";
 
   /** Đổi chỗ hai mục (dùng cho câu sắp xếp). */
@@ -20,7 +22,9 @@ export function OptionsEditor({ form, setForm, errors, warnings }: EditorProps) 
     if (j < 0 || j >= form.options.length) return;
     const next = [...form.options];
     [next[i], next[j]] = [next[j], next[i]];
-    setForm({ ...form, options: next });
+    const nextImg = [...(form.option_images ?? [])];
+    [nextImg[i], nextImg[j]] = [nextImg[j], nextImg[i]];
+    setForm({ ...form, options: next, option_images: nextImg });
   }
 
   return (
@@ -71,12 +75,25 @@ export function OptionsEditor({ form, setForm, errors, warnings }: EditorProps) 
           <Input
             value={o}
             placeholder={ordering ? `Mục ${i + 1}` : `Phương án ${String.fromCharCode(65 + i)}`}
+            data-option-index={i}
             onChange={(e) => {
               const next = [...form.options];
               next[i] = e.target.value;
               setForm({ ...form, options: next });
             }}
           />
+          {quizId ? (
+            <OptionImageButton
+              quizId={quizId}
+              path={form.option_images?.[i] ?? ""}
+              label={ordering ? `Mục ${i + 1}` : `Phương án ${String.fromCharCode(65 + i)}`}
+              onChange={(path) => {
+                const nextImg = [...(form.option_images ?? [])];
+                nextImg[i] = path;
+                setForm({ ...form, option_images: nextImg });
+              }}
+            />
+          ) : null}
           {ordering ? (
             <>
               <Button
@@ -104,7 +121,13 @@ export function OptionsEditor({ form, setForm, errors, warnings }: EditorProps) 
               variant="ghost"
               size="icon"
               aria-label="Xoá phương án"
-              onClick={() => setForm({ ...form, options: form.options.filter((_, j) => j !== i) })}
+              onClick={() =>
+                setForm({
+                  ...form,
+                  options: form.options.filter((_, j) => j !== i),
+                  option_images: (form.option_images ?? []).filter((_, j) => j !== i),
+                })
+              }
             >
               <X className="size-4" />
             </Button>
@@ -118,7 +141,13 @@ export function OptionsEditor({ form, setForm, errors, warnings }: EditorProps) 
           variant="outline"
           size="sm"
           className="rounded-full"
-          onClick={() => setForm({ ...form, options: [...form.options, ""] })}
+          onClick={() =>
+            setForm({
+              ...form,
+              options: [...form.options, ""],
+              option_images: [...(form.option_images ?? []), ""],
+            })
+          }
         >
           <Plus className="size-4" /> {ordering ? "Thêm mục" : "Thêm phương án"}
         </Button>

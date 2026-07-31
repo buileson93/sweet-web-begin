@@ -8,6 +8,7 @@ export type QuestionRow = {
   question: string;
   options: string[];
   correct_index: number;
+  option_images: string[] | null;
   correct_indices: number[] | null;
   accepted_answers: string[] | null;
   pairs: Pair[] | null;
@@ -28,6 +29,7 @@ export type QuestionRow = {
 export const emptyForm = {
   question: "",
   options: ["", "", "", ""],
+  option_images: ["", "", "", ""],
   correct_index: 0,
   correct_indices: [] as number[],
   accepted_answers: "",
@@ -51,6 +53,8 @@ export type EditorProps = {
   /** Thông báo lỗi/cảnh báo gắn theo trường, hiện ngay dưới ô nhập. */
   errors?: Partial<Record<string, string>>;
   warnings?: Partial<Record<string, string>>;
+  /** Mã cuộc thi để tải ảnh phương án lên đúng phạm vi. */
+  quizId?: string;
 };
 
 export type CsvQuestion = { question: string; options: string[]; correct_index: number };

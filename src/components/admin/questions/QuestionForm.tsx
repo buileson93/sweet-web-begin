@@ -65,6 +65,7 @@ export function QuestionForm({
   existing,
   form,
   setForm,
+  quizId,
   uploadStage,
   uploadInfo,
   onAttachImage,
@@ -82,6 +83,7 @@ export function QuestionForm({
   existing: { id: string; question: string }[];
   form: QuestionFormState;
   setForm: React.Dispatch<React.SetStateAction<QuestionFormState>>;
+  quizId: string;
   uploadStage: "idle" | "compressing" | "uploading";
   uploadInfo: string | null;
   onAttachImage: (file: File) => void;
@@ -315,6 +317,7 @@ export function QuestionForm({
             setForm={setForm}
             errors={validation.errors}
             warnings={validation.warnings}
+            quizId={quizId}
           />
 
           <div className="grid gap-3 sm:grid-cols-2">
