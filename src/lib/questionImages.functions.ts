@@ -27,6 +27,34 @@ export const commitQuestionImage = createServerFn({ method: "POST" })
     return moveImageToQuestion(data.path, data.quizId, data.questionId);
   });
 
+const optionCommitSchema = z.object({
+  paths: z.array(z.string().max(400)).max(30),
+  quizId: z.string().uuid(),
+  questionId: z.string().uuid(),
+});
+
+/** Chuyển ảnh của từng phương án từ thư mục tạm sang thư mục chính thức. */
+export const commitOptionImagesFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => optionCommitSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { assertImageEditor } = await import("@/lib/questionImageAuth.server");
+    await assertImageEditor(context);
+    const { commitOptionImages } = await import("@/lib/questionImages.server");
+    return commitOptionImages(data.paths, data.quizId, data.questionId);
+  });
+
+/** Nhân bản ảnh phương án cho câu hỏi bản sao. */
+export const duplicateOptionImagesFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => optionCommitSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { assertImageEditor } = await import("@/lib/questionImageAuth.server");
+    await assertImageEditor(context);
+    const { copyOptionImagesForQuestion } = await import("@/lib/questionImages.server");
+    return copyOptionImagesForQuestion(data.paths, data.quizId, data.questionId);
+  });
+
 /** Thống kê số tệp và dung lượng kho ảnh câu hỏi. */
 export const getQuestionImageStats = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -57,11 +85,12 @@ export const purgeQuizImages = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("questions")
-      .select("image_url")
-      .eq("quiz_id", data.quizId)
-      .not("image_url", "is", null);
+      .select("image_url, option_images")
+      .eq("quiz_id", data.quizId);
     if (error) throw new Error(error.message);
-    const paths = (rows ?? []).map((r) => r.image_url as string).filter(Boolean);
+    const paths = (rows ?? [])
+      .flatMap((r) => [r.image_url as string | null, ...((r.option_images ?? []) as string[])])
+      .filter((p): p is string => Boolean(p));
     const { removeImages } = await import("@/lib/questionImages.server");
     return { removed: await removeImages(paths) };
   });
