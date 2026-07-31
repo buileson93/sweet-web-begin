@@ -57,6 +57,8 @@ export type Database = {
           created_at: string
           device_type: string
           id: string
+          ip: string
+          ip_source: string
           is_pwa: boolean
           is_touch: boolean
           language: string
@@ -78,6 +80,8 @@ export type Database = {
           created_at?: string
           device_type?: string
           id?: string
+          ip?: string
+          ip_source?: string
           is_pwa?: boolean
           is_touch?: boolean
           language?: string
@@ -99,6 +103,8 @@ export type Database = {
           created_at?: string
           device_type?: string
           id?: string
+          ip?: string
+          ip_source?: string
           is_pwa?: boolean
           is_touch?: boolean
           language?: string
