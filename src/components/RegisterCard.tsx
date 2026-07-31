@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { BadgeCheck, CalendarClock, Loader2, Play, RefreshCw, ShieldCheck } from "lucide-react";
+import { BadgeCheck, CalendarClock, Loader2, LogIn, Plane, Play, RefreshCw, Repeat, ShieldCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import { CredentialInput } from "@/components/CredentialInput";
