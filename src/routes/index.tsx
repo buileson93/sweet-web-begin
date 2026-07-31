@@ -306,7 +306,7 @@ function HomePage() {
                   >
                     {/* Ảnh ngang chủ đề: trượt ra từ mép phải khi rê chuột, luôn nằm dưới lớp chữ */}
                     <img
-                      src={resolveQuizCover(q.cover_url, q.id)}
+                      src={resolveQuizCover(q.cover_url, q.id, q.title)}
                       alt=""
                       aria-hidden
                       loading="lazy"
