@@ -73,9 +73,15 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const [uploading, setUploading] = useState(false);
   const [quizId, setQuizId] = useState("");
   const [keyword, setKeyword] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState<"all" | Difficulty>("all");
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<QuestionRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+
+  const PAGE_SIZE = 20;
+
 
   const { data: quizzes = [] } = useQuery({
     queryKey: ["admin-quizzes-lite"],
