@@ -1775,3 +1775,76 @@ body.fx-shaking {
 @media (prefers-reduced-motion: reduce) {
   .animate-hit-soft, .animate-hit-mid, .animate-hit-hard, .animate-skill-pulse, .animate-dice-roll, .animate-slash-hit, .animate-avatar-recoil { animation: none; }
 }
+
+/* ---- Đấu trường: lớp đồ hoạ tông xanh hàng không ---- */
+
+@utility arena-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  border: 1px solid color-mix(in oklab, var(--color-primary) 18%, transparent);
+  background:
+    radial-gradient(120% 140% at 100% 0%, color-mix(in oklab, var(--color-accent) 18%, transparent) 0%, transparent 55%),
+    radial-gradient(90% 120% at 0% 100%, color-mix(in oklab, var(--color-primary) 14%, transparent) 0%, transparent 60%),
+    var(--color-card);
+  box-shadow: var(--shadow-soft);
+}
+
+@utility arena-radar {
+  position: relative;
+  overflow: hidden;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -40% -10% auto -10%;
+    height: 200%;
+    background:
+      repeating-radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--color-primary) 10%, transparent) 0 1px, transparent 1px 46px);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+@utility stat-chip {
+  display: grid;
+  gap: 0.125rem;
+  place-items: center;
+  border-radius: var(--radius-xl);
+  border: 1px solid color-mix(in oklab, var(--color-primary) 16%, transparent);
+  background: color-mix(in oklab, var(--color-primary) 7%, var(--color-card));
+  padding: 0.5rem 0.75rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift);
+  }
+}
+
+@utility cta-glow {
+  position: relative;
+  background-image: var(--gradient-accent);
+  color: var(--color-primary-foreground);
+  box-shadow: 0 10px 30px color-mix(in oklab, var(--color-primary) 35%, transparent);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  &:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 16px 44px color-mix(in oklab, var(--color-primary) 45%, transparent);
+  }
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--gradient-sheen);
+    pointer-events: none;
+  }
+}
+
+@keyframes arena-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-primary) 45%, transparent); }
+  60% { box-shadow: 0 0 0 16px transparent; }
+}
+
+@utility pulse-ready {
+  animation: arena-pulse 2.4s ease-out infinite;
+}
