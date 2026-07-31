@@ -374,7 +374,7 @@ function ArenaLobby() {
         </section>
 
         <section className="space-y-2">
-          <SectionHeading title="Trận gần đây" />
+          <SectionHeading title="So tài gần đây" />
           <ul className="space-y-1.5">
             {(home?.history ?? []).map((h) => (
               <li
@@ -406,11 +406,16 @@ function ArenaLobby() {
                   {h.eloDelta >= 0 ? "+" : ""}
                   {h.eloDelta}
                 </span>
+                <Button asChild size="sm" variant="ghost" className="shrink-0">
+                  <Link to="/dau-truong/xem-lai/$duelId" params={{ duelId: h.duelId }}>
+                    Xem lại
+                  </Link>
+                </Button>
               </li>
             ))}
             {!home?.history.length ? (
               <li className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
-                Chưa có trận nào.
+                Chưa có ván so tài nào.
               </li>
             ) : null}
           </ul>
@@ -419,6 +424,95 @@ function ArenaLobby() {
     </PageContainer>
   );
 }
+
+/** Danh sách đồng nghiệp đang trực tuyến (máy chủ xác nhận qua nhịp tim). */
+function OnlineList({
+  token,
+  players,
+  disabled,
+}: {
+  token: string;
+  players: Awaited<ReturnType<typeof arenaPresence>>["online"];
+  disabled: boolean;
+}) {
+  const runInvite = useServerFn(arenaInvite);
+  const [sending, setSending] = useState("");
+
+  return (
+    <section className="space-y-2">
+      <SectionHeading
+        title={
+          <span className="flex items-center gap-2">
+            <Users className="size-4 text-primary" /> Đang trực tuyến ({players.length})
+          </span>
+        }
+      />
+      <ul className="grid gap-1.5 sm:grid-cols-2">
+        {players.map((p) => (
+          <li
+            key={p.employeeId}
+            className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2"
+          >
+            <span className="relative">
+              <AvatarBubble
+                name={p.displayName}
+                avatarUrl={p.avatarUrl}
+                avatarImage={p.avatarImage}
+                level={p.level}
+                size="sm"
+              />
+              <span
+                className={cn(
+                  "absolute -right-0.5 -top-0.5 size-3 rounded-full ring-2 ring-card",
+                  p.busy ? "bg-amber-500" : "bg-emerald-500",
+                )}
+                title={p.busy ? "Đang bận so tài" : "Sẵn sàng"}
+              />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">{p.displayName}</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {p.title} • Elo {p.elo}
+              </span>
+            </span>
+            <Button
+              size="sm"
+              variant={p.busy ? "outline" : "default"}
+              className="shrink-0 rounded-full"
+              disabled={disabled || p.busy || sending === p.employeeId}
+              onClick={async () => {
+                setSending(p.employeeId);
+                try {
+                  await runInvite({
+                    data: { token, toEmployeeId: p.employeeId, deviceHash: getDeviceId() },
+                  });
+                  toast.success(`Đã mời ${p.displayName} so tài.`);
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Không gửi được lời mời.");
+                } finally {
+                  setSending("");
+                }
+              }}
+            >
+              {sending === p.employeeId ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Swords className="mr-1 size-4" />
+              )}
+              {p.busy ? "Đang bận" : "So tài"}
+            </Button>
+          </li>
+        ))}
+        {!players.length ? (
+          <li className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground sm:col-span-2">
+            Chưa có đồng nghiệp nào trực tuyến. Hãy dùng “So tài nhanh” để ghép cặp tự động.
+          </li>
+        ) : null}
+      </ul>
+    </section>
+  );
+}
+
 
 /** Avatar 2D của chính mình trong đấu trường (đồng bộ với nhân vật đã tạo). */
 function ArenaSelfAvatar({ name, fallback }: { name: string; fallback?: string }) {
