@@ -5,7 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { isTempImagePath, removeQuestionImage } from "@/lib/questionImage";
 import {
+  commitOptionImages,
   commitQuestionImage,
+  duplicateOptionImages,
   duplicateQuestionImage,
   relocateQuestionImages,
 } from "@/lib/questionImages.functions";
