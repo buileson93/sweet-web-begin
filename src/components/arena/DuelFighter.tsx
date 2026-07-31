@@ -133,36 +133,82 @@ export function DuelFighter({
       </div>
       <div
         className={cn(
-          "relative flex h-36 items-end overflow-hidden rounded-lg bg-gradient-to-b from-primary/5 to-muted/40 sm:h-40",
+          "relative flex h-44 items-end overflow-hidden rounded-lg bg-gradient-to-b from-primary/5 to-muted/40 sm:h-52",
           // Hai nhân vật đứng quay mặt vào nhau, dồn sát về phía sân giữa.
           mine ? "justify-end pr-0" : "justify-start pl-0",
         )}
       >
+        {/* Hào quang thở liên tục quanh nhân vật + vòng năng lượng lan ra. */}
         <span
           className={cn(
-            "pointer-events-none absolute bottom-3 h-16 w-16 rounded-full blur-xl",
-            mine ? "right-6 bg-primary/25" : "left-6 bg-rose-500/20",
+            "pointer-events-none absolute bottom-3 h-20 w-20 rounded-full blur-xl animate-aura-pulse",
+            mine ? "right-8 bg-primary/30" : "left-8 bg-rose-500/25",
           )}
         />
         <span
           className={cn(
-            "pointer-events-none absolute bottom-2 h-3 w-20 rounded-[50%] bg-foreground/15 blur-[2px]",
-            mine ? "right-8" : "left-8",
+            "pointer-events-none absolute bottom-4 h-16 w-16 rounded-full border animate-aura-ring",
+            mine ? "right-10 border-primary/40" : "left-10 border-rose-500/40",
           )}
         />
+        {/* Bụi nền bốc lên cho sân đấu có chiều sâu. */}
+        <span
+          className={cn(
+            "pointer-events-none absolute bottom-3 h-2 w-2 rounded-full bg-foreground/20 blur-[1px] animate-ground-dust",
+            mine ? "right-16" : "left-16",
+          )}
+        />
+        <span
+          className={cn(
+            "pointer-events-none absolute bottom-3 h-1.5 w-1.5 rounded-full bg-foreground/15 blur-[1px] animate-ground-dust [animation-delay:1.1s]",
+            mine ? "right-24" : "left-24",
+          )}
+        />
+        <span
+          className={cn(
+            "pointer-events-none absolute bottom-2 h-3 w-24 rounded-[50%] bg-foreground/15 blur-[2px]",
+            mine ? "right-10" : "left-10",
+          )}
+        />
+        {/* Vệt chém bay về phía đối thủ khi ra đòn. */}
+        {pose === "attack" ? (
+          <span
+            className={cn(
+              "pointer-events-none absolute bottom-12 z-20 h-10 w-24 rounded-full blur-[3px]",
+              mine
+                ? "right-2 animate-trail-right bg-gradient-to-r from-transparent via-primary/70 to-transparent"
+                : "left-2 animate-trail-left bg-gradient-to-l from-transparent via-rose-400/70 to-transparent",
+            )}
+          />
+        ) : null}
+        {/* Tia va chạm khi trúng đòn. */}
+        {pose === "hurt" ? (
+          <span
+            className={cn(
+              "pointer-events-none absolute bottom-14 z-30 grid size-14 place-items-center text-3xl animate-impact-spark",
+              mine ? "right-16" : "left-16",
+            )}
+            aria-hidden
+          >
+            💥
+          </span>
+        ) : null}
         <ClassSprite
           key={`${pose}-${dealt}-${hp}`}
           classId={player?.classId}
           action={pose}
           flip={!mine}
-          size={160}
+          size={196}
           className={cn(
-            "-mb-2 drop-shadow-[0_6px_10px_rgba(0,0,0,0.35)]",
+            "-mb-3 drop-shadow-[0_8px_12px_rgba(0,0,0,0.35)]",
+            pose === "idle" && "animate-idle-bob",
             pose === "attack" && (mine ? "animate-lunge-right" : "animate-lunge-left"),
             pose === "hurt" && (mine ? "animate-recoil-left" : "animate-recoil-right"),
+            pose === "hurt" && "animate-sprite-flash",
           )}
         />
       </div>
+
 
       <HpBar hp={hp} hpStart={hpStart} mine={mine} />
       <p className="text-[11px] text-muted-foreground">
