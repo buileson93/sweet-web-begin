@@ -25,9 +25,16 @@ export function useExamAnswers(opts: {
   const [fiftyBusy, setFiftyBusy] = useState(false);
   /** Phản hồi tức thì cho từng câu (chỉ ở chế độ chốt đáp án một lần). */
   const [feedback, setFeedback] = useState<Record<string, "correct" | "wrong">>({});
+  /** Đáp án đúng + giải thích do máy chủ trả về sau khi chốt (chế độ chấm ngay). */
+  const [feedbackInfo, setFeedbackInfo] = useState<
+    Record<string, { correctText: string; explanation: string }>
+  >({});
+  /** Sự kiện hiệu ứng đúng/sai (like bay lên hoặc mặt buồn). */
+  const [answerFx, setAnswerFx] = useState<{ id: number; correct: boolean } | null>(null);
   const [combo, setCombo] = useState(0);
   /** Sự kiện kích hoạt hiệu ứng combo (mỗi lần trả lời đúng liên tiếp). */
   const [comboEvent, setComboEvent] = useState<{ id: number; combo: number } | null>(null);
+
 
   const fiftyLeft = 2 - Object.keys(fifty).length;
   const requestFifty = useCallback(async () => {
