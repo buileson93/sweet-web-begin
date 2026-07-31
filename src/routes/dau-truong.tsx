@@ -221,16 +221,63 @@ function ArenaLobby() {
     <PageContainer className="space-y-6 py-6">
       <PageHero
         title="Đấu trường 1vs1"
-        description="Thách đấu đồng nghiệp, leo hạng Elo và sưu tầm huy hiệu."
+        description="So tài cùng đồng nghiệp, leo hạng Elo và sưu tầm huy hiệu."
+        aside={
+          <Button asChild variant="outline" className="rounded-full">
+            <Link to="/dau-truong/thong-ke">
+              <BarChart3 className="mr-2 size-4" /> Thống kê của tôi
+            </Link>
+          </Button>
+        }
       />
 
       {profile ? <ProfileStrip profile={profile} /> : null}
+
+      {presence?.active ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-400/60 bg-amber-500/10 p-4">
+          <PlayCircle className="size-5 text-amber-600" />
+          <p className="min-w-0 flex-1 text-sm font-medium">
+            Bạn đang trong một ván so tài với {presence.active.opponent}.
+          </p>
+          <Button
+            size="sm"
+            onClick={() =>
+              void navigate({
+                to: "/dau-truong/$duelId",
+                params: { duelId: presence.active!.duelId },
+              })
+            }
+          >
+            Vào tiếp
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={ending}
+            onClick={async () => {
+              setEnding(true);
+              try {
+                await endActive({ data: { token } });
+                setPresence({ ...presence, active: null });
+                toast.success("Đã kết thúc ván so tài dang dở.");
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Không kết thúc được.");
+              } finally {
+                setEnding(false);
+              }
+            }}
+          >
+            {ending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <LogOut className="mr-2 size-4" />}
+            Kết thúc
+          </Button>
+        </div>
+      ) : null}
 
       <div className="flex flex-col items-center gap-3">
         {searching ? (
           <div className="flex flex-col items-center gap-2">
             <Button size="lg" variant="secondary" onClick={() => setSearching(false)}>
-              <X className="mr-2 size-4" /> Huỷ tìm trận
+              <X className="mr-2 size-4" /> Huỷ tìm đối thủ
             </Button>
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" /> Đang tìm đối thủ cùng trình độ…
@@ -240,15 +287,23 @@ function ArenaLobby() {
           <Button
             size="lg"
             className="h-14 px-10 text-lg shadow-lg"
+            disabled={Boolean(presence?.active)}
             onClick={() => {
               waitedRef.current = 0;
               setSearching(true);
             }}
           >
-            <Zap className="mr-2 size-5" /> Tìm trận nhanh
+            <Zap className="mr-2 size-5" /> So tài nhanh
           </Button>
         )}
       </div>
+
+      <OnlineList
+        token={token}
+        players={presence?.online ?? []}
+        disabled={Boolean(presence?.active)}
+      />
+
 
       {home?.invites.incoming.length ? (
         <section className="space-y-2">
