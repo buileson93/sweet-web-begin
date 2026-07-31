@@ -20,6 +20,7 @@ function makeRow(over: Partial<QuestionRow> & { kind: QuestionKind }): QuestionR
     points: 1,
     explanation: "",
     time_limit_seconds: null,
+    order_index: 0,
     ...over,
   };
 }
@@ -131,11 +132,19 @@ describe("gradeOne – ordering", () => {
 });
 
 // ===== pickByBlueprint =====
+// Pool được tạo theo thứ tự ổn định: order_index tăng dần theo vị trí trong mảng.
 function pool(spec: [Difficulty, number][]): QuestionRow[] {
   const rows: QuestionRow[] = [];
   for (const [level, n] of spec) {
     for (let i = 0; i < n; i++) {
-      rows.push(makeRow({ kind: "single", id: `${level}-${i}`, difficulty: level }));
+      rows.push(
+        makeRow({
+          kind: "single",
+          id: `${level}-${i}`,
+          difficulty: level,
+          order_index: rows.length,
+        }),
+      );
     }
   }
   return rows;
@@ -151,6 +160,7 @@ describe("pickByBlueprint", () => {
       ]),
       12,
       {},
+      true,
     );
     expect(picked).toHaveLength(12);
   });
@@ -168,6 +178,7 @@ describe("pickByBlueprint", () => {
         medium: 5,
         hard: 5,
       },
+      true,
     );
     expect(new Set(picked.map((r) => r.id)).size).toBe(picked.length);
   });
@@ -185,6 +196,7 @@ describe("pickByBlueprint", () => {
         medium: 3,
         hard: 2,
       },
+      true,
     );
     const count = (d: Difficulty) => picked.filter((r) => r.difficulty === d).length;
     expect(picked).toHaveLength(9);
@@ -201,6 +213,7 @@ describe("pickByBlueprint", () => {
       ]),
       6,
       { easy: 4, hard: 2 },
+      true,
     );
     expect(picked).toHaveLength(6);
     expect(picked.filter((r) => r.difficulty === "easy")).toHaveLength(1);
@@ -208,7 +221,54 @@ describe("pickByBlueprint", () => {
   });
 
   it("không vượt quá kích thước pool", () => {
-    const picked = pickByBlueprint(pool([["easy", 3]]), 10, {});
+    const picked = pickByBlueprint(pool([["easy", 3]]), 10, {}, true);
     expect(picked).toHaveLength(3);
+  });
+});
+
+// ===== pickByBlueprint – cờ trộn câu hỏi =====
+describe("pickByBlueprint – shuffleQuestions", () => {
+  const bigPool = () =>
+    pool([
+      ["easy", 8],
+      ["medium", 8],
+      ["hard", 8],
+    ]);
+  const orderKey = (rows: QuestionRow[]) => rows.map((r) => r.id).join(",");
+
+  it("shuffleQuestions=false: giữ nguyên thứ tự tương đối của pool (dãy con tăng dần)", () => {
+    const p = bigPool();
+    const picked = pickByBlueprint(p, 12, { easy: 4, medium: 4, hard: 4 }, false);
+    const indexes = picked.map((r) => r.order_index);
+    expect(picked).toHaveLength(12);
+    expect([...indexes].sort((a, b) => a - b)).toEqual(indexes);
+  });
+
+  it("shuffleQuestions=false: chạy 20 lần cho cùng một thứ tự", () => {
+    const p = bigPool();
+    // Blueprint phủ kín pool để tập câu được chọn là cố định, chỉ còn xét thứ tự.
+    const results = Array.from({ length: 20 }, () =>
+      orderKey(pickByBlueprint(p, 24, { easy: 8, medium: 8, hard: 8 }, false)),
+    );
+    expect(new Set(results).size).toBe(1);
+  });
+
+  it("shuffleQuestions=true: 20 lần có ít nhất 2 thứ tự khác nhau", () => {
+    const p = bigPool();
+    const results = Array.from({ length: 20 }, () =>
+      orderKey(pickByBlueprint(p, 24, { easy: 8, medium: 8, hard: 8 }, true)),
+    );
+    expect(new Set(results).size).toBeGreaterThanOrEqual(2);
+  });
+
+  it("cả hai chế độ: đúng số lượng, không trùng id, tôn trọng blueprint", () => {
+    for (const flag of [false, true]) {
+      const picked = pickByBlueprint(bigPool(), 9, { easy: 4, medium: 3, hard: 2 }, flag);
+      expect(picked).toHaveLength(9);
+      expect(new Set(picked.map((r) => r.id)).size).toBe(9);
+      expect(picked.filter((r) => r.difficulty === "easy")).toHaveLength(4);
+      expect(picked.filter((r) => r.difficulty === "medium")).toHaveLength(3);
+      expect(picked.filter((r) => r.difficulty === "hard")).toHaveLength(2);
+    }
   });
 });
