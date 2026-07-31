@@ -19,7 +19,7 @@ import { AppShell } from "@/components/AppShell";
 import { lazy, Suspense } from "react";
 
 import { AvatarBubble, type AvatarBubbleSize } from "@/components/player/AvatarBubble";
-import { AvatarCreatorDialog } from "@/components/player/AvatarCreatorDialog";
+import { AvatarPickerDialog } from "@/components/player/AvatarPickerDialog";
 import { LevelBar } from "@/components/player/LevelBar";
 import { LevelLadder } from "@/components/player/LevelLadder";
 import { EmptyState } from "@/components/ui-kit";
@@ -166,7 +166,7 @@ function CharacterPage() {
                 </p>
                 <p className="type-meta">{profile.unit || "Chưa rõ đơn vị"}</p>
               </div>
-              <AvatarCreatorDialog
+              <AvatarPickerDialog
                 name={name.trim()}
                 credential={credential.trim()}
                 currentUrl={profile.avatarUrl}
