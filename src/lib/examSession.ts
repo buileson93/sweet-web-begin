@@ -49,3 +49,40 @@ export function restoreExamSession(storage: StorageLike | undefined | null): Sta
     questions: s.questions,
   };
 }
+
+/** Khoá lưu thông tin đăng ký gần nhất để "Thi lại ngay" không phải nhập lại. */
+export const EXAM_LAST_ENTRY_KEY = "exam:last-entry";
+
+export type ExamEntry = {
+  quizId: string;
+  name: string;
+  credential: string;
+  extraCredential?: string;
+};
+
+export function saveExamEntry(storage: Pick<Storage, "setItem"> | undefined | null, entry: ExamEntry) {
+  if (!storage) return;
+  try {
+    storage.setItem(EXAM_LAST_ENTRY_KEY, JSON.stringify(entry));
+  } catch {
+    /* bỏ qua khi trình duyệt chặn lưu trữ */
+  }
+}
+
+export function readExamEntry(storage: Pick<Storage, "getItem"> | undefined | null): ExamEntry | null {
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(EXAM_LAST_ENTRY_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<ExamEntry>;
+    if (!parsed?.quizId || !parsed.name || !parsed.credential) return null;
+    return {
+      quizId: parsed.quizId,
+      name: parsed.name,
+      credential: parsed.credential,
+      extraCredential: parsed.extraCredential || undefined,
+    };
+  } catch {
+    return null;
+  }
+}
