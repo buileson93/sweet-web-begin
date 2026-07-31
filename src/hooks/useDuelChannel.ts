@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { arenaState } from "@/lib/arena.functions";
+import { classifyVersion, createClockSync } from "@/lib/arena/clock";
+import { createDiagLog, type DiagEntry, type DiagKind } from "@/lib/arena/diagnostics";
 import type { DuelState } from "@/lib/arena/types";
 
 export type DuelConnectionStatus = "live" | "syncing" | "retrying" | "offline";
@@ -12,12 +14,30 @@ type Options = { duelId: string; token: string; enabled?: boolean };
 const BATCH_WINDOW_MS = 70;
 /** Khoảng cách tối thiểu giữa hai lần hỏi máy chủ (trừ khi ép buộc). */
 const MIN_GAP_MS = 350;
+/** Ping vượt ngưỡng này thì ghi nhật ký "độ trễ cao". */
+const SLOW_PING_MS = 900;
+
+export type DuelNetStats = {
+  /** Độ trễ vòng lặp gần nhất (ms). */
+  ping: number | null;
+  /** Ping trung bình trượt (ms). */
+  avgPing: number | null;
+  /** Số lần phải dựng lại kênh realtime. */
+  reconnects: number;
+  /** Khoảng cách từ lúc nhận broadcast tới lúc trạng thái được cập nhật (ms). */
+  eventLag: number | null;
+  /** Lệch đồng hồ client ↔ máy chủ (ms). */
+  skew: number;
+  /** Số gói bị bỏ vì trùng hoặc tới muộn. */
+  dropped: number;
+};
 
 /**
  * Theo dõi diễn biến trận đấu.
- * - Gom (batch) sự kiện realtime để giảm số lần cập nhật giao diện.
+ * - Hiệu chỉnh lệch đồng hồ để hai bên thấy xúc xắc/chốt lượt cùng một mốc thời gian.
+ * - Gom (batch) sự kiện realtime và bỏ gói trùng/tới muộn để HP không nhảy sai.
  * - Tự kết nối lại theo bậc thang khi rớt mạng, khôi phục đúng lượt/HP hiện tại.
- * - Cho phép dự đoán phía client và tự đối chiếu lại khi máy chủ xác nhận.
+ * - Ghi nhật ký sự cố để người chơi gửi lại khi trạng thái bị lệch.
  */
 export function useDuelChannel({ duelId, token, enabled = true }: Options) {
   const [state, setState] = useState<DuelState | null>(null);
@@ -26,6 +46,16 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
   const [latency, setLatency] = useState<number | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<DuelConnectionStatus>("syncing");
   const [attempt, setAttempt] = useState(0);
+  const [stats, setStats] = useState<DuelNetStats>({
+    ping: null,
+    avgPing: null,
+    reconnects: 0,
+    eventLag: null,
+    skew: 0,
+    dropped: 0,
+  });
+  const [diag, setDiag] = useState<DiagEntry[]>([]);
+
   const versionRef = useRef(-1);
   const busyRef = useRef(false);
   const liveRef = useRef(false);
@@ -34,6 +64,20 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
   const pendingForce = useRef(false);
   /** Số phiên bản mà bản dự đoán đang dựa vào; server vượt qua là hoà lại (reconcile). */
   const predictedOn = useRef<number | null>(null);
+  /** Mốc nhận broadcast đầu tiên trong lô hiện tại — dùng để đo độ trễ sự kiện. */
+  const eventAtRef = useRef<number | null>(null);
+  const clock = useRef(createClockSync()).current;
+  const diagLog = useRef(createDiagLog()).current;
+  const avgPingRef = useRef<number | null>(null);
+  const connectedOnceRef = useRef(false);
+
+  const log = useCallback(
+    (kind: DiagKind, message: string, detail?: Record<string, unknown>) => {
+      diagLog.push(kind, message, detail);
+      setDiag(diagLog.list());
+    },
+    [diagLog],
+  );
 
   const refresh = useCallback(
     async (force = false) => {
@@ -43,8 +87,8 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
         return;
       }
       busyRef.current = true;
-      const started = performance.now();
-      lastFetchRef.current = Date.now();
+      const sentAt = Date.now();
+      lastFetchRef.current = sentAt;
       setConnectionStatus((current) => (current === "live" ? "syncing" : current));
       try {
         const res = await arenaState({
@@ -54,18 +98,60 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
             sinceVersion: force || versionRef.current < 0 ? undefined : versionRef.current,
           },
         });
+        const receivedAt = Date.now();
+        const ping = receivedAt - sentAt;
+
         if (!res.unchanged) {
-          versionRef.current = res.state.version;
-          // Máy chủ đã xác nhận: bỏ bản dự đoán cũ, lấy sự thật từ máy chủ.
-          predictedOn.current = null;
-          setState(res.state);
+          const verdict = classifyVersion(versionRef.current, res.state.version);
+          // Hiệu chỉnh đồng hồ theo mốc máy chủ (bù một nửa RTT).
+          const skew = clock.push({
+            sentAt,
+            receivedAt,
+            serverNow: Date.parse(res.state.serverNow),
+          });
+          if (verdict === "apply") {
+            if (predictedOn.current !== null) {
+              log("reconcile", "Máy chủ xác nhận, bỏ bản dự đoán tạm", {
+                predictedOn: predictedOn.current,
+                serverVersion: res.state.version,
+              });
+            }
+            versionRef.current = res.state.version;
+            predictedOn.current = null;
+            setState(res.state);
+          } else {
+            // Gói trùng hoặc tới muộn: KHÔNG ghi đè, tránh HP/xúc xắc nhảy lùi.
+            log(
+              verdict === "duplicate" ? "duplicate" : "stale",
+              verdict === "duplicate"
+                ? "Bỏ qua gói trùng phiên bản"
+                : "Bỏ qua gói tới muộn (phiên bản cũ)",
+              { current: versionRef.current, incoming: res.state.version },
+            );
+            setStats((s) => ({ ...s, dropped: s.dropped + 1 }));
+          }
+          setStats((s) => ({ ...s, skew: Math.round(skew) }));
         }
-        setLatency(Math.round(performance.now() - started));
+
+        avgPingRef.current =
+          avgPingRef.current === null ? ping : Math.round(avgPingRef.current * 0.7 + ping * 0.3);
+        const eventAt = eventAtRef.current;
+        eventAtRef.current = null;
+        setLatency(ping);
+        setStats((s) => ({
+          ...s,
+          ping,
+          avgPing: avgPingRef.current,
+          eventLag: eventAt === null ? s.eventLag : receivedAt - eventAt,
+        }));
+        if (ping >= SLOW_PING_MS) log("slow", `Độ trễ cao ${ping}ms`);
         setConnectionStatus(liveRef.current ? "live" : "retrying");
         setError(null);
       } catch (e) {
+        const message = e instanceof Error ? e.message : "Không lấy được diễn biến trận.";
         setConnectionStatus(navigator.onLine ? "retrying" : "offline");
-        setError(e instanceof Error ? e.message : "Không lấy được diễn biến trận.");
+        setError(message);
+        log("error", message);
       } finally {
         busyRef.current = false;
         if (pendingForce.current) {
@@ -74,13 +160,14 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
         }
       }
     },
-    [duelId, token, enabled],
+    [duelId, token, enabled, clock, log],
   );
 
   /** Gom nhiều sự kiện trong một cửa sổ ngắn rồi mới đồng bộ một lần. */
   const scheduleRefresh = useCallback(
-    (force = false) => {
+    (force = false, fromEvent = false) => {
       pendingForce.current = pendingForce.current || force;
+      if (fromEvent && eventAtRef.current === null) eventAtRef.current = Date.now();
       if (batchTimer.current) return;
       const since = Date.now() - lastFetchRef.current;
       const wait = Math.max(BATCH_WINDOW_MS, force ? 0 : MIN_GAP_MS - since);
@@ -113,11 +200,11 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
     let retryTimer = 0;
     const channel = supabase
       .channel(`duel:${duelId}`, { config: { broadcast: { self: true } } })
-      .on("broadcast", { event: "*" }, () => scheduleRefresh())
+      .on("broadcast", { event: "*" }, () => scheduleRefresh(false, true))
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "duels", filter: `id=eq.${duelId}` },
-        () => scheduleRefresh(),
+        () => scheduleRefresh(false, true),
       )
       .subscribe((status) => {
         const connected = status === "SUBSCRIBED";
@@ -125,12 +212,20 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
         setLive(connected);
         if (connected) {
           setConnectionStatus("live");
+          if (connectedOnceRef.current) {
+            setStats((s) => ({ ...s, reconnects: s.reconnects + 1 }));
+            log("reconnect", "Đã kết nối lại kênh realtime");
+          } else {
+            connectedOnceRef.current = true;
+            log("connect", "Đã vào kênh realtime");
+          }
           // Kết nối lại: kéo trạng thái đầy đủ để khôi phục đúng lượt và máu.
           void refresh(true);
           return;
         }
         setConnectionStatus(navigator.onLine ? "retrying" : "offline");
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          log(status === "TIMED_OUT" ? "timeout" : "disconnect", `Kênh realtime: ${status}`);
           // Thử lại theo bậc thang 1s → 2s → 4s → tối đa 8s, không dồn dập.
           window.clearTimeout(retryTimer);
           retryTimer = window.setTimeout(
@@ -147,7 +242,7 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
       void supabase.removeChannel(channel);
     };
     // `attempt` tăng lên nghĩa là cần dựng lại kênh realtime.
-  }, [duelId, enabled, refresh, scheduleRefresh, attempt]);
+  }, [duelId, enabled, refresh, scheduleRefresh, attempt, log]);
 
   // Nhịp dự phòng: nhanh khi mất Realtime, chậm khi kênh còn sống,
   // và ngưng hẳn khi người dùng chuyển tab để không đốt tài nguyên máy chủ.
@@ -177,14 +272,44 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
       setAttempt((n) => n + 1);
       void refresh(true);
     };
-    const offline = () => setConnectionStatus("offline");
+    const offline = () => {
+      setConnectionStatus("offline");
+      log("disconnect", "Thiết bị mất mạng");
+    };
     window.addEventListener("online", online);
     window.addEventListener("offline", offline);
     return () => {
       window.removeEventListener("online", online);
       window.removeEventListener("offline", offline);
     };
-  }, [refresh]);
+  }, [refresh, log]);
 
-  return { state, live, error, refresh, latency, connectionStatus, predict };
+  /** Đổi mốc thời gian máy chủ (ISO) sang mốc đồng hồ của trình duyệt. */
+  const toClientTime = useCallback(
+    (serverIso: string | null | undefined, fallback = Date.now()) => {
+      if (!serverIso) return fallback;
+      const parsed = Date.parse(serverIso);
+      return Number.isNaN(parsed) ? fallback : clock.toClient(parsed);
+    },
+    [clock],
+  );
+
+  const clockApi = useMemo(
+    () => ({ toClientTime, skew: () => clock.skew(), serverNow: () => clock.serverNow() }),
+    [toClientTime, clock],
+  );
+
+  return {
+    state,
+    live,
+    error,
+    refresh,
+    latency,
+    connectionStatus,
+    predict,
+    stats,
+    diag,
+    log,
+    clock: clockApi,
+  };
 }
