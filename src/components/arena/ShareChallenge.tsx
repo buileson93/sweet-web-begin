@@ -7,7 +7,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { arenaCreateRoom } from "@/lib/arena.functions";
-import { getDeviceId } from "@/lib/deviceInfo";
+import { getDeviceId } from "@/lib/deviceId";
 
 /**
  * Tạo phòng chờ và chia sẻ link thách đấu qua mạng xã hội.
