@@ -490,7 +490,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
               aria-label="Lịch sử làm bài"
               className="grid size-9 place-items-center rounded-xl bg-secondary text-muted-foreground transition-all duration-200 hover:scale-110 hover:bg-primary hover:text-primary-foreground"
             >
-              <History className="size-4.5" strokeWidth={2.4} />
+              <HistoryIcon className="size-4.5" strokeWidth={2.4} />
             </Link>
           </IconTip>
           <IconTip label="Luật chơi & hướng dẫn">
