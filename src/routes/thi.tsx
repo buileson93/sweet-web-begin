@@ -46,9 +46,20 @@ import {
   requestFiftyFifty,
   startExam,
   submitExam,
+  loadProgress,
 } from "@/lib/exam.functions";
 import type { StartExamResult, SubmitExamResult } from "@/lib/exam.server";
-import { EXAM_CURRENT_KEY, examKey, readExamEntry, restoreExamSession } from "@/lib/examSession";
+import {
+  EXAM_CURRENT_KEY,
+  examKey,
+  mergeAnswers,
+  readExamEntry,
+  restoreExamSession,
+} from "@/lib/examSession";
+import { useExamAutosave, seqKey } from "@/hooks/useExamAutosave";
+
+/** Khoá lưu đáp án tạm trên máy (giữ bài khi F5 hoặc mất mạng). */
+const localAnswersKey = (sessionId: string) => "exam:answers:" + sessionId;
 
 import { isAnswered, KIND_LABEL, type AnswerValue } from "@/lib/questionKinds";
 import { formatSeconds } from "@/lib/format";
@@ -150,6 +161,7 @@ function ExamPage() {
   const runCheck = useServerFn(checkAnswer);
   const runAbandon = useServerFn(abandonExam);
   const runStart = useServerFn(startExam);
+  const runLoadProgress = useServerFn(loadProgress);
 
   const [session, setSession] = useState<StartExamResult | null>(null);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
@@ -172,6 +184,9 @@ function ExamPage() {
   /** Hết giờ: chỉ cho phép gọi nộp bài TỰ ĐỘNG đúng một lần, kể cả khi lần gọi trước lỗi. */
   const timeUpRef = useRef(false);
   const [timeUp, setTimeUp] = useState(false);
+  /** Seq autosave lấy từ máy chủ sau khi khôi phục bài làm. */
+  const [serverSeq, setServerSeq] = useState(0);
+  const autosaveAckRef = useRef<{ answers: Record<string, AnswerValue>; seq: number } | null>(null);
 
   useEffect(() => {
     const restored = restoreExamSession(
@@ -182,7 +197,73 @@ function ExamPage() {
       return;
     }
     setSession(restored);
-  }, [navigate]);
+
+    // Khôi phục bài làm: hợp nhất đáp án lưu trên máy với đáp án đã autosave trên máy chủ,
+    // bên nào có seq lớn hơn thì thắng ở những câu bị trùng.
+    let localAnswers: Record<string, AnswerValue> = {};
+    let localSeq = 0;
+    try {
+      const raw = window.sessionStorage.getItem(localAnswersKey(restored.sessionId));
+      if (raw) localAnswers = JSON.parse(raw) as Record<string, AnswerValue>;
+      localSeq = Number(window.sessionStorage.getItem(seqKey(restored.sessionId)) ?? 0) || 0;
+    } catch {
+      /* bỏ qua khi dữ liệu hỏng */
+    }
+    if (Object.keys(localAnswers).length > 0) setAnswers(localAnswers);
+
+    void (async () => {
+      try {
+        const server = await runLoadProgress({
+          data: { sessionId: restored.sessionId, submitToken: restored.submitToken },
+        });
+        const merged = mergeAnswers<AnswerValue>(
+          localAnswers,
+          server.answers as Record<string, AnswerValue>,
+          localSeq,
+          server.seq,
+        );
+        setAnswers(merged.answers);
+        setServerSeq(merged.seq);
+        autosaveAckRef.current = {
+          answers: (server.answers as Record<string, AnswerValue>) ?? {},
+          seq: server.seq,
+        };
+      } catch {
+        /* mất mạng: vẫn thi tiếp bằng bản lưu trên máy */
+      }
+    })();
+  }, [navigate, runLoadProgress]);
+
+  // Lưu đáp án xuống sessionStorage mỗi khi thay đổi (chống mất bài khi F5).
+  useEffect(() => {
+    if (!session || result) return;
+    try {
+      window.sessionStorage.setItem(localAnswersKey(session.sessionId), JSON.stringify(answers));
+    } catch {
+      /* bỏ qua khi trình duyệt chặn lưu trữ */
+    }
+  }, [answers, session, result]);
+
+  // Autosave đáp án lên máy chủ (delta, nhịp 12s, debounce 2s, tối đa 1 request/5s).
+  const {
+    status: saveStatus,
+    savedAt: lastSavedAt,
+    markAcked,
+  } = useExamAutosave({
+    sessionId: session?.sessionId ?? null,
+    submitToken: session?.submitToken ?? null,
+    answers,
+    enabled: Boolean(session) && !result,
+    initialSeq: serverSeq,
+  });
+
+  // Sau khi khôi phục xong, báo cho autosave biết máy chủ đã có sẵn những đáp án nào.
+  useEffect(() => {
+    const ack = autosaveAckRef.current;
+    if (!ack) return;
+    autosaveAckRef.current = null;
+    markAcked(ack.answers, ack.seq);
+  }, [markAcked, serverSeq]);
 
   const finish = useCallback(
     async (opts?: { disqualified?: boolean; reason?: string }) => {
@@ -202,6 +283,8 @@ function ExamPage() {
         });
         sessionStorage.removeItem("exam:" + session.sessionId);
         sessionStorage.removeItem("exam:current");
+        sessionStorage.removeItem(localAnswersKey(session.sessionId));
+        sessionStorage.removeItem(seqKey(session.sessionId));
         setResult(res);
         window.scrollTo({ top: 0 });
       } catch (error) {
@@ -369,6 +452,8 @@ function ExamPage() {
       }
       sessionStorage.removeItem("exam:" + session.sessionId);
       sessionStorage.removeItem("exam:current");
+      sessionStorage.removeItem(localAnswersKey(session.sessionId));
+      sessionStorage.removeItem(seqKey(session.sessionId));
     }
     navigate({ to: "/" });
   }, [navigate, runAbandon, session]);
@@ -472,6 +557,35 @@ function ExamPage() {
             <Timer className="size-4" />
             {formatSeconds(remaining)}
           </div>
+        </div>
+        <div className="mx-auto flex max-w-5xl items-center px-3 pb-1.5 sm:px-4">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
+              saveStatus === "offline"
+                ? "bg-destructive/20 text-destructive-foreground"
+                : "bg-primary-foreground/10 text-primary-foreground/80",
+            )}
+          >
+            {saveStatus === "saving" ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : saveStatus === "offline" ? (
+              <AlertTriangle className="size-3" />
+            ) : (
+              <CheckCircle2 className="size-3" />
+            )}
+            {saveStatus === "saving"
+              ? "Đang lưu..."
+              : saveStatus === "offline"
+                ? "Mất kết nối — bài vẫn được giữ trên máy"
+                : lastSavedAt
+                  ? "Đã lưu lúc " +
+                    lastSavedAt.toLocaleTimeString("vi-VN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "Bài làm được lưu tự động"}
+          </span>
         </div>
         <Progress value={progress} className="h-1 rounded-none bg-primary-foreground/15" />
       </header>

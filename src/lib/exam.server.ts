@@ -768,3 +768,77 @@ export async function getExamHistoryFor(input: {
     passedCount: scored.filter((a) => a.passed).length,
   };
 }
+
+/**
+ * Lưu tạm đáp án giữa giờ làm bài (autosave).
+ * - Chỉ chấp nhận phiên còn "active", đúng submit_token và chưa quá expires_at.
+ * - MERGE vào answers đã có trên máy chủ, không ghi đè toàn bộ.
+ * - Chỉ nhận các chỉ số câu nằm trong question_ids của phiên.
+ * - Chống ghi lùi bằng answers_seq: request có clientSeq <= answers_seq hiện tại sẽ bị bỏ qua.
+ * KHÔNG trả về bất kỳ thông tin đúng/sai nào.
+ */
+export async function saveExamProgress(input: {
+  sessionId: string;
+  submitToken: string;
+  answers: Record<string, AnswerValue>;
+  clientSeq: number;
+}): Promise<{ savedAt: string; seq: number }> {
+  const { data: session, error } = await supabaseAdmin
+    .from("exam_sessions")
+    .select("id, question_ids, status, submit_token, answers, answers_seq, expires_at")
+    .eq("id", input.sessionId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!session || session.status !== "active" || session.submit_token !== input.submitToken) {
+    throw new Error("Phiên thi không hợp lệ.");
+  }
+  // Hết giờ thì không nhận thêm đáp án nữa (không có ân hạn cho autosave).
+  if (lateness(new Date().toISOString(), session.expires_at).expired) {
+    throw new Error("Đã hết giờ làm bài.");
+  }
+
+  const currentSeq = Number(session.answers_seq ?? 0);
+  const savedAnswers = (session.answers as Record<string, AnswerValue>) ?? {};
+  // Gói tin đến muộn (seq nhỏ hơn hoặc bằng) bị bỏ qua để không ghi đè bản mới hơn.
+  if (input.clientSeq <= currentSeq) {
+    return { savedAt: new Date().toISOString(), seq: currentSeq };
+  }
+
+  const total = (session.question_ids as string[]).length;
+  const incoming: Record<string, AnswerValue> = {};
+  for (const [key, value] of Object.entries(input.answers ?? {})) {
+    const idx = Number(key);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= total) continue;
+    incoming[String(idx)] = value;
+  }
+
+  const merged = { ...savedAnswers, ...incoming };
+  const { error: upErr } = await supabaseAdmin
+    .from("exam_sessions")
+    .update({ answers: merged as never, answers_seq: input.clientSeq })
+    .eq("id", session.id)
+    .eq("status", "active");
+  if (upErr) throw new Error(upErr.message);
+
+  return { savedAt: new Date().toISOString(), seq: input.clientSeq };
+}
+
+/** Đọc lại đáp án đã lưu trên máy chủ để hợp nhất khi thí sinh F5 / vào lại phòng thi. */
+export async function getExamProgress(input: {
+  sessionId: string;
+  submitToken: string;
+}): Promise<{ answers: Record<string, AnswerValue>; seq: number }> {
+  const { data: session, error } = await supabaseAdmin
+    .from("exam_sessions")
+    .select("id, status, submit_token, answers, answers_seq")
+    .eq("id", input.sessionId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!session || session.status !== "active" || session.submit_token !== input.submitToken) {
+    throw new Error("Phiên thi không hợp lệ.");
+  }
+  return {
+    answers: (session.answers as Record<string, AnswerValue>) ?? {},
+    seq: Number(session.answers_seq ?? 0),
+  };
+}

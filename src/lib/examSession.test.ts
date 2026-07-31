@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_EXAM_SETTINGS, EXAM_CURRENT_KEY, examKey, restoreExamSession } from "@/lib/examSession";
+import { DEFAULT_EXAM_SETTINGS, EXAM_CURRENT_KEY, examKey, mergeAnswers, restoreExamSession } from "@/lib/examSession";
 
 function makeStorage(entries: Record<string, string>) {
   return {
@@ -74,5 +74,36 @@ describe("restoreExamSession", () => {
       removeItem: () => {},
     };
     expect(restoreExamSession(blocked)).toBeNull();
+  });
+});
+
+describe("mergeAnswers", () => {
+  it("ưu tiên bản có seq lớn hơn khi trùng câu (server mới hơn)", () => {
+    const r = mergeAnswers({ "0": 1 }, { "0": 2 }, 3, 5);
+    expect(r.answers).toEqual({ "0": 2 });
+    expect(r.seq).toBe(5);
+  });
+
+  it("ưu tiên bản local khi localSeq lớn hơn", () => {
+    const r = mergeAnswers({ "0": 1 }, { "0": 2 }, 7, 5);
+    expect(r.answers).toEqual({ "0": 1 });
+    expect(r.seq).toBe(7);
+  });
+
+  it("hợp nhất các câu chỉ có ở một bên bất kể seq", () => {
+    const r = mergeAnswers<unknown>({ "1": "a" }, { "2": [0, 1] }, 1, 9);
+    expect(r.answers).toEqual({ "1": "a", "2": [0, 1] });
+    expect(r.seq).toBe(9);
+  });
+
+  it("seq bằng nhau thì giữ bản local (máy đang thi là nguồn mới nhất)", () => {
+    const r = mergeAnswers({ "0": 1 }, { "0": 2 }, 4, 4);
+    expect(r.answers).toEqual({ "0": 1 });
+    expect(r.seq).toBe(4);
+  });
+
+  it("xử lý an toàn khi một bên rỗng hoặc thiếu", () => {
+    expect(mergeAnswers({}, {}, 0, 0)).toEqual({ answers: {}, seq: 0 });
+    expect(mergeAnswers(null as never, { "0": 1 }, 0, 2).answers).toEqual({ "0": 1 });
   });
 });

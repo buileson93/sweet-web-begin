@@ -28,6 +28,31 @@ const submitSchema = z.object({
   disqualifyReason: z.string().max(300).optional(),
 });
 
+/** Lưu tạm đáp án giữa giờ (autosave). clientSeq tăng dần để chống ghi lùi. */
+const progressSchema = z.object({
+  sessionId: z.string().uuid(),
+  submitToken: z.string().uuid(),
+  answers: z.record(z.string(), answerSchema),
+  clientSeq: z.number().int().min(0),
+});
+
+export const saveProgress = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => progressSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { saveExamProgress } = await import("@/lib/exam.server");
+    return saveExamProgress(data);
+  });
+
+/** Đọc đáp án đã lưu trên máy chủ (không kèm thông tin đúng/sai) để khôi phục bài làm. */
+export const loadProgress = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ sessionId: z.string().uuid(), submitToken: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { getExamProgress } = await import("@/lib/exam.server");
+    return getExamProgress(data);
+  });
+
 const fiftyFiftySchema = z.object({
   sessionId: z.string().uuid(),
   submitToken: z.string().uuid(),
@@ -67,8 +92,6 @@ export const checkAnswer = createServerFn({ method: "POST" })
     const { checkExamAnswer } = await import("@/lib/exam.server");
     return checkExamAnswer(data);
   });
-
-
 
 export const getServerTime = createServerFn({ method: "GET" }).handler(async () => ({
   now: new Date().toISOString(),
