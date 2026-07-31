@@ -1,7 +1,21 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { BarChart3, BellRing, Building2, Database, IdCard, FileQuestion, ListChecks, LogOut, ScrollText, ShieldAlert, ShieldCheck, Trophy } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  BarChart3,
+  BellRing,
+  Building2,
+  Command as CommandIcon,
+  Database,
+  IdCard,
+  FileQuestion,
+  ListChecks,
+  LogOut,
+  ScrollText,
+  ShieldAlert,
+  ShieldCheck,
+  Trophy,
+} from "lucide-react";
 
 import { QuizManager } from "@/components/admin/QuizManager";
 import { QuestionManager } from "@/components/admin/QuestionManager";
@@ -16,12 +30,23 @@ import { BackupManager } from "@/components/admin/BackupManager";
 import { SiteHeader } from "@/components/SiteHeader";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyRoles } from "@/hooks/useMyRoles";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/quan-tri")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    muc: typeof search.muc === "string" ? search.muc : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Bảng điều khiển quản trị | Hội thi trắc nghiệm" },
@@ -35,25 +60,69 @@ export const Route = createFileRoute("/_authenticated/quan-tri")({
 });
 
 /** adminOnly: chỉ quản trị viên hệ thống mới thấy (biên soạn đề không được vào). */
-const tabs = [
-  { value: "quizzes", label: "Cuộc thi", icon: ListChecks },
-  { value: "questions", label: "Ngân hàng câu hỏi", icon: FileQuestion },
-  { value: "units", label: "Đơn vị", icon: Building2 },
-  { value: "employees", label: "Nhân viên", icon: IdCard, adminOnly: true },
-  { value: "results", label: "Kết quả", icon: BarChart3 },
-  { value: "history", label: "Thành tích", icon: Trophy },
-  { value: "reminders", label: "Nhắc nhở", icon: BellRing },
-  { value: "audit", label: "Lịch sử thao tác", icon: ScrollText },
-  { value: "accounts", label: "Tài khoản", icon: ShieldCheck, adminOnly: true },
-  { value: "backup", label: "Sao lưu", icon: Database, adminOnly: true },
-] as const;
+type Section = {
+  value: string;
+  label: string;
+  hint: string;
+  icon: typeof ListChecks;
+  adminOnly?: boolean;
+};
+
+const GROUPS: { group: string; items: Section[] }[] = [
+  {
+    group: "Nội dung",
+    items: [
+      { value: "quizzes", label: "Cuộc thi", hint: "Tạo, mở/đóng phòng thi", icon: ListChecks },
+      { value: "questions", label: "Ngân hàng câu hỏi", hint: "Soạn và nhập câu hỏi", icon: FileQuestion },
+      { value: "units", label: "Đơn vị", hint: "Danh mục đơn vị dự thi", icon: Building2 },
+    ],
+  },
+  {
+    group: "Thí sinh",
+    items: [
+      { value: "employees", label: "Nhân viên", hint: "Danh sách nhân sự", icon: IdCard, adminOnly: true },
+      { value: "reminders", label: "Nhắc nhở", hint: "Ai chưa hoàn thành bài thi", icon: BellRing },
+    ],
+  },
+  {
+    group: "Báo cáo",
+    items: [
+      { value: "results", label: "Kết quả", hint: "Bài thi đã nộp", icon: BarChart3 },
+      { value: "history", label: "Thành tích", hint: "Lịch sử theo nhân viên", icon: Trophy },
+      { value: "audit", label: "Lịch sử thao tác", hint: "Nhật ký quản trị", icon: ScrollText },
+    ],
+  },
+  {
+    group: "Hệ thống",
+    items: [
+      { value: "accounts", label: "Tài khoản", hint: "Phân quyền người dùng", icon: ShieldCheck, adminOnly: true },
+      { value: "backup", label: "Sao lưu", hint: "Xuất/nhập dữ liệu", icon: Database, adminOnly: true },
+    ],
+  },
+];
+
+const ALL_SECTIONS = GROUPS.flatMap((g) => g.items);
 
 function AdminPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const [email, setEmail] = useState<string>("");
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
+  }, []);
+
+  // Ctrl/Cmd + K: mở bảng tìm kiếm nhanh các mục quản trị.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   const roleQuery = useMyRoles();
@@ -75,6 +144,24 @@ function AdminPage() {
   });
 
   const { canAccessAdmin, canEdit, canManageSystem, roleLabel } = roleQuery;
+
+  const visibleGroups = useMemo(
+    () =>
+      GROUPS.map((g) => ({
+        ...g,
+        items: g.items.filter((i) => canManageSystem || !i.adminOnly),
+      })).filter((g) => g.items.length > 0),
+    [canManageSystem],
+  );
+
+  const visibleValues = visibleGroups.flatMap((g) => g.items.map((i) => i.value));
+  const current =
+    search.muc && visibleValues.includes(search.muc) ? search.muc : (visibleValues[0] ?? "quizzes");
+  const currentSection = ALL_SECTIONS.find((s) => s.value === current);
+
+  function goTo(value: string) {
+    void navigate({ to: "/quan-tri", search: { muc: value } });
+  }
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -142,62 +229,104 @@ function AdminPage() {
               description={`Vui lòng liên hệ quản trị viên hệ thống để được cấp quyền cho tài khoản ${email}.`}
             />
           ) : (
-            <Tabs defaultValue="quizzes">
-              {!canEdit || !canManageSystem ? (
-                <p className="mb-4 flex items-center gap-2 rounded-2xl border border-border bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
-                  <ShieldAlert className="size-4 shrink-0 text-accent" />
-                  {!canEdit
-                    ? "Tài khoản kỹ thuật chỉ có quyền xem dữ liệu và xuất báo cáo. Mọi thay đổi cấu hình cần tài khoản quản trị viên."
-                    : "Tài khoản biên soạn đề: được tạo và chỉnh sửa cuộc thi, câu hỏi, đơn vị. Nhân sự, sao lưu và nhập dữ liệu do quản trị viên phụ trách."}
-                </p>
-              ) : null}
-              <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-2xl p-1">
-                {tabs
-                  .filter((t) => canManageSystem || !("adminOnly" in t && t.adminOnly))
-                  .map((t) => (
-                    <TabsTrigger key={t.value} value={t.value} className="rounded-xl px-4 py-2">
-                      <t.icon className="size-4" /> {t.label}
-                    </TabsTrigger>
+            <div className="grid gap-6 lg:grid-cols-[248px_minmax(0,1fr)] lg:items-start">
+              {/* Điều hướng: cột dọc trên máy tính, thanh cuộn ngang trên điện thoại */}
+              <nav aria-label="Mục quản trị" className="lg:sticky lg:top-4">
+                <Button
+                  variant="outline"
+                  className="mb-3 hidden w-full justify-between rounded-2xl lg:flex"
+                  onClick={() => setPaletteOpen(true)}
+                >
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <CommandIcon className="size-4" /> Tìm nhanh…
+                  </span>
+                  <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                    Ctrl K
+                  </kbd>
+                </Button>
+
+                <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 lg:mx-0 lg:block lg:space-y-4 lg:overflow-visible lg:px-0 lg:pb-0">
+                  {visibleGroups.map((g) => (
+                    <div key={g.group} className="flex shrink-0 gap-1 lg:block lg:space-y-1">
+                      <p className="type-eyebrow hidden px-3 text-muted-foreground lg:block">{g.group}</p>
+                      {g.items.map((item) => (
+                        <button
+                          key={item.value}
+                          type="button"
+                          onClick={() => goTo(item.value)}
+                          aria-current={current === item.value ? "page" : undefined}
+                          className={cn(
+                            "flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition-colors lg:w-full",
+                            current === item.value
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                          )}
+                        >
+                          <item.icon className="size-4 shrink-0" />
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
                   ))}
-              </TabsList>
+                </div>
+              </nav>
 
-              <TabsContent value="quizzes" className="mt-6">
-                <QuizManager canEdit={canEdit} />
-              </TabsContent>
-              <TabsContent value="questions" className="mt-6">
-                <QuestionManager canEdit={canEdit} />
-              </TabsContent>
-              <TabsContent value="units" className="mt-6">
-                <UnitManager canEdit={canEdit} />
-              </TabsContent>
-              <TabsContent value="employees" className="mt-6">
-                <EmployeeManager canEdit={canManageSystem} />
-              </TabsContent>
-              <TabsContent value="results" className="mt-6">
-                <ResultManager canEdit={canEdit} />
-              </TabsContent>
-              <TabsContent value="history" className="mt-6">
-                <EmployeeHistoryManager />
-              </TabsContent>
-              <TabsContent value="reminders" className="mt-6">
-                <ReminderManager />
-              </TabsContent>
-              <TabsContent value="audit" className="mt-6">
-                <AuditLogManager />
-              </TabsContent>
-              {canManageSystem ? (
-                <TabsContent value="accounts" className="mt-6">
-                  <RoleManager />
-                </TabsContent>
-              ) : null}
-              <TabsContent value="backup" className="mt-6">
-                <BackupManager />
-              </TabsContent>
+              <div className="min-w-0">
+                <p className="type-meta mb-3 text-muted-foreground">
+                  Quản trị <span className="mx-1">/</span>
+                  <span className="text-foreground">{currentSection?.label}</span>
+                  {currentSection?.hint ? <span className="ml-2">— {currentSection.hint}</span> : null}
+                </p>
 
-            </Tabs>
+                {!canEdit || !canManageSystem ? (
+                  <p className="mb-4 flex items-center gap-2 rounded-2xl border border-border bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
+                    <ShieldAlert className="size-4 shrink-0 text-accent" />
+                    {!canEdit
+                      ? "Tài khoản kỹ thuật chỉ có quyền xem dữ liệu và xuất báo cáo. Mọi thay đổi cấu hình cần tài khoản quản trị viên."
+                      : "Tài khoản biên soạn đề: được tạo và chỉnh sửa cuộc thi, câu hỏi, đơn vị. Nhân sự, sao lưu và nhập dữ liệu do quản trị viên phụ trách."}
+                  </p>
+                ) : null}
+
+                {current === "quizzes" && <QuizManager canEdit={canEdit} />}
+                {current === "questions" && <QuestionManager canEdit={canEdit} />}
+                {current === "units" && <UnitManager canEdit={canEdit} />}
+                {current === "employees" && <EmployeeManager canEdit={canManageSystem} />}
+                {current === "results" && <ResultManager canEdit={canEdit} />}
+                {current === "history" && <EmployeeHistoryManager />}
+                {current === "reminders" && <ReminderManager />}
+                {current === "audit" && <AuditLogManager />}
+                {current === "accounts" && canManageSystem && <RoleManager />}
+                {current === "backup" && canManageSystem && <BackupManager />}
+              </div>
+            </div>
           )}
         </PageContainer>
       </main>
+
+      <CommandDialog open={paletteOpen} onOpenChange={setPaletteOpen}>
+        <CommandInput placeholder="Tìm mục quản trị…" />
+        <CommandList>
+          <CommandEmpty>Không có mục nào phù hợp.</CommandEmpty>
+          {visibleGroups.map((g) => (
+            <CommandGroup key={g.group} heading={g.group}>
+              {g.items.map((item) => (
+                <CommandItem
+                  key={item.value}
+                  value={`${item.label} ${item.hint}`}
+                  onSelect={() => {
+                    setPaletteOpen(false);
+                    goTo(item.value);
+                  }}
+                >
+                  <item.icon className="size-4" />
+                  <span>{item.label}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{item.hint}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          ))}
+        </CommandList>
+      </CommandDialog>
     </div>
   );
 }
