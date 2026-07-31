@@ -23,7 +23,7 @@ import {
   resolveRoundCombat,
   winReasonLabel,
 } from "@/lib/arena/combat";
-import { skillById, skillCooldownLeft, type SkillId } from "@/lib/arena/skills";
+import { SKILLS, skillById, skillCooldownLeft, type SkillId } from "@/lib/arena/skills";
 import { levelProgress } from "@/lib/xp";
 
 import { DUEL_COLUMNS, type DuelFinish, type DuelState, type RoundResult } from "@/lib/arena/types";
