@@ -153,7 +153,8 @@ export async function startExamSession(input: {
     throw new Error("Mật khẩu phòng thi không đúng.");
   }
 
-  // Khuyến khích thi lại nhiều lần: luôn cho phép, chỉ ghi nhận thành tích tốt nhất.
+  // Khuyến khích thi lại nhiều lần: chỉ ghi nhận thành tích tốt nhất.
+  // Việc đếm/khoá số lượt thi do hàm start_exam_session_tx đảm nhiệm (chống race condition).
   const { data: previous } = await supabaseAdmin
     .from("results")
     .select("score, total")
@@ -161,22 +162,11 @@ export async function startExamSession(input: {
     .eq("employee_id", employee.id)
     .eq("disqualified", false);
 
-  const attempts = previous?.length ?? 0;
   const bestPercent = (previous ?? []).reduce(
     (max, r) => Math.max(max, percentOf(r.score, r.total)),
     0,
   );
-  if (quiz.max_attempts && attempts >= quiz.max_attempts) {
-    throw new Error(`Cuộc thi này chỉ cho phép tối đa ${quiz.max_attempts} lượt thi.`);
-  }
 
-  // Khoá luồng làm bài: mọi phiên cũ chưa nộp của người này đều bị vô hiệu hoá.
-  await supabaseAdmin
-    .from("exam_sessions")
-    .update({ status: "abandoned", submitted_at: now.toISOString() })
-    .eq("employee_id", employee.id)
-    .eq("status", "active")
-    .is("submitted_at", null);
 
   const { data: poolRaw, error: poolError } = await supabaseAdmin
     .from("questions")
