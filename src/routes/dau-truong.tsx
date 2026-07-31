@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { CredentialInput } from "@/components/CredentialInput";
 import { InviteDialog } from "@/components/arena/InviteDialog";
 import { ShareChallenge } from "@/components/arena/ShareChallenge";
+import { ClassPicker, useWarriorClass } from "@/components/arena/ClassPicker";
 import { PracticePanel } from "@/components/arena/PracticePanel";
 import { useArenaInviteChannel } from "@/hooks/useArenaInviteChannel";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
@@ -72,6 +73,7 @@ type Presence = Awaited<ReturnType<typeof arenaPresence>>;
 
 function ArenaLobby() {
   const navigate = useNavigate();
+  const { classId, choose: chooseClass } = useWarriorClass();
   const signIn = useServerFn(arenaSignIn);
   const loadHome = useServerFn(arenaHome);
   const quickMatch = useServerFn(arenaQuickMatch);
@@ -165,7 +167,7 @@ function ArenaLobby() {
     const attempt = async () => {
       try {
         const res = await quickMatch({
-          data: { token, waitedSeconds: waitedRef.current, deviceHash: getDeviceId() },
+          data: { token, waitedSeconds: waitedRef.current, deviceHash: getDeviceId(), classId },
         });
         waitedRef.current += 3;
         if (!alive) return;
@@ -189,7 +191,7 @@ function ArenaLobby() {
       alive = false;
       window.clearInterval(id);
     };
-  }, [searching, token, quickMatch, loadHome, navigate]);
+  }, [searching, token, quickMatch, loadHome, navigate, classId]);
 
   async function handleSignIn() {
     if (name.trim().length < 2 || credential.trim().length < 4) {
@@ -327,10 +329,13 @@ function ArenaLobby() {
         )}
       </div>
 
+      <ClassPicker value={classId} onChange={chooseClass} disabled={searching} />
+
       <ShareChallenge token={token} />
 
       <PracticePanel
         token={token}
+        classId={classId}
         disabled={Boolean(presence?.active) || searching}
         onStarted={(duelId) => void navigate({ to: "/dau-truong/$duelId", params: { duelId } })}
       />
