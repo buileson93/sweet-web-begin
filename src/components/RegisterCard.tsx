@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { startExam } from "@/lib/exam.functions";
+import { saveExamEntry } from "@/lib/examSession";
 import { verifyEmployeeFn } from "@/lib/employees.functions";
 import { formatDateTime, quizStatus, statusLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
