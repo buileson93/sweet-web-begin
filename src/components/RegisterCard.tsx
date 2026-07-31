@@ -25,6 +25,9 @@ export type RegisterQuiz = {
   is_active: boolean;
   question_count: number;
   duration_minutes: number;
+  status?: string | null;
+  /** Nội quy riêng của cuộc thi, hiển thị trước khi vào phòng thi. */
+  intro_markdown?: string | null;
 };
 
 type Props = {
@@ -75,6 +78,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
   const [verified, setVerified] = useState<Verified | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [committed, setCommitted] = useState(false);
 
   const selected = useMemo(() => quizzes.find((q) => q.id === quizId), [quizzes, quizId]);
   const selectedStatus = selected ? quizStatus(selected) : null;
@@ -89,7 +93,9 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
 
   const quizReady = Boolean(quizId) && selectedStatus === "open";
   const canVerify = !nameError && !credentialError && (!needExtra || credentialOk(extraCredential));
-  const canStart = quizReady && Boolean(verified);
+  const intro = (selected?.intro_markdown ?? "").trim();
+  const needCommit = Boolean(intro);
+  const canStart = quizReady && Boolean(verified) && (!needCommit || committed);
 
   const hint = !quizId
     ? "Chọn cuộc thi bạn muốn tham gia."
@@ -97,7 +103,9 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
       ? `Cuộc thi này ${selectedStatus === "upcoming" ? "chưa đến giờ mở" : selectedStatus === "closed" ? "đã kết thúc" : "đang tạm dừng"}.`
       : !verified
         ? "Xác thực bằng họ tên kèm 4 số cuối điện thoại hoặc ngày sinh."
-        : "Sẵn sàng vào phòng thi.";
+        : needCommit && !committed
+          ? "Vui lòng đọc nội quy và tích ô cam kết."
+          : "Sẵn sàng vào phòng thi.";
 
   function resetVerified() {
     if (verified) setVerified(null);
@@ -298,6 +306,22 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
             {verifying ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
             {verifying ? "Đang đối chiếu..." : "Xác thực thông tin"}
           </Button>
+        )}
+
+        {intro && (
+          <div className="space-y-2 rounded-xl border border-border bg-secondary/60 p-3">
+            <p className="text-sm font-semibold">Hướng dẫn &amp; nội quy</p>
+            <p className="whitespace-pre-line text-xs leading-relaxed text-muted-foreground">{intro}</p>
+            <label className="flex cursor-pointer items-start gap-2 text-xs font-medium">
+              <input
+                type="checkbox"
+                className="mt-0.5 size-4 accent-[hsl(var(--primary))]"
+                checked={committed}
+                onChange={(e) => setCommitted(e.target.checked)}
+              />
+              <span>Tôi đã đọc và cam kết làm bài trung thực.</span>
+            </label>
+          </div>
         )}
 
         {selected && (

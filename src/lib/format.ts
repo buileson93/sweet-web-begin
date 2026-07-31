@@ -39,7 +39,11 @@ export function quizStatus(quiz: {
   is_active: boolean;
   start_time: string | null;
   end_time: string | null;
+  /** Trạng thái soạn thảo: nháp / đã xuất bản / đã đóng. */
+  status?: string | null;
 }): QuizStatus {
+  if (quiz.status === "draft") return "paused";
+  if (quiz.status === "closed") return "closed";
   if (!quiz.is_active) return "paused";
   const now = Date.now();
   if (quiz.start_time && now < new Date(quiz.start_time).getTime()) return "upcoming";
