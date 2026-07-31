@@ -7,8 +7,20 @@ import {
   type QuestionKind,
 } from "@/lib/questionKinds";
 
-/** Tỷ lệ điểm tối thiểu để được công nhận "Đạt" khi cuộc thi không cấu hình riêng. */
-export const PASS_RATIO = 0.5;
+/** Mức điểm đạt mặc định, tính theo PHẦN TRĂM (0–100), dùng khi cuộc thi không cấu hình riêng. */
+export const PASS_PERCENT_DEFAULT = 50;
+
+/**
+ * Xác định bài thi có ĐẠT hay không.
+ * Đơn vị duy nhất của `passPercent` là phần trăm (0–100), không phải số câu đúng.
+ * - total = 0 -> luôn chưa đạt.
+ * - passPercent <= 0 -> dùng mặc định 50%.
+ */
+export function isPassed(score: number, total: number, passPercent: number): boolean {
+  if (!total || total <= 0) return false;
+  const threshold = passPercent > 0 ? passPercent : PASS_PERCENT_DEFAULT;
+  return percentOf(score, total) >= threshold;
+}
 
 export type QuestionRow = {
   id: string;
