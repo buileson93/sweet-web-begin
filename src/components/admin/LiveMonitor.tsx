@@ -50,7 +50,8 @@ export function LiveMonitor() {
   // Giữ dữ liệu đã tải để khi máy chủ báo "không đổi" thì không phải dựng lại bảng.
   const cacheRef = useRef<{ version: string; rows: LiveSession[] } | null>(null);
   const [syncedAt, setSyncedAt] = useState<Date | null>(null);
-  const [changedAt, setChangedAt] = useState<Date | null>(null);
+  const [changed, setChanged] = useState(false);
+
 
   const detailQuery = useQuery({
     queryKey: ["admin-session-detail", openId],
