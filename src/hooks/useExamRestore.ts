@@ -65,10 +65,31 @@ export function useExamRestore(finished: boolean) {
           answers: (server.answers as Record<string, AnswerValue>) ?? {},
           seq: server.seq,
         };
-      } catch {
+      } catch (error) {
+        // Phiên đã bị đóng (hết giờ, mở lượt mới ở nơi khác, đã nộp): dọn sạch dấu vết
+        // trên máy và đưa thí sinh về trang chủ thay vì để kẹt trong phòng thi lỗi.
+        const message = error instanceof Error ? error.message : "";
+        if (/không hợp lệ|hết giờ/i.test(message)) {
+          try {
+            window.sessionStorage.removeItem("exam:" + restored.sessionId);
+            window.sessionStorage.removeItem("exam:current");
+            window.sessionStorage.removeItem(localAnswersKey(restored.sessionId));
+            window.sessionStorage.removeItem(seqKey(restored.sessionId));
+          } catch {
+            /* bỏ qua khi trình duyệt chặn lưu trữ */
+          }
+          toast.warning(
+            message.includes("hết giờ")
+              ? "Lượt thi đã hết giờ. Bạn có thể bắt đầu lượt thi mới."
+              : "Lượt thi này đã kết thúc hoặc bạn đã mở lượt thi khác. Vui lòng vào lại phòng thi.",
+          );
+          navigate({ to: "/" });
+          return;
+        }
         /* mất mạng: vẫn thi tiếp bằng bản lưu trên máy */
       }
     })();
+
   }, [navigate, runLoadProgress]);
 
   // Lưu đáp án xuống sessionStorage mỗi khi thay đổi (chống mất bài khi F5).
