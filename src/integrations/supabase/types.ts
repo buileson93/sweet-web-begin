@@ -209,6 +209,7 @@ export type Database = {
           ms_taken: number
           points: number
           round_index: number
+          skill: string
           value: Json | null
         }
         Insert: {
@@ -222,6 +223,7 @@ export type Database = {
           ms_taken?: number
           points?: number
           round_index: number
+          skill?: string
           value?: Json | null
         }
         Update: {
@@ -235,6 +237,7 @@ export type Database = {
           ms_taken?: number
           points?: number
           round_index?: number
+          skill?: string
           value?: Json | null
         }
         Relationships: [
@@ -324,6 +327,7 @@ export type Database = {
           id: string
           joined_at: string
           left_at: string | null
+          misses: number
           ready: boolean
           score: number
           seat: number
@@ -345,6 +349,7 @@ export type Database = {
           id?: string
           joined_at?: string
           left_at?: string | null
+          misses?: number
           ready?: boolean
           score?: number
           seat?: number
@@ -366,6 +371,7 @@ export type Database = {
           id?: string
           joined_at?: string
           left_at?: string | null
+          misses?: number
           ready?: boolean
           score?: number
           seat?: number

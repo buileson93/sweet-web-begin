@@ -5,6 +5,7 @@ import { Check, Dices, Link2, Loader2, LogOut, Swords, Wifi, WifiOff, X } from "
 import { toast } from "sonner";
 
 import { DuelFighter } from "@/components/arena/DuelFighter";
+import { SkillBar } from "@/components/arena/SkillBar";
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -12,6 +13,7 @@ import { PageContainer } from "@/components/ui-kit";
 import { useDuelChannel } from "@/hooks/useDuelChannel";
 import { arenaAnswer, arenaLeave, arenaReady } from "@/lib/arena.functions";
 import { getArenaToken } from "@/lib/arena/client";
+import { skillById, type SkillId } from "@/lib/arena/skills";
 import type { DuelPlayerView, DuelState } from "@/lib/arena/types";
 import type { AnswerValue } from "@/lib/questionKinds";
 import { cn } from "@/lib/utils";
@@ -51,7 +53,9 @@ function DuelRoom() {
 
   const [value, setValue] = useState<AnswerValue | undefined>();
   const [locked, setLocked] = useState(false);
+  const [skill, setSkill] = useState<SkillId | null>(null);
   const roundRef = useRef(-1);
+  const announced = useRef(-1);
 
   // Mỗi câu mới thì xoá lựa chọn cũ.
   useEffect(() => {
@@ -60,11 +64,33 @@ function DuelRoom() {
       roundRef.current = state.currentRound;
       setValue(undefined);
       setLocked(false);
+      setSkill(null);
     }
   }, [state]);
 
   const me = state?.players.find((p) => p.employeeId === state?.you);
   const foe = state?.players.find((p) => p.employeeId !== me?.employeeId);
+
+  // Thông báo trực tiếp: trúng đòn, ăn combo, đối thủ sắp gục.
+  useEffect(() => {
+    const r = state?.lastResult;
+    if (!state || !r || r.roundIndex === announced.current) return;
+    announced.current = r.roundIndex;
+    const mineLine = r.lines.find((l) => l.employeeId === state.you);
+    const foeLine = r.lines.find((l) => l.employeeId !== state.you);
+    for (const n of r.skillNotes ?? []) toast.message(n.label);
+    if (r.timedOut) toast.warning("⏱️ Hết giờ — không ai gây sát thương.");
+    else if ((mineLine?.damage ?? 0) > 0)
+      toast.success(`⚔️ Bạn gây ${mineLine!.damage} sát thương!`);
+    else if ((foeLine?.damage ?? 0) > 0)
+      toast.error(`💔 Bạn nhận ${foeLine!.damage} sát thương!`);
+    const foeHp = foeLine?.hp ?? state.hpStart;
+    const myHp = mineLine?.hp ?? state.hpStart;
+    if (foeHp > 0 && foeHp <= state.hpStart * 0.25)
+      toast.warning(`🔥 Đối thủ chỉ còn ${foeHp} máu — dứt điểm thôi!`);
+    if (myHp > 0 && myHp <= state.hpStart * 0.25)
+      toast.warning(`🩸 Bạn chỉ còn ${myHp} máu — cẩn thận!`);
+  }, [state]);
 
   if (!token || !state)
     return (
@@ -85,7 +111,12 @@ function DuelRoom() {
   return (
     <PageContainer className="space-y-4 py-4">
       <header className="flex items-center gap-3">
-        <DuelFighter player={me} hpStart={state.hpStart} mine hitKey={me?.hp} />
+        <DuelFighter
+          player={me}
+          hpStart={state.hpStart}
+          mine
+          skill={state.lastResult?.lines.find((l) => l.employeeId === me?.employeeId)?.skill}
+        />
         <div className="flex flex-col items-center text-xs text-muted-foreground">
           <Swords className="size-5 text-primary" />
           <span>
@@ -103,7 +134,11 @@ function DuelRoom() {
             )}
           </span>
         </div>
-        <DuelFighter player={foe} hpStart={state.hpStart} hitKey={foe?.hp} />
+        <DuelFighter
+          player={foe}
+          hpStart={state.hpStart}
+          skill={state.lastResult?.lines.find((l) => l.employeeId === foe?.employeeId)?.skill}
+        />
       </header>
 
       {state.status === "waiting" || state.status === "countdown" ? (
@@ -126,12 +161,21 @@ function DuelRoom() {
           state={state}
           value={value}
           locked={locked || !!me?.answered}
+          skill={skill}
+          skillUses={me?.skillUses ?? []}
+          onSkill={setSkill}
           onChange={setValue}
           onSubmit={async (v) => {
             setLocked(true);
             try {
               await sendAnswer({
-                data: { token, duelId, roundIndex: state.currentRound, value: v as never },
+                data: {
+                  token,
+                  duelId,
+                  roundIndex: state.currentRound,
+                  value: v as never,
+                  skill,
+                },
               });
               await refresh(true);
             } catch (e) {
@@ -236,12 +280,18 @@ function RoundPanel({
   state,
   value,
   locked,
+  skill,
+  skillUses,
+  onSkill,
   onChange,
   onSubmit,
 }: {
   state: DuelState;
   value: AnswerValue | undefined;
   locked: boolean;
+  skill: SkillId | null;
+  skillUses: { skill: string; round: number }[];
+  onSkill: (s: SkillId | null) => void;
   onChange: (v: AnswerValue) => void;
   onSubmit: (v: AnswerValue) => void;
 }) {
@@ -266,6 +316,18 @@ function RoundPanel({
         <p className="text-right font-mono text-xs text-muted-foreground">
           {(remain / 1000).toFixed(1)}s
         </p>
+      </div>
+      <div className="space-y-1">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Kỹ năng — nạp trước khi chốt đáp án
+        </p>
+        <SkillBar
+          uses={skillUses}
+          currentRound={state.currentRound}
+          selected={skill}
+          disabled={locked}
+          onSelect={onSkill}
+        />
       </div>
       <p className="text-lg font-semibold leading-snug">{q.question}</p>
       {q.imageUrl ? (
@@ -344,6 +406,18 @@ function ResultPanel({ state, meId }: { state: DuelState; meId?: string }) {
         ❤️ Máu của bạn: <strong>{mine?.hp ?? state.hpStart}</strong> · Đối thủ:{" "}
         <strong>{foe?.hp ?? state.hpStart}</strong>
       </p>
+      {r.skillNotes?.length ? (
+        <ul className="space-y-0.5 text-sm">
+          {r.skillNotes.map((n, i) => (
+            <li key={i} className="font-medium text-primary">
+              {n.label}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {r.timedOut ? (
+        <p className="text-sm font-medium text-amber-600">⏱️ Hết giờ — cả hai đều bỏ trống câu này.</p>
+      ) : null}
       {r.explanation ? <p className="text-sm text-muted-foreground">{r.explanation}</p> : null}
     </div>
   );

@@ -23,7 +23,9 @@ import {
   resolveRoundCombat,
   winReasonLabel,
 } from "@/lib/arena/combat";
+import { SKILLS, skillById, skillCooldownLeft, type SkillId } from "@/lib/arena/skills";
 import { levelProgress } from "@/lib/xp";
+
 import { DUEL_COLUMNS, type DuelFinish, type DuelState, type RoundResult } from "@/lib/arena/types";
 import { QUESTION_COLUMNS } from "@/lib/exam/types";
 import {
@@ -43,6 +45,11 @@ const REVEAL_MS = 3_000;
 const NETWORK_GRACE_MS = 1_500;
 /** Thời gian chờ đối thủ mất kết nối trước khi xử thua kỹ thuật (ms). */
 export const DISCONNECT_GRACE_MS = 20_000;
+/** Trần thời gian mỗi câu trong ván so tài (giây) — tốc chiến, không để ai câu giờ. */
+export const MAX_ROUND_SECONDS = 15;
+/** Bỏ trống liên tiếp bấy nhiêu câu thì bị xử thua kỹ thuật. */
+export const MAX_CONSECUTIVE_MISSES = 3;
+
 
 type DuelRow = {
   id: string;
@@ -164,7 +171,11 @@ export async function createDuel(input: {
   await assertFree(input.employeeId);
 
   const roundCount = Math.min(20, Math.max(3, input.roundCount ?? settings.default_rounds));
-  const seconds = Math.min(60, Math.max(5, input.secondsPerRound ?? settings.default_seconds));
+  const seconds = Math.min(
+    MAX_ROUND_SECONDS,
+    Math.max(5, input.secondsPerRound ?? settings.default_seconds),
+  );
+
   const { ids, orders } = await pickDuelQuestions(input.quizId ?? null, roundCount);
 
   const { data: duel, error } = await supabaseAdmin
@@ -539,6 +550,7 @@ export async function answerRound(input: {
   duelId: string;
   roundIndex: number;
   value: unknown;
+  skill?: string | null;
 }) {
   // Chống spam: tối đa 1 yêu cầu / 300ms cho mỗi người.
   const key = `${input.employeeId}:${input.duelId}`;
@@ -559,6 +571,9 @@ export async function answerRound(input: {
   const q = await questionAt(duel, input.roundIndex);
   if (!q) throw new Error("Không tìm thấy câu hỏi.");
 
+  // Kỹ năng: máy chủ tự kiểm tra thời gian hồi, trình duyệt không tự phong.
+  const skill = await validateSkill(duel.id, input.employeeId, input.roundIndex, input.skill);
+
   const isCorrect = gradeOne(q.row, q.order, input.value as never);
   const msTaken = Math.max(0, Math.min(now - servedAt, duel.seconds_per_round * 1000));
   const streak = await currentStreak(duel.id, input.employeeId, input.roundIndex, isCorrect);
@@ -573,11 +588,13 @@ export async function answerRound(input: {
     is_correct: isCorrect,
     ms_taken: msTaken,
     points,
+    skill: skill ?? "",
   });
   if (error) {
     if (error.code === "23505") throw new Error("Bạn đã trả lời câu này rồi.");
     throw new Error(error.message);
   }
+
 
   const players = await loadPlayers(duel.id);
   const me = players.find((p) => p.employee_id === input.employeeId);
@@ -636,6 +653,16 @@ export async function ensureBotAnswer(duel: DuelRow, roundIndex: number) {
   const streak = await currentStreak(duel.id, bot.employee_id, roundIndex, decision.isCorrect);
   const points = roundPoints(decision.isCorrect, decision.msTaken, limitMs, streak);
 
+  // Trợ lý máy cũng biết dùng kỹ năng (khoảng 35% số lượt, nếu đã hồi xong).
+  let botSkill = "";
+  if (Math.random() < 0.35) {
+    const uses = await skillUsesOf(duel.id, bot.employee_id);
+    const ready = SKILLS.filter(
+      (s) => skillCooldownLeft(uses.filter((u) => u.skill === s.id).map((u) => u.round), roundIndex) === 0,
+    );
+    if (ready.length) botSkill = ready[Math.floor(Math.random() * ready.length)].id;
+  }
+
   const { error } = await supabaseAdmin.from("duel_answers").insert({
     duel_id: duel.id,
     employee_id: bot.employee_id,
@@ -644,7 +671,9 @@ export async function ensureBotAnswer(duel: DuelRow, roundIndex: number) {
     is_correct: decision.isCorrect,
     ms_taken: decision.msTaken,
     points,
+    skill: botSkill,
   });
+
   if (error) return;
 
   await supabaseAdmin
@@ -662,7 +691,35 @@ export async function ensureBotAnswer(duel: DuelRow, roundIndex: number) {
   });
 }
 
+/** Các lượt câu mà một đấu thủ đã kích hoạt kỹ năng trong ván. */
+export async function skillUsesOf(duelId: string, employeeId: string) {
+  const { data } = await supabaseAdmin
+    .from("duel_answers")
+    .select("round_index, skill")
+    .eq("duel_id", duelId)
+    .eq("employee_id", employeeId)
+    .neq("skill", "");
+  return (data ?? []).map((r) => ({ skill: String(r.skill), round: r.round_index }));
+}
+
+/** Chỉ chấp nhận kỹ năng hợp lệ và đã hồi xong; ngược lại coi như không dùng. */
+async function validateSkill(
+  duelId: string,
+  employeeId: string,
+  roundIndex: number,
+  requested?: string | null,
+): Promise<SkillId | null> {
+  const def = skillById(requested);
+  if (!def) return null;
+  const uses = await skillUsesOf(duelId, employeeId);
+  const rounds = uses.filter((u) => u.skill === def.id).map((u) => u.round);
+  if (skillCooldownLeft(rounds, roundIndex) > 0)
+    throw new Error(`Kỹ năng ${def.name} chưa hồi xong.`);
+  return def.id;
+}
+
 async function currentStreak(
+
   duelId: string,
   employeeId: string,
   roundIndex: number,
@@ -695,7 +752,7 @@ export async function closeRound(duelId: string, roundIndex: number) {
   const players = await loadPlayers(duelId);
   const { data: allAnswers } = await supabaseAdmin
     .from("duel_answers")
-    .select("id, employee_id, round_index, is_correct, ms_taken, points")
+    .select("id, employee_id, round_index, is_correct, ms_taken, points, skill")
     .eq("duel_id", duelId)
     .lte("round_index", roundIndex);
   const rows = allAnswers ?? [];
@@ -712,20 +769,24 @@ export async function closeRound(duelId: string, roundIndex: number) {
         msTaken: a?.ms_taken ?? limitMs,
         streak: streakUpTo(rows, p.employee_id, roundIndex),
         hpBefore: p.hp,
+        skill: (skillById(a?.skill)?.id ?? null) as SkillId | null,
       };
     }),
     limitMs,
   );
 
-  // Ghi máu và sát thương xuống CSDL để máy chủ luôn là nguồn sự thật.
+  // Ghi máu, sát thương và số câu bỏ trống liên tiếp để máy chủ luôn là nguồn sự thật.
+  const missMap = new Map<string, number>();
   for (const l of combat.lines) {
     const p = players.find((x) => x.employee_id === l.employeeId);
     if (!p) continue;
+    const a = answers.find((x) => x.employee_id === l.employeeId);
+    const misses = a ? 0 : (p.misses ?? 0) + 1;
+    missMap.set(l.employeeId, misses);
     await supabaseAdmin
       .from("duel_players")
-      .update({ hp: l.hpAfter, damage_dealt: p.damage_dealt + l.damageDealt })
+      .update({ hp: l.hpAfter, damage_dealt: p.damage_dealt + l.damageDealt, misses })
       .eq("id", p.id);
-    const a = answers.find((x) => x.employee_id === l.employeeId);
     if (a)
       await supabaseAdmin
         .from("duel_answers")
@@ -733,12 +794,20 @@ export async function closeRound(duelId: string, roundIndex: number) {
         .eq("id", a.id);
   }
 
+  // Bỏ trống liên tiếp quá ngưỡng -> xử thua kỹ thuật (ghi rõ lý do vào nhật ký).
+  const noShow = players.find(
+    (p) => (missMap.get(p.employee_id) ?? 0) >= MAX_CONSECUTIVE_MISSES,
+  );
+
   const result: RoundResult = {
     roundIndex,
     correctText: q ? correctTextOf(q.row) : "",
     explanation: q?.row.explanation ?? "",
     neutral: combat.neutral,
     dice: combat.dice,
+    baseDamage: combat.baseDamage,
+    timedOut: combat.timedOut,
+    skillNotes: combat.skillNotes,
     lines: players.map((p) => {
       const a = answers.find((x) => x.employee_id === p.employee_id);
       const c = combat.lines.find((x) => x.employeeId === p.employee_id);
@@ -751,18 +820,29 @@ export async function closeRound(duelId: string, roundIndex: number) {
         damage: c?.damageDealt ?? 0,
         hp: c?.hpAfter ?? p.hp,
         firstCorrect: c?.firstCorrect ?? false,
+        skill: skillById(a?.skill)?.id ?? null,
+        timedOut: !a,
       };
     }),
   };
 
-  const isLast = roundIndex + 1 >= duel.round_count || !!combat.knockedOutId;
+  const isLast = roundIndex + 1 >= duel.round_count || !!combat.knockedOutId || !!noShow;
   await supabaseAdmin
     .from("duels")
     .update({ last_result: result as never, version: duel.version + 1 })
     .eq("id", duelId);
   await broadcastDuel(duelId, "round.result", result);
 
-  if (isLast) {
+  if (noShow) {
+    await logArenaAudit(
+      "update",
+      duelId,
+      `${noShow.display_name} bỏ trống ${MAX_CONSECUTIVE_MISSES} câu liên tiếp — xử thua kỹ thuật`,
+      { roundIndex },
+    );
+    await new Promise((r) => setTimeout(r, 1_200));
+    await finishDuel(duelId, noShow.employee_id);
+  } else if (isLast) {
     // Chờ đúng thời gian hiện đáp án rồi chốt ván; nếu tiến trình bị cắt,
     // watchdog (tickDuels) vẫn kết thúc ván này.
     await new Promise((r) => setTimeout(r, REVEAL_MS));
@@ -772,6 +852,8 @@ export async function closeRound(duelId: string, roundIndex: number) {
     await serveRound(next, roundIndex + 1, REVEAL_MS);
   }
 }
+
+
 
 /** Chuỗi câu đúng liên tiếp của một người, tính đến hết câu `roundIndex`. */
 function streakUpTo(
@@ -1024,6 +1106,11 @@ export async function getDuelState(input: {
     .eq("round_index", duel.current_round);
 
   const ids = players.map((p) => p.employee_id);
+  const { data: skillRows } = await supabaseAdmin
+    .from("duel_answers")
+    .select("employee_id, round_index, skill")
+    .eq("duel_id", duel.id)
+    .neq("skill", "");
   const [profiles, xpRows] = await Promise.all([
     supabaseAdmin.from("players").select("employee_id, elo, avatar").in("employee_id", ids),
     supabaseAdmin
@@ -1087,6 +1174,9 @@ export async function getDuelState(input: {
         avatarUrl: String(xp?.avatar_url ?? ""),
         avatarImage: String(xp?.avatar_image ?? ""),
         level: levelProgress(Number(xp?.xp ?? 0)).level,
+        skillUses: (skillRows ?? [])
+          .filter((r) => r.employee_id === p.employee_id)
+          .map((r) => ({ skill: String(r.skill), round: r.round_index })),
       };
     }),
     question,

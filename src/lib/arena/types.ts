@@ -30,6 +30,8 @@ export type DuelPlayerView = {
   avatarUrl: string;
   avatarImage: string;
   level: number;
+  /** Các lượt câu đã kích hoạt kỹ năng (dùng để tính thời gian hồi). */
+  skillUses: { skill: string; round: number }[];
 };
 
 export type DuelState = {
@@ -66,6 +68,12 @@ export type RoundResult = {
   neutral: boolean;
   /** Hai viên xúc xắc quyết định sát thương gốc của câu này. */
   dice: number[];
+  /** Sát thương gốc trước khi áp kỹ năng. */
+  baseDamage?: number;
+  /** Cả hai cùng không kịp trả lời — câu bị bỏ trống do hết giờ. */
+  timedOut?: boolean;
+  /** Diễn giải hiệu ứng kỹ năng đã kích hoạt trong câu. */
+  skillNotes?: { employeeId: string; skill: string; label: string }[];
   lines: {
     employeeId: string;
     isCorrect: boolean;
@@ -77,6 +85,10 @@ export type RoundResult = {
     /** Máu còn lại sau câu này. */
     hp: number;
     firstCorrect: boolean;
+    /** Kỹ năng đã kích hoạt ở câu này. */
+    skill?: string | null;
+    /** Người này không kịp trả lời câu này. */
+    timedOut?: boolean;
   }[];
 };
 

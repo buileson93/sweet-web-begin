@@ -1,31 +1,89 @@
+import { useEffect, useRef, useState } from "react";
+
 import { HpBar } from "@/components/arena/HpBar";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
 import type { DuelPlayerView } from "@/lib/arena/types";
+import { skillById } from "@/lib/arena/skills";
 import { levelTitle } from "@/lib/xp";
 import { cn } from "@/lib/utils";
 
-/** Khối thông tin một đấu thủ: avatar 2D, cấp bậc, máu và sát thương. */
+type Fx = { id: number; text: string; tone: "hit" | "heal" | "skill" };
+
+/** Khối thông tin một đấu thủ: avatar 2D, cấp bậc, máu, sát thương và hiệu ứng đánh nhau. */
 export function DuelFighter({
   player,
   hpStart,
   mine,
-  hitKey,
+  skill,
 }: {
   player?: DuelPlayerView;
   hpStart: number;
   mine?: boolean;
-  /** Đổi giá trị để kích hoạt hiệu ứng trúng đòn. */
-  hitKey?: number;
+  /** Kỹ năng vừa kích hoạt ở câu gần nhất (hiện hiệu ứng bay lên). */
+  skill?: string | null;
 }) {
+  const hp = player?.hp ?? hpStart;
+  const [fx, setFx] = useState<Fx[]>([]);
+  const [shake, setShake] = useState(0);
+  const prevHp = useRef(hp);
+  const seq = useRef(0);
+
+  useEffect(() => {
+    const diff = prevHp.current - hp;
+    prevHp.current = hp;
+    if (diff <= 0) return;
+    seq.current += 1;
+    const item: Fx = { id: seq.current, text: `-${diff}`, tone: "hit" };
+    setFx((f) => [...f, item]);
+    setShake(diff);
+    const t1 = window.setTimeout(() => setFx((f) => f.filter((x) => x.id !== item.id)), 1100);
+    const t2 = window.setTimeout(() => setShake(0), 600);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [hp]);
+
+  const def = skillById(skill);
+  useEffect(() => {
+    if (!def) return;
+    seq.current += 1;
+    const item: Fx = { id: seq.current, text: `${def.icon} ${def.name}`, tone: "skill" };
+    setFx((f) => [...f, item]);
+    const t = window.setTimeout(() => setFx((f) => f.filter((x) => x.id !== item.id)), 1400);
+    return () => window.clearTimeout(t);
+  }, [def, player?.hp]);
+
+  // Cường độ rung tăng dần theo mức sát thương phải nhận.
+  const shakeClass =
+    shake >= 16 ? "animate-hit-hard" : shake >= 8 ? "animate-hit-mid" : shake > 0 ? "animate-hit-soft" : "";
+
   return (
     <div
-      key={hitKey}
       className={cn(
-        "flex min-w-0 flex-1 flex-col gap-2 rounded-2xl border bg-card p-3 transition",
+        "relative flex min-w-0 flex-1 flex-col gap-2 overflow-visible rounded-2xl border bg-card p-3 transition",
         mine ? "border-primary/50" : "border-border",
         player?.left && "opacity-50",
+        shakeClass,
       )}
     >
+      {shake > 0 ? (
+        <span className="pointer-events-none absolute inset-0 rounded-2xl bg-rose-500/25 animate-flash-hit" />
+      ) : null}
+      <div className="pointer-events-none absolute inset-x-0 -top-2 z-10 flex flex-col items-center">
+        {fx.map((f) => (
+          <span
+            key={f.id}
+            className={cn(
+              "animate-float-up whitespace-nowrap text-lg font-black drop-shadow",
+              f.tone === "hit" ? "text-rose-500" : "text-primary",
+            )}
+          >
+            {f.text}
+          </span>
+        ))}
+      </div>
+
       <div className="flex items-center gap-2">
         <AvatarBubble
           name={player?.displayName}
@@ -48,7 +106,7 @@ export function DuelFighter({
           </span>
         ) : null}
       </div>
-      <HpBar hp={player?.hp ?? hpStart} hpStart={hpStart} mine={mine} />
+      <HpBar hp={hp} hpStart={hpStart} mine={mine} />
       <p className="text-[11px] text-muted-foreground">
         ⚔️ {player?.damageDealt ?? 0} sát thương · ✅ {player?.correct ?? 0} câu đúng
       </p>

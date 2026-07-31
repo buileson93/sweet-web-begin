@@ -126,6 +126,7 @@ export const arenaAnswer = createServerFn({ method: "POST" })
         duelId: z.string().uuid(),
         roundIndex: z.number().int().min(0).max(50),
         value: answerValue,
+        skill: z.enum(["cong_pha", "chi_mang", "khien_thep"]).nullable().optional(),
       })
       .parse(input),
   )
@@ -137,6 +138,7 @@ export const arenaAnswer = createServerFn({ method: "POST" })
       duelId: data.duelId,
       roundIndex: data.roundIndex,
       value: data.value,
+      skill: data.skill ?? null,
     });
   });
 

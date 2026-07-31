@@ -63,13 +63,28 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
     };
   }, [duelId, enabled, refresh]);
 
-  // Nhịp dự phòng: nhanh khi mất Realtime, chậm khi kênh còn sống.
+  // Nhịp dự phòng: nhanh khi mất Realtime, chậm khi kênh còn sống,
+  // và ngưng hẳn khi người dùng chuyển tab để không đốt tài nguyên máy chủ.
   useEffect(() => {
     if (!enabled) return;
-    const period = live ? 4000 : 1200;
-    const id = window.setInterval(() => void refresh(), period);
-    return () => window.clearInterval(id);
+    let id = 0;
+    const start = () => {
+      window.clearInterval(id);
+      if (document.hidden) return;
+      id = window.setInterval(() => void refresh(), live ? 4000 : 1200);
+    };
+    const onVisible = () => {
+      if (!document.hidden) void refresh(true);
+      start();
+    };
+    start();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [enabled, live, refresh]);
+
 
   return { state, live, error, refresh };
 }
