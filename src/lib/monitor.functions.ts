@@ -16,23 +16,20 @@ export type LiveSession = {
   total: number;
 };
 
-/** Ai được xem màn hình theo dõi: quản trị, kỹ thuật (staff) hoặc biên soạn đề. */
-async function assertMonitor(context: { supabase: any; userId: string }) {
-  const roles = await Promise.all(
-    (["admin", "staff", "editor"] as const).map((role) =>
-      context.supabase.rpc("has_role", { _user_id: context.userId, _role: role }),
-    ),
-  );
-  if (!roles.some((r) => r.data === true)) {
-    throw new Error("Tài khoản không có quyền theo dõi kỳ thi.");
-  }
-}
-
 /** Danh sách phiên thi đang diễn ra + vừa nộp trong 2 giờ gần nhất. */
 export const listLiveSessions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<LiveSession[]> => {
-    await assertMonitor(context);
+    // Chỉ quản trị, kỹ thuật hoặc biên soạn đề mới được theo dõi.
+    const roles = await Promise.all(
+      (["admin", "staff", "editor"] as const).map((role) =>
+        context.supabase.rpc("has_role", { _user_id: context.userId, _role: role }),
+      ),
+    );
+    if (!roles.some((r) => r.data === true)) {
+      throw new Error("Tài khoản không có quyền theo dõi kỳ thi.");
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
