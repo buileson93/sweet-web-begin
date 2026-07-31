@@ -54,7 +54,7 @@ function QuizDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quizzes")
-        .select("id, title, description, start_time, end_time, is_active, question_count, duration_minutes")
+        .select("id, title, description, start_time, end_time, is_active, question_count, duration_minutes, intro_markdown, status")
         .eq("id", quizId)
         .maybeSingle();
       if (error) throw error;

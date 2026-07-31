@@ -46,6 +46,8 @@ export async function startExamSession(input: {
   if (quizError) throw new Error(quizError.message);
   if (!quiz) throw new Error("Không tìm thấy cuộc thi.");
   if (!quiz.is_active) throw new Error("Cuộc thi này hiện đang tạm dừng.");
+  if (quiz.status === "draft") throw new Error("Cuộc thi đang ở trạng thái nháp, chưa mở cho thí sinh.");
+  if (quiz.status === "closed") throw new Error("Cuộc thi đã đóng.");
 
   const now = new Date();
   if (quiz.start_time && now < new Date(quiz.start_time)) {
@@ -56,6 +58,18 @@ export async function startExamSession(input: {
   }
   if (quiz.room_password && quiz.room_password !== (input.roomPassword ?? "")) {
     throw new Error("Mật khẩu phòng thi không đúng.");
+  }
+
+  // Đối tượng dự thi: để trống nghĩa là toàn công ty.
+  const { data: audiences } = await supabaseAdmin
+    .from("quiz_audiences")
+    .select("units(name)")
+    .eq("quiz_id", quiz.id);
+  const allowedUnits = (audiences ?? [])
+    .map((a) => (a as { units?: { name?: string } | null }).units?.name ?? "")
+    .filter(Boolean);
+  if (allowedUnits.length && !allowedUnits.includes(unit)) {
+    throw new Error("Cuộc thi này chỉ dành cho: " + allowedUnits.join(", ") + ".");
   }
 
   // Khuyến khích thi lại nhiều lần: chỉ ghi nhận thành tích tốt nhất.

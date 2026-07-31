@@ -63,7 +63,8 @@ function HomePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quizzes")
-        .select("id, title, description, start_time, end_time, is_active, question_count, duration_minutes")
+        .select("id, title, description, start_time, end_time, is_active, question_count, duration_minutes, intro_markdown")
+        .eq("status", "published")
         .order("start_time", { ascending: true });
       if (error) throw error;
       return data;
