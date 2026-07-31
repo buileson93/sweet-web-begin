@@ -30,6 +30,12 @@ export async function getProfile(employeeId: string): Promise<ArenaProfile> {
     .maybeSingle();
   if (!p) throw new Error("Chưa có hồ sơ đấu thủ.");
 
+  const { data: prof } = await supabaseAdmin
+    .from("player_profiles")
+    .select("xp, avatar_url, avatar_image")
+    .eq("employee_id", employeeId)
+    .maybeSingle();
+
   const { data: badges } = await supabaseAdmin
     .from("player_badges")
     .select("badge_code, earned_at, badges(name, icon)")
@@ -53,6 +59,9 @@ export async function getProfile(employeeId: string): Promise<ArenaProfile> {
     abandonRate: total ? Math.round((p.abandons / total) * 100) : 0,
     rankedLockedUntil: p.ranked_locked_until,
     avatar: p.avatar,
+    avatarUrl: String(prof?.avatar_url ?? ""),
+    avatarImage: String(prof?.avatar_image ?? ""),
+    level: levelProgress(Number(prof?.xp ?? 0)).level,
     badges: (badges ?? []).map((b) => ({
       code: b.badge_code,
       name: (b as { badges?: { name?: string } }).badges?.name ?? b.badge_code,

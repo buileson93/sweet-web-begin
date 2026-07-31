@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 import { CredentialInput } from "@/components/CredentialInput";
 import { InviteDialog } from "@/components/arena/InviteDialog";
+import { ShareChallenge } from "@/components/arena/ShareChallenge";
 import { PracticePanel } from "@/components/arena/PracticePanel";
 import { useArenaInviteChannel } from "@/hooks/useArenaInviteChannel";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
@@ -78,6 +79,7 @@ function ArenaLobby() {
   const beat = useServerFn(arenaPresence);
   const endActive = useServerFn(arenaEndActive);
 
+  const { save: saveIdentity } = usePlayerIdentity();
   const [token, setToken] = useState("");
   const [home, setHome] = useState<Home | null>(null);
   const [presence, setPresence] = useState<Presence | null>(null);
@@ -101,7 +103,17 @@ function ArenaLobby() {
     const pull = async () => {
       try {
         const data = await loadHome({ data: { token } });
-        if (alive) setHome(data);
+        if (alive) {
+          setHome(data);
+          saveIdentity({
+            employeeId: data.profile.employeeId,
+            displayName: data.profile.displayName,
+            unit: data.profile.unit,
+            avatarUrl: data.profile.avatarUrl,
+            avatarImage: data.profile.avatarImage,
+            level: data.profile.level,
+          });
+        }
       } catch {
         if (alive) {
           clearArenaToken();
@@ -115,7 +127,7 @@ function ArenaLobby() {
       alive = false;
       window.clearInterval(id);
     };
-  }, [token, loadHome]);
+  }, [token, loadHome, saveIdentity]);
 
   // Có lời mời mới -> nạp lại ngay, không phải chờ vòng hỏi lại 6 giây.
   useArenaInviteChannel(home?.profile.employeeId, () => {
@@ -209,7 +221,7 @@ function ArenaLobby() {
           title="Đấu trường 1vs1"
           description="10 câu tốc chiến, ai nhanh và đúng hơn thì thắng."
         />
-        <div className="mx-auto mt-6 w-full max-w-md rounded-2xl border bg-card/80 p-5 shadow-lg backdrop-blur">
+        <div className="arena-panel arena-radar mx-auto mt-6 w-full max-w-md p-5">
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="arena-name" className="flex items-center gap-2">
@@ -224,7 +236,7 @@ function ArenaLobby() {
               />
             </div>
             <CredentialInput value={credential} onChange={setCredential} onEnter={handleSignIn} />
-            <Button className="w-full" onClick={handleSignIn} disabled={busy}>
+            <Button className="cta-glow w-full rounded-full" onClick={handleSignIn} disabled={busy}>
               {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Swords className="mr-2 size-4" />}
               Vào đấu trường
             </Button>
@@ -303,7 +315,7 @@ function ArenaLobby() {
         ) : (
           <Button
             size="lg"
-            className="h-14 px-10 text-lg shadow-lg"
+            className="cta-glow pulse-ready h-14 rounded-full px-10 text-lg"
             disabled={Boolean(presence?.active)}
             onClick={() => {
               waitedRef.current = 0;
@@ -314,6 +326,8 @@ function ArenaLobby() {
           </Button>
         )}
       </div>
+
+      <ShareChallenge token={token} />
 
       <PracticePanel
         token={token}
@@ -405,7 +419,7 @@ function ArenaLobby() {
                 )}
               >
                 <span className="w-6 text-center font-bold text-muted-foreground">{i + 1}</span>
-                <span className="text-lg">🧑‍✈️</span>
+                <AvatarBubble name={p.short_name ?? ""} size="xs" live />
                 <span className="min-w-0 flex-1 truncate font-medium">{p.short_name}</span>
                 <span className="text-xs text-muted-foreground">{p.unit}</span>
                 <span className="font-mono font-semibold text-primary">{p.elo}</span>
@@ -561,21 +575,19 @@ function OnlineList({
 
 
 /** Avatar 2D của chính mình trong đấu trường (đồng bộ với nhân vật đã tạo). */
-function ArenaSelfAvatar({ name, fallback }: { name: string; fallback?: string }) {
+function ArenaSelfAvatar({ profile }: { profile: ArenaProfile }) {
   const { identity } = usePlayerIdentity();
-  if (!identity)
-    return (
-      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10 text-2xl">
-        {fallback || "🧑‍✈️"}
-      </span>
-    );
+  // Ưu tiên dữ liệu máy chủ (luôn đúng), sau đó tới nhận diện lưu trên máy.
+  const avatarUrl = profile.avatarUrl || identity?.avatarUrl || "";
+  const avatarImage = profile.avatarImage || identity?.avatarImage || "";
   return (
     <AvatarBubble
-      name={name}
-      avatarUrl={identity.avatarUrl}
-      avatarImage={identity.avatarImage}
-      level={identity.level}
+      name={profile.displayName}
+      avatarUrl={avatarUrl}
+      avatarImage={avatarImage}
+      level={profile.level || identity?.level}
       size="md"
+      live
     />
   );
 }
@@ -670,19 +682,19 @@ function ProfileStrip({ profile }: { profile: ArenaProfile }) {
     { icon: Coins, label: "Xu", value: profile.coins },
   ];
   return (
-    <div className="rounded-2xl border bg-card/80 p-4 shadow-sm backdrop-blur">
-      <div className="flex flex-wrap items-center gap-3">
-        <ArenaSelfAvatar name={profile.displayName} fallback={profile.avatar} />
+    <div className="arena-panel arena-radar p-4">
+      <div className="relative flex flex-wrap items-center gap-3">
+        <ArenaSelfAvatar profile={profile} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{profile.displayName}</p>
+          <p className="truncate text-base font-semibold">{profile.displayName}</p>
           <p className="truncate text-xs text-muted-foreground">{profile.unit}</p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid w-full grid-cols-4 gap-2 sm:w-auto">
           {items.map((it) => (
-            <div key={it.label} className="rounded-xl bg-muted/50 px-3 py-1.5 text-center">
-              <it.icon className="mx-auto size-4 text-primary" />
-              <p className="text-sm font-semibold">{it.value}</p>
-              <p className="text-[10px] uppercase text-muted-foreground">{it.label}</p>
+            <div key={it.label} className="stat-chip">
+              <it.icon className="size-4 text-primary" />
+              <p className="text-sm font-bold tabular-nums">{it.value}</p>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{it.label}</p>
             </div>
           ))}
         </div>

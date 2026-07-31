@@ -45,7 +45,7 @@ export function PageHero({
         {description && (
           <p
             className={cn(
-              "type-lead mt-3 text-primary-foreground/80",
+              "type-lead mt-3 text-muted-foreground",
               align === "center" && "mx-auto max-w-2xl",
             )}
           >

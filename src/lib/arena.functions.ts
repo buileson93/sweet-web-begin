@@ -286,3 +286,25 @@ export const arenaPlayBot = createServerFn({ method: "POST" })
       deviceHash: data.deviceHash,
     });
   });
+
+/** Tạo một phòng chờ mở để chia sẻ link mời qua mạng xã hội. */
+export const arenaCreateRoom = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        token,
+        quizId: z.string().uuid().nullable().optional(),
+        deviceHash: z.string().max(80).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const employeeId = await auth(data.token);
+    const { createDuel } = await import("@/lib/arena/duel.server");
+    return createDuel({
+      employeeId,
+      quizId: data.quizId ?? null,
+      deviceHash: data.deviceHash,
+      note: "Phòng mời qua link",
+    });
+  });

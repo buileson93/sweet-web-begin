@@ -133,6 +133,9 @@ export type ArenaProfile = {
   abandonRate: number;
   rankedLockedUntil: string | null;
   avatar: string;
+  avatarUrl: string;
+  avatarImage: string;
+  level: number;
   badges: { code: string; name: string; icon: string; earnedAt: string }[];
 };
 
