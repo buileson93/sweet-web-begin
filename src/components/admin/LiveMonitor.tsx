@@ -1,15 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { CheckCircle2, Eye, RadioTower, RefreshCw, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle2, ChevronDown, Eye, Loader2, RadioTower, RefreshCw, Users } from "lucide-react";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getSessionDetail, listLiveSessions, type LiveSession, type SessionDetail } from "@/lib/monitor.functions";
+import {
+  getSessionDetail,
+  listLiveSessions,
+  type LivePage,
+  type LiveSession,
+  type SessionDetail,
+} from "@/lib/monitor.functions";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 25;
 
 function remaining(expiresAt: string) {
   const ms = new Date(expiresAt).getTime() - Date.now();
@@ -19,28 +27,66 @@ function remaining(expiresAt: string) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/** Tab đang hiển thị hay không — ẩn tab thì ngừng làm mới để đỡ tải máy chủ. */
+function useTabVisible() {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const onChange = () => setVisible(document.visibilityState === "visible");
+    onChange();
+    document.addEventListener("visibilitychange", onChange);
+    return () => document.removeEventListener("visibilitychange", onChange);
+  }, []);
+  return visible;
+}
+
 export function LiveMonitor() {
   const fetchLive = useServerFn(listLiveSessions);
   const fetchDetail = useServerFn(getSessionDetail);
   const [auto, setAuto] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const visible = useTabVisible();
+
+  // Giữ dữ liệu đã tải để khi máy chủ báo "không đổi" thì không phải dựng lại bảng.
+  const cacheRef = useRef<{ version: string; rows: LiveSession[] } | null>(null);
+  const [syncedAt, setSyncedAt] = useState<Date | null>(null);
+  const [changed, setChanged] = useState(false);
+
 
   const detailQuery = useQuery({
     queryKey: ["admin-session-detail", openId],
     enabled: Boolean(openId),
-    refetchInterval: openId ? 15_000 : false,
+    refetchInterval: openId && visible ? 15_000 : false,
     queryFn: () => fetchDetail({ data: { sessionId: openId! } }) as Promise<SessionDetail>,
   });
 
   const query = useQuery({
-    queryKey: ["admin-live-sessions"],
-    queryFn: () => fetchLive({ data: undefined }) as Promise<LiveSession[]>,
-    refetchInterval: auto ? 10_000 : false,
+    queryKey: ["admin-live-sessions", limit],
+    refetchInterval: auto && visible ? 10_000 : false,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const page = (await fetchLive({
+        data: { limit, offset: 0, knownVersion: cacheRef.current?.version },
+      })) as LivePage;
+      const rows = page.changed ? page.rows : (cacheRef.current?.rows ?? []);
+      cacheRef.current = { version: page.version, rows };
+      setSyncedAt(new Date());
+      setChanged(page.changed);
+      return { ...page, rows };
+    },
   });
 
-  const rows = query.data ?? [];
-  const active = rows.filter((r) => !r.submittedAt && new Date(r.expiresAt).getTime() > Date.now());
-  const submitted = rows.filter((r) => r.submittedAt);
+  const page = query.data;
+  const rows = page?.rows ?? [];
+  const activeCount = page?.activeCount ?? 0;
+  const submittedCount = page?.submittedCount ?? 0;
+  const syncLabel = query.isFetching
+    ? "Đang đồng bộ…"
+    : query.isError
+      ? "Mất kết nối"
+      : syncedAt
+        ? `Đồng bộ ${syncedAt.toLocaleTimeString("vi-VN")} · ${changed ? "có thay đổi" : "không đổi"}`
+        : "Chưa đồng bộ";
 
   return (
     <AdminSection
@@ -48,18 +94,39 @@ export function LiveMonitor() {
       description={
         query.isLoading
           ? "Đang tải..."
-          : `${active.length} thí sinh đang làm bài · ${submitted.length} bài đã nộp (2 giờ gần nhất)`
+          : `${activeCount} thí sinh đang làm bài · ${submittedCount} bài đã nộp (2 giờ gần nhất)`
       }
       toolbar={
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-sm">
-            <Users className="size-4 text-accent" /> Đang thi: <b className="font-mono">{active.length}</b>
+            <Users className="size-4 text-accent" /> Đang thi: <b className="font-mono">{activeCount}</b>
           </span>
           <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-sm">
-            <CheckCircle2 className="size-4 text-accent" /> Đã nộp: <b className="font-mono">{submitted.length}</b>
+            <CheckCircle2 className="size-4 text-accent" /> Đã nộp: <b className="font-mono">{submittedCount}</b>
+          </span>
+          <span
+            className={cn(
+              "type-meta inline-flex items-center gap-1.5 rounded-full px-3 py-1.5",
+              query.isError ? "bg-destructive/10 text-destructive" : "bg-secondary text-muted-foreground",
+            )}
+            aria-live="polite"
+          >
+            {query.isFetching ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  query.isError ? "bg-destructive" : changed ? "bg-primary" : "bg-accent",
+                )}
+              />
+            )}
+            {syncLabel}
+            {!visible ? " · tạm dừng (tab ẩn)" : ""}
           </span>
         </div>
       }
+
       actions={
         <div className="flex gap-2">
           <Button variant={auto ? "default" : "outline"} className="rounded-full" onClick={() => setAuto((v) => !v)}>
@@ -158,7 +225,25 @@ export function LiveMonitor() {
             </tbody>
           </table>
         </div>
+
+        {/* Tải dần: mặc định chỉ dựng 25 dòng, bấm để lấy thêm */}
+        {page?.hasMore ? (
+          <div className="mt-3 flex justify-center">
+            <Button
+              variant="outline"
+              className="rounded-full"
+              disabled={query.isFetching}
+              onClick={() => setLimit((n) => Math.min(n + PAGE_SIZE, 100))}
+            >
+              {query.isFetching ? <Loader2 className="size-4 animate-spin" /> : <ChevronDown className="size-4" />}
+              Tải thêm {PAGE_SIZE} phiên
+            </Button>
+          </div>
+        ) : rows.length > PAGE_SIZE ? (
+          <p className="type-meta mt-3 text-center">Đã hiển thị toàn bộ {rows.length} phiên gần đây.</p>
+        ) : null}
       </QueryState>
+
 
       <Dialog open={Boolean(openId)} onOpenChange={(o) => setOpenId(o ? openId : null)}>
         <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
