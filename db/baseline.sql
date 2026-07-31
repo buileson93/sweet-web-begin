@@ -351,21 +351,24 @@ CREATE TRIGGER update_employees_updated_at BEFORE UPDATE ON public.employees
 -- 6. CHỈ MỤC
 -- -----------------------------------------------------------------------------
 
--- user_roles: đã có UNIQUE(user_id, role) phục vụ tra cứu, không cần index riêng
+-- user_roles
+CREATE INDEX IF NOT EXISTS idx_user_roles_user ON public.user_roles (user_id, role);
 
 -- employees
-CREATE INDEX IF NOT EXISTS employees_lookup_idx          ON public.employees (name_key, phone_last4);
-CREATE INDEX IF NOT EXISTS employees_unit_idx            ON public.employees (unit_name);
-CREATE INDEX IF NOT EXISTS idx_employees_active_unit     ON public.employees (is_active, unit_name);
--- verifyEmployee: tra nhân viên đang hoạt động theo tên (0.133 ms -> 0.072 ms)
-CREATE INDEX IF NOT EXISTS idx_employees_name_key_active ON public.employees (name_key) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS employees_lookup_idx      ON public.employees (name_key, phone_last4);
+CREATE INDEX IF NOT EXISTS employees_unit_idx        ON public.employees (unit_name);
+CREATE INDEX IF NOT EXISTS idx_employees_active_unit ON public.employees (is_active, unit_name);
+CREATE INDEX IF NOT EXISTS idx_employees_name_key    ON public.employees (name_key);
 
 -- employee_login_attempts
+CREATE INDEX IF NOT EXISTS employee_login_attempts_idx     ON public.employee_login_attempts (name_key, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_login_attempts_name_created ON public.employee_login_attempts (name_key, created_at DESC);
 
--- quizzes: đã có UNIQUE(legacy_id), không cần index riêng
+-- quizzes
+CREATE INDEX IF NOT EXISTS idx_quizzes_legacy_id ON public.quizzes (legacy_id);
 
 -- questions
+CREATE INDEX IF NOT EXISTS questions_quiz_idx            ON public.questions (quiz_id);
 CREATE INDEX IF NOT EXISTS questions_quiz_order_idx      ON public.questions (quiz_id, order_index, created_at);
 CREATE INDEX IF NOT EXISTS questions_quiz_difficulty_idx ON public.questions (quiz_id, difficulty) WHERE is_archived = false;
 CREATE INDEX IF NOT EXISTS questions_tags_idx            ON public.questions USING gin (tags);
@@ -374,27 +377,25 @@ CREATE INDEX IF NOT EXISTS idx_questions_quiz_difficulty ON public.questions (qu
 CREATE INDEX IF NOT EXISTS idx_questions_created_at      ON public.questions (created_at DESC);
 
 -- exam_sessions
-CREATE INDEX IF NOT EXISTS exam_sessions_status_expires_idx  ON public.exam_sessions (status, expires_at);
-CREATE INDEX IF NOT EXISTS idx_exam_sessions_employee        ON public.exam_sessions (employee_id, started_at DESC);
-CREATE INDEX IF NOT EXISTS idx_exam_sessions_quiz_started    ON public.exam_sessions (quiz_id, started_at DESC);
-CREATE INDEX IF NOT EXISTS idx_exam_sessions_started_at      ON public.exam_sessions (started_at DESC);
-CREATE INDEX IF NOT EXISTS idx_exam_sessions_status_started  ON public.exam_sessions (status, started_at DESC);
-CREATE INDEX IF NOT EXISTS idx_exam_sessions_submitted_at    ON public.exam_sessions (submitted_at DESC);
--- start_exam_session_tx: phiên đang mở của nhân viên (0.785 ms -> 0.144 ms)
-CREATE INDEX IF NOT EXISTS idx_exam_sessions_employee_status ON public.exam_sessions (employee_id, status);
--- loadLivePage: bộ đếm "đang thi" (12.889 ms -> 0.100 ms, 579 -> 2 buffer)
-CREATE INDEX IF NOT EXISTS idx_exam_sessions_open            ON public.exam_sessions (started_at DESC) WHERE submitted_at IS NULL;
+CREATE INDEX IF NOT EXISTS exam_sessions_quiz_idx           ON public.exam_sessions (quiz_id);
+CREATE INDEX IF NOT EXISTS exam_sessions_employee_idx       ON public.exam_sessions (employee_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS exam_sessions_status_expires_idx ON public.exam_sessions (status, expires_at);
+CREATE INDEX IF NOT EXISTS idx_exam_sessions_employee       ON public.exam_sessions (employee_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_exam_sessions_quiz_started   ON public.exam_sessions (quiz_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_exam_sessions_started_at     ON public.exam_sessions (started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_exam_sessions_status_started ON public.exam_sessions (status, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_exam_sessions_submitted_at   ON public.exam_sessions (submitted_at DESC);
 
 -- results
 CREATE UNIQUE INDEX IF NOT EXISTS results_session_id_unique ON public.results (session_id) WHERE session_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS results_quiz_idx           ON public.results (quiz_id);
 CREATE INDEX IF NOT EXISTS results_rank_idx           ON public.results (quiz_id, score DESC, time_seconds);
+CREATE INDEX IF NOT EXISTS results_employee_idx       ON public.results (employee_id, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_results_employee       ON public.results (employee_id, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_results_quiz_submitted ON public.results (quiz_id, submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_results_session        ON public.results (session_id);
 CREATE INDEX IF NOT EXISTS idx_results_submitted_at   ON public.results (submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_results_unit           ON public.results (unit);
--- startExamSession/submitExamSession: đếm lượt hợp lệ + bestPercent (1.116 ms -> 0.220 ms)
-CREATE INDEX IF NOT EXISTS idx_results_quiz_employee_valid ON public.results (quiz_id, employee_id) WHERE disqualified = false;
-
 
 -- exam_events
 CREATE INDEX IF NOT EXISTS exam_events_session_created_idx ON public.exam_events (session_id, created_at);
@@ -402,6 +403,7 @@ CREATE INDEX IF NOT EXISTS exam_events_session_created_idx ON public.exam_events
 -- audit_logs
 CREATE INDEX IF NOT EXISTS audit_logs_user_idx       ON public.audit_logs (user_id);
 CREATE INDEX IF NOT EXISTS audit_logs_created_at_idx ON public.audit_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON public.audit_logs (created_at DESC);
 
 -- device_visits
 CREATE INDEX IF NOT EXISTS device_visits_ip_idx          ON public.device_visits (ip);
