@@ -1094,6 +1094,11 @@ export async function getDuelState(input: {
     .eq("round_index", duel.current_round);
 
   const ids = players.map((p) => p.employee_id);
+  const { data: skillRows } = await supabaseAdmin
+    .from("duel_answers")
+    .select("employee_id, round_index, skill")
+    .eq("duel_id", duel.id)
+    .neq("skill", "");
   const [profiles, xpRows] = await Promise.all([
     supabaseAdmin.from("players").select("employee_id, elo, avatar").in("employee_id", ids),
     supabaseAdmin
@@ -1157,6 +1162,9 @@ export async function getDuelState(input: {
         avatarUrl: String(xp?.avatar_url ?? ""),
         avatarImage: String(xp?.avatar_image ?? ""),
         level: levelProgress(Number(xp?.xp ?? 0)).level,
+        skillUses: (skillRows ?? [])
+          .filter((r) => r.employee_id === p.employee_id)
+          .map((r) => ({ skill: String(r.skill), round: r.round_index })),
       };
     }),
     question,
