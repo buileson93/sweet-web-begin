@@ -188,6 +188,7 @@ export type Database = {
       exam_sessions: {
         Row: {
           answers: Json
+          answers_seq: number
           best_streak: number
           birth_year: string
           candidate_name: string
@@ -207,6 +208,7 @@ export type Database = {
         }
         Insert: {
           answers?: Json
+          answers_seq?: number
           best_streak?: number
           birth_year?: string
           candidate_name: string
@@ -226,6 +228,7 @@ export type Database = {
         }
         Update: {
           answers?: Json
+          answers_seq?: number
           best_streak?: number
           birth_year?: string
           candidate_name?: string
