@@ -687,7 +687,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
 
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Sửa câu hỏi" : "Thêm câu hỏi"}</DialogTitle>
             <DialogDescription>Chọn phương án đúng bằng nút bên trái.</DialogDescription>

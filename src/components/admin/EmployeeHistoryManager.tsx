@@ -240,7 +240,7 @@ export function EmployeeHistoryManager() {
       </AdminSection>
 
       <Dialog open={Boolean(selected)} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Award className="size-5 text-primary" /> {selected?.name}

@@ -151,7 +151,7 @@ export function UnitStats() {
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="card-elevated p-4">
             <p className="type-eyebrow mb-3 text-muted-foreground">Điểm trung bình & tỉ lệ đạt theo đơn vị</p>
-            <div className="h-72 w-full">
+            <div className="h-[clamp(15rem,45dvh,20rem)] w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartRows} margin={{ left: -20, right: 8, top: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -174,7 +174,7 @@ export function UnitStats() {
 
           <div className="card-elevated p-4">
             <p className="type-eyebrow mb-3 text-muted-foreground">Phân bố điểm (số lượt thi)</p>
-            <div className="h-72 w-full">
+            <div className="h-[clamp(15rem,45dvh,20rem)] w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={distribution} margin={{ left: -20, right: 8, top: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
