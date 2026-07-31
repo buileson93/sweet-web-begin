@@ -121,6 +121,8 @@ export type ReplayRound = {
   correctText: string;
   explanation: string;
   neutral: boolean;
+  /** Cả hai cùng không trả lời kịp — câu bị bỏ trống do hết giờ. */
+  timedOut: boolean;
   lines: {
     employeeId: string;
     displayName: string;
@@ -129,9 +131,12 @@ export type ReplayRound = {
     msTaken: number;
     damage: number;
     firstCorrect: boolean;
+    /** Kỹ năng đã kích hoạt ở câu này (rỗng nếu không dùng). */
+    skill: string;
     hpAfter: number;
   }[];
 };
+
 
 export type DuelReplay = {
   duelId: string;
