@@ -20,6 +20,7 @@ import { Route as AuthenticatedNhapDuLieuRouteImport } from './routes/_authentic
 import { Route as AuthenticatedNhatKyRouteImport } from './routes/_authenticated/nhat-ky'
 import { Route as AuthenticatedQuanTriRouteImport } from './routes/_authenticated/quan-tri'
 import { Route as CuocThiQuizIdRouteImport } from './routes/cuoc-thi.$quizId'
+import { Route as ApiCronAutoSubmitRouteImport } from './routes/api/cron/auto-submit'
 import { Route as ApiPublicAnhCauHoiSplatRouteImport } from './routes/api/public/anh-cau-hoi.$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -76,6 +77,11 @@ const CuocThiQuizIdRoute = CuocThiQuizIdRouteImport.update({
   path: '/cuoc-thi/$quizId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronAutoSubmitRoute = ApiCronAutoSubmitRouteImport.update({
+  id: '/api/cron/auto-submit',
+  path: '/api/cron/auto-submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAnhCauHoiSplatRoute = ApiPublicAnhCauHoiSplatRouteImport.update({
   id: '/api/public/anh-cau-hoi/$',
   path: '/api/public/anh-cau-hoi/$',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/nhat-ky': typeof AuthenticatedNhatKyRoute
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
+  '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
 export interface FileRoutesByTo {
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/nhat-ky': typeof AuthenticatedNhatKyRoute
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
+  '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
 export interface FileRoutesById {
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/_authenticated/nhat-ky': typeof AuthenticatedNhatKyRoute
   '/_authenticated/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
+  '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
 export interface FileRouteTypes {
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/nhat-ky'
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
+    | '/api/cron/auto-submit'
     | '/api/public/anh-cau-hoi/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/nhat-ky'
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
+    | '/api/cron/auto-submit'
     | '/api/public/anh-cau-hoi/$'
   id:
     | '__root__'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/_authenticated/nhat-ky'
     | '/_authenticated/quan-tri'
     | '/cuoc-thi/$quizId'
+    | '/api/cron/auto-submit'
     | '/api/public/anh-cau-hoi/$'
   fileRoutesById: FileRoutesById
 }
@@ -175,6 +187,7 @@ export interface RootRouteChildren {
   LichSuRoute: typeof LichSuRoute
   ThiRoute: typeof ThiRoute
   CuocThiQuizIdRoute: typeof CuocThiQuizIdRoute
+  ApiCronAutoSubmitRoute: typeof ApiCronAutoSubmitRoute
   ApiPublicAnhCauHoiSplatRoute: typeof ApiPublicAnhCauHoiSplatRoute
 }
 
@@ -257,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CuocThiQuizIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cron/auto-submit': {
+      id: '/api/cron/auto-submit'
+      path: '/api/cron/auto-submit'
+      fullPath: '/api/cron/auto-submit'
+      preLoaderRoute: typeof ApiCronAutoSubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/anh-cau-hoi/$': {
       id: '/api/public/anh-cau-hoi/$'
       path: '/api/public/anh-cau-hoi/$'
@@ -291,6 +311,7 @@ const rootRouteChildren: RootRouteChildren = {
   LichSuRoute: LichSuRoute,
   ThiRoute: ThiRoute,
   CuocThiQuizIdRoute: CuocThiQuizIdRoute,
+  ApiCronAutoSubmitRoute: ApiCronAutoSubmitRoute,
   ApiPublicAnhCauHoiSplatRoute: ApiPublicAnhCauHoiSplatRoute,
 }
 export const routeTree = rootRouteImport
