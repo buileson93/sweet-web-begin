@@ -15,7 +15,9 @@ import {
   type ScoreRules,
 } from "@/lib/grading";
 import { type AnswerValue } from "@/lib/questionKinds";
-import { QUESTION_COLUMNS, type ReviewItem, type SubmitExamResult } from "@/lib/exam/types";
+import { computeXpGain, levelFromXp, levelProgress, levelTitle } from "@/lib/xp";
+import { QUESTION_COLUMNS, type ReviewItem, type SubmitExamResult, type XpAward } from "@/lib/exam/types";
+
 
 /** Chấm ngay một câu (chế độ phản hồi tức thì): chốt đáp án, trả kết quả đúng/sai. */
 export async function checkExamAnswer(input: {
@@ -241,7 +243,10 @@ export async function submitExamSession(input: {
     0,
   );
 
+  let xpAward: XpAward | null = null;
+
   if (!replay) {
+
     await supabaseAdmin
       .from("exam_sessions")
       .update({
@@ -285,6 +290,39 @@ export async function submitExamSession(input: {
 
     if (insertError && !insertError.message.includes("duplicate"))
       throw new Error(insertError.message);
+
+    // Cộng kinh nghiệm / lên cấp cho nhân viên (Habitica style).
+    if (session.employee_id) {
+      const gain = computeXpGain({
+        score: finalScore,
+        total,
+        passed,
+        bestStreak,
+        disqualified,
+        improved: !disqualified && percentOf(finalScore, total) > previousBestPercent,
+      });
+      const { data: xpRow, error: xpErr } = await supabaseAdmin.rpc("award_player_xp", {
+        p_employee_id: session.employee_id,
+        p_display_name: session.candidate_name,
+        p_unit: session.unit,
+        p_gain: gain,
+        p_passed: passed,
+        p_best_streak: bestStreak,
+      });
+      if (!xpErr) {
+        const row = Array.isArray(xpRow) ? xpRow[0] : xpRow;
+        const newXp = Number(row?.xp ?? 0);
+        const newLevel = Number(row?.level ?? 1);
+        xpAward = {
+          gained: Number(row?.gained ?? gain),
+          xp: newXp,
+          level: newLevel,
+          leveledUp: newLevel > levelFromXp(Math.max(0, newXp - gain)),
+          title: levelTitle(newLevel),
+          ...(({ into, need, percent }) => ({ into, need, percent }))(levelProgress(newXp)),
+        };
+      }
+    }
   }
 
   return {
@@ -302,7 +340,9 @@ export async function submitExamSession(input: {
     previousBestPercent,
     improved: !disqualified && percentOf(finalScore, total) > previousBestPercent,
     review,
+    xp: xpAward,
   };
+
 }
 
 /**

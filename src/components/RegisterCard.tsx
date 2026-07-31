@@ -23,6 +23,8 @@ import { toast } from "sonner";
 
 import { CredentialInput } from "@/components/CredentialInput";
 import { HintTip } from "@/components/HintTip";
+import { AvatarCreatorDialog } from "@/components/player/AvatarCreatorDialog";
+
 import { IconTip } from "@/components/IconTip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -502,7 +504,16 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
               Đổi
             </button>
           </div>
-        ) : (
+        ) : null}
+
+        {verified ? (
+          <div className="flex justify-end">
+            <AvatarCreatorDialog name={trimmed} credential={credential.trim()} />
+          </div>
+        ) : null}
+
+        {verified ? null : (
+
           <Button
             variant="secondary"
             className="h-10 w-full rounded-xl"

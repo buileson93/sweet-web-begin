@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 
 import { Celebration } from "@/components/Celebration";
+import { LevelBar } from "@/components/player/LevelBar";
+
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeResults } from "@/hooks/useRealtimeResults";
@@ -138,6 +140,23 @@ export function ExamResult({
               <p className="type-meta mt-1 text-primary-foreground/70">{percent}%</p>
             </div>
           </div>
+
+          {result.xp ? (
+            <LevelBar
+              className="mt-4 border-primary-foreground/15 bg-primary-foreground/5 text-primary-foreground"
+              data={{
+                level: result.xp.level,
+                title: result.xp.title,
+                into: result.xp.into,
+                need: result.xp.need,
+                percent: result.xp.percent,
+                gained: result.xp.gained,
+                leveledUp: result.xp.leveledUp,
+              }}
+            />
+          ) : null}
+
+
 
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <Button

@@ -328,6 +328,54 @@ export type Database = {
           },
         ]
       }
+      player_profiles: {
+        Row: {
+          avatar_image: string
+          avatar_url: string
+          best_streak: number
+          created_at: string
+          display_name: string
+          employee_id: string
+          exams_passed: number
+          exams_taken: number
+          level: number
+          title: string
+          unit: string
+          updated_at: string
+          xp: number
+        }
+        Insert: {
+          avatar_image?: string
+          avatar_url?: string
+          best_streak?: number
+          created_at?: string
+          display_name?: string
+          employee_id: string
+          exams_passed?: number
+          exams_taken?: number
+          level?: number
+          title?: string
+          unit?: string
+          updated_at?: string
+          xp?: number
+        }
+        Update: {
+          avatar_image?: string
+          avatar_url?: string
+          best_streak?: number
+          created_at?: string
+          display_name?: string
+          employee_id?: string
+          exams_passed?: number
+          exams_taken?: number
+          level?: number
+          title?: string
+          unit?: string
+          updated_at?: string
+          xp?: number
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           accepted_answers: string[]
@@ -407,6 +455,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quiz_assets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          height: number
+          id: string
+          kind: string
+          size_bytes: number
+          storage_path: string
+          tags: string[]
+          title: string
+          updated_at: string
+          width: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          height?: number
+          id?: string
+          kind?: string
+          size_bytes?: number
+          storage_path: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          width?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          height?: number
+          id?: string
+          kind?: string
+          size_bytes?: number
+          storage_path?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          width?: number
+        }
+        Relationships: []
       }
       quiz_audiences: {
         Row: {
@@ -699,6 +789,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_player_xp: {
+        Args: {
+          p_best_streak: number
+          p_display_name: string
+          p_employee_id: string
+          p_gain: number
+          p_passed: boolean
+          p_unit: string
+        }
+        Returns: {
+          gained: number
+          level: number
+          xp: number
+        }[]
+      }
       claim_exam_device: {
         Args: {
           p_candidate_name: string
@@ -718,6 +823,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      set_player_avatar: {
+        Args: {
+          p_avatar_image: string
+          p_avatar_url: string
+          p_employee_id: string
+        }
+        Returns: undefined
       }
       start_exam_session_tx: {
         Args: {
