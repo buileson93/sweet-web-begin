@@ -406,7 +406,8 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         editing={Boolean(editing)}
         form={form}
         setForm={setForm}
-        uploading={uploading}
+        uploadStage={uploadStage}
+        uploadInfo={uploadInfo}
         onAttachImage={(file) => void attachImage(file)}
         onSave={() => save.mutate()}
         saving={save.isPending}

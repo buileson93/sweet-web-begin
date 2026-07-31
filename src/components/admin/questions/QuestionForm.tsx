@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { ImagePlus, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
