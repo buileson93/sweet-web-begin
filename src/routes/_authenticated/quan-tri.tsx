@@ -23,6 +23,7 @@ import {
 
 import { QuizManager } from "@/components/admin/QuizManager";
 import { QuestionManager } from "@/components/admin/QuestionManager";
+import { ImageStorageStats } from "@/components/admin/ImageStorageStats";
 import { UnitManager } from "@/components/admin/UnitManager";
 import { ResultManager } from "@/components/admin/ResultManager";
 import { EmployeeManager } from "@/components/admin/EmployeeManager";
@@ -299,7 +300,12 @@ function AdminPage() {
                 ) : null}
 
                 {current === "quizzes" && <QuizManager canEdit={canEdit} />}
-                {current === "questions" && <QuestionManager canEdit={canEdit} />}
+                {current === "questions" && (
+                  <>
+                    <ImageStorageStats canClean={canManageSystem} />
+                    <QuestionManager canEdit={canEdit} />
+                  </>
+                )}
                 {current === "units" && <UnitManager canEdit={canEdit} />}
                 {current === "employees" && <EmployeeManager canEdit={canManageSystem} />}
                 {current === "live" && <LiveMonitor />}
