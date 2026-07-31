@@ -7,6 +7,8 @@ import {
   Building2,
   Command as CommandIcon,
   Database,
+  Images,
+
   IdCard,
   FileQuestion,
   ListChecks,
