@@ -274,6 +274,7 @@ export type Database = {
           is_archived: boolean
           kind: Database["public"]["Enums"]["question_kind"]
           options: string[]
+          order_index: number
           pairs: Json
           points: number
           question: string
@@ -295,6 +296,7 @@ export type Database = {
           is_archived?: boolean
           kind?: Database["public"]["Enums"]["question_kind"]
           options: string[]
+          order_index?: number
           pairs?: Json
           points?: number
           question: string
@@ -316,6 +318,7 @@ export type Database = {
           is_archived?: boolean
           kind?: Database["public"]["Enums"]["question_kind"]
           options?: string[]
+          order_index?: number
           pairs?: Json
           points?: number
           question?: string
