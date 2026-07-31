@@ -633,8 +633,15 @@ export async function submitExamSession(input: {
       passed,
       time_seconds: timeSeconds,
       disqualified,
+      integrity_score: integrityScore,
       late_submit: lateSubmit,
-      disqualify_reason: lateSubmit ? "Nộp sau giờ" : (input.disqualifyReason ?? null),
+      disqualify_reason: lateSubmit
+        ? "Nộp sau giờ"
+        : disqualified
+          ? `Vi phạm quy chế (điểm liêm chính ${integrityScore}/${threshold})`
+          : integrityFlagged
+            ? `Cảnh báo liêm chính ${integrityScore}/${threshold}`
+            : null,
       submitted_at: now.toISOString(),
     });
 
