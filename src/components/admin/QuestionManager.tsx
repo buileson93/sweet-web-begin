@@ -369,6 +369,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
             onQuizChange={setQuizId}
             difficultyFilter={difficultyFilter}
             onDifficultyChange={setDifficultyFilter}
+            archiveFilter={archiveFilter}
+            onArchiveChange={setArchiveFilter}
+
             keyword={keyword}
             onKeywordChange={setKeyword}
           />
