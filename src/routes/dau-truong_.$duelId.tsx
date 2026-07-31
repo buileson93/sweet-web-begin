@@ -232,6 +232,20 @@ function DuelRoom() {
         />
       ) : null}
 
+      <DiagnosticsDialog
+        open={diagOpen}
+        onOpenChange={setDiagOpen}
+        entries={diag}
+        meta={{
+          duelId,
+          round: state.currentRound + 1,
+          version: state.version,
+          ping: stats.ping,
+          skew: stats.skew,
+          reconnects: stats.reconnects,
+        }}
+      />
+
       {state.lastResult && state.lastResult.roundIndex === state.currentRound ? (
         <ResultPanel state={state} meId={me?.employeeId} />
       ) : null}
