@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Check, Dices, Link2, Loader2, LogOut, RotateCcw, Share2, Swords, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { ClassPicker } from "@/components/arena/ClassPicker";
 import { DuelFighter } from "@/components/arena/DuelFighter";
 import { BattleDice } from "@/components/arena/BattleDice";
 import { ConnectionBadge } from "@/components/arena/ConnectionBadge";
@@ -15,9 +16,18 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PageContainer } from "@/components/ui-kit";
 import { useDuelChannel } from "@/hooks/useDuelChannel";
-import { arenaAnswer, arenaCloseExpiredRound, arenaJoinDuel, arenaLeave, arenaReady, arenaRematch } from "@/lib/arena.functions";
+import {
+  arenaAnswer,
+  arenaChooseClass,
+  arenaCloseExpiredRound,
+  arenaJoinDuel,
+  arenaLeave,
+  arenaReady,
+  arenaRematch,
+} from "@/lib/arena.functions";
 import { getArenaToken } from "@/lib/arena/client";
 import { getDeviceId } from "@/lib/deviceId";
+import { DEFAULT_CLASS, type ClassId } from "@/lib/arena/classes";
 import { skillById, type SkillId } from "@/lib/arena/skills";
 import type { DuelPlayerView, DuelState } from "@/lib/arena/types";
 import type { AnswerValue } from "@/lib/questionKinds";
