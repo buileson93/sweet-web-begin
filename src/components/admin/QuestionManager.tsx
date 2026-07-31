@@ -490,16 +490,30 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
           <QuestionList
             paged={paged}
             canEdit={canEdit}
+            quizzes={quizzes}
+            quizId={quizId}
             selected={selected}
             allOnPageSelected={allOnPageSelected}
             onToggleOne={toggleOne}
             onTogglePage={togglePage}
             onClearSelection={() => setSelected(new Set())}
-            onBulkDifficulty={(v) => bulkDifficulty.mutate(v)}
-            onBulkRemove={() => bulkRemove.mutate()}
+            bulkHandlers={{
+              onBulkDifficulty: (v) => bulkDifficulty.mutate(v),
+              onBulkPoints: (v) => bulkPoints.mutate(v),
+              onBulkTags: (tags, mode) => bulkTags.mutate({ tags, mode }),
+              onBulkArchive: (archived) => bulkArchive.mutate(archived),
+              onBulkMoveQuiz: (target) => bulkMoveQuiz.mutate(target),
+              onBulkRemove: () => bulkRemove.mutate(),
+            }}
             bulkRemoving={bulkRemove.isPending}
+            bulkBusy={bulkBusy}
             onEdit={openEdit}
             onRemove={(q) => remove.mutate(q)}
+            onPreview={(q) => setPreview(q)}
+            onDuplicate={(q) => duplicate.mutate(q)}
+            onArchive={(q, archived) => archive.mutate({ row: q, archived })}
+            onMove={moveRow}
+            onSetOrder={(q, value) => reorder.mutate([{ id: q.id, order_index: value }])}
             pageSize={PAGE_SIZE}
             page={safePage}
             pageCount={pageCount}
@@ -509,10 +523,14 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         </QueryState>
       </AdminSection>
 
+      <QuestionPreviewDialog question={preview} onClose={() => setPreview(null)} />
+
       <QuestionForm
         open={open}
         onOpenChange={handleDialogOpenChange}
         editing={Boolean(editing)}
+        editingId={editing?.id ?? null}
+        existing={questions.map((q) => ({ id: q.id, question: q.question }))}
         form={form}
         setForm={setForm}
         uploadStage={uploadStage}
@@ -521,7 +539,18 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         onRemoveImage={dropPendingImage}
         onSave={() => save.mutate()}
         saving={save.isPending}
+        draftAvailable={draftAvailable}
+        onRestoreDraft={() => {
+          if (pendingDraft.current) setForm(pendingDraft.current);
+          setDraftAvailable(false);
+        }}
+        onDiscardDraft={() => {
+          clearDraft(draftKey(quizId, editing?.id ?? null));
+          pendingDraft.current = null;
+          setDraftAvailable(false);
+        }}
       />
+
     </div>
   );
 }
