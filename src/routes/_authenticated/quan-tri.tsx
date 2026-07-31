@@ -11,7 +11,9 @@ import {
   FileQuestion,
   ListChecks,
   LogOut,
-  ScrollText,
+  PieChart,
+  RadioTower,
+
   ShieldAlert,
   ShieldCheck,
   Trophy,
@@ -87,11 +89,14 @@ const GROUPS: { group: string; items: Section[] }[] = [
   {
     group: "Báo cáo",
     items: [
+      { value: "live", label: "Theo dõi trực tiếp", hint: "Ai đang làm bài ngay lúc này", icon: RadioTower },
       { value: "results", label: "Kết quả", hint: "Bài thi đã nộp", icon: BarChart3 },
+      { value: "unit-stats", label: "Thống kê đơn vị", hint: "Điểm trung bình, tỉ lệ đạt", icon: PieChart },
       { value: "history", label: "Thành tích", hint: "Lịch sử theo nhân viên", icon: Trophy },
       { value: "audit", label: "Lịch sử thao tác", hint: "Nhật ký quản trị", icon: ScrollText },
     ],
   },
+
   {
     group: "Hệ thống",
     items: [
