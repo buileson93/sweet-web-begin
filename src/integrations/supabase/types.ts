@@ -449,6 +449,7 @@ export type Database = {
           allow_fifty_fifty: boolean
           allow_skip: boolean
           blueprint: Json
+          cover_url: string
           created_at: string
           description: string
           disqualify_threshold: number
@@ -481,6 +482,7 @@ export type Database = {
           allow_fifty_fifty?: boolean
           allow_skip?: boolean
           blueprint?: Json
+          cover_url?: string
           created_at?: string
           description?: string
           disqualify_threshold?: number
@@ -513,6 +515,7 @@ export type Database = {
           allow_fifty_fifty?: boolean
           allow_skip?: boolean
           blueprint?: Json
+          cover_url?: string
           created_at?: string
           description?: string
           disqualify_threshold?: number
