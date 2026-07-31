@@ -1,6 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FileQuestion, ImagePlus, Loader2, Pencil, Plus, Search, SearchX, Trash2, Upload, X } from "lucide-react";
+import {
+  Download,
+  FileQuestion,
+  ImagePlus,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  SearchX,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
@@ -9,7 +21,13 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +40,12 @@ import { CsvImportDialog } from "@/components/admin/CsvImportDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { normalizeKey } from "@/lib/csv";
-import { formatBytes, questionImageSrc, removeQuestionImage, uploadQuestionImage } from "@/lib/questionImage";
+import {
+  formatBytes,
+  questionImageSrc,
+  removeQuestionImage,
+  uploadQuestionImage,
+} from "@/lib/questionImage";
 import { cn } from "@/lib/utils";
 
 import {
@@ -46,6 +69,8 @@ type QuestionRow = {
   kind: QuestionKind | null;
   difficulty: Difficulty | null;
   points: number | null;
+  /** Thứ tự hiển thị ổn định khi cuộc thi tắt "Xáo trộn câu hỏi". */
+  order_index: number | null;
   tags: string[] | null;
   explanation: string | null;
   image_url: string | null;
@@ -61,11 +86,11 @@ const emptyForm = {
   kind: "single" as QuestionKind,
   difficulty: "medium" as Difficulty,
   points: 1,
+  order_index: 0,
   tags: "",
   explanation: "",
   image_url: null as string | null,
 };
-
 
 export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const qc = useQueryClient();
@@ -83,11 +108,13 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
 
   const PAGE_SIZE = 20;
 
-
   const { data: quizzes = [] } = useQuery({
     queryKey: ["admin-quizzes-lite"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("quizzes").select("id, title").order("start_time");
+      const { data, error } = await supabase
+        .from("quizzes")
+        .select("id, title")
+        .order("start_time");
       if (error) throw error;
       if (data.length && !quizId) setQuizId(data[0].id);
       return data;
@@ -101,17 +128,18 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       const { data, error } = await supabase
         .from("questions")
         .select(
-          "id, quiz_id, question, options, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, tags, explanation, image_url",
+          "id, quiz_id, question, options, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, order_index, tags, explanation, image_url",
         )
         .eq("quiz_id", quizId)
-        .order("created_at");
+        // Sắp theo số thứ tự để admin thấy đúng trật tự đề khi tắt xáo trộn.
+        .order("order_index", { ascending: true })
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data as QuestionRow[];
     },
   });
   const questions = questionsQuery.data ?? [];
   const isLoading = questionsQuery.isLoading || (Boolean(quizId) && questionsQuery.isPending);
-
 
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
@@ -155,23 +183,30 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     });
   }
 
-
   const save = useMutation({
     mutationFn: async () => {
-      const options = form.options.map((o) => o.trim()).filter((o, i) => o || form.kind === "fill_blank" || i < 2);
+      const options = form.options
+        .map((o) => o.trim())
+        .filter((o, i) => o || form.kind === "fill_blank" || i < 2);
       const accepted = form.accepted_answers
         .split("\n")
         .map((a) => a.trim())
         .filter(Boolean);
-      const pairs = form.pairs.map((p) => ({ left: p.left.trim(), right: p.right.trim() })).filter((p) => p.left && p.right);
+      const pairs = form.pairs
+        .map((p) => ({ left: p.left.trim(), right: p.right.trim() }))
+        .filter((p) => p.left && p.right);
 
       if (form.question.trim().length < 5) throw new Error("Nội dung câu hỏi quá ngắn.");
-      if (form.kind === "fill_blank" && accepted.length === 0) throw new Error("Cần ít nhất một đáp án được chấp nhận.");
-      if (form.kind === "matching" && pairs.length < 2) throw new Error("Câu nối cặp cần ít nhất 2 cặp.");
+      if (form.kind === "fill_blank" && accepted.length === 0)
+        throw new Error("Cần ít nhất một đáp án được chấp nhận.");
+      if (form.kind === "matching" && pairs.length < 2)
+        throw new Error("Câu nối cặp cần ít nhất 2 cặp.");
       if (["single", "true_false", "multi", "ordering"].includes(form.kind)) {
-        if (options.length < 2 || options.some((o) => !o)) throw new Error("Vui lòng nhập đủ nội dung các phương án.");
+        if (options.length < 2 || options.some((o) => !o))
+          throw new Error("Vui lòng nhập đủ nội dung các phương án.");
       }
-      if (form.kind === "multi" && form.correct_indices.length === 0) throw new Error("Chọn ít nhất một đáp án đúng.");
+      if (form.kind === "multi" && form.correct_indices.length === 0)
+        throw new Error("Chọn ít nhất một đáp án đúng.");
 
       const payload = {
         quiz_id: quizId,
@@ -185,6 +220,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         kind: form.kind,
         difficulty: form.difficulty,
         points: Number(form.points) || 1,
+        order_index: Math.max(0, Number(form.order_index) || 0),
         tags: form.tags
           .split(",")
           .map((t) => t.trim())
@@ -238,7 +274,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       const rows = questions.filter((q) => ids.includes(q.id));
       const { error } = await supabase.from("questions").delete().in("id", ids);
       if (error) throw error;
-      await Promise.all(rows.filter((r) => r.image_url).map((r) => removeQuestionImage(r.image_url!)));
+      await Promise.all(
+        rows.filter((r) => r.image_url).map((r) => removeQuestionImage(r.image_url!)),
+      );
       await logAudit({
         action: "delete",
         entity: "question",
@@ -259,7 +297,10 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const bulkDifficulty = useMutation({
     mutationFn: async (value: Difficulty) => {
       const ids = [...selected];
-      const { error } = await supabase.from("questions").update({ difficulty: value }).in("id", ids);
+      const { error } = await supabase
+        .from("questions")
+        .update({ difficulty: value })
+        .in("id", ids);
       if (error) throw error;
       await logAudit({
         action: "update",
@@ -277,8 +318,6 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-
-
   const importFile = useMutation({
     mutationFn: async (file: File) => {
       const XLSX = await import("xlsx");
@@ -289,7 +328,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       const body = rows.filter((r) => r.length >= 6 && String(r[0]).trim());
       const start = /câu hỏi|question/i.test(String(body[0]?.[0] ?? "")) ? 1 : 0;
       const payload = body.slice(start).map((r) => {
-        const answer = String(r[5] ?? "A").trim().toUpperCase();
+        const answer = String(r[5] ?? "A")
+          .trim()
+          .toUpperCase();
         const idx = ["A", "B", "C", "D"].indexOf(answer);
         return {
           quiz_id: quizId,
@@ -320,7 +361,11 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     const XLSX = await import("xlsx");
     const rows = [
       ["Câu hỏi", "Phương án A", "Phương án B", "Phương án C", "Phương án D", "Đáp án"],
-      ...questions.map((q) => [...[q.question], ...q.options, String.fromCharCode(65 + q.correct_index)]),
+      ...questions.map((q) => [
+        ...[q.question],
+        ...q.options,
+        String.fromCharCode(65 + q.correct_index),
+      ]),
     ];
     const ws = XLSX.utils.aoa_to_sheet(rows);
     const wb = XLSX.utils.book_new();
@@ -328,12 +373,17 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     XLSX.writeFile(wb, "ngan-hang-cau-hoi.xlsx");
   }
 
-  const existingKeys = useMemo(() => new Set(questions.map((q) => normalizeKey(q.question))), [questions]);
+  const existingKeys = useMemo(
+    () => new Set(questions.map((q) => normalizeKey(q.question))),
+    [questions],
+  );
 
   type CsvQuestion = { question: string; options: string[]; correct_index: number };
 
   async function importCsv(rows: CsvQuestion[]) {
-    const { error } = await supabase.from("questions").insert(rows.map((r) => ({ ...r, quiz_id: quizId })));
+    const { error } = await supabase
+      .from("questions")
+      .insert(rows.map((r) => ({ ...r, quiz_id: quizId })));
     if (error) {
       toast.error(error.message);
       return;
@@ -367,7 +417,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   useEffect(() => {
     if (!open || !canEdit) return;
     function onPaste(e: ClipboardEvent) {
-      const item = Array.from(e.clipboardData?.items ?? []).find((i) => i.type.startsWith("image/"));
+      const item = Array.from(e.clipboardData?.items ?? []).find((i) =>
+        i.type.startsWith("image/"),
+      );
       const file = item?.getAsFile();
       if (!file) return;
       e.preventDefault();
@@ -377,7 +429,6 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     return () => window.removeEventListener("paste", onPaste);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, canEdit, quizId]);
-
 
   function openCreate() {
     setEditing(null);
@@ -397,6 +448,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       kind: q.kind ?? "single",
       difficulty: q.difficulty ?? "medium",
       points: q.points ?? 1,
+      order_index: q.order_index ?? 0,
       tags: (q.tags ?? []).join(", "),
       explanation: q.explanation ?? "",
       image_url: q.image_url,
@@ -404,10 +456,8 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     setOpen(true);
   }
 
-
   return (
     <div className="space-y-4">
-
       <AdminSection
         title="Ngân hàng câu hỏi"
         description={isLoading ? "Đang tải..." : `${filtered.length} / ${questions.length} câu hỏi`}
@@ -458,11 +508,22 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
               title="Nhập câu hỏi từ CSV"
               description="Cột bắt buộc: cau_hoi, phuong_an_a…d, dap_an (A/B/C/D). Hệ thống kiểm tra định dạng và bỏ qua câu hỏi trùng."
               templateFileName="mau-cau-hoi.csv"
-              templateHeaders={["cau_hoi", "phuong_an_a", "phuong_an_b", "phuong_an_c", "phuong_an_d", "dap_an"]}
-              templateSample={[["Sân bay Đà Nẵng có mã ICAO là gì?", "VVDN", "VVNB", "VVTS", "VVCR", "A"]]}
+              templateHeaders={[
+                "cau_hoi",
+                "phuong_an_a",
+                "phuong_an_b",
+                "phuong_an_c",
+                "phuong_an_d",
+                "dap_an",
+              ]}
+              templateSample={[
+                ["Sân bay Đà Nẵng có mã ICAO là gì?", "VVDN", "VVNB", "VVTS", "VVCR", "A"],
+              ]}
               existingKeys={existingKeys}
               keyOf={(v) => v.question}
-              renderPreview={(v) => `${v.question} — Đáp án ${String.fromCharCode(65 + v.correct_index)}`}
+              renderPreview={(v) =>
+                `${v.question} — Đáp án ${String.fromCharCode(65 + v.correct_index)}`
+              }
               disabled={!quizId || !canEdit}
               mapRow={(row) => {
                 const question = (row["cau_hoi"] ?? row["question"] ?? "").trim();
@@ -470,13 +531,16 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                   (row[`phuong_an_${k}`] ?? row[`option_${k}`] ?? row[k] ?? "").trim(),
                 );
                 const answer = (row["dap_an"] ?? row["answer"] ?? "").trim().toUpperCase();
-                if (question.length < 5) return { ok: false as const, message: "Nội dung câu hỏi quá ngắn." };
-                if (options.some((o) => !o)) return { ok: false as const, message: "Thiếu phương án trả lời." };
+                if (question.length < 5)
+                  return { ok: false as const, message: "Nội dung câu hỏi quá ngắn." };
+                if (options.some((o) => !o))
+                  return { ok: false as const, message: "Thiếu phương án trả lời." };
                 if (new Set(options.map((o) => o.toLowerCase())).size !== 4)
                   return { ok: false as const, message: "Các phương án bị trùng nhau." };
                 let idx = ["A", "B", "C", "D"].indexOf(answer);
                 if (idx < 0 && /^[1-4]$/.test(answer)) idx = Number(answer) - 1;
-                if (idx < 0) return { ok: false as const, message: "Đáp án phải là A, B, C hoặc D." };
+                if (idx < 0)
+                  return { ok: false as const, message: "Đáp án phải là A, B, C hoặc D." };
                 return { ok: true as const, value: { question, options, correct_index: idx } };
               }}
               onImport={importCsv}
@@ -500,7 +564,12 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
             >
               <Upload className="size-4" /> Nhập Excel
             </Button>
-            <Button variant="outline" className="rounded-full" onClick={exportExcel} disabled={!questions.length}>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={exportExcel}
+              disabled={!questions.length}
+            >
               <Download className="size-4" /> Xuất
             </Button>
             <Button className="rounded-full" onClick={openCreate} disabled={!quizId || !canEdit}>
@@ -535,7 +604,11 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                 title="Ngân hàng câu hỏi đang trống"
                 description="Thêm thủ công từng câu hoặc nhập hàng loạt từ tệp Excel."
                 action={
-                  <Button className="rounded-full" onClick={openCreate} disabled={!quizId || !canEdit}>
+                  <Button
+                    className="rounded-full"
+                    onClick={openCreate}
+                    disabled={!quizId || !canEdit}
+                  >
                     <Plus className="size-4" /> Thêm câu hỏi
                   </Button>
                 }
@@ -548,7 +621,11 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
             {canEdit ? (
               <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-2.5">
                 <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-                  <Checkbox checked={allOnPageSelected} onCheckedChange={togglePage} aria-label="Chọn cả trang" />
+                  <Checkbox
+                    checked={allOnPageSelected}
+                    onCheckedChange={togglePage}
+                    aria-label="Chọn cả trang"
+                  />
                   Chọn cả trang
                 </label>
                 {selected.size > 0 ? (
@@ -582,7 +659,12 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                       )}
                       Xoá đã chọn
                     </Button>
-                    <Button size="sm" variant="ghost" className="rounded-full" onClick={() => setSelected(new Set())}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-full"
+                      onClick={() => setSelected(new Set())}
+                    >
                       Bỏ chọn
                     </Button>
                   </>
@@ -609,7 +691,12 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                     </p>
                   </div>
                   <div className={cn("flex shrink-0 gap-1", !canEdit && "hidden")}>
-                    <Button size="icon" variant="ghost" aria-label="Sửa" onClick={() => openEdit(q)}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Sửa"
+                      onClick={() => openEdit(q)}
+                    >
                       <Pencil className="size-4" />
                     </Button>
                     <Button
@@ -680,11 +767,8 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
               </div>
             ) : null}
           </div>
-
         </QueryState>
       </AdminSection>
-
-
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="overflow-y-auto">
@@ -724,7 +808,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
               ) : (
                 <div
                   onPaste={(e) => {
-                    const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith("image/"));
+                    const item = Array.from(e.clipboardData.items).find((i) =>
+                      i.type.startsWith("image/"),
+                    );
                     const file = item?.getAsFile();
                     if (!file) return;
                     e.preventDefault();
@@ -739,16 +825,25 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                     disabled={uploading}
                     onClick={() => imageRef.current?.click()}
                   >
-                    {uploading ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
+                    {uploading ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <ImagePlus className="size-4" />
+                    )}
                     {uploading ? "Đang nén và tải lên..." : "Chọn ảnh"}
                   </Button>
                   <p className="type-meta">
-                    Hoặc <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[10px]">Ctrl/⌘ + V</kbd> để
-                    dán ảnh chụp màn hình trực tiếp từ clipboard.
+                    Hoặc{" "}
+                    <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[10px]">
+                      Ctrl/⌘ + V
+                    </kbd>{" "}
+                    để dán ảnh chụp màn hình trực tiếp từ clipboard.
                   </p>
                 </div>
               )}
-              <p className="type-meta">Ảnh được tự động nén về WebP, cạnh dài tối đa 1280px để tiết kiệm dung lượng.</p>
+              <p className="type-meta">
+                Ảnh được tự động nén về WebP, cạnh dài tối đa 1280px để tiết kiệm dung lượng.
+              </p>
               <input
                 ref={imageRef}
                 type="file"
@@ -760,7 +855,6 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                   if (file) void attachImage(file);
                 }}
               />
-
             </div>
             {/* Thuộc tính câu hỏi */}
             <div className="grid gap-3 sm:grid-cols-3">
@@ -798,7 +892,10 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
               </div>
               <div className="space-y-2">
                 <Label>Độ khó</Label>
-                <Select value={form.difficulty} onValueChange={(v) => setForm({ ...form, difficulty: v as Difficulty })}>
+                <Select
+                  value={form.difficulty}
+                  onValueChange={(v) => setForm({ ...form, difficulty: v as Difficulty })}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -819,6 +916,18 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                   value={form.points}
                   onChange={(e) => setForm({ ...form, points: Number(e.target.value) })}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Số thứ tự</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.order_index}
+                  onChange={(e) => setForm({ ...form, order_index: Number(e.target.value) })}
+                />
+                <p className="type-meta">
+                  Dùng khi cuộc thi tắt &quot;Xáo trộn câu hỏi&quot;: số nhỏ hiện trước.
+                </p>
               </div>
             </div>
 
@@ -862,7 +971,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                       variant="ghost"
                       size="icon"
                       aria-label="Xoá cặp"
-                      onClick={() => setForm({ ...form, pairs: form.pairs.filter((_, j) => j !== i) })}
+                      onClick={() =>
+                        setForm({ ...form, pairs: form.pairs.filter((_, j) => j !== i) })
+                      }
                     >
                       <X className="size-4" />
                     </Button>
@@ -872,7 +983,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                   variant="outline"
                   size="sm"
                   className="rounded-full"
-                  onClick={() => setForm({ ...form, pairs: [...form.pairs, { left: "", right: "" }] })}
+                  onClick={() =>
+                    setForm({ ...form, pairs: [...form.pairs, { left: "", right: "" }] })
+                  }
                 >
                   <Plus className="size-4" /> Thêm cặp
                 </Button>
@@ -906,7 +1019,11 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                         }
                         className={cn(
                           "flex size-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors",
-                          (form.kind === "multi" ? form.correct_indices.includes(i) : form.correct_index === i)
+                          (
+                            form.kind === "multi"
+                              ? form.correct_indices.includes(i)
+                              : form.correct_index === i
+                          )
                             ? "border-success bg-success text-success-foreground"
                             : "border-border bg-secondary text-muted-foreground",
                         )}
@@ -916,7 +1033,11 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                     )}
                     <Input
                       value={o}
-                      placeholder={form.kind === "ordering" ? `Mục ${i + 1}` : `Phương án ${String.fromCharCode(65 + i)}`}
+                      placeholder={
+                        form.kind === "ordering"
+                          ? `Mục ${i + 1}`
+                          : `Phương án ${String.fromCharCode(65 + i)}`
+                      }
                       onChange={(e) => {
                         const next = [...form.options];
                         next[i] = e.target.value;
@@ -928,7 +1049,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                         variant="ghost"
                         size="icon"
                         aria-label="Xoá phương án"
-                        onClick={() => setForm({ ...form, options: form.options.filter((_, j) => j !== i) })}
+                        onClick={() =>
+                          setForm({ ...form, options: form.options.filter((_, j) => j !== i) })
+                        }
                       >
                         <X className="size-4" />
                       </Button>
@@ -959,10 +1082,13 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
               </div>
               <div className="space-y-2">
                 <Label>Giải thích đáp án (hiện khi xem lại)</Label>
-                <Textarea rows={2} value={form.explanation} onChange={(e) => setForm({ ...form, explanation: e.target.value })} />
+                <Textarea
+                  rows={2}
+                  value={form.explanation}
+                  onChange={(e) => setForm({ ...form, explanation: e.target.value })}
+                />
               </div>
             </div>
-
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
