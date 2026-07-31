@@ -432,9 +432,7 @@ export async function submitExamSession(input: {
   const late = lateness(new Date().toISOString(), session.expires_at);
   const lateSubmit = !replay && late.expired && !late.withinGrace;
   const answersToGrade =
-    replay || lateSubmit
-      ? (savedAnswers ?? input.answers)
-      : { ...savedAnswers, ...input.answers };
+    replay || lateSubmit ? (savedAnswers ?? input.answers) : { ...savedAnswers, ...input.answers };
 
   // Tải song song để rút ngắn thời gian chấm bài.
   const [quizRes, rowsRes, historyRes, existingRes] = await Promise.all([

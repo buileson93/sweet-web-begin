@@ -40,7 +40,13 @@ import { useQuery } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeResults } from "@/hooks/useRealtimeResults";
-import { abandonExam, checkAnswer, requestFiftyFifty, startExam, submitExam } from "@/lib/exam.functions";
+import {
+  abandonExam,
+  checkAnswer,
+  requestFiftyFifty,
+  startExam,
+  submitExam,
+} from "@/lib/exam.functions";
 import type { StartExamResult, SubmitExamResult } from "@/lib/exam.server";
 import { EXAM_CURRENT_KEY, examKey, readExamEntry, restoreExamSession } from "@/lib/examSession";
 
@@ -49,15 +55,20 @@ import { formatSeconds } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Celebration } from "@/components/Celebration";
 
-
 export const Route = createFileRoute("/thi")({
   ssr: false,
   head: () => ({
     meta: [
       { title: "Phòng thi trực tuyến | Hội thi trắc nghiệm" },
-      { name: "description", content: "Màn hình làm bài thi trắc nghiệm có tính giờ và chấm điểm tự động." },
+      {
+        name: "description",
+        content: "Màn hình làm bài thi trắc nghiệm có tính giờ và chấm điểm tự động.",
+      },
       { property: "og:title", content: "Phòng thi trực tuyến" },
-      { property: "og:description", content: "Làm bài thi trắc nghiệm có tính giờ, nộp bài và nhận điểm ngay." },
+      {
+        property: "og:description",
+        content: "Làm bài thi trắc nghiệm có tính giờ, nộp bài và nhận điểm ngay.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -79,7 +90,9 @@ function ExamErrorScreen({ error }: { error: unknown }) {
         <p className="type-muted mt-2">
           Dữ liệu lượt thi không hợp lệ hoặc đã hết hạn. Bạn có thể bắt đầu lại một lượt thi mới.
         </p>
-        <p className="type-meta mt-3 line-clamp-3 rounded-xl bg-secondary px-3 py-2 text-left">{message}</p>
+        <p className="type-meta mt-3 line-clamp-3 rounded-xl bg-secondary px-3 py-2 text-left">
+          {message}
+        </p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Button
             className="rounded-full"
@@ -94,7 +107,11 @@ function ExamErrorScreen({ error }: { error: unknown }) {
           >
             <RefreshCw className="size-4" /> Bắt đầu lượt thi mới
           </Button>
-          <Button variant="outline" className="rounded-full" onClick={() => window.location.reload()}>
+          <Button
+            variant="outline"
+            className="rounded-full"
+            onClick={() => window.location.reload()}
+          >
             Tải lại trang
           </Button>
         </div>
@@ -103,18 +120,19 @@ function ExamErrorScreen({ error }: { error: unknown }) {
   );
 }
 
-
 /** Các bước giới thiệu nhanh giao diện phòng thi cho người thi lần đầu. */
 const EXAM_TOUR_STEPS: TourStep[] = [
   {
     target: "exam-question",
     title: "Nội dung câu hỏi",
-    description: "Đề bài và hình minh hoạ (nếu có) hiển thị tại đây. Câu hỏi được trộn ngẫu nhiên cho mỗi lượt thi.",
+    description:
+      "Đề bài và hình minh hoạ (nếu có) hiển thị tại đây. Câu hỏi được trộn ngẫu nhiên cho mỗi lượt thi.",
   },
   {
     target: "exam-options",
     title: "Chọn đáp án",
-    description: "Bấm vào một phương án để chọn. Bạn có thể đổi đáp án bất cứ lúc nào trước khi nộp bài.",
+    description:
+      "Bấm vào một phương án để chọn. Bạn có thể đổi đáp án bất cứ lúc nào trước khi nộp bài.",
   },
   {
     target: "exam-nav",
@@ -151,17 +169,20 @@ function ExamPage() {
   const [sending, setSending] = useState(false);
   const [retaking, setRetaking] = useState(false);
   const submittedRef = useRef(false);
+  /** Hết giờ: chỉ cho phép gọi nộp bài TỰ ĐỘNG đúng một lần, kể cả khi lần gọi trước lỗi. */
+  const timeUpRef = useRef(false);
+  const [timeUp, setTimeUp] = useState(false);
 
   useEffect(() => {
-    const restored = restoreExamSession(typeof window === "undefined" ? null : window.sessionStorage);
+    const restored = restoreExamSession(
+      typeof window === "undefined" ? null : window.sessionStorage,
+    );
     if (!restored) {
       navigate({ to: "/" });
       return;
     }
     setSession(restored);
   }, [navigate]);
-
-
 
   const finish = useCallback(
     async (opts?: { disqualified?: boolean; reason?: string }) => {
@@ -201,7 +222,10 @@ function ExamPage() {
     const tick = () => {
       const left = Math.max(0, Math.round((end - (Date.now() + offset)) / 1000));
       setRemaining(left);
-      if (left === 0 && !submittedRef.current) {
+      if (left === 0 && !timeUpRef.current && !submittedRef.current) {
+        // Chống gọi lặp: mỗi phiên chỉ tự động nộp một lần duy nhất.
+        timeUpRef.current = true;
+        setTimeUp(true);
         toast.warning("Hết giờ! Hệ thống tự động nộp bài.");
         void finish();
       }
@@ -237,7 +261,10 @@ function ExamPage() {
     };
     const block = (e: Event) => e.preventDefault();
     const blockKeys = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && ["c", "v", "x", "p", "s", "u"].includes(e.key.toLowerCase())) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        ["c", "v", "x", "p", "s", "u"].includes(e.key.toLowerCase())
+      ) {
         e.preventDefault();
       }
     };
@@ -270,7 +297,10 @@ function ExamPage() {
   }, [session, result]);
 
   const answeredCount = useMemo(
-    () => (session ? session.questions.filter((q, i) => isAnswered(q.kind, answers[String(i)])).length : 0),
+    () =>
+      session
+        ? session.questions.filter((q, i) => isAnswered(q.kind, answers[String(i)])).length
+        : 0,
     [answers, session],
   );
 
@@ -279,7 +309,9 @@ function ExamPage() {
     if (!session) return;
     setFiftyBusy(true);
     try {
-      const res = await runFifty({ data: { sessionId: session.sessionId, submitToken: session.submitToken, index: current } });
+      const res = await runFifty({
+        data: { sessionId: session.sessionId, submitToken: session.submitToken, index: current },
+      });
       setFifty((f) => ({ ...f, [String(current)]: res.removed }));
       toast.success("Đã loại 2 phương án sai.");
     } catch (error) {
@@ -300,7 +332,12 @@ function ExamPage() {
       if (!instant || !session) return;
       try {
         const res = await runCheck({
-          data: { sessionId: session.sessionId, submitToken: session.submitToken, index: idx, value },
+          data: {
+            sessionId: session.sessionId,
+            submitToken: session.submitToken,
+            index: idx,
+            value,
+          },
         });
         setFeedback((f) => ({ ...f, [String(idx)]: res.correct ? "correct" : "wrong" }));
         setCombo((c) => {
@@ -324,7 +361,9 @@ function ExamPage() {
     if (session) {
       submittedRef.current = true;
       try {
-        await runAbandon({ data: { sessionId: session.sessionId, submitToken: session.submitToken } });
+        await runAbandon({
+          data: { sessionId: session.sessionId, submitToken: session.submitToken },
+        });
       } catch {
         /* bỏ qua - vẫn cho thoát */
       }
@@ -373,7 +412,6 @@ function ExamPage() {
   }, [navigate, runStart]);
 
   if (result) return <ResultView result={result} onRetake={retake} retaking={retaking} />;
-
 
   if (!session) {
     return (
@@ -438,10 +476,15 @@ function ExamPage() {
         <Progress value={progress} className="h-1 rounded-none bg-primary-foreground/15" />
       </header>
 
-
       <ProductTour steps={EXAM_TOUR_STEPS} storageKey="tour:seen:exam:v1" />
 
       <main className="mx-auto max-w-5xl px-3 py-4 sm:px-4 lg:py-6">
+        {timeUp && (
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+            <AlertTriangle className="size-4 shrink-0" />
+            Đã hết giờ, hệ thống đang nộp bài
+          </div>
+        )}
         {violations > 0 && (
           <div className="mb-3 flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
             <AlertTriangle className="size-4 shrink-0" />
@@ -450,12 +493,18 @@ function ExamPage() {
         )}
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_200px]">
-          <section className="card-elevated animate-rise rounded-2xl p-4 sm:p-6" key={current} data-tour="exam-question">
+          <section
+            className="card-elevated animate-rise rounded-2xl p-4 sm:p-6"
+            key={current}
+            data-tour="exam-question"
+          >
             <div className="flex flex-wrap items-center gap-2">
               <p className="type-eyebrow text-accent">
                 Câu {current + 1} / {total}
               </p>
-              <span className="type-meta rounded-full bg-secondary px-2 py-0.5 font-semibold">{KIND_LABEL[q.kind]}</span>
+              <span className="type-meta rounded-full bg-secondary px-2 py-0.5 font-semibold">
+                {KIND_LABEL[q.kind]}
+              </span>
               <span className="type-meta rounded-full bg-accent/10 px-2 py-0.5 font-semibold text-accent">
                 {q.points} điểm
               </span>
@@ -497,7 +546,6 @@ function ExamPage() {
               </p>
             ) : null}
 
-
             {/* Vật phẩm trợ giúp */}
             {session.settings.allowFiftyFifty || session.settings.allowSkip ? (
               <div className="mt-4 flex flex-wrap gap-2">
@@ -533,10 +581,13 @@ function ExamPage() {
               </div>
             ) : null}
 
-
             {/* Điều hướng cho desktop — mobile dùng thanh cố định dưới màn hình */}
             <div className="mt-6 hidden items-center justify-between gap-3 lg:flex">
-              <Button variant="outline" disabled={current === 0} onClick={() => setCurrent((c) => c - 1)}>
+              <Button
+                variant="outline"
+                disabled={current === 0}
+                onClick={() => setCurrent((c) => c - 1)}
+              >
                 <ArrowLeft className="size-4" />
                 Câu trước
               </Button>
@@ -595,7 +646,11 @@ function ExamPage() {
               })}
             </div>
 
-            <Button className="mt-3 hidden w-full lg:flex" variant="secondary" onClick={() => setConfirmOpen(true)}>
+            <Button
+              className="mt-3 hidden w-full lg:flex"
+              variant="secondary"
+              onClick={() => setConfirmOpen(true)}
+            >
               <Send className="size-4" />
               Nộp bài
             </Button>
@@ -643,8 +698,8 @@ function ExamPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận nộp bài?</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn đã trả lời {answeredCount}/{total} câu. Sau khi nộp sẽ không thể chỉnh sửa, nhưng bạn luôn có thể thi
-              lại để cải thiện điểm số.
+              Bạn đã trả lời {answeredCount}/{total} câu. Sau khi nộp sẽ không thể chỉnh sửa, nhưng
+              bạn luôn có thể thi lại để cải thiện điểm số.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -662,7 +717,8 @@ function ExamPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Thoát bài thi?</AlertDialogTitle>
             <AlertDialogDescription>
-              Lượt thi này sẽ bị huỷ và không được tính điểm. Bạn có thể bắt đầu lượt thi mới bất cứ lúc nào.
+              Lượt thi này sẽ bị huỷ và không được tính điểm. Bạn có thể bắt đầu lượt thi mới bất cứ
+              lúc nào.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -684,7 +740,10 @@ function LiveRank({ result }: { result: SubmitExamResult }) {
     queryKey,
     staleTime: 10_000,
     queryFn: async () => {
-      const base = supabase.from("results").select("id", { count: "exact", head: true }).eq("disqualified", false);
+      const base = supabase
+        .from("results")
+        .select("id", { count: "exact", head: true })
+        .eq("disqualified", false);
       const [total, better] = await Promise.all([
         base.eq("quiz_id", result.quizId),
         supabase
@@ -692,7 +751,9 @@ function LiveRank({ result }: { result: SubmitExamResult }) {
           .select("id", { count: "exact", head: true })
           .eq("disqualified", false)
           .eq("quiz_id", result.quizId)
-          .or(`score.gt.${result.score},and(score.eq.${result.score},time_seconds.lt.${result.timeSeconds})`),
+          .or(
+            `score.gt.${result.score},and(score.eq.${result.score},time_seconds.lt.${result.timeSeconds})`,
+          ),
       ]);
       return { total: total.count ?? 0, rank: (better.count ?? 0) + 1 };
     },
@@ -704,7 +765,9 @@ function LiveRank({ result }: { result: SubmitExamResult }) {
       aria-live="polite"
     >
       {live ? <Radio className="size-3.5 text-success" /> : null}
-      {rankQuery.data ? `Hạng ${rankQuery.data.rank}/${rankQuery.data.total}` : "Đang tính thứ hạng..."}
+      {rankQuery.data
+        ? `Hạng ${rankQuery.data.rank}/${rankQuery.data.total}`
+        : "Đang tính thứ hạng..."}
     </p>
   );
 }
@@ -735,7 +798,11 @@ function ResultView({
           <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
             <div className="min-w-0">
               <h1 className="type-h2 text-primary-foreground">
-                {result.disqualified ? "Bài thi bị huỷ" : result.passed ? "Chúc mừng, bạn đã ĐẠT!" : "Chưa đạt yêu cầu"}
+                {result.disqualified
+                  ? "Bài thi bị huỷ"
+                  : result.passed
+                    ? "Chúc mừng, bạn đã ĐẠT!"
+                    : "Chưa đạt yêu cầu"}
               </h1>
               <p
                 className={cn(
@@ -783,14 +850,26 @@ function ResultView({
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-2">
-            <Button className="h-10 flex-1 rounded-xl sm:flex-none" onClick={onRetake} disabled={retaking}>
-              {retaking ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+            <Button
+              className="h-10 flex-1 rounded-xl sm:flex-none"
+              onClick={onRetake}
+              disabled={retaking}
+            >
+              {retaking ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <RefreshCw className="size-4" />
+              )}
               {result.passed ? "Thi lại để lên điểm" : "Thi lại ngay"}
             </Button>
             <Button asChild variant="secondary" className="h-10 flex-1 rounded-xl sm:flex-none">
               <a href="/bang-xep-hang">Bảng xếp hạng</a>
             </Button>
-            <Button asChild variant="outline" className="h-10 rounded-xl border-primary-foreground/30 bg-transparent">
+            <Button
+              asChild
+              variant="outline"
+              className="h-10 rounded-xl border-primary-foreground/30 bg-transparent"
+            >
               <a href="/lich-su">Lịch sử làm bài</a>
             </Button>
             {!result.disqualified && result.passed ? <LiveRank result={result} /> : null}
@@ -803,10 +882,17 @@ function ResultView({
           <div className="min-w-0">
             <h2 className="type-h3">Xem lại đáp án</h2>
             <p className="type-meta">
-              {wrong.length > 0 ? `${wrong.length} câu cần ôn lại` : "Bạn trả lời đúng tất cả các câu."}
+              {wrong.length > 0
+                ? `${wrong.length} câu cần ôn lại`
+                : "Bạn trả lời đúng tất cả các câu."}
             </p>
           </div>
-          <Button variant="outline" size="sm" className="shrink-0 rounded-full" onClick={() => setShowAll((v) => !v)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 rounded-full"
+            onClick={() => setShowAll((v) => !v)}
+          >
             {showAll ? "Chỉ câu sai" : "Xem tất cả"}
           </Button>
         </div>
@@ -825,7 +911,9 @@ function ResultView({
                   <p className="min-w-0 text-sm font-semibold leading-relaxed">
                     Câu {number}. {item.question}
                   </p>
-                  <span className="type-meta shrink-0 rounded-full bg-secondary px-2 py-0.5">{KIND_LABEL[item.kind]}</span>
+                  <span className="type-meta shrink-0 rounded-full bg-secondary px-2 py-0.5">
+                    {KIND_LABEL[item.kind]}
+                  </span>
                 </div>
                 {questionImageSrc(item.imageUrl) ? (
                   <img
@@ -839,7 +927,9 @@ function ResultView({
                   <p
                     className={cn(
                       "rounded-lg border px-3 py-1.5",
-                      item.correct ? "border-success/50 bg-success/10 text-success" : "border-destructive/50 bg-destructive/10 text-destructive",
+                      item.correct
+                        ? "border-success/50 bg-success/10 text-success"
+                        : "border-destructive/50 bg-destructive/10 text-destructive",
                     )}
                   >
                     <span className="font-semibold">Bạn trả lời: </span>
@@ -871,4 +961,3 @@ function ResultView({
     </div>
   );
 }
-
