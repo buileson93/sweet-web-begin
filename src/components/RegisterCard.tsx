@@ -321,12 +321,16 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                   {quizzes.map((q) => {
                     const st = quizStatus(q);
                     return (
-                      <SelectItem key={q.id} value={q.id} disabled={st !== "open"}>
-                        {q.title} — {statusLabel[st]}
+                      <SelectItem key={q.id} value={q.id} disabled={st !== "open"} className="py-2.5">
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="truncate font-semibold">{q.title}</span>
+                          <QuizStatusBadge status={st} />
+                        </span>
                       </SelectItem>
                     );
                   })}
                 </SelectContent>
+
               </Select>
             )}
             {selected && selectedStatus !== "open" && (
