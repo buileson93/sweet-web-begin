@@ -58,10 +58,10 @@ describe("restoreExamSession", () => {
   });
 
   it("bổ sung các trường settings còn thiếu và giữ giá trị đã có", () => {
-    const raw = JSON.stringify({ ...baseSession, settings: { instantFeedback: true, passScore: 80 } });
+    const raw = JSON.stringify({ ...baseSession, settings: { instantFeedback: true, passPercent: 80 } });
     const s = restoreExamSession(makeStorage({ [EXAM_CURRENT_KEY]: "s1", [examKey("s1")]: raw }));
     expect(s!.settings.instantFeedback).toBe(true);
-    expect(s!.settings.passScore).toBe(80);
+    expect(s!.settings.passPercent).toBe(80);
     expect(s!.settings.showQuestionMap).toBe(true);
     expect(s!.settings.allowSkip).toBe(false);
   });

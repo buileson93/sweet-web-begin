@@ -11,7 +11,7 @@ export const DEFAULT_EXAM_SETTINGS: ExamSettings = {
   allowSkip: false,
   streakBonus: false,
   showQuestionMap: true,
-  passScore: 50,
+  passPercent: 50,
 };
 
 type StorageLike = Pick<Storage, "getItem" | "removeItem">;
@@ -21,7 +21,9 @@ type StorageLike = Pick<Storage, "getItem" | "removeItem">;
  * Trả về null khi thiếu dữ liệu, JSON hỏng, hoặc thiếu câu hỏi —
  * nhờ đó trang thi luôn render được thay vì trắng màn hình.
  */
-export function restoreExamSession(storage: StorageLike | undefined | null): StartExamResult | null {
+export function restoreExamSession(
+  storage: StorageLike | undefined | null,
+): StartExamResult | null {
   if (!storage) return null;
   let raw: string | null = null;
   try {
@@ -60,7 +62,10 @@ export type ExamEntry = {
   extraCredential?: string;
 };
 
-export function saveExamEntry(storage: Pick<Storage, "setItem"> | undefined | null, entry: ExamEntry) {
+export function saveExamEntry(
+  storage: Pick<Storage, "setItem"> | undefined | null,
+  entry: ExamEntry,
+) {
   if (!storage) return;
   try {
     storage.setItem(EXAM_LAST_ENTRY_KEY, JSON.stringify(entry));
@@ -69,7 +74,9 @@ export function saveExamEntry(storage: Pick<Storage, "setItem"> | undefined | nu
   }
 }
 
-export function readExamEntry(storage: Pick<Storage, "getItem"> | undefined | null): ExamEntry | null {
+export function readExamEntry(
+  storage: Pick<Storage, "getItem"> | undefined | null,
+): ExamEntry | null {
   if (!storage) return null;
   try {
     const raw = storage.getItem(EXAM_LAST_ENTRY_KEY);
