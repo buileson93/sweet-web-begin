@@ -1385,3 +1385,122 @@
     animation: none;
   }
 }
+
+/* ================= Hiệu ứng combo (Audition style) ================= */
+/* Rung màn hình — mỗi cấp combo một kiểu rung riêng, biên độ --fx-amp tăng dần. */
+body.fx-shaking {
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.fx-shaking { animation: none !important; }
+}
+
+@keyframes fx-tilt {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(calc(var(--fx-amp, 2px) * 0.12deg)); }
+  75% { transform: rotate(calc(var(--fx-amp, 2px) * -0.12deg)); }
+}
+.fx-shake-tilt { animation: fx-tilt 0.7s ease-in-out; }
+
+@keyframes fx-jitter {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  20% { transform: translate3d(calc(var(--fx-amp) * -1), 0, 0); }
+  40% { transform: translate3d(var(--fx-amp), 0, 0); }
+  60% { transform: translate3d(calc(var(--fx-amp) * -0.6), 0, 0); }
+  80% { transform: translate3d(calc(var(--fx-amp) * 0.6), 0, 0); }
+}
+.fx-shake-jitter { animation: fx-jitter 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+@keyframes fx-wave {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(0, calc(var(--fx-amp) * -1), 0) skewX(1deg); }
+  50% { transform: translate3d(0, var(--fx-amp), 0) skewX(-1deg); }
+  75% { transform: translate3d(0, calc(var(--fx-amp) * -0.5), 0); }
+}
+.fx-shake-wave { animation: fx-wave 0.9s ease-in-out; }
+
+@keyframes fx-roll {
+  0%, 100% { transform: rotate(0) scale(1); }
+  30% { transform: rotate(calc(var(--fx-amp) * 0.1deg)) scale(1.012); }
+  60% { transform: rotate(calc(var(--fx-amp) * -0.1deg)) scale(0.992); }
+}
+.fx-shake-roll { animation: fx-roll 0.95s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@keyframes fx-punch {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.03) translate3d(var(--fx-amp), 0, 0); }
+  35% { transform: scale(0.985) translate3d(calc(var(--fx-amp) * -1), 0, 0); }
+  55% { transform: scale(1.015) translate3d(0, calc(var(--fx-amp) * -0.8), 0); }
+  100% { transform: scale(1); }
+}
+.fx-shake-punch { animation: fx-punch 1s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+@keyframes fx-quake {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0); }
+  10% { transform: translate3d(calc(var(--fx-amp) * -1), calc(var(--fx-amp) * 0.4), 0) rotate(-0.6deg); }
+  25% { transform: translate3d(var(--fx-amp), calc(var(--fx-amp) * -0.5), 0) rotate(0.6deg); }
+  45% { transform: translate3d(calc(var(--fx-amp) * -0.8), calc(var(--fx-amp) * -0.3), 0) rotate(-0.4deg); }
+  65% { transform: translate3d(calc(var(--fx-amp) * 0.7), var(--fx-amp), 0) rotate(0.4deg); }
+  85% { transform: translate3d(calc(var(--fx-amp) * -0.4), 0, 0) rotate(-0.2deg); }
+}
+.fx-shake-quake { animation: fx-quake 1.1s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+@keyframes fx-storm {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0) scale(1); filter: saturate(1); }
+  8% { transform: translate3d(var(--fx-amp), calc(var(--fx-amp) * -1), 0) rotate(1deg) scale(1.02); filter: saturate(1.35); }
+  22% { transform: translate3d(calc(var(--fx-amp) * -1), var(--fx-amp), 0) rotate(-1deg) scale(0.985); }
+  38% { transform: translate3d(calc(var(--fx-amp) * 0.9), calc(var(--fx-amp) * 0.6), 0) rotate(0.8deg) scale(1.015); filter: saturate(1.25); }
+  56% { transform: translate3d(calc(var(--fx-amp) * -0.7), calc(var(--fx-amp) * -0.8), 0) rotate(-0.8deg); }
+  74% { transform: translate3d(calc(var(--fx-amp) * 0.5), calc(var(--fx-amp) * -0.4), 0) rotate(0.5deg); }
+  90% { transform: translate3d(calc(var(--fx-amp) * -0.3), 0, 0) rotate(-0.3deg); }
+}
+.fx-shake-storm { animation: fx-storm 1.2s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+/* Kiểu bung chữ combo — mỗi cấp một kiểu riêng. */
+@keyframes fx-pop { 0% { opacity: 0; transform: scale(0.5); } 35% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0; transform: scale(1); } }
+.fx-burst-pop { animation: fx-pop 0.7s ease-out forwards; }
+
+@keyframes fx-slam { 0% { opacity: 0; transform: scale(2.4) rotate(-8deg); } 30% { opacity: 1; transform: scale(1) rotate(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(1.05); } }
+.fx-burst-slam { animation: fx-slam 0.8s cubic-bezier(0.2, 1.4, 0.3, 1) forwards; }
+
+@keyframes fx-flip { 0% { opacity: 0; transform: rotateX(90deg) scale(0.8); } 40% { opacity: 1; transform: rotateX(0) scale(1.12); } 100% { opacity: 0; transform: rotateX(-20deg) scale(1); } }
+.fx-burst-flip { animation: fx-flip 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+@keyframes fx-zoom { 0% { opacity: 0; transform: scale(0.2) rotate(20deg); } 25% { opacity: 1; transform: scale(1.25) rotate(-6deg); } 55% { transform: scale(0.95) rotate(3deg); } 100% { opacity: 0; transform: scale(1.4) rotate(0); } }
+.fx-burst-zoom { animation: fx-zoom 0.95s ease-out forwards; }
+
+@keyframes fx-streak { 0% { opacity: 0; transform: translateX(-60vw) skewX(-18deg); } 30% { opacity: 1; transform: translateX(0) skewX(0); } 75% { opacity: 1; transform: translateX(0) scale(1.08); } 100% { opacity: 0; transform: translateX(45vw) skewX(14deg); } }
+.fx-burst-streak { animation: fx-streak 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes fx-glory { 0% { opacity: 0; transform: translateY(40px) scale(0.7); } 25% { opacity: 1; transform: translateY(-10px) scale(1.2); } 50% { transform: translateY(0) scale(1); } 70% { transform: translateY(-6px) scale(1.08); } 100% { opacity: 0; transform: translateY(-40px) scale(1.15); } }
+.fx-burst-glory { animation: fx-glory 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+@keyframes fx-nova { 0% { opacity: 0; transform: scale(0.4) rotate(-30deg); filter: blur(6px); } 20% { opacity: 1; transform: scale(1.35) rotate(6deg); filter: blur(0); } 40% { transform: scale(0.95) rotate(-4deg); } 60% { transform: scale(1.15) rotate(2deg); } 100% { opacity: 0; transform: scale(1.8) rotate(0); filter: blur(3px); } }
+.fx-burst-nova { animation: fx-nova 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* Hạt biểu tượng bay toả ra. */
+@keyframes fx-fly {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.3) rotate(0); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--fx-dx), var(--fx-dy), 0) scale(var(--fx-scale, 1)) rotate(220deg); }
+}
+.fx-particle { animation: fx-fly 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes fx-halo { 0% { opacity: 0.55; transform: scale(0.3); } 100% { opacity: 0; transform: scale(2.6); } }
+.fx-halo {
+  animation: fx-halo 0.85s ease-out forwards;
+  background: radial-gradient(circle, var(--fx-color) 0%, transparent 70%);
+}
+
+/* ============ Biểu tượng trang trí bay lơ lửng trong phòng thi ============ */
+@keyframes fx-drift-a { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0); } 50% { transform: translate3d(14px, -22px, 0) rotate(8deg); } }
+@keyframes fx-drift-b { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0); } 50% { transform: translate3d(-18px, 16px, 0) rotate(-10deg); } }
+@keyframes fx-drift-c { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.7; } 50% { transform: translate3d(10px, 18px, 0) scale(1.18); opacity: 1; } }
+.fx-drift-1 { animation: fx-drift-a 11s ease-in-out infinite; }
+.fx-drift-2 { animation: fx-drift-b 13s ease-in-out infinite; }
+.fx-drift-3 { animation: fx-drift-c 9s ease-in-out infinite; }
+.fx-drift-4 { animation: fx-drift-a 14s ease-in-out infinite reverse; }
+.fx-drift-5 { animation: fx-drift-b 16s ease-in-out infinite; }
+.fx-drift-6 { animation: fx-drift-c 12s ease-in-out infinite reverse; }
+.fx-drift-7 { animation: fx-drift-a 15s ease-in-out infinite; }
+.fx-drift-8 { animation: fx-drift-b 10s ease-in-out infinite reverse; }
