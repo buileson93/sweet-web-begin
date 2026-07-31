@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Check, Dices, Link2, Loader2, LogOut, RotateCcw, Share2, Swords, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { ClassPicker } from "@/components/arena/ClassPicker";
 import { DuelFighter } from "@/components/arena/DuelFighter";
 import { BattleDice } from "@/components/arena/BattleDice";
 import { ConnectionBadge } from "@/components/arena/ConnectionBadge";
@@ -15,9 +16,18 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PageContainer } from "@/components/ui-kit";
 import { useDuelChannel } from "@/hooks/useDuelChannel";
-import { arenaAnswer, arenaCloseExpiredRound, arenaJoinDuel, arenaLeave, arenaReady, arenaRematch } from "@/lib/arena.functions";
+import {
+  arenaAnswer,
+  arenaChooseClass,
+  arenaCloseExpiredRound,
+  arenaJoinDuel,
+  arenaLeave,
+  arenaReady,
+  arenaRematch,
+} from "@/lib/arena.functions";
 import { getArenaToken } from "@/lib/arena/client";
 import { getDeviceId } from "@/lib/deviceId";
+import { DEFAULT_CLASS, type ClassId } from "@/lib/arena/classes";
 import { skillById, type SkillId } from "@/lib/arena/skills";
 import type { DuelPlayerView, DuelState } from "@/lib/arena/types";
 import type { AnswerValue } from "@/lib/questionKinds";
@@ -66,6 +76,7 @@ function DuelRoom() {
     useDuelChannel({ duelId, token, enabled: !!token && joined });
   const [diagOpen, setDiagOpen] = useState(false);
 
+  const setClass = useServerFn(arenaChooseClass);
   const sendReady = useServerFn(arenaReady);
   const sendAnswer = useServerFn(arenaAnswer);
   const sendLeave = useServerFn(arenaLeave);
@@ -172,6 +183,13 @@ function DuelRoom() {
         <WaitingPanel
           state={state}
           toClientTime={clock.toClientTime}
+          onChooseClass={(id) => {
+            void setClass({ data: { token, duelId, classId: id } })
+              .then(() => refresh(true))
+              .catch((e) =>
+                toast.error(e instanceof Error ? e.message : "Không đổi được lớp chiến binh."),
+              );
+          }}
           onReady={async () => {
             try {
               await sendReady({ data: { token, duelId } });
@@ -288,14 +306,24 @@ function WaitingPanel({
   state,
   me,
   onReady,
+  onChooseClass,
   toClientTime,
 }: {
   state: DuelState;
   toClientTime: (iso: string | null | undefined, fallback?: number) => number;
   me?: DuelPlayerView;
   onReady: () => void;
+  onChooseClass: (id: ClassId) => void;
 }) {
   const [left, setLeft] = useState(0);
+  // 15 giây chọn lớp trước khi vào trận; hết giờ thì chốt lớp đang chọn.
+  const [pick, setPick] = useState(15);
+  const lockedClass = state.status === "countdown" || pick <= 0 || Boolean(me?.ready);
+  useEffect(() => {
+    if (state.status !== "waiting") return;
+    const id = window.setInterval(() => setPick((v) => (v > 0 ? v - 1 : 0)), 1000);
+    return () => window.clearInterval(id);
+  }, [state.status]);
   useEffect(() => {
     if (state.status !== "countdown" || !state.startedAt) return;
     const target = toClientTime(state.startedAt);
@@ -320,6 +348,19 @@ function WaitingPanel({
       <p className="text-sm text-muted-foreground">
         {state.players.length < 2 ? "Đang chờ đối thủ vào phòng…" : "Chờ cả hai bấm sẵn sàng"}
       </p>
+      <div className="w-full max-w-2xl px-3">
+        <p className="mb-2 text-center text-xs text-muted-foreground">
+          {lockedClass
+            ? "Đã chốt lớp chiến binh cho ván này."
+            : `Chọn lớp chiến binh — còn ${pick} giây`}
+        </p>
+        <ClassPicker
+          value={(me?.classId as ClassId | undefined) ?? DEFAULT_CLASS}
+          onChange={onChooseClass}
+          disabled={lockedClass}
+        />
+      </div>
+
       <Button onClick={onReady} disabled={me?.ready} size="lg">
         {me?.ready ? <Check className="mr-2 size-4" /> : null}
         {me?.ready ? "Đã sẵn sàng" : "Sẵn sàng"}

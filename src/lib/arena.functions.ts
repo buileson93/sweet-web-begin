@@ -321,12 +321,24 @@ export const arenaCreateRoom = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const employeeId = await auth(data.token);
-    const { createDuel } = await import("@/lib/arena/duel.server");
-    return createDuel({
+    const { ensureInviteRoom } = await import("@/lib/arena/duel.server");
+    return ensureInviteRoom({
       employeeId,
       quizId: data.quizId ?? null,
       deviceHash: data.deviceHash,
       classId: data.classId ?? null,
-      note: "Phòng mời qua link",
     });
+  });
+
+/** Chọn lớp chiến binh khi còn ở phòng chờ (15 giây trước trận). */
+export const arenaChooseClass = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({ token, duelId: z.string().uuid(), classId: z.string().min(2).max(20) })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const employeeId = await auth(data.token);
+    const { chooseClass } = await import("@/lib/arena/duel.server");
+    return chooseClass({ employeeId, duelId: data.duelId, classId: data.classId });
   });

@@ -34,7 +34,11 @@ export function ShareChallenge({ token, quizId }: { token: string; quizId?: stri
           .catch(() => undefined);
       } else {
         await navigator.clipboard.writeText(link).catch(() => undefined);
-        toast.success("Đã sao chép link thách đấu");
+        toast.success(
+          res.reused
+            ? "Bạn đã có sẵn phòng chờ — link đã được sao chép lại."
+            : "Đã sao chép link thách đấu",
+        );
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Không tạo được phòng mời");
