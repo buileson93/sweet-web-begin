@@ -1,15 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  BASE_DAMAGE,
+  DICE_COUNT,
+  DICE_SIDES,
   HP_START,
   comboDamage,
   decideWinnerByHp,
   resolveRoundCombat,
+  rollDice,
   winReasonLabel,
 } from "./combat";
 
 const LIMIT = 20_000;
+/** Xúc xắc "gian lận" để kiểm thử: luôn ra mặt 6 (tổng 12). */
+const maxRng = () => 0.999;
+/** Xúc xắc luôn ra mặt 1 (tổng 2). */
+const minRng = () => 0;
 
 const line = (over: Partial<Parameters<typeof resolveRoundCombat>[0][number]> & { employeeId: string }) => ({
   answered: true,
@@ -20,28 +26,48 @@ const line = (over: Partial<Parameters<typeof resolveRoundCombat>[0][number]> & 
   ...over,
 });
 
+describe("rollDice", () => {
+  it("tung đúng hai viên, mỗi viên 1–6", () => {
+    for (let i = 0; i < 200; i += 1) {
+      const { dice, total } = rollDice();
+      expect(dice).toHaveLength(DICE_COUNT);
+      expect(dice.every((d) => Number.isInteger(d) && d >= 1 && d <= DICE_SIDES)).toBe(true);
+      expect(total).toBe(dice[0] + dice[1]);
+      expect(total).toBeGreaterThanOrEqual(2);
+      expect(total).toBeLessThanOrEqual(12);
+    }
+  });
+
+  it("hai đầu mút của nguồn ngẫu nhiên cho 2 và 12", () => {
+    expect(rollDice(minRng).total).toBe(2);
+    expect(rollDice(maxRng).total).toBe(12);
+  });
+});
+
 describe("comboDamage", () => {
-  it("đúng câu đầu, trả lời chậm nhất chỉ gây sát thương gốc", () => {
-    expect(comboDamage(1, LIMIT, LIMIT)).toBe(BASE_DAMAGE);
+  it("đúng câu đầu, trả lời chậm nhất chỉ gây đúng số xúc xắc", () => {
+    expect(comboDamage(1, LIMIT, LIMIT, 7)).toBe(7);
   });
 
   it("càng nhanh càng đau (tối đa +5)", () => {
-    expect(comboDamage(1, 0, LIMIT)).toBe(BASE_DAMAGE + 5);
+    expect(comboDamage(1, 0, LIMIT, 7)).toBe(12);
   });
 
   it("combo cộng 3 sát thương mỗi bậc", () => {
-    expect(comboDamage(2, LIMIT, LIMIT)).toBe(13);
-    expect(comboDamage(4, LIMIT, LIMIT)).toBe(19);
+    expect(comboDamage(2, LIMIT, LIMIT, 10)).toBe(13);
+    expect(comboDamage(4, LIMIT, LIMIT, 10)).toBe(19);
   });
 
   it("combo bị chặn trần ở 5 bậc", () => {
-    expect(comboDamage(6, LIMIT, LIMIT)).toBe(25);
-    expect(comboDamage(50, LIMIT, LIMIT)).toBe(25);
+    expect(comboDamage(6, LIMIT, LIMIT, 10)).toBe(25);
+    expect(comboDamage(50, LIMIT, LIMIT, 10)).toBe(25);
   });
 
-  it("chuẩn hoá giá trị thời gian bất thường", () => {
-    expect(comboDamage(1, -100, LIMIT)).toBe(BASE_DAMAGE + 5);
-    expect(comboDamage(1, Number.NaN, LIMIT)).toBe(BASE_DAMAGE + 5);
+  it("chuẩn hoá giá trị thời gian và xúc xắc bất thường", () => {
+    expect(comboDamage(1, -100, LIMIT, 7)).toBe(12);
+    expect(comboDamage(1, Number.NaN, LIMIT, 7)).toBe(12);
+    expect(comboDamage(1, LIMIT, LIMIT, 999)).toBe(12);
+    expect(comboDamage(1, LIMIT, LIMIT, -5)).toBe(2);
   });
 });
 
@@ -53,6 +79,7 @@ describe("resolveRoundCombat", () => {
         line({ employeeId: "b", isCorrect: true, msTaken: 9_000, streak: 1 }),
       ],
       LIMIT,
+      maxRng,
     );
     const a = out.lines.find((l) => l.employeeId === "a")!;
     const b = out.lines.find((l) => l.employeeId === "b")!;
@@ -62,6 +89,22 @@ describe("resolveRoundCombat", () => {
     expect(b.damageTaken).toBe(a.damageDealt);
     expect(b.hpAfter).toBe(HP_START - a.damageDealt);
     expect(out.neutral).toBe(false);
+    expect(out.dice).toEqual([6, 6]);
+  });
+
+  it("sát thương luôn nằm trong khoảng xúc xắc cho phép", () => {
+    for (let i = 0; i < 100; i += 1) {
+      const out = resolveRoundCombat(
+        [
+          line({ employeeId: "a", isCorrect: true, msTaken: LIMIT, streak: 1 }),
+          line({ employeeId: "b" }),
+        ],
+        LIMIT,
+      );
+      const a = out.lines.find((l) => l.employeeId === "a")!;
+      expect(a.damageDealt).toBeGreaterThanOrEqual(2);
+      expect(a.damageDealt).toBeLessThanOrEqual(12);
+    }
   });
 
   it("cả hai cùng sai thì hoà câu, không ai mất máu", () => {
@@ -70,6 +113,7 @@ describe("resolveRoundCombat", () => {
       LIMIT,
     );
     expect(out.neutral).toBe(true);
+    expect(out.dice).toEqual([]);
     expect(out.lines.every((l) => l.damageTaken === 0 && l.hpAfter === HP_START)).toBe(true);
   });
 
@@ -92,6 +136,7 @@ describe("resolveRoundCombat", () => {
         line({ employeeId: "b", hpBefore: 5 }),
       ],
       LIMIT,
+      minRng,
     );
     expect(out.knockedOutId).toBe("b");
     expect(out.lines.find((l) => l.employeeId === "b")!.hpAfter).toBe(0);

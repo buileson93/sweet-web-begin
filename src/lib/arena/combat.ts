@@ -4,15 +4,17 @@
  * Luật chơi:
  * - Mỗi đấu thủ có 100 máu.
  * - Ở mỗi câu, ai trả lời ĐÚNG TRƯỚC sẽ gây sát thương cho đối phương.
- * - Sát thương gốc 10, cộng thêm theo chuỗi đúng liên tiếp (combo) và theo tốc độ.
+ * - Sát thương gốc do TUNG HAI XÚC XẮC 6 MẶT (2–12), cộng thêm theo chuỗi
+ *   đúng liên tiếp (combo) và theo tốc độ trả lời.
  * - Cả hai cùng sai (hoặc cùng bỏ trống) thì hoà câu đó, không ai mất máu.
  * - Ai hết máu trước thì thua (hạ gục). Hết câu mà cả hai còn máu thì so máu còn lại.
  */
 
 /** Máu khởi điểm của mỗi đấu thủ. */
 export const HP_START = 100;
-/** Sát thương gốc cho một câu trả lời đúng trước. */
-export const BASE_DAMAGE = 10;
+/** Số xúc xắc tung mỗi đòn và số mặt của mỗi viên. */
+export const DICE_COUNT = 2;
+export const DICE_SIDES = 6;
 /** Sát thương cộng thêm cho mỗi bậc combo (tối đa 5 bậc). */
 export const COMBO_STEP = 3;
 /** Số bậc combo tối đa được cộng. */
@@ -20,21 +22,40 @@ export const COMBO_MAX_STEPS = 5;
 /** Sát thương cộng thêm tối đa nhờ trả lời nhanh. */
 export const MAX_SPEED_DAMAGE = 5;
 
+/** Nguồn ngẫu nhiên (tách ra để kiểm thử được). */
+export type Rng = () => number;
+
 function clamp(value: number, min: number, max: number) {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, value));
 }
 
+/** Tung hai xúc xắc 6 mặt: trả về từng viên và tổng (2–12). */
+export function rollDice(rng: Rng = Math.random): { dice: number[]; total: number } {
+  const dice = Array.from({ length: DICE_COUNT }, () => {
+    const r = clamp(rng(), 0, 0.999999);
+    return Math.floor(r * DICE_SIDES) + 1;
+  });
+  return { dice, total: dice.reduce((a, b) => a + b, 0) };
+}
+
 /**
  * Sát thương của một câu trả lời đúng trước.
  * `streak` là số câu đúng liên tiếp TÍNH CẢ câu này (1 = câu đúng đầu tiên).
+ * `diceTotal` là tổng hai xúc xắc đã tung cho đòn đánh này.
  */
-export function comboDamage(streak: number, msTaken: number, limitMs: number): number {
+export function comboDamage(
+  streak: number,
+  msTaken: number,
+  limitMs: number,
+  diceTotal: number,
+): number {
   const limit = Math.max(1, limitMs);
   const taken = clamp(msTaken, 0, limit);
   const steps = clamp(Math.floor(streak) - 1, 0, COMBO_MAX_STEPS);
   const speed = Math.round(MAX_SPEED_DAMAGE * (1 - taken / limit));
-  return BASE_DAMAGE + steps * COMBO_STEP + Math.max(0, speed);
+  const base = clamp(Math.round(diceTotal), DICE_COUNT, DICE_COUNT * DICE_SIDES);
+  return base + steps * COMBO_STEP + Math.max(0, speed);
 }
 
 export type CombatInput = {
@@ -65,10 +86,16 @@ export type CombatOutcome = {
   neutral: boolean;
   /** Mã nhân viên bị hạ gục (máu về 0) nếu có. */
   knockedOutId: string | null;
+  /** Hai viên xúc xắc đã tung cho đòn đánh (rỗng khi không ai đánh trúng). */
+  dice: number[];
 };
 
 /** Phân xử sát thương của MỘT câu giữa hai đấu thủ. */
-export function resolveRoundCombat(inputs: CombatInput[], limitMs: number): CombatOutcome {
+export function resolveRoundCombat(
+  inputs: CombatInput[],
+  limitMs: number,
+  rng: Rng = Math.random,
+): CombatOutcome {
   const corrects = inputs
     .filter((i) => i.answered && i.isCorrect)
     .sort((a, b) => a.msTaken - b.msTaken || a.employeeId.localeCompare(b.employeeId));
@@ -79,7 +106,8 @@ export function resolveRoundCombat(inputs: CombatInput[], limitMs: number): Comb
     corrects.length > 1 && corrects[0].msTaken === corrects[1].msTaken ? true : false;
   const striker = tie ? null : first;
 
-  const damage = striker ? comboDamage(striker.streak, striker.msTaken, limitMs) : 0;
+  const roll = striker ? rollDice(rng) : { dice: [], total: 0 };
+  const damage = striker ? comboDamage(striker.streak, striker.msTaken, limitMs, roll.total) : 0;
 
   const lines: CombatLine[] = inputs.map((i) => {
     const isStriker = !!striker && striker.employeeId === i.employeeId;
@@ -94,7 +122,12 @@ export function resolveRoundCombat(inputs: CombatInput[], limitMs: number): Comb
   });
 
   const ko = lines.find((l) => l.hpAfter <= 0) ?? null;
-  return { lines, neutral: !striker, knockedOutId: ko ? ko.employeeId : null };
+  return {
+    lines,
+    neutral: !striker,
+    knockedOutId: ko ? ko.employeeId : null,
+    dice: roll.dice,
+  };
 }
 
 export type HpScoreLine = {

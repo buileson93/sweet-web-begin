@@ -398,6 +398,7 @@ export type Database = {
           finished_at: string | null
           hp_start: number
           id: string
+          is_bot: boolean
           is_ranked: boolean
           last_result: Json | null
           note: string
@@ -419,6 +420,7 @@ export type Database = {
           finished_at?: string | null
           hp_start?: number
           id?: string
+          is_bot?: boolean
           is_ranked?: boolean
           last_result?: Json | null
           note?: string
@@ -440,6 +442,7 @@ export type Database = {
           finished_at?: string | null
           hp_start?: number
           id?: string
+          is_bot?: boolean
           is_ranked?: boolean
           last_result?: Json | null
           note?: string
