@@ -378,6 +378,42 @@ export type Database = {
           },
         ]
       }
+      quiz_audiences: {
+        Row: {
+          created_at: string
+          id: string
+          quiz_id: string
+          unit_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          quiz_id: string
+          unit_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          quiz_id?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_audiences_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_audiences_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quizzes: {
         Row: {
           allow_fifty_fifty: boolean
@@ -390,6 +426,7 @@ export type Database = {
           end_time: string | null
           id: string
           instant_feedback: boolean
+          intro_markdown: string
           is_active: boolean
           legacy_id: string | null
           max_attempts: number | null
@@ -401,6 +438,7 @@ export type Database = {
           shuffle_options: boolean
           shuffle_questions: boolean
           start_time: string | null
+          status: string
           streak_bonus: boolean
           strict_mode: boolean
           title: string
@@ -417,6 +455,7 @@ export type Database = {
           end_time?: string | null
           id?: string
           instant_feedback?: boolean
+          intro_markdown?: string
           is_active?: boolean
           legacy_id?: string | null
           max_attempts?: number | null
@@ -428,6 +467,7 @@ export type Database = {
           shuffle_options?: boolean
           shuffle_questions?: boolean
           start_time?: string | null
+          status?: string
           streak_bonus?: boolean
           strict_mode?: boolean
           title: string
@@ -444,6 +484,7 @@ export type Database = {
           end_time?: string | null
           id?: string
           instant_feedback?: boolean
+          intro_markdown?: string
           is_active?: boolean
           legacy_id?: string | null
           max_attempts?: number | null
@@ -455,6 +496,7 @@ export type Database = {
           shuffle_options?: boolean
           shuffle_questions?: boolean
           start_time?: string | null
+          status?: string
           streak_bonus?: boolean
           strict_mode?: boolean
           title?: string
