@@ -11,6 +11,8 @@ import {
   isPassed,
   lateness,
   type QuestionRow,
+  scoreForAnswer,
+  type ScoreRules,
 } from "@/lib/grading";
 import { type AnswerValue } from "@/lib/questionKinds";
 import { QUESTION_COLUMNS, type ReviewItem, type SubmitExamResult } from "@/lib/exam/types";
