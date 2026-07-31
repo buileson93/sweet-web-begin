@@ -841,7 +841,7 @@ export async function closeRound(duelId: string, roundIndex: number) {
   }
 }
 
-}
+
 
 /** Chuỗi câu đúng liên tiếp của một người, tính đến hết câu `roundIndex`. */
 function streakUpTo(
