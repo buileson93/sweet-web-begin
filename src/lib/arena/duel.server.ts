@@ -283,6 +283,7 @@ export async function quickMatch(input: {
   employeeId: string;
   waitedSeconds?: number;
   deviceHash?: string;
+  classId?: string | null;
 }): Promise<{ duelId: string; created: boolean }> {
   await requireSettings();
   const player = await mustPlayer(input.employeeId);
@@ -337,7 +338,12 @@ export async function quickMatch(input: {
     const best = pickBestRoom(seeker, pool, waited);
     if (!best) break;
     try {
-      await joinDuel({ duelId: best.duelId, employeeId: input.employeeId, deviceHash: input.deviceHash });
+      await joinDuel({
+        duelId: best.duelId,
+        employeeId: input.employeeId,
+        deviceHash: input.deviceHash,
+        classId: input.classId ?? null,
+      });
       return { duelId: best.duelId, created: false };
     } catch {
       pool = pool.filter((c) => c.duelId !== best.duelId); // phòng vừa bị chiếm — thử phòng khác
@@ -347,6 +353,7 @@ export async function quickMatch(input: {
   const { duelId } = await createDuel({
     employeeId: input.employeeId,
     deviceHash: input.deviceHash,
+    classId: input.classId ?? null,
   });
   return { duelId, created: true };
 }
@@ -1300,6 +1307,8 @@ export async function getDuelState(input: {
         avatarUrl: String(xp?.avatar_url ?? ""),
         avatarImage: String(xp?.avatar_image ?? ""),
         level: levelProgress(Number(xp?.xp ?? 0)).level,
+        classId: classById(p.class_id).id,
+        lowestHp: p.lowest_hp ?? duel.hp_start,
         skillUses: (skillRows ?? [])
           .filter((r) => r.employee_id === p.employee_id)
           .map((r) => ({ skill: String(r.skill), round: r.round_index })),

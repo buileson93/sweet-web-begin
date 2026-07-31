@@ -3,6 +3,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BOT_TIERS, tierOf } from "@/lib/arena/bot";
+import { CLASSES } from "@/lib/arena/classes";
 import { createDuel, setReady } from "@/lib/arena/duel.server";
 
 /** Danh sách bộ đề (cuộc thi) có thể chọn khi so tài. */
@@ -49,6 +50,7 @@ export async function startBotDuel(input: {
   roundCount?: number;
   secondsPerRound?: number;
   deviceHash?: string;
+  classId?: string | null;
 }): Promise<{ duelId: string }> {
   const tier = tierOf(input.tier);
 
@@ -72,6 +74,7 @@ export async function startBotDuel(input: {
     isBot: true,
     note: `bot:${tier.id}`,
     deviceHash: input.deviceHash,
+    classId: input.classId ?? null,
   });
 
   const { data: bot } = await supabaseAdmin
@@ -87,6 +90,7 @@ export async function startBotDuel(input: {
     display_name: bot?.display_name ?? "Trợ lý luyện tập",
     unit: bot?.unit ?? "Trợ lý luyện tập",
     elo_before: bot?.elo ?? 1000,
+    class_id: CLASSES[Math.floor(Math.random() * CLASSES.length)]!.id,
     ready: true,
     device_hash: "bot",
   });
