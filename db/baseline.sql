@@ -390,6 +390,7 @@ CREATE INDEX IF NOT EXISTS idx_exam_sessions_submitted_at   ON public.exam_sessi
 CREATE UNIQUE INDEX IF NOT EXISTS results_session_id_unique ON public.results (session_id) WHERE session_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS results_quiz_idx           ON public.results (quiz_id);
 CREATE INDEX IF NOT EXISTS results_rank_idx           ON public.results (quiz_id, score DESC, time_seconds);
+CREATE INDEX IF NOT EXISTS results_rank_valid_idx     ON public.results (quiz_id, score DESC, time_seconds ASC) WHERE disqualified = false;
 CREATE INDEX IF NOT EXISTS results_employee_idx       ON public.results (employee_id, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_results_employee       ON public.results (employee_id, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_results_quiz_submitted ON public.results (quiz_id, submitted_at DESC);
