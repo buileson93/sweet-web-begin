@@ -147,6 +147,13 @@ export function ShareChallenge({ token, quizId }: { token: string; quizId?: stri
           ) : null}
         </div>
       ) : null}
+
+      <BusyDuelDialog
+        busy={busyDuel}
+        onClose={() => setBusyDuel(null)}
+        onLeave={() => endActive({ data: { token } })}
+        onLeft={() => void make()}
+      />
     </section>
   );
 }
