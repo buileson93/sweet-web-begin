@@ -90,6 +90,33 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
 
   const [innerQuiz, setInnerQuiz] = useState("");
   const [quizPulse, setQuizPulse] = useState(0);
+  const [peek, setPeek] = useState<QuizPeek | null>(null);
+  const peekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (peekTimer.current) clearTimeout(peekTimer.current); }, []);
+
+  /** Giữ chuột trên một mục ~550ms mới bung thẻ giới thiệu, tránh nhấp nháy. */
+  const showPeek = (q: RegisterQuiz, status: ReturnType<typeof quizStatus>, el: HTMLElement) => {
+    if (peekTimer.current) clearTimeout(peekTimer.current);
+    const rect = el.getBoundingClientRect();
+    peekTimer.current = setTimeout(() => {
+      setPeek({
+        id: q.id,
+        title: q.title,
+        status,
+        question_count: q.question_count,
+        duration_minutes: q.duration_minutes,
+        pass_percent: q.pass_percent ?? null,
+        x: rect.right + 12,
+        y: Math.max(12, rect.top - 40),
+      });
+    }, 550);
+  };
+
+  const hidePeek = () => {
+    if (peekTimer.current) clearTimeout(peekTimer.current);
+    setPeek(null);
+  };
   const quizId = lockedQuizId ?? value ?? innerQuiz;
   const setQuizId = (id: string) => (onValueChange ? onValueChange(id) : setInnerQuiz(id));
 
@@ -502,6 +529,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           {submitting ? "Đang tạo phiên thi..." : "Bắt đầu làm bài"}
         </Button>
 
+        {hint ? (
         <p
           className={cn(
             "type-meta flex items-center justify-center gap-1.5 text-center",
@@ -511,6 +539,8 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           {canStart ? <BadgeCheck className="size-3.5 shrink-0" /> : <AlertCircle className="size-3.5 shrink-0" />}
           {hint}
         </p>
+        ) : null}
+        <QuizPeekCard peek={peek} />
 
         <div className="flex items-center justify-center gap-2 border-t border-border pt-3">
           <IconTip label="Lịch sử làm bài của bạn">
