@@ -16,6 +16,7 @@ import {
   formatBytes,
   isTempImagePath,
   removeQuestionImage,
+  uploadOptionImage,
   uploadQuestionImage,
 } from "@/lib/questionImage";
 import type { Difficulty } from "@/lib/questionKinds";
@@ -78,7 +79,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       const { data, error } = await supabase
         .from("questions")
         .select(
-          "id, quiz_id, question, options, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, order_index, time_limit_seconds, is_archived, tags, explanation, image_url",
+          "id, quiz_id, question, options, option_images, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, order_index, time_limit_seconds, is_archived, tags, explanation, image_url",
         )
 
         .eq("quiz_id", quizId)
@@ -261,6 +262,30 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     [quizId],
   );
 
+  /** Tải ảnh cho MỘT phương án (nén nhỏ hơn ảnh câu hỏi). */
+  const attachOptionImage = useCallback(
+    async (index: number, file: File) => {
+      if (!quizId || uploadingRef.current) return;
+      uploadingRef.current = true;
+      try {
+        const { path } = await uploadOptionImage(file, quizId);
+        setForm((f) => {
+          const next = [...f.option_images];
+          const previous = next[index] ?? "";
+          next[index] = path;
+          if (isTempImagePath(previous)) void removeQuestionImage(previous);
+          return { ...f, option_images: next };
+        });
+        toast.success(`Đã gắn ảnh cho phương án ${String.fromCharCode(65 + index)}.`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Không tải được ảnh phương án.");
+      } finally {
+        uploadingRef.current = false;
+      }
+    },
+    [quizId],
+  );
+
   // Dán ảnh từ clipboard (Ctrl/Cmd + V): chỉ MỘT nguồn sự thật, nghe trên window
   // và chỉ khi hộp thoại soạn câu hỏi đang mở.
   useEffect(() => {
@@ -270,11 +295,18 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       const file = extractImageFromClipboard(e.clipboardData?.items);
       if (!file) return;
       e.preventDefault();
+      // Dán khi con trỏ đang ở một ô phương án -> ảnh gắn vào đúng phương án đó.
+      const active = document.activeElement as HTMLElement | null;
+      const optionIndex = active?.getAttribute?.("data-option-index");
+      if (optionIndex !== null && optionIndex !== undefined && optionIndex !== "") {
+        void attachOptionImage(Number(optionIndex), file);
+        return;
+      }
       void attachImage(file);
     }
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
-  }, [open, canEdit, attachImage]);
+  }, [open, canEdit, attachImage, attachOptionImage]);
 
   // Chặn trình duyệt mở tệp trên tab khi người dùng thả ảnh ra ngoài vùng nhận.
   useEffect(() => {
@@ -303,6 +335,8 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     if (!next) {
       setForm((f) => {
         if (isTempImagePath(f.image_url)) void removeQuestionImage(f.image_url!);
+        for (const path of f.option_images)
+          if (isTempImagePath(path)) void removeQuestionImage(path);
         return f;
       });
       setUploadInfo(null);
@@ -329,7 +363,13 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
 
   function openCreate() {
     setEditing(null);
-    setForm({ ...emptyForm, options: ["", "", "", ""], pairs: [], correct_indices: [] });
+    setForm({
+      ...emptyForm,
+      options: ["", "", "", ""],
+      option_images: ["", "", "", ""],
+      pairs: [],
+      correct_indices: [],
+    });
     offerDraft(null);
     setOpen(true);
   }
@@ -339,6 +379,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     setForm({
       question: q.question,
       options: q.options.length ? [...q.options] : ["", "", "", ""],
+      option_images: (q.options.length ? q.options : ["", "", "", ""]).map(
+        (_, i) => (q.option_images ?? [])[i] ?? "",
+      ),
       correct_index: q.correct_index,
       correct_indices: q.correct_indices ?? [],
       accepted_answers: (q.accepted_answers ?? []).join("\n"),
@@ -538,6 +581,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         setForm={setForm}
         uploadStage={uploadStage}
         uploadInfo={uploadInfo}
+        quizId={quizId}
         onAttachImage={(file) => void attachImage(file)}
         onRemoveImage={dropPendingImage}
         onSave={() => save.mutate()}
