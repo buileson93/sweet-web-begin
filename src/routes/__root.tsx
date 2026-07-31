@@ -90,8 +90,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Đấu trường tri thức trực tuyến của Công ty Quản lý bay miền Trung: chọn cuộc thi, làm bài tính giờ, chấm điểm tức thì và leo bảng xếp hạng." },
       { property: "og:description", content: "Đấu trường tri thức trực tuyến của Công ty Quản lý bay miền Trung: chọn cuộc thi, làm bài tính giờ, chấm điểm tức thì và leo bảng xếp hạng." },
       { name: "twitter:description", content: "Đấu trường tri thức trực tuyến của Công ty Quản lý bay miền Trung: chọn cuộc thi, làm bài tính giờ, chấm điểm tức thì và leo bảng xếp hạng." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/1575b37e-4148-4bd0-9ed2-7e36e82e7d00" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/1575b37e-4148-4bd0-9ed2-7e36e82e7d00" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f0832e90-18db-4ee5-b8ee-5f92404bf0cb/id-preview-13eb5c72--e18a9a92-c822-4f4e-aa3d-fe075ccaef3d.lovable.app-1785484374522.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f0832e90-18db-4ee5-b8ee-5f92404bf0cb/id-preview-13eb5c72--e18a9a92-c822-4f4e-aa3d-fe075ccaef3d.lovable.app-1785484374522.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
