@@ -299,10 +299,20 @@ function HomePage() {
                     type="button"
                     onClick={() => navigate({ to: "/cuoc-thi/$quizId", params: { quizId: q.id } })}
                     className={cn(
-                      "game-card group relative overflow-hidden p-5 text-left",
+                      "game-card quiz-card group relative overflow-hidden p-5 text-left",
                       st === "closed" && "opacity-70",
                     )}
                   >
+                    {/* Ảnh chìm chủ đề: trượt vào từ phải khi rê chuột, luôn nằm dưới lớp chữ */}
+                    <img
+                      src={resolveQuizCover(q.cover_url, q.id)}
+                      alt=""
+                      aria-hidden
+                      loading="lazy"
+                      width={1024}
+                      height={768}
+                      className="quiz-card-art pointer-events-none absolute -right-6 bottom-0 h-[86%] w-auto max-w-[62%] select-none object-contain"
+                    />
                     <span
                       aria-hidden
                       className={cn(
