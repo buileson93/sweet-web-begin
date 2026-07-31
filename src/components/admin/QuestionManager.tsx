@@ -299,23 +299,38 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   }, []);
 
   /** Đóng hộp thoại mà chưa lưu: thu hồi ảnh tạm để không bỏ rác trong kho. */
-  const handleDialogOpenChange = useCallback(
-    (next: boolean) => {
-      if (!next) {
-        setForm((f) => {
-          if (isTempImagePath(f.image_url)) void removeQuestionImage(f.image_url!);
-          return f;
-        });
-        setUploadInfo(null);
-      }
-      setOpen(next);
-    },
-    [],
-  );
+  const handleDialogOpenChange = useCallback((next: boolean) => {
+    if (!next) {
+      setForm((f) => {
+        if (isTempImagePath(f.image_url)) void removeQuestionImage(f.image_url!);
+        return f;
+      });
+      setUploadInfo(null);
+      setDraftAvailable(false);
+      pendingDraft.current = null;
+    }
+    setOpen(next);
+  }, []);
+
+  /** Tìm bản nháp còn hạn cho ngữ cảnh đang mở và bật lời mời khôi phục. */
+  function offerDraft(editingId: string | null) {
+    const saved = loadDraft<QuestionFormState>(draftKey(quizId, editingId));
+    pendingDraft.current = saved && isDraftMeaningful(saved) ? saved : null;
+    setDraftAvailable(Boolean(pendingDraft.current));
+  }
+
+  // Tự lưu nháp trong lúc soạn để không mất khi lỡ đóng tab.
+  useEffect(() => {
+    if (!open || !quizId) return;
+    if (!isDraftMeaningful(form)) return;
+    const id = window.setTimeout(() => saveDraft(draftKey(quizId, editing?.id ?? null), form), 800);
+    return () => window.clearTimeout(id);
+  }, [open, quizId, editing, form]);
 
   function openCreate() {
     setEditing(null);
     setForm({ ...emptyForm, options: ["", "", "", ""], pairs: [], correct_indices: [] });
+    offerDraft(null);
     setOpen(true);
   }
 
@@ -332,12 +347,15 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       difficulty: q.difficulty ?? "medium",
       points: q.points ?? 1,
       order_index: q.order_index ?? 0,
+      time_limit_seconds: q.time_limit_seconds ? String(q.time_limit_seconds) : "",
       tags: (q.tags ?? []).join(", "),
       explanation: q.explanation ?? "",
       image_url: q.image_url,
     });
+    offerDraft(q.id);
     setOpen(true);
   }
+
 
   return (
     <div className="space-y-4">
