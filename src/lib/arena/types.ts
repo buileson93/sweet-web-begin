@@ -78,7 +78,7 @@ export type RoundResult = {
   /** Cả hai cùng không kịp trả lời — câu bị bỏ trống do hết giờ. */
   timedOut?: boolean;
   /** Diễn giải hiệu ứng kỹ năng đã kích hoạt trong câu. */
-  skillNotes?: { employeeId: string; skill: string; label: string }[];
+  skillNotes?: { employeeId: string; skill: string | null; label: string }[];
   lines: {
     employeeId: string;
     isCorrect: boolean;
