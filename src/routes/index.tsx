@@ -122,8 +122,10 @@ function HomePage() {
               aria-hidden
             >
               <span className="plane-orbit">
-                <span className="plane-orbit-craft">
-                  <Plane className="size-4 text-accent drop-shadow-sm sm:size-5" strokeWidth={2.2} />
+                <span className="plane-orbit-ring">
+                  <span className="plane-orbit-craft">
+                    <Plane className="size-4 text-accent drop-shadow-sm sm:size-5" strokeWidth={2.2} />
+                  </span>
                 </span>
               </span>
               <BookOpen className="animate-book-flip relative size-7 text-primary/70 drop-shadow-sm sm:size-9" />
