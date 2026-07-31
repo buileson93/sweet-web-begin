@@ -103,6 +103,17 @@ export function planInviteRoom(seat: ActiveSeat): InvitePlan {
   return { action: "reuse", duelId: seat.duelId };
 }
 
+/**
+ * Cột `note` của ván vừa chứa ghi chú kỹ thuật ("bot:easy", "Phòng mời qua link")
+ * vừa chứa lý do không tính Elo. Hàm này chỉ giữ lại phần đáng hiển thị.
+ */
+export function rankedReasonFromNote(note: string, isBot: boolean): string {
+  if (isBot) return "Ván luyện tập với trợ lý máy nên kết quả không tính Elo.";
+  const clean = note.trim();
+  if (!clean || clean.startsWith("bot:") || clean === "Phòng mời qua link") return "";
+  return clean;
+}
+
 /** Lý do một ván không tính Elo, dùng chung cho nhãn hiển thị. */
 export function rankedLabel(isRanked: boolean, note: string): { label: string; reason: string } {
   if (isRanked) return { label: "Tính Elo", reason: "Trận xếp hạng: kết quả cộng/trừ điểm Elo." };

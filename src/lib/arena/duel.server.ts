@@ -20,6 +20,7 @@ import {
   BUSY_PREFIX,
   encodeBusyError,
   planInviteRoom,
+  rankedReasonFromNote,
   type ActiveSeat,
   type SeatStatus,
 } from "@/lib/arena/rooms";
@@ -1195,7 +1196,9 @@ export async function finishDuel(duelId: string, technicalLoserId?: string) {
     reason: decision.reason,
     reasonLabel: technicalLoserId ? "Đối thủ rời ván so tài" : winReasonLabel(decision.reason),
     isRanked: duel.is_ranked,
-    rankedNote: duel.note ?? "",
+    rankedNote: duel.is_ranked
+      ? ""
+      : rankedReasonFromNote(duel.note ?? "", duel.is_bot === true),
     lines: finishLines,
   };
 
@@ -1365,6 +1368,9 @@ export async function getDuelState(input: {
     roundCount: duel.round_count,
     secondsPerRound: duel.seconds_per_round,
     isRanked: duel.is_ranked,
+    rankedNote: duel.is_ranked
+      ? ""
+      : rankedReasonFromNote(duel.note ?? "", duel.is_bot === true),
     isBot: duel.is_bot === true,
     hpStart: duel.hp_start ?? HP_START,
     currentRound: duel.current_round,
