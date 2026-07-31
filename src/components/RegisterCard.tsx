@@ -23,6 +23,8 @@ import { toast } from "sonner";
 
 import { CredentialInput } from "@/components/CredentialInput";
 import { HintTip } from "@/components/HintTip";
+import { AvatarCreatorDialog } from "@/components/player/AvatarCreatorDialog";
+
 import { IconTip } from "@/components/IconTip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
