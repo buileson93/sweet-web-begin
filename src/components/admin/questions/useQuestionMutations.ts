@@ -146,7 +146,10 @@ export function useQuestionMutations({
   const bulkDifficulty = useMutation({
     mutationFn: async (value: Difficulty) => {
       const ids = [...selected];
-      const { error } = await supabase.from("questions").update({ difficulty: value }).in("id", ids);
+      const { error } = await supabase
+        .from("questions")
+        .update({ difficulty: value })
+        .in("id", ids);
       if (error) throw error;
       await logAudit({
         action: "update",

@@ -54,9 +54,7 @@ export function OptionsEditor({ form, setForm }: EditorProps) {
           <Input
             value={o}
             placeholder={
-              form.kind === "ordering"
-                ? `Mục ${i + 1}`
-                : `Phương án ${String.fromCharCode(65 + i)}`
+              form.kind === "ordering" ? `Mục ${i + 1}` : `Phương án ${String.fromCharCode(65 + i)}`
             }
             onChange={(e) => {
               const next = [...form.options];

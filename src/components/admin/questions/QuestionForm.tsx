@@ -21,7 +21,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { questionImageSrc } from "@/lib/questionImage";
-import { DIFFICULTIES, QUESTION_KINDS, type Difficulty, type QuestionKind } from "@/lib/questionKinds";
+import {
+  DIFFICULTIES,
+  QUESTION_KINDS,
+  type Difficulty,
+  type QuestionKind,
+} from "@/lib/questionKinds";
 
 import { FillBlankEditor } from "./FillBlankEditor";
 import { MatchingEditor } from "./MatchingEditor";
