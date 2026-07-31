@@ -6,7 +6,9 @@ import { useNavigate } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { arenaCreateRoom } from "@/lib/arena.functions";
+import { BusyDuelDialog } from "@/components/arena/BusyDuelDialog";
+import { arenaCreateRoom, arenaEndActive } from "@/lib/arena.functions";
+import { parseBusyError, type BusyInfo } from "@/lib/arena/rooms";
 import { getDeviceId } from "@/lib/deviceId";
 
 /**
@@ -15,6 +17,8 @@ import { getDeviceId } from "@/lib/deviceId";
  */
 export function ShareChallenge({ token, quizId }: { token: string; quizId?: string | null }) {
   const createRoom = useServerFn(arenaCreateRoom);
+  const endActive = useServerFn(arenaEndActive);
+  const [busyDuel, setBusyDuel] = useState<BusyInfo | null>(null);
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [url, setUrl] = useState("");
@@ -41,7 +45,10 @@ export function ShareChallenge({ token, quizId }: { token: string; quizId?: stri
         );
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Không tạo được phòng mời");
+      const raw = e instanceof Error ? e.message : "Không tạo được phòng mời";
+      const info = parseBusyError(raw);
+      if (info) setBusyDuel(info);
+      else toast.error(raw);
     } finally {
       setBusy(false);
     }
