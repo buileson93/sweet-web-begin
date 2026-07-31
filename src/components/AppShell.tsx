@@ -5,6 +5,8 @@ import { BookOpenCheck, Home, Settings2, Swords, Trophy, UserRoundCog } from "lu
 import { BrandMark } from "@/components/BrandLogo";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { AvatarBubble } from "@/components/player/AvatarBubble";
+import { usePlayerIdentity } from "@/hooks/usePlayerIdentity";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -27,6 +29,7 @@ const mobileNavItems = navItems.filter(
  * vùng nội dung ở giữa và panel phụ bên phải (tuỳ chọn).
  */
 export function AppShell({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
+  const { identity } = usePlayerIdentity();
   return (
     <div className="min-h-screen bg-background lg:p-5">
       <div className="mx-auto flex w-full max-w-[100rem] flex-col overflow-hidden bg-card lg:min-h-[calc(100vh-2.5rem)] lg:flex-row lg:rounded-[2.5rem] lg:shadow-[var(--shadow-lift)]">
@@ -54,9 +57,22 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
             </nav>
 
           </div>
-          <span className="grid size-11 place-items-center rounded-2xl surface-gold shadow-[var(--shadow-gold)]">
-            <Trophy className="size-5" />
-          </span>
+          {identity ? (
+            <Link to="/nhan-vat" aria-label="Nhân vật của tôi" title={identity.displayName} className="transition hover:scale-110">
+              <AvatarBubble
+                name={identity.displayName}
+                avatarUrl={identity.avatarUrl}
+                avatarImage={identity.avatarImage}
+                level={identity.level}
+                size="sm"
+                live
+              />
+            </Link>
+          ) : (
+            <span className="grid size-11 place-items-center rounded-2xl surface-gold shadow-[var(--shadow-gold)]">
+              <Trophy className="size-5" />
+            </span>
+          )}
         </aside>
 
         {/* Nội dung chính */}
