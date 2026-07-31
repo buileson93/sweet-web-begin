@@ -1,7 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Coins, Flame, Loader2, Search, Send, Swords, Trophy, User, X, Zap } from "lucide-react";
+import {
+  BarChart3,
+  Coins,
+  Flame,
+  Loader2,
+  LogOut,
+  PlayCircle,
+  Search,
+  Send,
+  Swords,
+  Trophy,
+  User,
+  Users,
+  X,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { CredentialInput } from "@/components/CredentialInput";
@@ -12,8 +27,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
 import {
+  arenaEndActive,
   arenaHome,
   arenaInvite,
+  arenaPresence,
   arenaQuickMatch,
   arenaRespondInvite,
   arenaSearchOpponents,
@@ -23,6 +40,7 @@ import { clearArenaToken, getArenaToken, saveArenaToken } from "@/lib/arena/clie
 import type { ArenaProfile } from "@/lib/arena/types";
 import { getDeviceId } from "@/lib/deviceId";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/dau-truong")({
   component: ArenaLobby,
