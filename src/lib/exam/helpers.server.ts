@@ -70,6 +70,46 @@ export async function useFiftyFifty(input: {
 }
 
 /**
+ * Vật phẩm X2 — nhân đôi điểm của MỘT câu (kể cả điểm thưởng combo đang có).
+ * Mỗi lượt thi chỉ dùng được một lần và phải dùng TRƯỚC khi chốt đáp án câu đó.
+ */
+export async function useDoublePoints(input: {
+  sessionId: string;
+  submitToken: string;
+  index: number;
+}): Promise<{ index: number }> {
+  const { data: session } = await supabaseAdmin
+    .from("exam_sessions")
+    .select("id, status, submit_token, helpers, answers, expires_at")
+    .eq("id", input.sessionId)
+    .maybeSingle();
+
+  if (!session || session.status !== "active" || session.submit_token !== input.submitToken) {
+    throw new Error("Phiên thi không hợp lệ.");
+  }
+  if (lateness(new Date().toISOString(), session.expires_at).expired) {
+    throw new Error("Đã hết giờ làm bài.");
+  }
+
+  const helpers = (session.helpers ?? {}) as Record<string, unknown>;
+  const used = Array.isArray(helpers.x2) ? (helpers.x2 as number[]) : [];
+  if (used.length >= 1) throw new Error("Bạn đã dùng hết lượt X2.");
+
+  const answers = (session.answers ?? {}) as Record<string, unknown>;
+  const answered = answers[String(input.index)];
+  if (answered !== undefined && answered !== null && answered !== "") {
+    throw new Error("Câu này đã trả lời, hãy dùng X2 trước khi chọn đáp án.");
+  }
+
+  await supabaseAdmin
+    .from("exam_sessions")
+    .update({ helpers: { ...helpers, x2: [input.index] } as never })
+    .eq("id", session.id);
+
+  return { index: input.index };
+}
+
+/**
  * Ghi nhận một sự kiện hành vi trong phòng thi và cộng dồn điểm liêm chính.
  * Không bao giờ tự huỷ bài ở đây — quyết định nằm ở lúc chấm bài (submitExamSession).
  */
