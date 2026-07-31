@@ -1,5 +1,13 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyEmployee } from "@/lib/employees.server";
+import {
+  DISQUALIFY_THRESHOLD_DEFAULT,
+  MAX_EVENTS_PER_SESSION,
+  isExamEventKind,
+  scoreEvent,
+  shouldDisqualify,
+  type ExamEventDetail,
+} from "@/lib/integrity";
 // Logic chấm điểm thuần tuý nằm ở @/lib/grading để test được mà không cần Supabase.
 import {
   PASS_PERCENT_DEFAULT,
@@ -318,6 +326,56 @@ export async function useFiftyFifty(input: {
 }
 
 /** Người thi chủ động thoát khỏi phòng thi (không tính điểm, không ghi bảng xếp hạng). */
+/**
+ * Ghi nhận một sự kiện hành vi trong phòng thi và cộng dồn điểm liêm chính.
+ * Không bao giờ tự huỷ bài ở đây — quyết định nằm ở lúc chấm bài (submitExamSession).
+ */
+export async function reportExamEvent(input: {
+  sessionId: string;
+  submitToken: string;
+  kind: string;
+  detail?: Record<string, unknown>;
+}): Promise<{ ok: boolean; integrityScore: number }> {
+  const { data: session } = await supabaseAdmin
+    .from("exam_sessions")
+    .select("id, submit_token, status, integrity_score")
+    .eq("id", input.sessionId)
+    .maybeSingle();
+
+  if (!session || session.submit_token !== input.submitToken || session.status !== "active")
+    return { ok: false, integrityScore: session?.integrity_score ?? 0 };
+
+  if (!isExamEventKind(input.kind))
+    return { ok: false, integrityScore: session.integrity_score ?? 0 };
+
+  // Chống spam: mỗi phiên chỉ ghi tối đa MAX_EVENTS_PER_SESSION sự kiện.
+  const { count } = await supabaseAdmin
+    .from("exam_events")
+    .select("id", { count: "exact", head: true })
+    .eq("session_id", session.id);
+  if ((count ?? 0) >= MAX_EVENTS_PER_SESSION)
+    return { ok: false, integrityScore: session.integrity_score ?? 0 };
+
+  const detail = (input.detail ?? {}) as ExamEventDetail;
+  const weight = scoreEvent(input.kind, detail);
+
+  await supabaseAdmin.from("exam_events").insert({
+    session_id: session.id,
+    kind: input.kind,
+    weight,
+    detail: detail as never,
+  });
+
+  const next = (session.integrity_score ?? 0) + weight;
+  if (weight > 0)
+    await supabaseAdmin
+      .from("exam_sessions")
+      .update({ integrity_score: next })
+      .eq("id", session.id);
+
+  return { ok: true, integrityScore: next };
+}
+
 export async function abandonExamSession(input: { sessionId: string; submitToken: string }) {
   const { error } = await supabaseAdmin
     .from("exam_sessions")
@@ -438,7 +496,9 @@ export async function submitExamSession(input: {
   const [quizRes, rowsRes, historyRes, existingRes] = await Promise.all([
     supabaseAdmin
       .from("quizzes")
-      .select("title, pass_percent, negative_marking, streak_bonus")
+      .select(
+        "title, pass_percent, negative_marking, streak_bonus, strict_mode, disqualify_threshold",
+      )
       .eq("id", session.quiz_id)
       .maybeSingle(),
     supabaseAdmin.from("questions").select(QUESTION_COLUMNS).in("id", session.question_ids),
@@ -515,7 +575,27 @@ export async function submitExamSession(input: {
     replay && existing
       ? existing.time_seconds
       : Math.max(0, Math.round((endMoment.getTime() - startedAt.getTime()) / 1000));
-  const disqualified = replay && existing ? existing.disqualified : Boolean(input.disqualified);
+  // Tương thích ngược: vẫn nhận input.disqualified nhưng CHỈ ghi lại như một gợi ý,
+  // không dùng để quyết định kết quả (chặn request mạng không còn giúp thoát bị huỷ bài).
+  if (!replay && input.disqualified) {
+    await supabaseAdmin.from("exam_events").insert({
+      session_id: session.id,
+      kind: "tab_hidden",
+      weight: 0,
+      detail: { clientHint: true, reason: input.disqualifyReason ?? "" } as never,
+    });
+  }
+
+  // Quyết định huỷ bài dựa trên điểm liêm chính do MÁY CHỦ tích luỹ.
+  const integrityScore = Number(session.integrity_score ?? 0);
+  const strictMode = Boolean(quiz?.strict_mode);
+  const threshold = Number(quiz?.disqualify_threshold ?? DISQUALIFY_THRESHOLD_DEFAULT);
+  const disqualified =
+    replay && existing
+      ? existing.disqualified
+      : shouldDisqualify(integrityScore, threshold, strictMode);
+  /** Cờ cảnh báo cho quản trị khi không bật chế độ nghiêm ngặt nhưng điểm liêm chính đã chạm ngưỡng. */
+  const integrityFlagged = !disqualified && integrityScore >= threshold;
   const total = session.question_ids.length;
   const finalScore = disqualified ? 0 : score;
   const finalPoints = disqualified ? 0 : Math.max(0, Math.round(points));
@@ -559,8 +639,15 @@ export async function submitExamSession(input: {
       passed,
       time_seconds: timeSeconds,
       disqualified,
+      integrity_score: integrityScore,
       late_submit: lateSubmit,
-      disqualify_reason: lateSubmit ? "Nộp sau giờ" : (input.disqualifyReason ?? null),
+      disqualify_reason: lateSubmit
+        ? "Nộp sau giờ"
+        : disqualified
+          ? `Vi phạm quy chế (điểm liêm chính ${integrityScore}/${threshold})`
+          : integrityFlagged
+            ? `Cảnh báo liêm chính ${integrityScore}/${threshold}`
+            : null,
       submitted_at: now.toISOString(),
     });
 

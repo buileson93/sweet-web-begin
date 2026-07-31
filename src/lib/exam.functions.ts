@@ -117,3 +117,20 @@ export const getExamHistory = createServerFn({ method: "POST" })
     const { getExamHistoryFor } = await import("@/lib/exam.server");
     return getExamHistoryFor(data);
   });
+
+/** Ghi nhận sự kiện hành vi trong phòng thi (client KHÔNG tự quyết định huỷ bài). */
+export const reportEvent = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        sessionId: z.string().uuid(),
+        submitToken: z.string().uuid(),
+        kind: z.string().max(40),
+        detail: z.record(z.string(), z.unknown()).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { reportExamEvent } = await import("@/lib/exam.server");
+    return reportExamEvent(data);
+  });

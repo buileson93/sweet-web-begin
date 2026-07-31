@@ -1,16 +1,101 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Download, Inbox, Search, SearchX, Trash2 } from "lucide-react";
+import { Download, Inbox, RotateCcw, Search, SearchX, ShieldAlert, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { formatDateTime, formatSeconds } from "@/lib/format";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useServerFn } from "@tanstack/react-start";
+import { listExamEvents, restoreResult } from "@/lib/integrity.functions";
 
+const EVENT_LABEL: Record<string, string> = {
+  tab_hidden: "Rời màn hình thi",
+  window_blur: "Chuyển cửa sổ",
+  copy: "Sao chép",
+  paste: "Dán",
+  contextmenu: "Chuột phải",
+  fullscreen_exit: "Thoát toàn màn hình",
+  resize_suspect: "Đổi kích thước bất thường",
+  reconnect: "Kết nối lại",
+  multi_tab: "Mở nhiều tab",
+};
+
+function IntegrityCell({ sessionId, score }: { sessionId: string | null; score: number | null }) {
+  const [open, setOpen] = useState(false);
+  const runList = useServerFn(listExamEvents);
+  const events = useQuery({
+    queryKey: ["exam-events", sessionId],
+    enabled: open && Boolean(sessionId),
+    queryFn: () => runList({ data: { sessionId: sessionId as string } }),
+  });
+
+  const value = score ?? 0;
+  const tone =
+    value === 0
+      ? "text-muted-foreground"
+      : value >= 6
+        ? "text-destructive"
+        : "text-warning-foreground";
+
+  if (!sessionId) return <span className="text-muted-foreground">—</span>;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={`inline-flex items-center gap-1 font-mono font-semibold ${tone}`}
+        >
+          <ShieldAlert className="size-4" />
+          {value}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 text-sm">
+        <p className="mb-2 font-semibold">Sự kiện liêm chính</p>
+        {events.isLoading ? (
+          <p className="type-meta">Đang tải...</p>
+        ) : events.data && events.data.length ? (
+          <ul className="max-h-60 space-y-1 overflow-y-auto">
+            {events.data.map((e) => (
+              <li key={e.id} className="flex justify-between gap-2 border-b border-border/60 pb-1">
+                <span>
+                  {EVENT_LABEL[e.kind] ?? e.kind}
+                  {typeof e.detail?.hiddenMs === "number"
+                    ? ` (${Math.round(e.detail.hiddenMs / 1000)}s)`
+                    : ""}
+                </span>
+                <span className="font-mono text-muted-foreground">+{e.weight}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="type-meta">Không có sự kiện nào được ghi nhận.</p>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   const qc = useQueryClient();
@@ -20,7 +105,10 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   const { data: quizzes = [] } = useQuery({
     queryKey: ["admin-quizzes-lite"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("quizzes").select("id, title").order("start_time");
+      const { data, error } = await supabase
+        .from("quizzes")
+        .select("id, title")
+        .order("start_time");
       if (error) throw error;
       return data;
     },
@@ -29,7 +117,11 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   const resultsQuery = useQuery({
     queryKey: ["admin-results", quizId],
     queryFn: async () => {
-      let query = supabase.from("results").select("*").order("submitted_at", { ascending: false }).limit(1000);
+      let query = supabase
+        .from("results")
+        .select("*")
+        .order("submitted_at", { ascending: false })
+        .limit(1000);
       if (quizId !== "all") query = query.eq("quiz_id", quizId);
       const { data, error } = await query;
       if (error) throw error;
@@ -38,19 +130,42 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   });
   const results = resultsQuery.data ?? [];
 
-
   const rows = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
     return results.filter(
-      (r) => !kw || r.candidate_name.toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
+      (r) =>
+        !kw ||
+        r.candidate_name.toLowerCase().includes(kw) ||
+        (r.unit ?? "").toLowerCase().includes(kw),
     );
   }, [results, keyword]);
+
+  const runRestore = useServerFn(restoreResult);
+  const [restoreTarget, setRestoreTarget] = useState<{ id: string; name: string } | null>(null);
+  const [restoreReason, setRestoreReason] = useState("");
+
+  const restore = useMutation({
+    mutationFn: async (payload: { resultId: string; reason: string }) =>
+      runRestore({ data: payload }),
+    onSuccess: () => {
+      toast.success("Đã phục hồi bài thi và ghi vào nhật ký.");
+      setRestoreTarget(null);
+      setRestoreReason("");
+      void qc.invalidateQueries({ queryKey: ["admin-results"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const remove = useMutation({
     mutationFn: async (row: { id: string; candidate_name: string }) => {
       const { error } = await supabase.from("results").delete().eq("id", row.id);
       if (error) throw error;
-      await logAudit({ action: "delete", entity: "result", entityId: row.id, entityLabel: row.candidate_name });
+      await logAudit({
+        action: "delete",
+        entity: "result",
+        entityId: row.id,
+        entityLabel: row.candidate_name,
+      });
     },
     onSuccess: () => {
       toast.success("Đã xoá kết quả.");
@@ -62,7 +177,17 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   async function exportExcel() {
     const XLSX = await import("xlsx");
     const data = [
-      ["Họ tên", "Năm sinh", "Đơn vị", "Cuộc thi", "Điểm", "Tổng câu", "Thời gian", "Nộp lúc", "Trạng thái"],
+      [
+        "Họ tên",
+        "Năm sinh",
+        "Đơn vị",
+        "Cuộc thi",
+        "Điểm",
+        "Tổng câu",
+        "Thời gian",
+        "Nộp lúc",
+        "Trạng thái",
+      ],
       ...rows.map((r) => [
         r.candidate_name,
         r.birth_year,
@@ -84,7 +209,9 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   return (
     <AdminSection
       title="Kết quả dự thi"
-      description={resultsQuery.isLoading ? "Đang tải..." : `${rows.length} / ${results.length} lượt thi`}
+      description={
+        resultsQuery.isLoading ? "Đang tải..." : `${rows.length} / ${results.length} lượt thi`
+      }
       toolbar={
         <div className="flex flex-col gap-2 sm:flex-row">
           <Select value={quizId} onValueChange={setQuizId}>
@@ -112,7 +239,12 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
         </div>
       }
       actions={
-        <Button variant="outline" className="rounded-full" onClick={exportExcel} disabled={!rows.length}>
+        <Button
+          variant="outline"
+          className="rounded-full"
+          onClick={exportExcel}
+          disabled={!rows.length}
+        >
           <Download className="size-4" /> Xuất Excel
         </Button>
       }
@@ -138,7 +270,11 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
               }
             />
           ) : (
-            <EmptyState icon={Inbox} title="Chưa có kết quả" description="Kết quả sẽ hiện ngay khi thí sinh nộp bài." />
+            <EmptyState
+              icon={Inbox}
+              title="Chưa có kết quả"
+              description="Kết quả sẽ hiện ngay khi thí sinh nộp bài."
+            />
           )
         }
       >
@@ -150,6 +286,7 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
                 <th className="px-4 py-3 font-semibold">Đơn vị</th>
                 <th className="px-4 py-3 font-semibold">Cuộc thi</th>
                 <th className="px-4 py-3 font-semibold">Điểm</th>
+                <th className="px-4 py-3 font-semibold">Liêm chính</th>
                 <th className="px-4 py-3 font-semibold">Thời gian</th>
                 <th className="px-4 py-3 font-semibold">Nộp lúc</th>
                 <th className="px-4 py-3" />
@@ -157,7 +294,10 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-t border-border transition-colors hover:bg-secondary/40">
+                <tr
+                  key={r.id}
+                  className="border-t border-border transition-colors hover:bg-secondary/40"
+                >
                   <td className="px-4 py-3">
                     <p className="font-semibold">{r.candidate_name}</p>
                     <p className="type-meta">{r.birth_year}</p>
@@ -166,11 +306,33 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
                   <td className="max-w-[240px] px-4 py-3 text-muted-foreground">{r.quiz_title}</td>
                   <td className="px-4 py-3 font-mono font-bold">
                     {r.score}/{r.total}
-                    {r.disqualified && <span className="ml-2 text-xs font-normal text-destructive">huỷ</span>}
+                    {r.disqualified && (
+                      <span className="ml-2 text-xs font-normal text-destructive">huỷ</span>
+                    )}
                   </td>
-                  <td className="px-4 py-3 font-mono text-muted-foreground">{formatSeconds(r.time_seconds)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{formatDateTime(r.submitted_at)}</td>
+                  <td className="px-4 py-3">
+                    <IntegrityCell sessionId={r.session_id} score={r.integrity_score} />
+                  </td>
+                  <td className="px-4 py-3 font-mono text-muted-foreground">
+                    {formatSeconds(r.time_seconds)}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {formatDateTime(r.submitted_at)}
+                  </td>
                   <td className="px-4 py-3 text-right">
+                    {r.disqualified && canEdit ? (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Phục hồi bài thi"
+                        onClick={() => {
+                          setRestoreReason("");
+                          setRestoreTarget({ id: r.id, name: r.candidate_name });
+                        }}
+                      >
+                        <RotateCcw className="size-4" />
+                      </Button>
+                    ) : null}
                     <Button
                       size="icon"
                       variant="ghost"
@@ -190,7 +352,42 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
           </table>
         </div>
       </QueryState>
+
+      <Dialog open={Boolean(restoreTarget)} onOpenChange={(o) => !o && setRestoreTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Phục hồi bài thi</DialogTitle>
+            <DialogDescription>
+              Bỏ trạng thái huỷ cho bài thi của {restoreTarget?.name}. Thao tác được ghi vào nhật ký
+              hệ thống.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Lý do phục hồi (bắt buộc, tối thiểu 5 ký tự)..."
+            value={restoreReason}
+            onChange={(e) => setRestoreReason(e.target.value)}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => setRestoreTarget(null)}
+            >
+              Huỷ
+            </Button>
+            <Button
+              className="rounded-full"
+              disabled={restoreReason.trim().length < 5 || restore.isPending}
+              onClick={() =>
+                restoreTarget &&
+                restore.mutate({ resultId: restoreTarget.id, reason: restoreReason.trim() })
+              }
+            >
+              Xác nhận phục hồi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminSection>
   );
 }
-
