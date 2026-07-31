@@ -130,3 +130,47 @@ export async function removeImages(paths: string[]) {
   }
   return paths.length;
 }
+
+/**
+ * Nhân bản ảnh sang một đường dẫn MỚI thuộc câu hỏi bản sao, để xoá câu này
+ * không làm mất ảnh của câu kia.
+ */
+export async function copyImageForQuestion(path: string, quizId: string, questionId: string) {
+  const { fileNameOf } = await import("@/lib/questionImagePaths");
+  const name = fileNameOf(path);
+  const ext = name.includes(".") ? name.split(".").pop()! : "webp";
+  const target = `${quizId}/${questionId}/${crypto.randomUUID()}.${ext}`;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin.storage.from(BUCKET).copy(path, target);
+  if (error) throw new Error(error.message);
+  const { error: updateError } = await supabaseAdmin
+    .from("questions")
+    .update({ image_url: target })
+    .eq("id", questionId);
+  if (updateError) throw new Error(updateError.message);
+  return { path: target };
+}
+
+/** Chuyển ảnh của các câu hỏi sang thư mục của cuộc thi mới sau khi đổi quiz_id. */
+export async function relocateImagesToQuiz(questionIds: string[], targetQuizId: string) {
+  if (!questionIds.length) return 0;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { fileNameOf } = await import("@/lib/questionImagePaths");
+  const { data: rows, error } = await supabaseAdmin
+    .from("questions")
+    .select("id, image_url")
+    .in("id", questionIds)
+    .not("image_url", "is", null);
+  if (error) throw new Error(error.message);
+  let moved = 0;
+  for (const row of rows ?? []) {
+    const from = row.image_url as string;
+    const to = `${targetQuizId}/${row.id}/${fileNameOf(from)}`;
+    if (from === to) continue;
+    const { error: moveError } = await supabaseAdmin.storage.from(BUCKET).move(from, to);
+    if (moveError) continue; // ảnh lỗi không được cản trở việc chuyển câu hỏi
+    await supabaseAdmin.from("questions").update({ image_url: to }).eq("id", row.id);
+    moved += 1;
+  }
+  return moved;
+}

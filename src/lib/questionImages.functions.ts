@@ -65,3 +65,29 @@ export const purgeQuizImages = createServerFn({ method: "POST" })
     const { removeImages } = await import("@/lib/questionImages.server");
     return { removed: await removeImages(paths) };
   });
+
+/** Nhân bản ảnh sang đường dẫn riêng của câu hỏi bản sao. */
+export const duplicateQuestionImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => commitSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { assertImageEditor } = await import("@/lib/questionImageAuth.server");
+    await assertImageEditor(context);
+    const { copyImageForQuestion } = await import("@/lib/questionImages.server");
+    return copyImageForQuestion(data.path, data.quizId, data.questionId);
+  });
+
+/** Chuyển ảnh của các câu hỏi vừa đổi cuộc thi sang thư mục cuộc thi mới. */
+export const relocateQuestionImages = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({ questionIds: z.array(z.string().uuid()).min(1).max(500), quizId: z.string().uuid() })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ moved: number }> => {
+    const { assertImageEditor } = await import("@/lib/questionImageAuth.server");
+    await assertImageEditor(context);
+    const { relocateImagesToQuiz } = await import("@/lib/questionImages.server");
+    return { moved: await relocateImagesToQuiz(data.questionIds, data.quizId) };
+  });

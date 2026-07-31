@@ -1,23 +1,40 @@
-import { Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
+import { FieldMessage } from "./FieldMessage";
 import type { EditorProps } from "./types";
 
 /**
  * Bộ soạn phương án dùng chung cho câu một đáp án, nhiều đáp án,
- * đúng-sai và sắp xếp thứ tự (hành vi giữ nguyên như bản gốc).
+ * đúng-sai và sắp xếp thứ tự.
  */
-export function OptionsEditor({ form, setForm }: EditorProps) {
+export function OptionsEditor({ form, setForm, errors, warnings }: EditorProps) {
+  const ordering = form.kind === "ordering";
+
+  /** Đổi chỗ hai mục (dùng cho câu sắp xếp). */
+  function swap(i: number, j: number) {
+    if (j < 0 || j >= form.options.length) return;
+    const next = [...form.options];
+    [next[i], next[j]] = [next[j], next[i]];
+    setForm({ ...form, options: next });
+  }
+
   return (
     <div className="space-y-2">
-      <Label>{form.kind === "ordering" ? "Các mục theo đúng thứ tự" : "Phương án trả lời"}</Label>
+      <Label>{ordering ? "Các mục theo đúng thứ tự" : "Phương án trả lời"}</Label>
+      {ordering ? (
+        <p className="type-meta">
+          Nhập các mục <strong>THEO ĐÚNG THỨ TỰ</strong> — hệ thống sẽ tự trộn khi thi. Dùng nút mũi
+          tên để sắp lại.
+        </p>
+      ) : null}
       {form.options.map((o, i) => (
         <div key={i} className="flex items-center gap-2">
-          {form.kind === "ordering" ? (
+          {ordering ? (
             <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-secondary text-sm font-bold">
               {i + 1}
             </span>
@@ -53,15 +70,35 @@ export function OptionsEditor({ form, setForm }: EditorProps) {
           )}
           <Input
             value={o}
-            placeholder={
-              form.kind === "ordering" ? `Mục ${i + 1}` : `Phương án ${String.fromCharCode(65 + i)}`
-            }
+            placeholder={ordering ? `Mục ${i + 1}` : `Phương án ${String.fromCharCode(65 + i)}`}
             onChange={(e) => {
               const next = [...form.options];
               next[i] = e.target.value;
               setForm({ ...form, options: next });
             }}
           />
+          {ordering ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Đưa mục lên trên"
+                disabled={i === 0}
+                onClick={() => swap(i, i - 1)}
+              >
+                <ArrowUp className="size-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Đưa mục xuống dưới"
+                disabled={i === form.options.length - 1}
+                onClick={() => swap(i, i + 1)}
+              >
+                <ArrowDown className="size-4" />
+              </Button>
+            </>
+          ) : null}
           {form.options.length > 2 ? (
             <Button
               variant="ghost"
@@ -74,6 +111,8 @@ export function OptionsEditor({ form, setForm }: EditorProps) {
           ) : null}
         </div>
       ))}
+      <FieldMessage error={errors?.options} warning={warnings?.options} />
+      <FieldMessage error={errors?.correct} warning={warnings?.correct} />
       {form.kind !== "true_false" ? (
         <Button
           variant="outline"
@@ -81,7 +120,7 @@ export function OptionsEditor({ form, setForm }: EditorProps) {
           className="rounded-full"
           onClick={() => setForm({ ...form, options: [...form.options, ""] })}
         >
-          <Plus className="size-4" /> Thêm phương án
+          <Plus className="size-4" /> {ordering ? "Thêm mục" : "Thêm phương án"}
         </Button>
       ) : null}
     </div>

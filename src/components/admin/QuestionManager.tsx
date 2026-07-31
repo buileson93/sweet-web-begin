@@ -19,12 +19,21 @@ import {
   uploadQuestionImage,
 } from "@/lib/questionImage";
 import type { Difficulty } from "@/lib/questionKinds";
+import { clearDraft, draftKey, isDraftMeaningful, loadDraft, saveDraft } from "@/lib/questionDraft";
 
 import { QuestionFilters } from "./questions/QuestionFilters";
 import { QuestionForm } from "./questions/QuestionForm";
 import { QuestionList } from "./questions/QuestionList";
+import { QuestionPreviewDialog } from "./questions/QuestionPreviewDialog";
 import { useQuestionMutations } from "./questions/useQuestionMutations";
-import { emptyForm, type CsvQuestion, type QuestionRow } from "./questions/types";
+import {
+  emptyForm,
+  type ArchiveFilter,
+  type CsvQuestion,
+  type QuestionFormState,
+  type QuestionRow,
+} from "./questions/types";
+
 
 export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const qc = useQueryClient();
@@ -36,11 +45,16 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const [quizId, setQuizId] = useState("");
   const [keyword, setKeyword] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | Difficulty>("all");
+  const [archiveFilter, setArchiveFilter] = useState<ArchiveFilter>("active");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<QuestionRow | null>(null);
-  const [form, setForm] = useState({ ...emptyForm });
+  const [preview, setPreview] = useState<QuestionRow | null>(null);
+  const [form, setForm] = useState<QuestionFormState>({ ...emptyForm });
+  const [draftAvailable, setDraftAvailable] = useState(false);
+  const pendingDraft = useRef<QuestionFormState | null>(null);
+
 
   const PAGE_SIZE = 20;
 
@@ -64,8 +78,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       const { data, error } = await supabase
         .from("questions")
         .select(
-          "id, quiz_id, question, options, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, order_index, tags, explanation, image_url",
+          "id, quiz_id, question, options, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, order_index, time_limit_seconds, is_archived, tags, explanation, image_url",
         )
+
         .eq("quiz_id", quizId)
         // Sắp theo số thứ tự để admin thấy đúng trật tự đề khi tắt xáo trộn.
         .order("order_index", { ascending: true })
@@ -82,9 +97,11 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     return questions.filter(
       (q) =>
         (!kw || q.question.toLowerCase().includes(kw)) &&
-        (difficultyFilter === "all" || (q.difficulty ?? "medium") === difficultyFilter),
+        (difficultyFilter === "all" || (q.difficulty ?? "medium") === difficultyFilter) &&
+        (archiveFilter === "all" ||
+          (archiveFilter === "archived" ? Boolean(q.is_archived) : !q.is_archived)),
     );
-  }, [questions, keyword, difficultyFilter]);
+  }, [questions, keyword, difficultyFilter, archiveFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
@@ -97,7 +114,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   useEffect(() => {
     setPage(1);
     setSelected(new Set());
-  }, [quizId, keyword, difficultyFilter]);
+  }, [quizId, keyword, difficultyFilter, archiveFilter]);
 
   const allOnPageSelected = paged.length > 0 && paged.every((q) => selected.has(q.id));
 
@@ -119,15 +136,59 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     });
   }
 
-  const { save, remove, bulkRemove, bulkDifficulty, importFile } = useQuestionMutations({
+  const {
+    save,
+    remove,
+    archive,
+    duplicate,
+    reorder,
+    bulkRemove,
+    bulkDifficulty,
+    bulkPoints,
+    bulkTags,
+    bulkArchive,
+    bulkMoveQuiz,
+    importFile,
+  } = useQuestionMutations({
     quizId,
     questions,
     selected,
     setSelected,
     form,
     editing,
-    onSaved: () => setOpen(false),
+    onSaved: () => {
+      clearDraft(draftKey(quizId, editing?.id ?? null));
+      setOpen(false);
+    },
   });
+
+  const bulkBusy =
+    bulkDifficulty.isPending ||
+    bulkPoints.isPending ||
+    bulkTags.isPending ||
+    bulkArchive.isPending ||
+    bulkMoveQuiz.isPending;
+
+  /** Đổi chỗ số thứ tự với câu liền kề trong danh sách đã lọc. */
+  function moveRow(row: QuestionRow, delta: -1 | 1) {
+    const index = filtered.findIndex((q) => q.id === row.id);
+    const neighbour = filtered[index + delta];
+    if (!neighbour) return;
+    const a = row.order_index ?? index;
+    const b = neighbour.order_index ?? index + delta;
+    reorder.mutate(
+      a === b
+        ? [
+            { id: row.id, order_index: index + delta },
+            { id: neighbour.id, order_index: index },
+          ]
+        : [
+            { id: row.id, order_index: b },
+            { id: neighbour.id, order_index: a },
+          ],
+    );
+  }
+
 
   async function exportExcel() {
     const rows = [
@@ -238,23 +299,38 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   }, []);
 
   /** Đóng hộp thoại mà chưa lưu: thu hồi ảnh tạm để không bỏ rác trong kho. */
-  const handleDialogOpenChange = useCallback(
-    (next: boolean) => {
-      if (!next) {
-        setForm((f) => {
-          if (isTempImagePath(f.image_url)) void removeQuestionImage(f.image_url!);
-          return f;
-        });
-        setUploadInfo(null);
-      }
-      setOpen(next);
-    },
-    [],
-  );
+  const handleDialogOpenChange = useCallback((next: boolean) => {
+    if (!next) {
+      setForm((f) => {
+        if (isTempImagePath(f.image_url)) void removeQuestionImage(f.image_url!);
+        return f;
+      });
+      setUploadInfo(null);
+      setDraftAvailable(false);
+      pendingDraft.current = null;
+    }
+    setOpen(next);
+  }, []);
+
+  /** Tìm bản nháp còn hạn cho ngữ cảnh đang mở và bật lời mời khôi phục. */
+  function offerDraft(editingId: string | null) {
+    const saved = loadDraft<QuestionFormState>(draftKey(quizId, editingId));
+    pendingDraft.current = saved && isDraftMeaningful(saved) ? saved : null;
+    setDraftAvailable(Boolean(pendingDraft.current));
+  }
+
+  // Tự lưu nháp trong lúc soạn để không mất khi lỡ đóng tab.
+  useEffect(() => {
+    if (!open || !quizId) return;
+    if (!isDraftMeaningful(form)) return;
+    const id = window.setTimeout(() => saveDraft(draftKey(quizId, editing?.id ?? null), form), 800);
+    return () => window.clearTimeout(id);
+  }, [open, quizId, editing, form]);
 
   function openCreate() {
     setEditing(null);
     setForm({ ...emptyForm, options: ["", "", "", ""], pairs: [], correct_indices: [] });
+    offerDraft(null);
     setOpen(true);
   }
 
@@ -271,12 +347,15 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       difficulty: q.difficulty ?? "medium",
       points: q.points ?? 1,
       order_index: q.order_index ?? 0,
+      time_limit_seconds: q.time_limit_seconds ? String(q.time_limit_seconds) : "",
       tags: (q.tags ?? []).join(", "),
       explanation: q.explanation ?? "",
       image_url: q.image_url,
     });
+    offerDraft(q.id);
     setOpen(true);
   }
+
 
   return (
     <div className="space-y-4">
@@ -290,6 +369,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
             onQuizChange={setQuizId}
             difficultyFilter={difficultyFilter}
             onDifficultyChange={setDifficultyFilter}
+            archiveFilter={archiveFilter}
+            onArchiveChange={setArchiveFilter}
+
             keyword={keyword}
             onKeywordChange={setKeyword}
           />
@@ -411,16 +493,30 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
           <QuestionList
             paged={paged}
             canEdit={canEdit}
+            quizzes={quizzes}
+            quizId={quizId}
             selected={selected}
             allOnPageSelected={allOnPageSelected}
             onToggleOne={toggleOne}
             onTogglePage={togglePage}
             onClearSelection={() => setSelected(new Set())}
-            onBulkDifficulty={(v) => bulkDifficulty.mutate(v)}
-            onBulkRemove={() => bulkRemove.mutate()}
+            bulkHandlers={{
+              onBulkDifficulty: (v) => bulkDifficulty.mutate(v),
+              onBulkPoints: (v) => bulkPoints.mutate(v),
+              onBulkTags: (tags, mode) => bulkTags.mutate({ tags, mode }),
+              onBulkArchive: (archived) => bulkArchive.mutate(archived),
+              onBulkMoveQuiz: (target) => bulkMoveQuiz.mutate(target),
+              onBulkRemove: () => bulkRemove.mutate(),
+            }}
             bulkRemoving={bulkRemove.isPending}
+            bulkBusy={bulkBusy}
             onEdit={openEdit}
             onRemove={(q) => remove.mutate(q)}
+            onPreview={(q) => setPreview(q)}
+            onDuplicate={(q) => duplicate.mutate(q)}
+            onArchive={(q, archived) => archive.mutate({ row: q, archived })}
+            onMove={moveRow}
+            onSetOrder={(q, value) => reorder.mutate([{ id: q.id, order_index: value }])}
             pageSize={PAGE_SIZE}
             page={safePage}
             pageCount={pageCount}
@@ -430,10 +526,14 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         </QueryState>
       </AdminSection>
 
+      <QuestionPreviewDialog question={preview} onClose={() => setPreview(null)} />
+
       <QuestionForm
         open={open}
         onOpenChange={handleDialogOpenChange}
         editing={Boolean(editing)}
+        editingId={editing?.id ?? null}
+        existing={questions.map((q) => ({ id: q.id, question: q.question }))}
         form={form}
         setForm={setForm}
         uploadStage={uploadStage}
@@ -442,7 +542,18 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         onRemoveImage={dropPendingImage}
         onSave={() => save.mutate()}
         saving={save.isPending}
+        draftAvailable={draftAvailable}
+        onRestoreDraft={() => {
+          if (pendingDraft.current) setForm(pendingDraft.current);
+          setDraftAvailable(false);
+        }}
+        onDiscardDraft={() => {
+          clearDraft(draftKey(quizId, editing?.id ?? null));
+          pendingDraft.current = null;
+          setDraftAvailable(false);
+        }}
       />
+
     </div>
   );
 }

@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { FieldMessage } from "./FieldMessage";
 import type { EditorProps } from "./types";
 
 /** Câu nối cặp: các cặp vế trái - vế phải. */
-export function MatchingEditor({ form, setForm }: EditorProps) {
+export function MatchingEditor({ form, setForm, errors, warnings }: EditorProps) {
   return (
     <div className="space-y-2">
       <Label>Các cặp cần nối</Label>
@@ -41,6 +42,7 @@ export function MatchingEditor({ form, setForm }: EditorProps) {
           </Button>
         </div>
       ))}
+      <FieldMessage error={errors?.pairs} warning={warnings?.pairs} />
       <Button
         variant="outline"
         size="sm"
