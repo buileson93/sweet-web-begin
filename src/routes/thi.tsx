@@ -244,6 +244,27 @@ function ExamPage() {
     }
   }, [answers, session, result]);
 
+  // Autosave đáp án lên máy chủ (delta, nhịp 12s, debounce 2s, tối đa 1 request/5s).
+  const {
+    status: saveStatus,
+    savedAt: lastSavedAt,
+    markAcked,
+  } = useExamAutosave({
+    sessionId: session?.sessionId ?? null,
+    submitToken: session?.submitToken ?? null,
+    answers,
+    enabled: Boolean(session) && !result,
+    initialSeq: serverSeq,
+  });
+
+  // Sau khi khôi phục xong, báo cho autosave biết máy chủ đã có sẵn những đáp án nào.
+  useEffect(() => {
+    const ack = autosaveAckRef.current;
+    if (!ack) return;
+    autosaveAckRef.current = null;
+    markAcked(ack.answers, ack.seq);
+  }, [markAcked, serverSeq]);
+
   const finish = useCallback(
     async (opts?: { disqualified?: boolean; reason?: string }) => {
       if (!session || submittedRef.current) return;
@@ -262,6 +283,8 @@ function ExamPage() {
         });
         sessionStorage.removeItem("exam:" + session.sessionId);
         sessionStorage.removeItem("exam:current");
+        sessionStorage.removeItem(localAnswersKey(session.sessionId));
+        sessionStorage.removeItem(seqKey(session.sessionId));
         setResult(res);
         window.scrollTo({ top: 0 });
       } catch (error) {
@@ -429,6 +452,8 @@ function ExamPage() {
       }
       sessionStorage.removeItem("exam:" + session.sessionId);
       sessionStorage.removeItem("exam:current");
+      sessionStorage.removeItem(localAnswersKey(session.sessionId));
+      sessionStorage.removeItem(seqKey(session.sessionId));
     }
     navigate({ to: "/" });
   }, [navigate, runAbandon, session]);
@@ -532,6 +557,35 @@ function ExamPage() {
             <Timer className="size-4" />
             {formatSeconds(remaining)}
           </div>
+        </div>
+        <div className="mx-auto flex max-w-5xl items-center px-3 pb-1.5 sm:px-4">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
+              saveStatus === "offline"
+                ? "bg-destructive/20 text-destructive-foreground"
+                : "bg-primary-foreground/10 text-primary-foreground/80",
+            )}
+          >
+            {saveStatus === "saving" ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : saveStatus === "offline" ? (
+              <AlertTriangle className="size-3" />
+            ) : (
+              <CheckCircle2 className="size-3" />
+            )}
+            {saveStatus === "saving"
+              ? "Đang lưu..."
+              : saveStatus === "offline"
+                ? "Mất kết nối — bài vẫn được giữ trên máy"
+                : lastSavedAt
+                  ? "Đã lưu lúc " +
+                    lastSavedAt.toLocaleTimeString("vi-VN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "Bài làm được lưu tự động"}
+          </span>
         </div>
         <Progress value={progress} className="h-1 rounded-none bg-primary-foreground/15" />
       </header>
