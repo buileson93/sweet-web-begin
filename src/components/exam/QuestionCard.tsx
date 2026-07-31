@@ -90,17 +90,40 @@ export function QuestionCard({
       </div>
 
       {instant && feedback ? (
-        <p
+        <div
           className={cn(
-            "animate-rise mt-4 rounded-xl px-3 py-2 text-sm font-semibold",
+            "animate-rise mt-4 space-y-1.5 rounded-xl px-3 py-2.5 text-sm",
             feedback === "correct"
               ? "bg-success/12 text-success"
               : "bg-destructive/12 text-destructive",
           )}
         >
-          {feedback === "correct" ? "Chính xác!" : "Chưa đúng."}
-        </p>
+          <p className="flex items-center gap-1.5 font-semibold">
+            {feedback === "correct" ? (
+              <>
+                <ThumbsUp className="size-4" /> Chính xác!
+              </>
+            ) : (
+              <>
+                <Frown className="size-4" /> Chưa đúng.
+              </>
+            )}
+          </p>
+          {feedback === "wrong" && feedbackInfo?.correctText ? (
+            <p className="rounded-lg bg-success/12 px-2.5 py-1.5 text-success">
+              <span className="font-semibold">Đáp án đúng: </span>
+              {feedbackInfo.correctText}
+            </p>
+          ) : null}
+          {feedbackInfo?.explanation ? (
+            <p className="rounded-lg bg-secondary/70 px-2.5 py-1.5 text-muted-foreground">
+              <span className="font-semibold text-foreground">Giải thích: </span>
+              {feedbackInfo.explanation}
+            </p>
+          ) : null}
+        </div>
       ) : null}
+
 
       {/* Vật phẩm trợ giúp */}
       {settings.allowFiftyFifty || settings.allowSkip ? (
