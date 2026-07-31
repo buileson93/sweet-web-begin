@@ -51,7 +51,7 @@ function LeaderboardPage() {
     queryFn: async () => {
       let query = supabase
         .from("results")
-        .select("id, candidate_name, unit, birth_year, score, total, time_seconds, submitted_at, quiz_title, quiz_id")
+        .select("id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id")
         .eq("disqualified", false)
         .order("score", { ascending: false })
         .order("time_seconds", { ascending: true })
@@ -94,7 +94,6 @@ function LeaderboardPage() {
     return rows.map((r, i) => ({
       "Xếp hạng": i + 1,
       "Họ và tên": r.candidate_name,
-      "Năm sinh": r.birth_year ?? "",
       "Đơn vị": r.unit ?? "",
       "Cuộc thi": r.quiz_title ?? "",
       "Điểm": r.score,
