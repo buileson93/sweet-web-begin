@@ -11,7 +11,12 @@ import {
 } from "./sheet";
 
 const rows: ExportRow[] = [
-  { "Họ tên": "Nguyễn Thị Ánh Tuyết", "Đơn vị": "Đài KSKL Nội Bài", Điểm: 0, "Ngày thi": "31/07/2026" },
+  {
+    "Họ tên": "Nguyễn Thị Ánh Tuyết",
+    "Đơn vị": "Đài KSKL Nội Bài",
+    Điểm: 0,
+    "Ngày thi": "31/07/2026",
+  },
   { "Họ tên": "Trần Đức Hải", "Đơn vị": "", Điểm: 18.5, "Ngày thi": "01/08/2026" },
 ];
 
@@ -64,9 +69,7 @@ describe("sheetDataToRows", () => {
 describe("chống CSV injection", () => {
   it("thêm dấu nháy đơn cho chuỗi bắt đầu bằng =", () => {
     expect(escapeFormula("=1+1")).toBe("'=1+1");
-    expect(escapeFormula('=HYPERLINK("http://evil","x")')).toBe(
-      "'=HYPERLINK(\"http://evil\",\"x\")",
-    );
+    expect(escapeFormula('=HYPERLINK("http://evil","x")')).toBe('\'=HYPERLINK("http://evil","x")');
     expect(escapeCsvCell("=cmd|' /c calc'!A0")).toBe("\"'=cmd|' /c calc'!A0\"");
   });
 

@@ -28,7 +28,11 @@ export function rowsToSheetData(rows: ExportRow[]): SheetData {
 /** Chuyển dữ liệu bảng ngược lại thành bản ghi (khoá viết thường, đã cắt khoảng trắng). */
 export function sheetDataToRows(data: SheetData): Record<string, string>[] {
   if (data.length === 0) return [];
-  const headers = data[0].map((h) => String(h ?? "").trim().toLowerCase());
+  const headers = data[0].map((h) =>
+    String(h ?? "")
+      .trim()
+      .toLowerCase(),
+  );
   return data
     .slice(1)
     .filter((cells) => cells.some((c) => String(c ?? "").trim() !== ""))
