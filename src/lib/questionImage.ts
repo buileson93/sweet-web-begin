@@ -28,6 +28,12 @@ const MAX_EDGE = 1280;
 /** Dung lượng mục tiêu sau khi nén (byte). */
 const TARGET_BYTES = 180 * 1024;
 
+/** Ảnh của từng phương án nhỏ hơn nhiều nên nén mạnh tay hơn. */
+export const OPTION_IMAGE_MAX_EDGE = 640;
+export const OPTION_IMAGE_TARGET_BYTES = 80 * 1024;
+
+export type CompressOptions = { maxEdge?: number; targetBytes?: number };
+
 export type CompressedImage = {
   blob: Blob;
   width: number;
@@ -55,7 +61,12 @@ async function decode(file: File): Promise<ImageBitmap> {
  * 1280px và mã hoá WebP (tự lùi về JPEG nếu trình duyệt không hỗ trợ WebP),
  * giảm dần chất lượng cho tới khi đạt dung lượng mục tiêu.
  */
-export async function compressImage(file: File): Promise<CompressedImage> {
+export async function compressImage(
+  file: File,
+  opts: CompressOptions = {},
+): Promise<CompressedImage> {
+  const maxEdge = opts.maxEdge ?? MAX_EDGE;
+  const targetBytes = opts.targetBytes ?? TARGET_BYTES;
   if (!file.type.startsWith("image/") && !isHeicFile(file.name, file.type))
     throw new Error("Tệp không phải là hình ảnh.");
 
@@ -69,7 +80,7 @@ export async function compressImage(file: File): Promise<CompressedImage> {
     throw new Error(pixelCheck.message);
   }
 
-  const { width, height } = planResize(bitmap.width, bitmap.height, MAX_EDGE);
+  const { width, height } = planResize(bitmap.width, bitmap.height, maxEdge);
 
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -81,7 +92,7 @@ export async function compressImage(file: File): Promise<CompressedImage> {
 
   let quality = 0.82;
   let blob = await encode(canvas, quality);
-  while (blob.size > TARGET_BYTES && quality > 0.4) {
+  while (blob.size > targetBytes && quality > 0.4) {
     quality -= 0.12;
     blob = await encode(canvas, quality);
   }
@@ -113,9 +124,10 @@ export async function uploadQuestionImage(
   file: File,
   quizId: string,
   onStage?: (stage: "compressing" | "uploading") => void,
+  opts: CompressOptions = {},
 ) {
   onStage?.("compressing");
-  const { blob, width, height, mime, ext } = await compressImage(file);
+  const { blob, width, height, mime, ext } = await compressImage(file, opts);
   onStage?.("uploading");
   // Tải lên thư mục tạm; chỉ khi lưu câu hỏi thành công ảnh mới được chuyển
   // sang thư mục chính thức. Ảnh tạm bị dọn tự động sau 24 giờ.
@@ -136,4 +148,18 @@ export function questionImageSrc(path: string | null | undefined) {
   if (!path) return null;
   if (/^https?:\/\//.test(path)) return path;
   return `/api/public/anh-cau-hoi/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+/**
+ * Tải ảnh cho MỘT PHƯƠNG ÁN trả lời: nén về cạnh dài tối đa 640px, mục tiêu 80KB.
+ */
+export async function uploadOptionImage(
+  file: File,
+  quizId: string,
+  onStage?: (stage: "compressing" | "uploading") => void,
+) {
+  return uploadQuestionImage(file, quizId, onStage, {
+    maxEdge: OPTION_IMAGE_MAX_EDGE,
+    targetBytes: OPTION_IMAGE_TARGET_BYTES,
+  });
 }
