@@ -70,7 +70,7 @@ export function LiveMonitor() {
       const rows = page.changed ? page.rows : (cacheRef.current?.rows ?? []);
       cacheRef.current = { version: page.version, rows };
       setSyncedAt(new Date());
-      if (page.changed) setChangedAt(new Date());
+      setChanged(page.changed);
       return { ...page, rows };
     },
   });
@@ -84,9 +84,8 @@ export function LiveMonitor() {
     : query.isError
       ? "Mất kết nối"
       : syncedAt
-        ? `Đồng bộ lúc ${syncedAt.toLocaleTimeString("vi-VN")}${changedAt && changedAt === syncedAt ? " · có thay đổi" : " · không đổi"}`
+        ? `Đồng bộ ${syncedAt.toLocaleTimeString("vi-VN")} · ${changed ? "có thay đổi" : "không đổi"}`
         : "Chưa đồng bộ";
-
 
   return (
     <AdminSection
@@ -94,18 +93,39 @@ export function LiveMonitor() {
       description={
         query.isLoading
           ? "Đang tải..."
-          : `${active.length} thí sinh đang làm bài · ${submitted.length} bài đã nộp (2 giờ gần nhất)`
+          : `${activeCount} thí sinh đang làm bài · ${submittedCount} bài đã nộp (2 giờ gần nhất)`
       }
       toolbar={
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-sm">
-            <Users className="size-4 text-accent" /> Đang thi: <b className="font-mono">{active.length}</b>
+            <Users className="size-4 text-accent" /> Đang thi: <b className="font-mono">{activeCount}</b>
           </span>
           <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-sm">
-            <CheckCircle2 className="size-4 text-accent" /> Đã nộp: <b className="font-mono">{submitted.length}</b>
+            <CheckCircle2 className="size-4 text-accent" /> Đã nộp: <b className="font-mono">{submittedCount}</b>
+          </span>
+          <span
+            className={cn(
+              "type-meta inline-flex items-center gap-1.5 rounded-full px-3 py-1.5",
+              query.isError ? "bg-destructive/10 text-destructive" : "bg-secondary text-muted-foreground",
+            )}
+            aria-live="polite"
+          >
+            {query.isFetching ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  query.isError ? "bg-destructive" : changed ? "bg-primary" : "bg-accent",
+                )}
+              />
+            )}
+            {syncLabel}
+            {!visible ? " · tạm dừng (tab ẩn)" : ""}
           </span>
         </div>
       }
+
       actions={
         <div className="flex gap-2">
           <Button variant={auto ? "default" : "outline"} className="rounded-full" onClick={() => setAuto((v) => !v)}>
