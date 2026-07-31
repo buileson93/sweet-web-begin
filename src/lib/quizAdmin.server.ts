@@ -181,13 +181,13 @@ export async function duplicateQuizRow(input: {
 
   const rows = (questions ?? []).map((q) => {
     const { id: _qid, created_at: _qc, updated_at: _qu, ...body } = q as Record<string, unknown> & { id: string };
-    return { ...(body as Record<string, never>), quiz_id: newQuizId, image_url: null };
+    return { ...body, quiz_id: newQuizId, image_url: null };
   });
   if (!rows.length) return { quizId: newQuizId, copiedQuestions: 0 };
 
   const { data: inserted, error: copyError } = await supabaseAdmin
     .from("questions")
-    .insert(rows)
+    .insert(rows as never)
     .select("id, question");
   if (copyError) throw new Error(copyError.message);
 
@@ -198,12 +198,13 @@ export async function duplicateQuizRow(input: {
     const dst = inserted![i];
     if (!src?.image_url) continue;
     try {
-      const path = await copyImageForQuestion(src.image_url, newQuizId, dst.id);
-      await supabaseAdmin.from("questions").update({ image_url: path }).eq("id", dst.id);
+      // Hàm này tự cập nhật image_url của câu hỏi bản sao.
+      await copyImageForQuestion(src.image_url, newQuizId, dst.id);
     } catch (err) {
       console.error("duplicateQuizRow: copy image", err);
     }
   }
+
 
   return { quizId: newQuizId, copiedQuestions: inserted?.length ?? 0 };
 }
