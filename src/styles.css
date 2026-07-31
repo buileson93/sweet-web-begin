@@ -1259,7 +1259,7 @@
   &::after {
     content: "";
     position: absolute;
-    left: -0.6rem;
+    left: 0.18rem;
     top: 50%;
     height: 0;
     width: 3px;
