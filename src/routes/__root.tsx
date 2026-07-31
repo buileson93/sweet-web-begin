@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/palette";
+import { useDeviceTracking } from "@/hooks/useDeviceTracking";
 
 
 function NotFoundComponent() {
