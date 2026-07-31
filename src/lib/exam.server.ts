@@ -345,7 +345,8 @@ export async function reportExamEvent(input: {
   if (!session || session.submit_token !== input.submitToken || session.status !== "active")
     return { ok: false, integrityScore: session?.integrity_score ?? 0 };
 
-  if (!isExamEventKind(input.kind)) return { ok: false, integrityScore: session.integrity_score ?? 0 };
+  if (!isExamEventKind(input.kind))
+    return { ok: false, integrityScore: session.integrity_score ?? 0 };
 
   // Chống spam: mỗi phiên chỉ ghi tối đa MAX_EVENTS_PER_SESSION sự kiện.
   const { count } = await supabaseAdmin
@@ -367,7 +368,10 @@ export async function reportExamEvent(input: {
 
   const next = (session.integrity_score ?? 0) + weight;
   if (weight > 0)
-    await supabaseAdmin.from("exam_sessions").update({ integrity_score: next }).eq("id", session.id);
+    await supabaseAdmin
+      .from("exam_sessions")
+      .update({ integrity_score: next })
+      .eq("id", session.id);
 
   return { ok: true, integrityScore: next };
 }
@@ -492,7 +496,9 @@ export async function submitExamSession(input: {
   const [quizRes, rowsRes, historyRes, existingRes] = await Promise.all([
     supabaseAdmin
       .from("quizzes")
-      .select("title, pass_percent, negative_marking, streak_bonus, strict_mode, disqualify_threshold")
+      .select(
+        "title, pass_percent, negative_marking, streak_bonus, strict_mode, disqualify_threshold",
+      )
       .eq("id", session.quiz_id)
       .maybeSingle(),
     supabaseAdmin.from("questions").select(QUESTION_COLUMNS).in("id", session.question_ids),

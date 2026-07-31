@@ -78,6 +78,7 @@ export function shouldDisqualify(
   strictMode = false,
 ): boolean {
   if (!strictMode) return false;
-  const limit = Number.isFinite(threshold) && threshold > 0 ? threshold : DISQUALIFY_THRESHOLD_DEFAULT;
+  const limit =
+    Number.isFinite(threshold) && threshold > 0 ? threshold : DISQUALIFY_THRESHOLD_DEFAULT;
   return score >= limit;
 }

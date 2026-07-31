@@ -6,7 +6,13 @@ import { toast } from "sonner";
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { formatDateTime, formatSeconds } from "@/lib/format";
@@ -45,14 +51,22 @@ function IntegrityCell({ sessionId, score }: { sessionId: string | null; score: 
   });
 
   const value = score ?? 0;
-  const tone = value === 0 ? "text-muted-foreground" : value >= 6 ? "text-destructive" : "text-warning-foreground";
+  const tone =
+    value === 0
+      ? "text-muted-foreground"
+      : value >= 6
+        ? "text-destructive"
+        : "text-warning-foreground";
 
   if (!sessionId) return <span className="text-muted-foreground">—</span>;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" className={`inline-flex items-center gap-1 font-mono font-semibold ${tone}`}>
+        <button
+          type="button"
+          className={`inline-flex items-center gap-1 font-mono font-semibold ${tone}`}
+        >
           <ShieldAlert className="size-4" />
           {value}
         </button>
@@ -67,7 +81,9 @@ function IntegrityCell({ sessionId, score }: { sessionId: string | null; score: 
               <li key={e.id} className="flex justify-between gap-2 border-b border-border/60 pb-1">
                 <span>
                   {EVENT_LABEL[e.kind] ?? e.kind}
-                  {typeof e.detail?.hiddenMs === "number" ? ` (${Math.round(e.detail.hiddenMs / 1000)}s)` : ""}
+                  {typeof e.detail?.hiddenMs === "number"
+                    ? ` (${Math.round(e.detail.hiddenMs / 1000)}s)`
+                    : ""}
                 </span>
                 <span className="font-mono text-muted-foreground">+{e.weight}</span>
               </li>
@@ -81,7 +97,6 @@ function IntegrityCell({ sessionId, score }: { sessionId: string | null; score: 
   );
 }
 
-
 export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   const qc = useQueryClient();
   const [quizId, setQuizId] = useState("all");
@@ -90,7 +105,10 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   const { data: quizzes = [] } = useQuery({
     queryKey: ["admin-quizzes-lite"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("quizzes").select("id, title").order("start_time");
+      const { data, error } = await supabase
+        .from("quizzes")
+        .select("id, title")
+        .order("start_time");
       if (error) throw error;
       return data;
     },
@@ -99,7 +117,11 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   const resultsQuery = useQuery({
     queryKey: ["admin-results", quizId],
     queryFn: async () => {
-      let query = supabase.from("results").select("*").order("submitted_at", { ascending: false }).limit(1000);
+      let query = supabase
+        .from("results")
+        .select("*")
+        .order("submitted_at", { ascending: false })
+        .limit(1000);
       if (quizId !== "all") query = query.eq("quiz_id", quizId);
       const { data, error } = await query;
       if (error) throw error;
@@ -108,11 +130,13 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   });
   const results = resultsQuery.data ?? [];
 
-
   const rows = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
     return results.filter(
-      (r) => !kw || r.candidate_name.toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
+      (r) =>
+        !kw ||
+        r.candidate_name.toLowerCase().includes(kw) ||
+        (r.unit ?? "").toLowerCase().includes(kw),
     );
   }, [results, keyword]);
 
@@ -121,7 +145,8 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   const [restoreReason, setRestoreReason] = useState("");
 
   const restore = useMutation({
-    mutationFn: async (payload: { resultId: string; reason: string }) => runRestore({ data: payload }),
+    mutationFn: async (payload: { resultId: string; reason: string }) =>
+      runRestore({ data: payload }),
     onSuccess: () => {
       toast.success("Đã phục hồi bài thi và ghi vào nhật ký.");
       setRestoreTarget(null);
@@ -135,7 +160,12 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
     mutationFn: async (row: { id: string; candidate_name: string }) => {
       const { error } = await supabase.from("results").delete().eq("id", row.id);
       if (error) throw error;
-      await logAudit({ action: "delete", entity: "result", entityId: row.id, entityLabel: row.candidate_name });
+      await logAudit({
+        action: "delete",
+        entity: "result",
+        entityId: row.id,
+        entityLabel: row.candidate_name,
+      });
     },
     onSuccess: () => {
       toast.success("Đã xoá kết quả.");
@@ -147,7 +177,17 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   async function exportExcel() {
     const XLSX = await import("xlsx");
     const data = [
-      ["Họ tên", "Năm sinh", "Đơn vị", "Cuộc thi", "Điểm", "Tổng câu", "Thời gian", "Nộp lúc", "Trạng thái"],
+      [
+        "Họ tên",
+        "Năm sinh",
+        "Đơn vị",
+        "Cuộc thi",
+        "Điểm",
+        "Tổng câu",
+        "Thời gian",
+        "Nộp lúc",
+        "Trạng thái",
+      ],
       ...rows.map((r) => [
         r.candidate_name,
         r.birth_year,
@@ -169,7 +209,9 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   return (
     <AdminSection
       title="Kết quả dự thi"
-      description={resultsQuery.isLoading ? "Đang tải..." : `${rows.length} / ${results.length} lượt thi`}
+      description={
+        resultsQuery.isLoading ? "Đang tải..." : `${rows.length} / ${results.length} lượt thi`
+      }
       toolbar={
         <div className="flex flex-col gap-2 sm:flex-row">
           <Select value={quizId} onValueChange={setQuizId}>
@@ -197,7 +239,12 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
         </div>
       }
       actions={
-        <Button variant="outline" className="rounded-full" onClick={exportExcel} disabled={!rows.length}>
+        <Button
+          variant="outline"
+          className="rounded-full"
+          onClick={exportExcel}
+          disabled={!rows.length}
+        >
           <Download className="size-4" /> Xuất Excel
         </Button>
       }
@@ -223,7 +270,11 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
               }
             />
           ) : (
-            <EmptyState icon={Inbox} title="Chưa có kết quả" description="Kết quả sẽ hiện ngay khi thí sinh nộp bài." />
+            <EmptyState
+              icon={Inbox}
+              title="Chưa có kết quả"
+              description="Kết quả sẽ hiện ngay khi thí sinh nộp bài."
+            />
           )
         }
       >
@@ -243,7 +294,10 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-t border-border transition-colors hover:bg-secondary/40">
+                <tr
+                  key={r.id}
+                  className="border-t border-border transition-colors hover:bg-secondary/40"
+                >
                   <td className="px-4 py-3">
                     <p className="font-semibold">{r.candidate_name}</p>
                     <p className="type-meta">{r.birth_year}</p>
@@ -252,13 +306,19 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
                   <td className="max-w-[240px] px-4 py-3 text-muted-foreground">{r.quiz_title}</td>
                   <td className="px-4 py-3 font-mono font-bold">
                     {r.score}/{r.total}
-                    {r.disqualified && <span className="ml-2 text-xs font-normal text-destructive">huỷ</span>}
+                    {r.disqualified && (
+                      <span className="ml-2 text-xs font-normal text-destructive">huỷ</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <IntegrityCell sessionId={r.session_id} score={r.integrity_score} />
                   </td>
-                  <td className="px-4 py-3 font-mono text-muted-foreground">{formatSeconds(r.time_seconds)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{formatDateTime(r.submitted_at)}</td>
+                  <td className="px-4 py-3 font-mono text-muted-foreground">
+                    {formatSeconds(r.time_seconds)}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {formatDateTime(r.submitted_at)}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     {r.disqualified && canEdit ? (
                       <Button
@@ -298,7 +358,8 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
           <DialogHeader>
             <DialogTitle>Phục hồi bài thi</DialogTitle>
             <DialogDescription>
-              Bỏ trạng thái huỷ cho bài thi của {restoreTarget?.name}. Thao tác được ghi vào nhật ký hệ thống.
+              Bỏ trạng thái huỷ cho bài thi của {restoreTarget?.name}. Thao tác được ghi vào nhật ký
+              hệ thống.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -307,7 +368,11 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
             onChange={(e) => setRestoreReason(e.target.value)}
           />
           <DialogFooter>
-            <Button variant="outline" className="rounded-full" onClick={() => setRestoreTarget(null)}>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => setRestoreTarget(null)}
+            >
               Huỷ
             </Button>
             <Button
@@ -326,4 +391,3 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
     </AdminSection>
   );
 }
-

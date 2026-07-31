@@ -11,7 +11,14 @@ export type ExamEventRow = {
   createdAt: string;
 };
 
-async function assertAdmin(context: { supabase: any; userId: string }) {
+type RpcContext = {
+  supabase: {
+    rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+  };
+  userId: string;
+};
+
+async function assertAdmin(context: RpcContext) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "admin",
@@ -78,7 +85,11 @@ export const restoreResult = createServerFn({ method: "POST" })
       .eq("id", data.resultId)
       .maybeSingle();
     const { data: quiz } = quizPass?.quiz_id
-      ? await supabaseAdmin.from("quizzes").select("pass_percent").eq("id", quizPass.quiz_id).maybeSingle()
+      ? await supabaseAdmin
+          .from("quizzes")
+          .select("pass_percent")
+          .eq("id", quizPass.quiz_id)
+          .maybeSingle()
       : { data: null };
 
     const passPercent = quiz?.pass_percent ?? 50;
@@ -97,7 +108,10 @@ export const restoreResult = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     if (row.session_id) {
-      await supabaseAdmin.from("exam_sessions").update({ status: "submitted" }).eq("id", row.session_id);
+      await supabaseAdmin
+        .from("exam_sessions")
+        .update({ status: "submitted" })
+        .eq("id", row.session_id);
     }
 
     await supabaseAdmin.from("audit_logs").insert({

@@ -638,7 +638,6 @@ function ExamPage() {
           </div>
         )}
 
-
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_200px]">
           <section
             className="card-elevated animate-rise rounded-2xl p-4 sm:p-6"
