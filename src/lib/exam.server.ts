@@ -2,20 +2,21 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyEmployee } from "@/lib/employees.server";
 // Logic chấm điểm thuần tuý nằm ở @/lib/grading để test được mà không cần Supabase.
 import {
-  PASS_RATIO,
+  PASS_PERCENT_DEFAULT,
   baseOptions,
   chosenTextOf,
   correctTextOf,
   gradeOne,
   pairsOf,
   percentOf,
+  isPassed,
   pickByBlueprint,
   shuffle,
   type QuestionRow,
 } from "@/lib/grading";
 import { type AnswerValue, type Blueprint, type Difficulty, type QuestionKind } from "@/lib/questionKinds";
 
-export { PASS_RATIO };
+export { PASS_PERCENT_DEFAULT };
 
 
 export type ExamQuestion = {
@@ -38,7 +39,8 @@ export type ExamSettings = {
   allowSkip: boolean;
   streakBonus: boolean;
   showQuestionMap: boolean;
-  passScore: number;
+  /** Mức điểm đạt tính theo PHẦN TRĂM (0-100). */
+  passPercent: number;
 };
 
 export type StartExamResult = {
@@ -82,7 +84,8 @@ export type SubmitExamResult = {
   maxPoints: number;
   bestStreak: number;
   passed: boolean;
-  passRatio: number;
+  /** Mức điểm đạt của cuộc thi, tính theo PHẦN TRĂM (0-100). */
+  passPercent: number;
   timeSeconds: number;
   disqualified: boolean;
   quizId: string;
@@ -97,7 +100,7 @@ const QUESTION_COLUMNS =
   "id, question, options, correct_index, image_url, kind, correct_indices, accepted_answers, pairs, correct_order, difficulty, tags, points, explanation, time_limit_seconds";
 
 const QUIZ_COLUMNS =
-  "id, title, is_active, start_time, end_time, question_count, duration_minutes, shuffle_options, shuffle_questions, pass_score, room_password, max_attempts, instant_feedback, allow_fifty_fifty, allow_skip, streak_bonus, show_question_map, negative_marking, blueprint";
+  "id, title, is_active, start_time, end_time, question_count, duration_minutes, shuffle_options, shuffle_questions, pass_percent, room_password, max_attempts, instant_feedback, allow_fifty_fifty, allow_skip, streak_bonus, show_question_map, negative_marking, blueprint";
 
 
 export async function startExamSession(input: {
@@ -238,7 +241,7 @@ export async function startExamSession(input: {
       allowSkip: quiz.allow_skip,
       streakBonus: quiz.streak_bonus,
       showQuestionMap: quiz.show_question_map,
-      passScore: quiz.pass_score ?? 0,
+      passPercent: quiz.pass_percent || PASS_PERCENT_DEFAULT,
     },
     questions,
   };
@@ -386,7 +389,7 @@ export async function submitExamSession(input: {
   const [quizRes, rowsRes, historyRes, existingRes] = await Promise.all([
     supabaseAdmin
       .from("quizzes")
-      .select("title, pass_score, negative_marking, streak_bonus")
+      .select("title, pass_percent, negative_marking, streak_bonus")
       .eq("id", session.quiz_id)
       .maybeSingle(),
     supabaseAdmin.from("questions").select(QUESTION_COLUMNS).in("id", session.question_ids),
@@ -465,12 +468,9 @@ export async function submitExamSession(input: {
   const finalScore = disqualified ? 0 : score;
   const finalPoints = disqualified ? 0 : Math.max(0, Math.round(points));
   const maxPoints = review.reduce((sum, r) => sum + r.points, 0);
-  const passScore = quiz?.pass_score ?? 0;
-  const passed = disqualified
-    ? false
-    : passScore > 0
-      ? finalScore >= passScore
-      : total > 0 && finalScore / total >= PASS_RATIO;
+  // Điểm đạt tính theo PHẦN TRĂM (0-100), không phải số câu đúng tuyệt đối.
+  const passPercent = quiz?.pass_percent || PASS_PERCENT_DEFAULT;
+  const passed = disqualified ? false : isPassed(finalScore, total, passPercent);
 
   const previousBestPercent = (history ?? []).reduce((max, r) => Math.max(max, percentOf(r.score, r.total)), 0);
 
@@ -519,7 +519,7 @@ export async function submitExamSession(input: {
     maxPoints,
     bestStreak,
     passed,
-    passRatio: PASS_RATIO,
+    passPercent,
     timeSeconds,
     disqualified,
     quizId: session.quiz_id,
@@ -594,7 +594,7 @@ export async function getExamHistoryFor(input: {
       ),
     supabaseAdmin
       .from("quizzes")
-      .select("id, title")
+      .select("id, title, pass_percent")
       .in("id", [...new Set(list.map((s) => s.quiz_id))]),
   ]);
 
@@ -638,7 +638,7 @@ export async function getExamHistoryFor(input: {
       score,
       total,
       percent,
-      passed: !result?.disqualified && total > 0 && score / total >= PASS_RATIO,
+      passed: !result?.disqualified && isPassed(score, total, passPercentById.get(s.quiz_id) ?? PASS_PERCENT_DEFAULT),
       timeSeconds: result?.time_seconds ?? 0,
       questions,
     };
