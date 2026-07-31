@@ -153,7 +153,7 @@ function LeaderboardPage() {
               <SelectTrigger className="rounded-xl sm:max-w-[16rem]">
                 <SelectValue placeholder="Tất cả cuộc thi" />
               </SelectTrigger>
-              <SelectContent className="max-w-[min(22rem,calc(100vw-2rem))]">
+              <SelectContent className="max-w-[calc(100vw-1.5rem)]">
 
                 <SelectItem value="all">Tất cả cuộc thi</SelectItem>
                 {(quizzesQuery.data ?? []).map((q) => (
