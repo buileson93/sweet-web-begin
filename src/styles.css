@@ -1031,7 +1031,7 @@
     transform: translateX(-120%) skewX(-18deg);
   }
   35% {
-    opacity: 0.85;
+    opacity: 0.4;
   }
   100% {
     opacity: 0;
@@ -1045,8 +1045,10 @@
   bottom: 0;
   left: 0;
   width: 45%;
+  opacity: 0;
   pointer-events: none;
-  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-primary) 45%, white), transparent);
+  mix-blend-mode: soft-light;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-primary) 25%, white), transparent);
   animation: tap-flash 0.6s ease-out;
 }
 

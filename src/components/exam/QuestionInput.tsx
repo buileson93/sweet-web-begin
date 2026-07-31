@@ -154,7 +154,7 @@ export function QuestionInput({
           >
             <span
               className={cn(
-                "grid size-9 shrink-0 place-items-center text-sm font-extrabold transition-colors",
+                "relative z-10 grid size-9 shrink-0 place-items-center text-sm font-extrabold transition-colors",
                 multi ? "rounded-lg" : "rounded-xl",
                 state === "correct"
                   ? "bg-success text-primary-foreground"
@@ -175,11 +175,11 @@ export function QuestionInput({
                 LETTER(i)
               )}
             </span>
-            <span className="min-w-0 flex-1 text-[0.95rem] font-medium leading-snug">{opt}</span>
+            <span className="relative z-10 min-w-0 flex-1 text-[0.95rem] font-medium leading-snug">{opt}</span>
             {active && !feedback ? (
               <>
-                <span className="pointer-events-none absolute inset-0 animate-answer-ping rounded-2xl bg-primary/20" />
-                <span className="tap-flash rounded-2xl" aria-hidden />
+                <span className="pointer-events-none absolute inset-0 z-0 animate-answer-ping rounded-2xl bg-primary/15" />
+                <span className="tap-flash z-0 rounded-2xl" aria-hidden />
               </>
             ) : null}
           </button>
