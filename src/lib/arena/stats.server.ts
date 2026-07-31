@@ -182,7 +182,7 @@ export async function getDuelReplay(duelId: string): Promise<DuelReplay> {
   const [{ data: answers }, { data: profiles }, { data: questions }] = await Promise.all([
     supabaseAdmin
       .from("duel_answers")
-      .select("employee_id, round_index, is_correct, ms_taken, damage, first_correct")
+      .select("employee_id, round_index, is_correct, ms_taken, damage, first_correct, skill")
       .eq("duel_id", duelId)
       .order("round_index", { ascending: true }),
     supabaseAdmin
@@ -221,6 +221,7 @@ export async function getDuelReplay(duelId: string): Promise<DuelReplay> {
         msTaken: a?.ms_taken ?? 0,
         damage: dealt,
         firstCorrect: !!a?.first_correct,
+        skill: a?.skill ? String(a.skill) : "",
         hpAfter: 0,
       };
     });
@@ -232,6 +233,7 @@ export async function getDuelReplay(duelId: string): Promise<DuelReplay> {
       correctText: q ? correctTextOf(q) : "",
       explanation: q?.explanation ?? "",
       neutral: lines.every((l) => l.damage === 0),
+      timedOut: lines.every((l) => !l.answered),
       lines,
     });
   }
