@@ -358,6 +358,73 @@ export async function quickMatch(input: {
   return { duelId, created: true };
 }
 
+/**
+ * Phòng mời qua link: nếu người tạo đang có sẵn một phòng CHỜ thì dùng lại phòng đó
+ * (bấm "Tạo link mời" nhiều lần không còn báo "Bạn đang ở trong một trận khác").
+ */
+export async function ensureInviteRoom(input: {
+  employeeId: string;
+  quizId?: string | null;
+  deviceHash?: string;
+  classId?: string | null;
+}): Promise<{ duelId: string; reused: boolean }> {
+  const { data: mine } = await supabaseAdmin
+    .from("duel_players")
+    .select("duel_id, duel_status")
+    .eq("employee_id", input.employeeId)
+    .is("left_at", null)
+    .in("duel_status", ["waiting", "countdown", "playing"])
+    .maybeSingle();
+
+  if (mine) {
+    if (mine.duel_status !== "waiting")
+      throw new Error("Bạn đang trong một ván so tài. Hãy kết thúc ván đó trước khi mời người mới.");
+    const seats = await loadPlayers(mine.duel_id);
+    if (seats.length >= 2)
+      throw new Error("Phòng hiện tại đã đủ hai người. Hãy chơi xong rồi tạo phòng mới nhé.");
+    if (input.classId)
+      await supabaseAdmin
+        .from("duel_players")
+        .update({ class_id: classById(input.classId).id })
+        .eq("duel_id", mine.duel_id)
+        .eq("employee_id", input.employeeId);
+    return { duelId: mine.duel_id, reused: true };
+  }
+
+  const { duelId } = await createDuel({
+    employeeId: input.employeeId,
+    quizId: input.quizId ?? null,
+    deviceHash: input.deviceHash,
+    classId: input.classId ?? null,
+    note: "Phòng mời qua link",
+  });
+  return { duelId, reused: false };
+}
+
+/** Đổi lớp chiến binh khi còn ở phòng chờ. */
+export async function chooseClass(input: {
+  employeeId: string;
+  duelId: string;
+  classId: string;
+}) {
+  const duel = await loadDuel(input.duelId);
+  if (duel.status !== "waiting")
+    throw new Error("Ván đã bắt đầu, không đổi lớp được nữa.");
+  const chosen = classById(input.classId).id;
+  await supabaseAdmin
+    .from("duel_players")
+    .update({ class_id: chosen })
+    .eq("duel_id", duel.id)
+    .eq("employee_id", input.employeeId);
+  await supabaseAdmin
+    .from("players")
+    .update({ preferred_class: chosen })
+    .eq("employee_id", input.employeeId);
+  await bumpVersion(duel.id);
+  await broadcastDuel(duel.id, "lobby.update", { duelId: duel.id });
+  return { ok: true, classId: chosen };
+}
+
 export async function inviteToDuel(input: {
   employeeId: string;
   toEmployeeId: string;
@@ -498,12 +565,14 @@ async function resolveRanked(
 ) {
   const me = await mustPlayer(players[0].employee_id);
   const dayStart = vnDayStart(Date.now());
+  // Số trận xếp hạng CỦA CHÍNH NGƯỜI NÀY trong ngày (trước đây đếm nhầm toàn hệ thống
+  // nên chỉ vài chục trận của cả công ty là mọi người đều mất Elo).
   const { count } = await supabaseAdmin
-    .from("duels")
-    .select("id", { count: "exact", head: true })
-    .eq("is_ranked", true)
-    .eq("status", "finished")
-    .gte("created_at", dayStart);
+    .from("duel_players")
+    .select("duel_id", { count: "exact", head: true })
+    .eq("employee_id", players[0].employee_id)
+    .eq("duel_status", "finished")
+    .gte("joined_at", dayStart);
 
   const { data: recent } = await supabaseAdmin
     .from("duel_players")
