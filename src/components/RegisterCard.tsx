@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -35,6 +35,8 @@ import { saveExamEntry } from "@/lib/examSession";
 import { verifyEmployeeFn } from "@/lib/employees.functions";
 import { formatDateTime, quizStatus, statusLabel } from "@/lib/format";
 import { QuizStatusBadge } from "@/components/QuizStatusBadge";
+import { QuizPeekCard, type QuizPeek } from "@/components/QuizPeekCard";
+import { quizTheme } from "@/lib/quizTheme";
 import { cn } from "@/lib/utils";
 
 export type RegisterQuiz = {
@@ -48,6 +50,8 @@ export type RegisterQuiz = {
   status?: string | null;
   /** Nội quy riêng của cuộc thi, hiển thị trước khi vào phòng thi. */
   intro_markdown?: string | null;
+  /** Ngưỡng đạt tính theo phần trăm. */
+  pass_percent?: number | null;
 };
 
 type Props = {
@@ -118,7 +122,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
   const canStart = quizReady && Boolean(verified) && (!needCommit || committed);
 
   const hint = !quizId
-    ? "Chọn cuộc thi bạn muốn tham gia."
+    ? null
     : selectedStatus !== "open"
       ? `Cuộc thi này ${selectedStatus === "upcoming" ? "chưa đến giờ mở" : selectedStatus === "closed" ? "đã kết thúc" : "đang tạm dừng"}.`
       : !verified
@@ -324,10 +328,28 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                 >
                   {quizzes.map((q) => {
                     const st = quizStatus(q);
+                    const theme = quizTheme(q.title);
                     return (
-                      <SelectItem key={q.id} value={q.id} disabled={st !== "open"} className="py-2.5">
-                        <span className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-                          <span className="min-w-0 truncate font-semibold">{q.title}</span>
+                      <SelectItem
+                        key={q.id}
+                        value={q.id}
+                        disabled={st !== "open"}
+                        className="my-0.5 py-2.5 pl-2 data-[highlighted]:bg-accent/60"
+                        onMouseEnter={(e) => showPeek(q, st, e.currentTarget)}
+                        onMouseLeave={hidePeek}
+                        onFocus={(e) => showPeek(q, st, e.currentTarget)}
+                        onBlur={hidePeek}
+                      >
+                        <span className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
+                          <span className={cn("grid size-7 shrink-0 place-items-center rounded-lg", theme.chip)}>
+                            <theme.Icon className="size-4" strokeWidth={2.6} />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block truncate font-bold leading-tight">{q.title}</span>
+                            <span className={cn("type-meta block truncate font-semibold", theme.text)}>
+                              {q.question_count} câu • {q.duration_minutes} phút
+                            </span>
+                          </span>
                           <QuizStatusBadge status={st} />
                         </span>
                       </SelectItem>
