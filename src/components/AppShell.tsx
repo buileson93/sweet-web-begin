@@ -56,7 +56,7 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
           <div className="lg:hidden">
             <SiteHeader />
           </div>
-          <main className="min-w-0 flex-1 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-10 lg:py-10 lg:pb-10">
+          <main className="min-w-0 flex-1 px-[calc(1rem+env(safe-area-inset-left))] pb-[calc(5.25rem+env(safe-area-inset-bottom))] pt-5 sm:px-[calc(1.5rem+env(safe-area-inset-left))] lg:px-10 lg:py-10 lg:pb-10">
             {children}
           </main>
           <div className="hidden lg:block">
@@ -67,8 +67,9 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
         {/* Thanh tab dưới cùng — kiểu ứng dụng di động */}
         <nav
           aria-label="Điều hướng chính"
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] backdrop-blur-md lg:hidden"
         >
+
           <ul className="grid grid-cols-4">
             {navItems.map((item) => (
               <li key={item.to}>

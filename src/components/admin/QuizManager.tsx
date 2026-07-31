@@ -299,7 +299,7 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
 
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Sửa cuộc thi" : "Tạo cuộc thi"}</DialogTitle>
             <DialogDescription>Thời gian nhập theo giờ Việt Nam (UTC+7).</DialogDescription>

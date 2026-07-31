@@ -246,7 +246,7 @@ export function LiveMonitor() {
 
 
       <Dialog open={Boolean(openId)} onOpenChange={(o) => setOpenId(o ? openId : null)}>
-        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+        <DialogContent className="max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{detailQuery.data?.candidateName ?? "Chi tiết bài thi"}</DialogTitle>
             <DialogDescription>

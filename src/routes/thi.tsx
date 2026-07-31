@@ -70,7 +70,7 @@ function ExamErrorScreen({ error }: { error: unknown }) {
   const navigate = useNavigate();
   const message = error instanceof Error ? error.message : "Đã xảy ra lỗi không xác định.";
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-4">
+    <div className="grid min-h-[100dvh] place-items-center bg-background px-[calc(1rem+env(safe-area-inset-left))] py-[calc(1rem+env(safe-area-inset-bottom))]">
       <div className="card-elevated w-full max-w-md p-8 text-center">
         <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-destructive/10 text-destructive">
           <AlertTriangle className="size-7" />
@@ -377,7 +377,7 @@ function ExamPage() {
 
   if (!session) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-[100dvh] items-center justify-center">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -390,7 +390,7 @@ function ExamPage() {
   const last = current === total - 1;
 
   return (
-    <div className="no-select min-h-screen bg-background pb-24 lg:pb-8">
+    <div className="no-select min-h-[100dvh] bg-background pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8">
       {sending && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/85 backdrop-blur-sm">
           <div className="card-elevated flex flex-col items-center gap-2 rounded-2xl px-7 py-5 text-center">
@@ -401,7 +401,7 @@ function ExamPage() {
       )}
 
       {/* Thanh trạng thái gọn: tên cuộc thi, tiến độ, đồng hồ */}
-      <header className="surface-hero sticky top-0 z-30">
+      <header className="surface-hero sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-2.5">
           <Button
             variant="ghost"
@@ -604,7 +604,7 @@ function ExamPage() {
       </main>
 
       {/* Thanh hành động cố định trên mobile: ưu tiên "Câu tiếp"/"Nộp bài" */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-3 py-2.5 backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-[calc(0.75rem+env(safe-area-inset-left))] pb-[calc(0.625rem+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-5xl items-center gap-2">
           <Button
             variant="outline"
@@ -726,7 +726,7 @@ function ResultView({
   const celebrate = !result.disqualified && result.passed;
 
   return (
-    <div className="min-h-screen bg-background pb-10">
+    <div className="min-h-[100dvh] bg-background pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
       {celebrate ? <Celebration /> : null}
       {/* Tóm tắt kết quả gọn trong một màn hình */}
       <div className={cn("surface-hero grid-pattern", celebrate && "animate-result-glow")}>

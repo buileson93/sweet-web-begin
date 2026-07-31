@@ -22,7 +22,7 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "onDark"
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 w-full border-b backdrop-blur",
+        "sticky top-0 z-40 w-full border-b pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] backdrop-blur",
         onDark ? "border-primary-foreground/15 bg-primary/70 text-primary-foreground" : "border-border bg-background/85",
       )}
     >
