@@ -47,6 +47,10 @@ const emptyForm = {
   allow_fifty_fifty: false,
   allow_skip: false,
   streak_bonus: true,
+  instant_feedback: false,
+  streak_step: 1,
+  streak_max_bonus: 5,
+  double_points_after: 0,
   show_question_map: true,
   negative_marking: 0,
   bp_easy: 0,
@@ -94,6 +98,10 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
       allow_fifty_fifty: editing.allow_fifty_fifty ?? false,
       allow_skip: editing.allow_skip ?? false,
       streak_bonus: editing.streak_bonus ?? true,
+      instant_feedback: editing.instant_feedback ?? false,
+      streak_step: Number(editing.streak_step ?? 1),
+      streak_max_bonus: Number(editing.streak_max_bonus ?? 5),
+      double_points_after: Number(editing.double_points_after ?? 0),
       show_question_map: editing.show_question_map ?? true,
       negative_marking: Number(editing.negative_marking ?? 0),
       bp_easy: Number(editing.blueprint?.easy ?? 0),
@@ -179,6 +187,10 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
         allow_fifty_fifty: form.allow_fifty_fifty,
         allow_skip: form.allow_skip,
         streak_bonus: form.streak_bonus,
+        instant_feedback: form.instant_feedback,
+        streak_step: Math.max(0, Number(form.streak_step) || 0),
+        streak_max_bonus: Math.max(0, Number(form.streak_max_bonus) || 0),
+        double_points_after: Math.max(0, Number(form.double_points_after) || 0),
         show_question_map: form.show_question_map,
         negative_marking: Number(form.negative_marking) || 0,
         blueprint,
@@ -477,13 +489,52 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
               </div>
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label>Điểm cộng thêm mỗi câu đúng liên tiếp</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="1"
+                  value={form.streak_step}
+                  onChange={(e) => setForm({ ...form, streak_step: Number(e.target.value) })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tính từ câu đúng thứ 3: +{Math.max(0, Number(form.streak_step) || 0)} điểm mỗi câu.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Trần điểm thưởng mỗi câu</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="1"
+                  value={form.streak_max_bonus}
+                  onChange={(e) => setForm({ ...form, streak_max_bonus: Number(e.target.value) })}
+                />
+                <p className="text-xs text-muted-foreground">Chặn trên để chuỗi dài không phá vỡ thang điểm.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Nhân đôi điểm sau bao nhiêu câu đúng liên tiếp</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="1"
+                  value={form.double_points_after}
+                  onChange={(e) => setForm({ ...form, double_points_after: Number(e.target.value) })}
+                />
+                <p className="text-xs text-muted-foreground">Để 0 nếu không dùng nhân đôi điểm.</p>
+              </div>
+            </div>
+
             <div className="grid gap-2 sm:grid-cols-2">
               {[
                 { key: "shuffle_questions" as const, title: "Xáo trộn câu hỏi", desc: "Mỗi lượt thi một đề khác nhau." },
                 { key: "shuffle_options" as const, title: "Xáo trộn phương án", desc: "Thứ tự đáp án khác nhau." },
                 { key: "allow_fifty_fifty" as const, title: "Trợ giúp 50:50", desc: "Tối đa 2 lần mỗi lượt thi." },
                 { key: "allow_skip" as const, title: "Cho phép bỏ qua", desc: "Nút bỏ qua nhanh sang câu sau." },
-                { key: "streak_bonus" as const, title: "Thưởng chuỗi đúng", desc: "Đúng liên tiếp từ 3 câu được cộng điểm." },
+                { key: "streak_bonus" as const, title: "Thưởng chuỗi đúng", desc: "Đúng liên tiếp từ 3 câu được cộng điểm luỹ tiến." },
+                { key: "instant_feedback" as const, title: "Chấm ngay khi chọn", desc: "Hiện đúng/sai và điểm ngay, thay vì chấm sau khi nộp bài." },
                 { key: "show_question_map" as const, title: "Bản đồ câu hỏi", desc: "Hiện lưới số câu để nhảy nhanh." },
               ].map((item) => (
                 <div key={item.key} className="flex items-center justify-between gap-3 rounded-xl bg-secondary p-3">
