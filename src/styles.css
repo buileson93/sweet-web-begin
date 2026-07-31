@@ -254,15 +254,16 @@
 
 @media (min-width: 640px) {
   .page-container {
-    padding-inline: 1.5rem;
+    padding-inline: calc(1.5rem + env(safe-area-inset-left)) calc(1.5rem + env(safe-area-inset-right));
   }
 }
 
 @media (min-width: 1024px) {
   .page-container {
-    padding-inline: 2rem;
+    padding-inline: calc(2rem + env(safe-area-inset-left)) calc(2rem + env(safe-area-inset-right));
   }
 }
+
 
 @utility type-h1 {
   font-family: var(--font-heading);
