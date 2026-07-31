@@ -27,6 +27,8 @@ export type DuelPlayerView = {
 
 export type DuelState = {
   duelId: string;
+  /** Mã nhân viên của chính người đang xem (do máy chủ xác định từ vé phiên). */
+  you: string;
   status: "waiting" | "countdown" | "playing" | "finished" | "cancelled";
   version: number;
   roundCount: number;

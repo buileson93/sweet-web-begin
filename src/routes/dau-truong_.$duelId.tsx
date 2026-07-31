@@ -62,7 +62,7 @@ function DuelRoom() {
     }
   }, [state]);
 
-  const me = state?.players.find((p) => p.employeeId === myId(state));
+  const me = state?.players.find((p) => p.employeeId === state?.you);
   const foe = state?.players.find((p) => p.employeeId !== me?.employeeId);
 
   if (!token || !state)
@@ -169,11 +169,6 @@ function DuelRoom() {
       )}
     </PageContainer>
   );
-}
-
-/** Người chơi hiện tại là người có cờ `answered`/ghế do máy chủ đánh dấu qua vé phiên. */
-function myId(state: DuelState | null) {
-  return state?.players.find((p) => p.seat === state.players[0]?.seat)?.employeeId;
 }
 
 function ScoreChip({ player, mine }: { player?: DuelPlayerView; mine?: boolean }) {

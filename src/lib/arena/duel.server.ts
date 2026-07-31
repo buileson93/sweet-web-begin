@@ -881,6 +881,7 @@ export async function getDuelState(input: {
 
   return {
     duelId: duel.id,
+    you: input.employeeId,
     status: duel.status as DuelState["status"],
     version: duel.version,
     roundCount: duel.round_count,
