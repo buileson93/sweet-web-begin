@@ -18,10 +18,10 @@ import { logAudit } from "@/lib/audit";
 import { normalizeKey } from "@/lib/csv";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
 import { formatDateTime } from "@/lib/format";
+import { PASS_PERCENT_DEFAULT, isPassed } from "@/lib/grading";
 import { cn } from "@/lib/utils";
 
-/** Ngưỡng đạt: 50% số điểm (đồng bộ với máy chủ chấm bài). */
-
+/** Ngưỡng đạt mặc định: 50% (đồng bộ với máy chủ chấm bài, xem isPassed). */
 
 type ResultRow = {
   id: string;
