@@ -50,9 +50,8 @@ import { useMyRoles } from "@/hooks/useMyRoles";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/quan-tri")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    muc: typeof search.muc === "string" ? search.muc : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { muc?: string } =>
+    typeof search.muc === "string" ? { muc: search.muc } : {},
   head: () => ({
     meta: [
       { title: "Bảng điều khiển quản trị | Hội thi trắc nghiệm" },
