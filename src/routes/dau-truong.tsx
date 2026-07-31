@@ -79,6 +79,7 @@ function ArenaLobby() {
   const beat = useServerFn(arenaPresence);
   const endActive = useServerFn(arenaEndActive);
 
+  const { save: saveIdentity } = usePlayerIdentity();
   const [token, setToken] = useState("");
   const [home, setHome] = useState<Home | null>(null);
   const [presence, setPresence] = useState<Presence | null>(null);
@@ -102,7 +103,17 @@ function ArenaLobby() {
     const pull = async () => {
       try {
         const data = await loadHome({ data: { token } });
-        if (alive) setHome(data);
+        if (alive) {
+          setHome(data);
+          saveIdentity({
+            employeeId: data.profile.employeeId,
+            displayName: data.profile.displayName,
+            unit: data.profile.unit,
+            avatarUrl: data.profile.avatarUrl,
+            avatarImage: data.profile.avatarImage,
+            level: data.profile.level,
+          });
+        }
       } catch {
         if (alive) {
           clearArenaToken();
