@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { ImagePlus, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -64,7 +64,8 @@ export function QuestionForm({
   editing,
   form,
   setForm,
-  uploading,
+  uploadStage,
+  uploadInfo,
   onAttachImage,
   onSave,
   saving,
@@ -74,12 +75,16 @@ export function QuestionForm({
   editing: boolean;
   form: QuestionFormState;
   setForm: React.Dispatch<React.SetStateAction<QuestionFormState>>;
-  uploading: boolean;
+  uploadStage: "idle" | "compressing" | "uploading";
+  uploadInfo: string | null;
   onAttachImage: (file: File) => void;
   onSave: () => void;
   saving: boolean;
 }) {
   const imageRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const uploading = uploadStage !== "idle";
+  const stageLabel = uploadStage === "compressing" ? "Đang nén..." : "Đang tải lên...";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -119,16 +124,23 @@ export function QuestionForm({
               </div>
             ) : (
               <div
-                onPaste={(e) => {
-                  const item = Array.from(e.clipboardData.items).find((i) =>
-                    i.type.startsWith("image/"),
-                  );
-                  const file = item?.getAsFile();
-                  if (!file) return;
+                onDragOver={(e) => {
                   e.preventDefault();
-                  onAttachImage(file);
+                  setDragging(true);
                 }}
-                className="flex flex-col items-start gap-2 rounded-2xl border border-dashed border-border p-4"
+                onDragLeave={() => setDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragging(false);
+                  if (uploading) return;
+                  const file = Array.from(e.dataTransfer.files).find((f) =>
+                    f.type.startsWith("image/"),
+                  );
+                  if (file) onAttachImage(file);
+                }}
+                className={`flex flex-col items-start gap-2 rounded-2xl border border-dashed p-4 transition-colors ${
+                  dragging ? "border-primary bg-primary/5 ring-2 ring-primary/40" : "border-border"
+                }`}
               >
                 <Button
                   type="button"
@@ -142,10 +154,10 @@ export function QuestionForm({
                   ) : (
                     <ImagePlus className="size-4" />
                   )}
-                  {uploading ? "Đang nén và tải lên..." : "Chọn ảnh"}
+                  {uploading ? stageLabel : "Chọn ảnh"}
                 </Button>
                 <p className="type-meta">
-                  Hoặc{" "}
+                  Kéo-thả ảnh vào đây, hoặc{" "}
                   <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[10px]">
                     Ctrl/⌘ + V
                   </kbd>{" "}
@@ -153,9 +165,12 @@ export function QuestionForm({
                 </p>
               </div>
             )}
+            {uploadInfo ? <p className="type-meta">Đã nén: {uploadInfo}</p> : null}
             <p className="type-meta">
-              Ảnh được tự động nén về WebP, cạnh dài tối đa 1280px để tiết kiệm dung lượng.
+              Ảnh được tự động nén về WebP (hoặc JPEG nếu trình duyệt không hỗ trợ), cạnh dài tối đa
+              1280px. Tối đa 25 MB mỗi tệp.
             </p>
+
             <input
               ref={imageRef}
               type="file"

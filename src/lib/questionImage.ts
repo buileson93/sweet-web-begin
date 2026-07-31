@@ -1,5 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
 
+import {
+  HEIC_MESSAGE,
+  isHeicFile,
+  planResize,
+  validateImageInput,
+} from "@/lib/imageProcessing";
+
+export {
+  extractImageFromClipboard,
+  formatBytes,
+  planResize,
+  validateImageInput,
+  SOFT_WARN_BYTES,
+  HEIC_MESSAGE,
+} from "@/lib/imageProcessing";
+
 export const QUESTION_IMAGE_BUCKET = "question-images";
 
 /** Kích thước cạnh dài tối đa sau khi nén (px). */
@@ -7,16 +23,48 @@ const MAX_EDGE = 1280;
 /** Dung lượng mục tiêu sau khi nén (byte). */
 const TARGET_BYTES = 180 * 1024;
 
+export type CompressedImage = {
+  blob: Blob;
+  width: number;
+  height: number;
+  mime: string;
+  ext: string;
+};
+
+/** Giải mã ảnh, ưu tiên giữ đúng hướng chụp (EXIF) của điện thoại. */
+async function decode(file: File): Promise<ImageBitmap> {
+  try {
+    return await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch {
+    try {
+      return await createImageBitmap(file);
+    } catch {
+      if (isHeicFile(file.name, file.type)) throw new Error(HEIC_MESSAGE);
+      throw new Error("Không đọc được tệp ảnh này. Vui lòng thử ảnh PNG hoặc JPG.");
+    }
+  }
+}
+
 /**
  * Nén ảnh ngay trên trình duyệt trước khi tải lên: thu nhỏ cạnh dài về tối đa
- * 1280px và mã hoá WebP, giảm dần chất lượng cho tới khi đạt dung lượng mục tiêu.
+ * 1280px và mã hoá WebP (tự lùi về JPEG nếu trình duyệt không hỗ trợ WebP),
+ * giảm dần chất lượng cho tới khi đạt dung lượng mục tiêu.
  */
-export async function compressImage(file: File): Promise<{ blob: Blob; width: number; height: number }> {
-  if (!file.type.startsWith("image/")) throw new Error("Tệp không phải là hình ảnh.");
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
-  const width = Math.round(bitmap.width * scale);
-  const height = Math.round(bitmap.height * scale);
+export async function compressImage(file: File): Promise<CompressedImage> {
+  if (!file.type.startsWith("image/") && !isHeicFile(file.name, file.type))
+    throw new Error("Tệp không phải là hình ảnh.");
+
+  const sizeCheck = validateImageInput(file.size);
+  if (!sizeCheck.ok) throw new Error(sizeCheck.message);
+
+  const bitmap = await decode(file);
+  const pixelCheck = validateImageInput(file.size, bitmap.width, bitmap.height);
+  if (!pixelCheck.ok) {
+    bitmap.close?.();
+    throw new Error(pixelCheck.message);
+  }
+
+  const { width, height } = planResize(bitmap.width, bitmap.height, MAX_EDGE);
 
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -27,33 +75,49 @@ export async function compressImage(file: File): Promise<{ blob: Blob; width: nu
   bitmap.close?.();
 
   let quality = 0.82;
-  let blob = await toBlob(canvas, quality);
+  let blob = await encode(canvas, quality);
   while (blob.size > TARGET_BYTES && quality > 0.4) {
     quality -= 0.12;
-    blob = await toBlob(canvas, quality);
+    blob = await encode(canvas, quality);
   }
-  return { blob, width, height };
+  const mime = blob.type || "image/jpeg";
+  return { blob, width, height, mime, ext: mime === "image/webp" ? "webp" : "jpg" };
 }
 
-function toBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error("Không nén được ảnh."))),
-      "image/webp",
-      quality,
-    );
+/** Mã hoá canvas: thử WebP trước, không được thì lùi về JPEG. */
+async function encode(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
+  const webp = await toBlob(canvas, "image/webp", quality);
+  if (webp && webp.type === "image/webp") return webp;
+  const jpeg = await toBlob(canvas, "image/jpeg", 0.85);
+  if (jpeg) return jpeg;
+  throw new Error("Không nén được ảnh.");
+}
+
+function toBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    try {
+      canvas.toBlob((b) => resolve(b), type, quality);
+    } catch {
+      resolve(null);
+    }
   });
 }
 
 /** Nén rồi tải ảnh lên kho lưu trữ nội bộ, trả về đường dẫn đối tượng. */
-export async function uploadQuestionImage(file: File, quizId: string) {
-  const { blob } = await compressImage(file);
-  const path = `${quizId}/${crypto.randomUUID()}.webp`;
+export async function uploadQuestionImage(
+  file: File,
+  quizId: string,
+  onStage?: (stage: "compressing" | "uploading") => void,
+) {
+  onStage?.("compressing");
+  const { blob, width, height, mime, ext } = await compressImage(file);
+  onStage?.("uploading");
+  const path = `${quizId}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage
     .from(QUESTION_IMAGE_BUCKET)
-    .upload(path, blob, { contentType: "image/webp", cacheControl: "31536000", upsert: false });
+    .upload(path, blob, { contentType: mime, cacheControl: "31536000", upsert: false });
   if (error) throw new Error(error.message);
-  return { path, bytes: blob.size };
+  return { path, bytes: blob.size, originalBytes: file.size, width, height, mime };
 }
 
 export async function removeQuestionImage(path: string) {
@@ -65,10 +129,4 @@ export function questionImageSrc(path: string | null | undefined) {
   if (!path) return null;
   if (/^https?:\/\//.test(path)) return path;
   return `/api/public/anh-cau-hoi/${path.split("/").map(encodeURIComponent).join("/")}`;
-}
-
-export function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

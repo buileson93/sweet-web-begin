@@ -10,7 +10,12 @@ import { CsvImportDialog } from "@/components/admin/CsvImportDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { normalizeKey } from "@/lib/csv";
-import { formatBytes, uploadQuestionImage } from "@/lib/questionImage";
+import {
+  SOFT_WARN_BYTES,
+  extractImageFromClipboard,
+  formatBytes,
+  uploadQuestionImage,
+} from "@/lib/questionImage";
 import type { Difficulty } from "@/lib/questionKinds";
 
 import { QuestionFilters } from "./questions/QuestionFilters";
@@ -22,7 +27,10 @@ import { emptyForm, type CsvQuestion, type QuestionRow } from "./questions/types
 export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadStage, setUploadStage] = useState<"idle" | "compressing" | "uploading">("idle");
+  const [uploadInfo, setUploadInfo] = useState<string | null>(null);
+  // Khoá chống trùng: ref cập nhật đồng bộ nên chặn được hai sự kiện liên tiếp.
+  const uploadingRef = useRef(false);
   const [quizId, setQuizId] = useState("");
   const [keyword, setKeyword] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | Difficulty>("all");
@@ -157,29 +165,42 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   /** Tải ảnh lên kho lưu trữ và gán vào câu hỏi đang soạn. */
   const attachImage = useCallback(
     async (file: File) => {
-      if (!quizId) return;
-      setUploading(true);
+      if (!quizId || uploadingRef.current) return;
+      uploadingRef.current = true;
+      setUploadInfo(null);
+      setUploadStage("compressing");
       try {
-        const { path, bytes } = await uploadQuestionImage(file, quizId);
+        const { path, bytes, originalBytes, width, height, mime } = await uploadQuestionImage(
+          file,
+          quizId,
+          setUploadStage,
+        );
         setForm((f) => ({ ...f, image_url: path }));
-        toast.success(`Đã tải ảnh lên (${formatBytes(bytes)} sau khi nén).`);
+        const label = mime === "image/webp" ? "WebP" : "JPEG";
+        const summary = `${formatBytes(originalBytes)} → ${formatBytes(bytes)} (${label}, ${width}×${height})`;
+        setUploadInfo(summary);
+        toast.success(`Đã tải ảnh lên: ${summary}`);
+        if (bytes > SOFT_WARN_BYTES)
+          toast.warning(
+            `Ảnh sau khi nén vẫn khá nặng (${formatBytes(bytes)}). Bạn vẫn có thể lưu, nhưng nên dùng ảnh đơn giản hơn.`,
+          );
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Không tải được ảnh.");
       } finally {
-        setUploading(false);
+        uploadingRef.current = false;
+        setUploadStage("idle");
       }
     },
     [quizId],
   );
 
-  // Dán ảnh từ clipboard (Ctrl/Cmd + V) khi đang mở hộp thoại soạn câu hỏi.
+  // Dán ảnh từ clipboard (Ctrl/Cmd + V): chỉ MỘT nguồn sự thật, nghe trên window
+  // và chỉ khi hộp thoại soạn câu hỏi đang mở.
   useEffect(() => {
     if (!open || !canEdit) return;
     function onPaste(e: ClipboardEvent) {
-      const item = Array.from(e.clipboardData?.items ?? []).find((i) =>
-        i.type.startsWith("image/"),
-      );
-      const file = item?.getAsFile();
+      if (uploadingRef.current) return;
+      const file = extractImageFromClipboard(e.clipboardData?.items);
       if (!file) return;
       e.preventDefault();
       void attachImage(file);
@@ -187,6 +208,19 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
   }, [open, canEdit, attachImage]);
+
+  // Chặn trình duyệt mở tệp trên tab khi người dùng thả ảnh ra ngoài vùng nhận.
+  useEffect(() => {
+    if (!open) return;
+    const prevent = (e: DragEvent) => e.preventDefault();
+    window.addEventListener("dragover", prevent);
+    window.addEventListener("drop", prevent);
+    return () => {
+      window.removeEventListener("dragover", prevent);
+      window.removeEventListener("drop", prevent);
+    };
+  }, [open]);
+
 
   function openCreate() {
     setEditing(null);
@@ -372,7 +406,8 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         editing={Boolean(editing)}
         form={form}
         setForm={setForm}
-        uploading={uploading}
+        uploadStage={uploadStage}
+        uploadInfo={uploadInfo}
         onAttachImage={(file) => void attachImage(file)}
         onSave={() => save.mutate()}
         saving={save.isPending}
