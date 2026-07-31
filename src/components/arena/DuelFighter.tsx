@@ -131,8 +131,19 @@ export function DuelFighter({
           </span>
         ) : null}
       </div>
-      <div className="relative flex h-24 items-end justify-center overflow-hidden rounded-lg bg-gradient-to-b from-primary/5 to-muted/40">
-        <span className="pointer-events-none absolute bottom-2 h-3 w-16 rounded-[50%] bg-foreground/15 blur-[2px]" />
+      <div
+        className={cn(
+          "relative flex h-24 items-end overflow-hidden rounded-lg bg-gradient-to-b from-primary/5 to-muted/40",
+          // Hai nhân vật đứng quay mặt vào nhau, dồn về phía sân giữa.
+          mine ? "justify-end pr-1" : "justify-start pl-1",
+        )}
+      >
+        <span
+          className={cn(
+            "pointer-events-none absolute bottom-2 h-3 w-16 rounded-[50%] bg-foreground/15 blur-[2px]",
+            mine ? "right-6" : "left-6",
+          )}
+        />
         <ClassSprite
           key={`${pose}-${dealt}-${hp}`}
           classId={player?.classId}
