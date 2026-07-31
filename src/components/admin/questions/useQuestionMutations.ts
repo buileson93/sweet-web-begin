@@ -108,13 +108,13 @@ export function useQuestionMutations({
           toast.warning("Đã lưu câu hỏi nhưng chưa chuyển được ảnh minh hoạ vào kho chính thức.");
         }
       }
-      for (const imgPath of payload.option_images ?? []) {
-        if (imgPath && isTempImagePath(imgPath) && questionId) {
-          try {
-            await commitQuestionImage({ data: { path: imgPath, quizId, questionId } });
-          } catch {
-            toast.warning("Chưa chuyển được một ảnh phương án vào kho chính thức.");
-          }
+      if ((payload.option_images ?? []).some((p) => p && isTempImagePath(p)) && questionId) {
+        try {
+          await commitOptionImages({
+            data: { paths: payload.option_images ?? [], quizId, questionId },
+          });
+        } catch {
+          toast.warning("Chưa chuyển được một số ảnh phương án vào kho chính thức.");
         }
       }
 
