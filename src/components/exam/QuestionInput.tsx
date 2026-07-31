@@ -48,7 +48,10 @@ export function QuestionInput({
   }
 
   if (kind === "matching") {
-    const map = (typeof value === "object" && !Array.isArray(value) ? value : {}) as Record<string, number>;
+    const map = (typeof value === "object" && !Array.isArray(value) ? value : {}) as Record<
+      string,
+      number
+    >;
     return (
       <div className="stagger mt-4 space-y-2">
         {matchLeft.map((left, i) => (
@@ -78,7 +81,10 @@ export function QuestionInput({
   }
 
   if (kind === "ordering") {
-    const order = Array.isArray(value) && value.length === options.length ? (value as number[]) : options.map((_, i) => i);
+    const order =
+      Array.isArray(value) && value.length === options.length
+        ? (value as number[])
+        : options.map((_, i) => i);
     const move = (pos: number, dir: -1 | 1) => {
       const next = [...order];
       const target = pos + dir;
@@ -89,12 +95,22 @@ export function QuestionInput({
     return (
       <div className="stagger mt-4 space-y-2">
         {order.map((optIndex, pos) => (
-          <div key={optIndex} className="flex items-center gap-2 rounded-xl border border-border bg-card p-2.5">
+          <div
+            key={optIndex}
+            className="flex items-center gap-2 rounded-xl border border-border bg-card p-2.5"
+          >
             <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-extrabold">
               {pos + 1}
             </span>
             <span className="min-w-0 flex-1 text-sm">{options[optIndex]}</span>
-            <Button variant="ghost" size="icon" className="size-8 shrink-0" disabled={disabled || pos === 0} onClick={() => move(pos, -1)} aria-label="Lên trên">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0"
+              disabled={disabled || pos === 0}
+              onClick={() => move(pos, -1)}
+              aria-label="Lên trên"
+            >
               <ArrowUp className="size-4" />
             </Button>
             <Button
@@ -175,7 +191,9 @@ export function QuestionInput({
                 LETTER(i)
               )}
             </span>
-            <span className="relative z-10 min-w-0 flex-1 text-[0.95rem] font-medium leading-snug">{opt}</span>
+            <span className="relative z-10 min-w-0 flex-1 text-[0.95rem] font-medium leading-snug">
+              {opt}
+            </span>
             {active && !feedback ? (
               <>
                 <span className="pointer-events-none absolute inset-0 z-0 animate-answer-ping rounded-2xl bg-primary/15" />
@@ -188,4 +206,3 @@ export function QuestionInput({
     </div>
   );
 }
-

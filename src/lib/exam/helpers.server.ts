@@ -1,0 +1,120 @@
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  MAX_EVENTS_PER_SESSION,
+  isExamEventKind,
+  scoreEvent,
+  type ExamEventDetail,
+} from "@/lib/integrity";
+import { lateness, shuffle, type QuestionRow } from "@/lib/grading";
+import { QUESTION_COLUMNS } from "@/lib/exam/types";
+
+/**
+ * Trợ giúp 50:50 — máy chủ loại bớt 2 phương án sai (không bao giờ trả về đáp án đúng).
+ * Chỉ áp dụng cho câu một đáp án / đúng-sai và chỉ khi cuộc thi bật tính năng này.
+ */
+export async function useFiftyFifty(input: {
+  sessionId: string;
+  submitToken: string;
+  index: number;
+}): Promise<{ removed: number[] }> {
+  const { data: session } = await supabaseAdmin
+    .from("exam_sessions")
+    .select("id, quiz_id, question_ids, option_orders, status, submit_token, helpers, expires_at")
+    .eq("id", input.sessionId)
+    .maybeSingle();
+
+  if (!session || session.status !== "active" || session.submit_token !== input.submitToken) {
+    throw new Error("Phiên thi không hợp lệ.");
+  }
+  // Khoá thời gian phía máy chủ: hết giờ thì không còn được dùng trợ giúp (không có ân hạn).
+  if (lateness(new Date().toISOString(), session.expires_at).expired) {
+    throw new Error("Đã hết giờ làm bài.");
+  }
+
+  const { data: quiz } = await supabaseAdmin
+    .from("quizzes")
+    .select("allow_fifty_fifty")
+    .eq("id", session.quiz_id)
+    .maybeSingle();
+  if (!quiz?.allow_fifty_fifty) throw new Error("Cuộc thi này không bật trợ giúp 50:50.");
+
+  const helpers = (session.helpers ?? {}) as Record<string, unknown>;
+  const usedList = Array.isArray(helpers.fiftyFifty) ? (helpers.fiftyFifty as number[]) : [];
+  if (usedList.length >= 2) throw new Error("Bạn đã dùng hết lượt trợ giúp 50:50.");
+
+  const qid = (session.question_ids as string[])[input.index];
+  const { data: rowRaw } = await supabaseAdmin
+    .from("questions")
+    .select(QUESTION_COLUMNS)
+    .eq("id", qid)
+    .maybeSingle();
+  const row = rowRaw as unknown as QuestionRow | null;
+  if (!row) throw new Error("Không tìm thấy câu hỏi.");
+  if (row.kind !== "single" && row.kind !== "true_false")
+    throw new Error("Câu hỏi này không hỗ trợ 50:50.");
+
+  const order = ((session.option_orders as unknown as number[][]) ?? [])[input.index] ?? [];
+  const wrong = order
+    .map((orig, display) => ({ orig, display }))
+    .filter((o) => o.orig !== row.correct_index);
+  const removed = shuffle(wrong)
+    .slice(0, Math.max(1, Math.min(2, wrong.length - 1)))
+    .map((o) => o.display);
+
+  await supabaseAdmin
+    .from("exam_sessions")
+    .update({ helpers: { ...helpers, fiftyFifty: [...usedList, input.index] } as never })
+    .eq("id", session.id);
+
+  return { removed };
+}
+
+/**
+ * Ghi nhận một sự kiện hành vi trong phòng thi và cộng dồn điểm liêm chính.
+ * Không bao giờ tự huỷ bài ở đây — quyết định nằm ở lúc chấm bài (submitExamSession).
+ */
+export async function reportExamEvent(input: {
+  sessionId: string;
+  submitToken: string;
+  kind: string;
+  detail?: Record<string, unknown>;
+}): Promise<{ ok: boolean; integrityScore: number }> {
+  const { data: session } = await supabaseAdmin
+    .from("exam_sessions")
+    .select("id, submit_token, status, integrity_score")
+    .eq("id", input.sessionId)
+    .maybeSingle();
+
+  if (!session || session.submit_token !== input.submitToken || session.status !== "active")
+    return { ok: false, integrityScore: session?.integrity_score ?? 0 };
+
+  if (!isExamEventKind(input.kind))
+    return { ok: false, integrityScore: session.integrity_score ?? 0 };
+
+  // Chống spam: mỗi phiên chỉ ghi tối đa MAX_EVENTS_PER_SESSION sự kiện.
+  const { count } = await supabaseAdmin
+    .from("exam_events")
+    .select("id", { count: "exact", head: true })
+    .eq("session_id", session.id);
+  if ((count ?? 0) >= MAX_EVENTS_PER_SESSION)
+    return { ok: false, integrityScore: session.integrity_score ?? 0 };
+
+  const detail = (input.detail ?? {}) as ExamEventDetail;
+  const weight = scoreEvent(input.kind, detail);
+
+  await supabaseAdmin.from("exam_events").insert({
+    session_id: session.id,
+    kind: input.kind,
+    weight,
+    detail: detail as never,
+  });
+
+  const next = (session.integrity_score ?? 0) + weight;
+  if (weight > 0)
+    await supabaseAdmin
+      .from("exam_sessions")
+      .update({ integrity_score: next })
+      .eq("id", session.id);
+
+  return { ok: true, integrityScore: next };
+}
