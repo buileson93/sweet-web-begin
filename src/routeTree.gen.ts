@@ -20,10 +20,10 @@ import { Route as AuthenticatedNhapDuLieuRouteImport } from './routes/_authentic
 import { Route as AuthenticatedNhatKyRouteImport } from './routes/_authenticated/nhat-ky'
 import { Route as AuthenticatedQuanTriRouteImport } from './routes/_authenticated/quan-tri'
 import { Route as CuocThiQuizIdRouteImport } from './routes/cuoc-thi.$quizId'
-import { Route as ApiCronAutoSubmitRouteImport } from './routes/api/cron/auto-submit'
-import { Route as ApiCronDonAnhRouteImport } from './routes/api/cron/don-anh'
 import { Route as ApiPublicExamProgressRouteImport } from './routes/api/public/exam-progress'
 import { Route as ApiPublicAnhCauHoiSplatRouteImport } from './routes/api/public/anh-cau-hoi.$'
+import { Route as ApiPublicCronAutoSubmitRouteImport } from './routes/api/public/cron/auto-submit'
+import { Route as ApiPublicCronDonAnhRouteImport } from './routes/api/public/cron/don-anh'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -79,16 +79,6 @@ const CuocThiQuizIdRoute = CuocThiQuizIdRouteImport.update({
   path: '/cuoc-thi/$quizId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiCronAutoSubmitRoute = ApiCronAutoSubmitRouteImport.update({
-  id: '/api/cron/auto-submit',
-  path: '/api/cron/auto-submit',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCronDonAnhRoute = ApiCronDonAnhRouteImport.update({
-  id: '/api/cron/don-anh',
-  path: '/api/cron/don-anh',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicExamProgressRoute = ApiPublicExamProgressRouteImport.update({
   id: '/api/public/exam-progress',
   path: '/api/public/exam-progress',
@@ -97,6 +87,16 @@ const ApiPublicExamProgressRoute = ApiPublicExamProgressRouteImport.update({
 const ApiPublicAnhCauHoiSplatRoute = ApiPublicAnhCauHoiSplatRouteImport.update({
   id: '/api/public/anh-cau-hoi/$',
   path: '/api/public/anh-cau-hoi/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicCronAutoSubmitRoute = ApiPublicCronAutoSubmitRouteImport.update({
+  id: '/api/public/cron/auto-submit',
+  path: '/api/public/cron/auto-submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicCronDonAnhRoute = ApiPublicCronDonAnhRouteImport.update({
+  id: '/api/public/cron/don-anh',
+  path: '/api/public/cron/don-anh',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -111,10 +111,10 @@ export interface FileRoutesByFullPath {
   '/nhat-ky': typeof AuthenticatedNhatKyRoute
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
-  '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
-  '/api/cron/don-anh': typeof ApiCronDonAnhRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
+  '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
+  '/api/public/cron/don-anh': typeof ApiPublicCronDonAnhRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -127,10 +127,10 @@ export interface FileRoutesByTo {
   '/nhat-ky': typeof AuthenticatedNhatKyRoute
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
-  '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
-  '/api/cron/don-anh': typeof ApiCronDonAnhRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
+  '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
+  '/api/public/cron/don-anh': typeof ApiPublicCronDonAnhRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -145,10 +145,10 @@ export interface FileRoutesById {
   '/_authenticated/nhat-ky': typeof AuthenticatedNhatKyRoute
   '/_authenticated/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
-  '/api/cron/auto-submit': typeof ApiCronAutoSubmitRoute
-  '/api/cron/don-anh': typeof ApiCronDonAnhRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
+  '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
+  '/api/public/cron/don-anh': typeof ApiPublicCronDonAnhRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -163,10 +163,10 @@ export interface FileRouteTypes {
     | '/nhat-ky'
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
-    | '/api/cron/auto-submit'
-    | '/api/cron/don-anh'
     | '/api/public/exam-progress'
     | '/api/public/anh-cau-hoi/$'
+    | '/api/public/cron/auto-submit'
+    | '/api/public/cron/don-anh'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -179,10 +179,10 @@ export interface FileRouteTypes {
     | '/nhat-ky'
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
-    | '/api/cron/auto-submit'
-    | '/api/cron/don-anh'
     | '/api/public/exam-progress'
     | '/api/public/anh-cau-hoi/$'
+    | '/api/public/cron/auto-submit'
+    | '/api/public/cron/don-anh'
   id:
     | '__root__'
     | '/'
@@ -196,10 +196,10 @@ export interface FileRouteTypes {
     | '/_authenticated/nhat-ky'
     | '/_authenticated/quan-tri'
     | '/cuoc-thi/$quizId'
-    | '/api/cron/auto-submit'
-    | '/api/cron/don-anh'
     | '/api/public/exam-progress'
     | '/api/public/anh-cau-hoi/$'
+    | '/api/public/cron/auto-submit'
+    | '/api/public/cron/don-anh'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -211,10 +211,10 @@ export interface RootRouteChildren {
   LichSuRoute: typeof LichSuRoute
   ThiRoute: typeof ThiRoute
   CuocThiQuizIdRoute: typeof CuocThiQuizIdRoute
-  ApiCronAutoSubmitRoute: typeof ApiCronAutoSubmitRoute
-  ApiCronDonAnhRoute: typeof ApiCronDonAnhRoute
   ApiPublicExamProgressRoute: typeof ApiPublicExamProgressRoute
   ApiPublicAnhCauHoiSplatRoute: typeof ApiPublicAnhCauHoiSplatRoute
+  ApiPublicCronAutoSubmitRoute: typeof ApiPublicCronAutoSubmitRoute
+  ApiPublicCronDonAnhRoute: typeof ApiPublicCronDonAnhRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -296,20 +296,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CuocThiQuizIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/cron/auto-submit': {
-      id: '/api/cron/auto-submit'
-      path: '/api/cron/auto-submit'
-      fullPath: '/api/cron/auto-submit'
-      preLoaderRoute: typeof ApiCronAutoSubmitRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/cron/don-anh': {
-      id: '/api/cron/don-anh'
-      path: '/api/cron/don-anh'
-      fullPath: '/api/cron/don-anh'
-      preLoaderRoute: typeof ApiCronDonAnhRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/exam-progress': {
       id: '/api/public/exam-progress'
       path: '/api/public/exam-progress'
@@ -322,6 +308,20 @@ declare module '@tanstack/react-router' {
       path: '/api/public/anh-cau-hoi/$'
       fullPath: '/api/public/anh-cau-hoi/$'
       preLoaderRoute: typeof ApiPublicAnhCauHoiSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron/auto-submit': {
+      id: '/api/public/cron/auto-submit'
+      path: '/api/public/cron/auto-submit'
+      fullPath: '/api/public/cron/auto-submit'
+      preLoaderRoute: typeof ApiPublicCronAutoSubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron/don-anh': {
+      id: '/api/public/cron/don-anh'
+      path: '/api/public/cron/don-anh'
+      fullPath: '/api/public/cron/don-anh'
+      preLoaderRoute: typeof ApiPublicCronDonAnhRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -351,11 +351,21 @@ const rootRouteChildren: RootRouteChildren = {
   LichSuRoute: LichSuRoute,
   ThiRoute: ThiRoute,
   CuocThiQuizIdRoute: CuocThiQuizIdRoute,
-  ApiCronAutoSubmitRoute: ApiCronAutoSubmitRoute,
-  ApiCronDonAnhRoute: ApiCronDonAnhRoute,
   ApiPublicExamProgressRoute: ApiPublicExamProgressRoute,
   ApiPublicAnhCauHoiSplatRoute: ApiPublicAnhCauHoiSplatRoute,
+  ApiPublicCronAutoSubmitRoute: ApiPublicCronAutoSubmitRoute,
+  ApiPublicCronDonAnhRoute: ApiPublicCronDonAnhRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
