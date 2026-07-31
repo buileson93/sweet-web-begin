@@ -304,16 +304,17 @@ function HomePage() {
                       st === "closed" && "opacity-70",
                     )}
                   >
-                    {/* Ảnh chìm chủ đề: trượt vào từ phải khi rê chuột, luôn nằm dưới lớp chữ */}
+                    {/* Ảnh ngang chủ đề: trượt ra từ mép phải khi rê chuột, luôn nằm dưới lớp chữ */}
                     <img
                       src={resolveQuizCover(q.cover_url, q.id)}
                       alt=""
                       aria-hidden
                       loading="lazy"
-                      width={1024}
-                      height={768}
-                      className="quiz-card-art pointer-events-none absolute -right-6 bottom-0 h-[86%] w-auto max-w-[62%] select-none object-contain"
+                      width={1536}
+                      height={640}
+                      className="quiz-card-art pointer-events-none absolute inset-y-0 right-0 h-full w-[68%] max-w-none select-none object-contain object-right"
                     />
+
                     <span
                       aria-hidden
                       className={cn(
