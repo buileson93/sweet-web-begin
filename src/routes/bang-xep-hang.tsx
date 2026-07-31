@@ -1,0 +1,320 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { Download, FileSpreadsheet, Medal, Radio, Search, SearchX, Trophy } from "lucide-react";
+import { toast } from "sonner";
+
+import { AppShell } from "@/components/AppShell";
+import { EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeResults } from "@/hooks/useRealtimeResults";
+import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
+import { formatDateTime, formatSeconds } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/bang-xep-hang")({
+  head: () => ({
+    meta: [
+      { title: "Bảng xếp hạng thí sinh | Hội thi trắc nghiệm" },
+      {
+        name: "description",
+        content: "Bảng xếp hạng kết quả thi trắc nghiệm theo điểm số và thời gian làm bài của từng thí sinh.",
+      },
+      { property: "og:title", content: "Bảng xếp hạng thí sinh" },
+      { property: "og:description", content: "Xếp hạng theo điểm số và thời gian làm bài của các thí sinh." },
+    ],
+  }),
+  component: LeaderboardPage,
+});
+
+function LeaderboardPage() {
+  const [quizId, setQuizId] = useState("all");
+  const [keyword, setKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
+
+  const quizzesQuery = useQuery({
+    queryKey: ["quizzes", "titles"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("quizzes").select("id, title").order("start_time");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const resultsQuery = useQuery({
+    queryKey: ["results", quizId],
+    queryFn: async () => {
+      let query = supabase
+        .from("results")
+        .select("id, candidate_name, unit, birth_year, score, total, time_seconds, submitted_at, quiz_title, quiz_id")
+        .eq("disqualified", false)
+        .order("score", { ascending: false })
+        .order("time_seconds", { ascending: true })
+        .limit(500);
+      if (quizId !== "all") query = query.eq("quiz_id", quizId);
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { live, pendingUpdates } = useRealtimeResults({
+    queryKey: ["results", quizId],
+    quizId: quizId === "all" ? null : quizId,
+  });
+
+  const all = resultsQuery.data ?? [];
+  const rows = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
+    return all.filter(
+      (r) => !kw || r.candidate_name.toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
+    );
+  }, [all, keyword]);
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+  const pageRows = useMemo(() => rows.slice((page - 1) * pageSize, page * pageSize), [rows, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [quizId, keyword]);
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
+  const quizLabel =
+    quizId === "all" ? "tat-ca" : ((quizzesQuery.data ?? []).find((q) => q.id === quizId)?.title ?? "cuoc-thi");
+
+  function exportRows(): ExportRow[] {
+    return rows.map((r, i) => ({
+      "Xếp hạng": i + 1,
+      "Họ và tên": r.candidate_name,
+      "Năm sinh": r.birth_year ?? "",
+      "Đơn vị": r.unit ?? "",
+      "Cuộc thi": r.quiz_title ?? "",
+      "Điểm": r.score,
+      "Tổng câu": r.total,
+      "Thời gian làm bài": formatSeconds(r.time_seconds),
+      "Thời điểm nộp": formatDateTime(r.submitted_at),
+    }));
+  }
+
+  function fileName(ext: string) {
+    const slug = quizLabel
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/gi, "d")
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .toLowerCase();
+    return `bang-xep-hang-${slug}-${new Date().toISOString().slice(0, 10)}.${ext}`;
+  }
+
+  async function handleExport(kind: "csv" | "xlsx") {
+    if (rows.length === 0) return toast.error("Không có dữ liệu để tải xuống.");
+    try {
+      if (kind === "csv") downloadCsv(exportRows(), fileName("csv"));
+      else await downloadExcel(exportRows(), fileName("xlsx"), "Bang xep hang");
+      toast.success(`Đã tải xuống ${rows.length} kết quả.`);
+    } catch {
+      toast.error("Không thể tạo tệp tải xuống.");
+    }
+  }
+
+  return (
+    <AppShell>
+      <div className="surface-hero animate-pop relative overflow-hidden rounded-2xl px-5 py-5 sm:px-7">
+        <Trophy aria-hidden className="animate-float absolute -right-4 -top-4 size-28 text-primary-foreground/10" />
+        <div className="flex items-center gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl surface-gold shadow-[var(--shadow-gold)]">
+            <Trophy className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
+            <p className="type-meta text-primary-foreground/75">
+              Xếp theo điểm; đồng điểm ưu tiên thời gian làm bài ngắn hơn.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5">
+          <div className="flex flex-col gap-2.5 sm:flex-row">
+
+            <Select value={quizId} onValueChange={setQuizId}>
+              <SelectTrigger className="rounded-xl sm:max-w-[16rem]">
+                <SelectValue placeholder="Tất cả cuộc thi" />
+              </SelectTrigger>
+              <SelectContent className="max-w-[min(22rem,calc(100vw-2rem))]">
+
+                <SelectItem value="all">Tất cả cuộc thi</SelectItem>
+                {(quizzesQuery.data ?? []).map((q) => (
+                  <SelectItem key={q.id} value={q.id}>
+                    {q.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="Tìm theo tên hoặc đơn vị..."
+                className="rounded-full pl-10"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-full sm:flex-none"
+                disabled={rows.length === 0}
+                onClick={() => void handleExport("csv")}
+              >
+                <Download className="size-4" />
+                CSV
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 rounded-full sm:flex-none"
+                disabled={rows.length === 0}
+                onClick={() => void handleExport("xlsx")}
+              >
+                <FileSpreadsheet className="size-4" />
+                Excel
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {!resultsQuery.isLoading && !resultsQuery.isError && rows.length > 0 ? (
+              <p className="type-meta">
+                Trang {page}/{pageCount} · {rows.length} kết quả (tải {all.length} bản ghi gần nhất).
+              </p>
+            ) : null}
+            {live ? (
+              <p className="type-meta inline-flex items-center gap-1.5 text-success" aria-live="polite">
+                <Radio className="size-3.5" />
+                {pendingUpdates > 0
+                  ? `${pendingUpdates} bài nộp mới — đang cập nhật...`
+                  : "Đang cập nhật trực tiếp"}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="mt-6">
+            <QueryState
+              isLoading={resultsQuery.isLoading}
+              isError={resultsQuery.isError}
+              error={resultsQuery.error}
+              isFetching={resultsQuery.isFetching}
+              onRetry={() => void resultsQuery.refetch()}
+              isEmpty={rows.length === 0}
+              skeleton={<ListSkeleton rows={6} height="h-20" />}
+              empty={
+                keyword.trim() || quizId !== "all" ? (
+                  <EmptyState
+                    icon={SearchX}
+                    title="Không có kết quả phù hợp"
+                    description="Thử xoá từ khoá tìm kiếm hoặc chọn lại cuộc thi khác."
+                    action={
+                      <Button
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={() => {
+                          setKeyword("");
+                          setQuizId("all");
+                        }}
+                      >
+                        Xoá bộ lọc
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <EmptyState
+                    icon={Trophy}
+                    title="Chưa có thí sinh nào nộp bài"
+                    description="Bảng xếp hạng sẽ hiển thị ngay khi có kết quả hợp lệ đầu tiên."
+                  />
+                )
+              }
+            >
+              <ol className="space-y-3">
+                {pageRows.map((r, offset) => {
+                  const i = (page - 1) * pageSize + offset;
+                  return (
+                  <li
+                    key={r.id}
+                    className={cn(
+                      "game-card animate-pop grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 sm:gap-4 sm:p-5",
+                      i < 3 && "ring-1 ring-gold/40",
+                    )}
+                    style={{ animationDelay: `${Math.min(i, 10) * 0.04}s` }}
+                  >
+                    <span
+                      className={cn(
+                        "grid size-10 shrink-0 place-items-center rounded-2xl text-sm font-extrabold sm:size-12",
+                        i === 0 && "surface-gold shadow-[var(--shadow-gold)]",
+                        i === 1 && "bg-secondary text-secondary-foreground",
+                        i === 2 && "bg-accent/25 text-accent-foreground",
+                        i > 2 && "bg-secondary text-muted-foreground",
+                      )}
+                    >
+                      {i < 3 ? <Medal className="size-5" /> : i + 1}
+                    </span>
+
+                    <div className="min-w-0">
+                      <p className="truncate font-heading font-bold">{r.candidate_name}</p>
+                      <p className="type-meta truncate">{r.unit}</p>
+                      <p className="type-meta mt-0.5 truncate">
+                        {r.quiz_title}
+                        <span className="hidden sm:inline"> • {formatDateTime(r.submitted_at)}</span>
+                      </p>
+                    </div>
+
+                    <div className="shrink-0 text-right">
+                      <p className="font-mono text-lg font-extrabold text-primary">
+                        {r.score}
+                        <span className="text-sm text-muted-foreground">/{r.total}</span>
+                      </p>
+                      <p className="font-mono text-xs text-muted-foreground">{formatSeconds(r.time_seconds)}</p>
+                    </div>
+                  </li>
+                  );
+                })}
+              </ol>
+              {pageCount > 1 ? (
+                <nav className="mt-6 flex items-center justify-center gap-2" aria-label="Phân trang bảng xếp hạng">
+                  <Button
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={page === 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    Trang trước
+                  </Button>
+                  <span className="type-meta px-2">
+                    {page} / {pageCount}
+                  </span>
+                  <Button
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={page === pageCount}
+                    onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                  >
+                    Trang sau
+                  </Button>
+                </nav>
+              ) : null}
+            </QueryState>
+          </div>
+      </div>
+    </AppShell>
+  );
+
+}

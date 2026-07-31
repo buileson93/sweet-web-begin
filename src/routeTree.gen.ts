@@ -10,33 +10,172 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BangXepHangRouteImport } from './routes/bang-xep-hang'
+import { Route as HuongDanRouteImport } from './routes/huong-dan'
+import { Route as LichSuRouteImport } from './routes/lich-su'
+import { Route as ThiRouteImport } from './routes/thi'
+import { Route as AuthenticatedNhapDuLieuRouteImport } from './routes/_authenticated/nhap-du-lieu'
+import { Route as AuthenticatedNhatKyRouteImport } from './routes/_authenticated/nhat-ky'
+import { Route as AuthenticatedQuanTriRouteImport } from './routes/_authenticated/quan-tri'
+import { Route as CuocThiQuizIdRouteImport } from './routes/cuoc-thi.$quizId'
+import { Route as ApiPublicAnhCauHoiSplatRouteImport } from './routes/api/public/anh-cau-hoi.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BangXepHangRoute = BangXepHangRouteImport.update({
+  id: '/bang-xep-hang',
+  path: '/bang-xep-hang',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HuongDanRoute = HuongDanRouteImport.update({
+  id: '/huong-dan',
+  path: '/huong-dan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LichSuRoute = LichSuRouteImport.update({
+  id: '/lich-su',
+  path: '/lich-su',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ThiRoute = ThiRouteImport.update({
+  id: '/thi',
+  path: '/thi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedNhapDuLieuRoute = AuthenticatedNhapDuLieuRouteImport.update({
+  id: '/nhap-du-lieu',
+  path: '/nhap-du-lieu',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedNhatKyRoute = AuthenticatedNhatKyRouteImport.update({
+  id: '/nhat-ky',
+  path: '/nhat-ky',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedQuanTriRoute = AuthenticatedQuanTriRouteImport.update({
+  id: '/quan-tri',
+  path: '/quan-tri',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const CuocThiQuizIdRoute = CuocThiQuizIdRouteImport.update({
+  id: '/cuoc-thi/$quizId',
+  path: '/cuoc-thi/$quizId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAnhCauHoiSplatRoute = ApiPublicAnhCauHoiSplatRouteImport.update({
+  id: '/api/public/anh-cau-hoi/$',
+  path: '/api/public/anh-cau-hoi/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/bang-xep-hang': typeof BangXepHangRoute
+  '/huong-dan': typeof HuongDanRoute
+  '/lich-su': typeof LichSuRoute
+  '/thi': typeof ThiRoute
+  '/nhap-du-lieu': typeof AuthenticatedNhapDuLieuRoute
+  '/nhat-ky': typeof AuthenticatedNhatKyRoute
+  '/quan-tri': typeof AuthenticatedQuanTriRoute
+  '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
+  '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/bang-xep-hang': typeof BangXepHangRoute
+  '/huong-dan': typeof HuongDanRoute
+  '/lich-su': typeof LichSuRoute
+  '/thi': typeof ThiRoute
+  '/nhap-du-lieu': typeof AuthenticatedNhapDuLieuRoute
+  '/nhat-ky': typeof AuthenticatedNhatKyRoute
+  '/quan-tri': typeof AuthenticatedQuanTriRoute
+  '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
+  '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/bang-xep-hang': typeof BangXepHangRoute
+  '/huong-dan': typeof HuongDanRoute
+  '/lich-su': typeof LichSuRoute
+  '/thi': typeof ThiRoute
+  '/_authenticated/nhap-du-lieu': typeof AuthenticatedNhapDuLieuRoute
+  '/_authenticated/nhat-ky': typeof AuthenticatedNhatKyRoute
+  '/_authenticated/quan-tri': typeof AuthenticatedQuanTriRoute
+  '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
+  '/api/public/anh-cau-hoi/$': typeof ApiPublicAnhCauHoiSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/bang-xep-hang'
+    | '/huong-dan'
+    | '/lich-su'
+    | '/thi'
+    | '/nhap-du-lieu'
+    | '/nhat-ky'
+    | '/quan-tri'
+    | '/cuoc-thi/$quizId'
+    | '/api/public/anh-cau-hoi/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/bang-xep-hang'
+    | '/huong-dan'
+    | '/lich-su'
+    | '/thi'
+    | '/nhap-du-lieu'
+    | '/nhat-ky'
+    | '/quan-tri'
+    | '/cuoc-thi/$quizId'
+    | '/api/public/anh-cau-hoi/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/bang-xep-hang'
+    | '/huong-dan'
+    | '/lich-su'
+    | '/thi'
+    | '/_authenticated/nhap-du-lieu'
+    | '/_authenticated/nhat-ky'
+    | '/_authenticated/quan-tri'
+    | '/cuoc-thi/$quizId'
+    | '/api/public/anh-cau-hoi/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  BangXepHangRoute: typeof BangXepHangRoute
+  HuongDanRoute: typeof HuongDanRoute
+  LichSuRoute: typeof LichSuRoute
+  ThiRoute: typeof ThiRoute
+  CuocThiQuizIdRoute: typeof CuocThiQuizIdRoute
+  ApiPublicAnhCauHoiSplatRoute: typeof ApiPublicAnhCauHoiSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +187,112 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bang-xep-hang': {
+      id: '/bang-xep-hang'
+      path: '/bang-xep-hang'
+      fullPath: '/bang-xep-hang'
+      preLoaderRoute: typeof BangXepHangRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/huong-dan': {
+      id: '/huong-dan'
+      path: '/huong-dan'
+      fullPath: '/huong-dan'
+      preLoaderRoute: typeof HuongDanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lich-su': {
+      id: '/lich-su'
+      path: '/lich-su'
+      fullPath: '/lich-su'
+      preLoaderRoute: typeof LichSuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/thi': {
+      id: '/thi'
+      path: '/thi'
+      fullPath: '/thi'
+      preLoaderRoute: typeof ThiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/nhap-du-lieu': {
+      id: '/_authenticated/nhap-du-lieu'
+      path: '/nhap-du-lieu'
+      fullPath: '/nhap-du-lieu'
+      preLoaderRoute: typeof AuthenticatedNhapDuLieuRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nhat-ky': {
+      id: '/_authenticated/nhat-ky'
+      path: '/nhat-ky'
+      fullPath: '/nhat-ky'
+      preLoaderRoute: typeof AuthenticatedNhatKyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/quan-tri': {
+      id: '/_authenticated/quan-tri'
+      path: '/quan-tri'
+      fullPath: '/quan-tri'
+      preLoaderRoute: typeof AuthenticatedQuanTriRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/cuoc-thi/$quizId': {
+      id: '/cuoc-thi/$quizId'
+      path: '/cuoc-thi/$quizId'
+      fullPath: '/cuoc-thi/$quizId'
+      preLoaderRoute: typeof CuocThiQuizIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/anh-cau-hoi/$': {
+      id: '/api/public/anh-cau-hoi/$'
+      path: '/api/public/anh-cau-hoi/$'
+      fullPath: '/api/public/anh-cau-hoi/$'
+      preLoaderRoute: typeof ApiPublicAnhCauHoiSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedNhapDuLieuRoute: typeof AuthenticatedNhapDuLieuRoute
+  AuthenticatedNhatKyRoute: typeof AuthenticatedNhatKyRoute
+  AuthenticatedQuanTriRoute: typeof AuthenticatedQuanTriRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedNhapDuLieuRoute: AuthenticatedNhapDuLieuRoute,
+  AuthenticatedNhatKyRoute: AuthenticatedNhatKyRoute,
+  AuthenticatedQuanTriRoute: AuthenticatedQuanTriRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  BangXepHangRoute: BangXepHangRoute,
+  HuongDanRoute: HuongDanRoute,
+  LichSuRoute: LichSuRoute,
+  ThiRoute: ThiRoute,
+  CuocThiQuizIdRoute: CuocThiQuizIdRoute,
+  ApiPublicAnhCauHoiSplatRoute: ApiPublicAnhCauHoiSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
