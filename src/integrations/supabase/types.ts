@@ -50,6 +50,72 @@ export type Database = {
         }
         Relationships: []
       }
+      device_visits: {
+        Row: {
+          browser: string
+          browser_version: string
+          created_at: string
+          device_type: string
+          id: string
+          is_pwa: boolean
+          is_touch: boolean
+          language: string
+          os: string
+          os_version: string
+          path: string
+          pixel_ratio: number
+          referrer_host: string
+          screen_h: number
+          screen_w: number
+          timezone: string
+          viewport_h: number
+          viewport_w: number
+          visitor_key: string
+        }
+        Insert: {
+          browser?: string
+          browser_version?: string
+          created_at?: string
+          device_type?: string
+          id?: string
+          is_pwa?: boolean
+          is_touch?: boolean
+          language?: string
+          os?: string
+          os_version?: string
+          path?: string
+          pixel_ratio?: number
+          referrer_host?: string
+          screen_h?: number
+          screen_w?: number
+          timezone?: string
+          viewport_h?: number
+          viewport_w?: number
+          visitor_key?: string
+        }
+        Update: {
+          browser?: string
+          browser_version?: string
+          created_at?: string
+          device_type?: string
+          id?: string
+          is_pwa?: boolean
+          is_touch?: boolean
+          language?: string
+          os?: string
+          os_version?: string
+          path?: string
+          pixel_ratio?: number
+          referrer_host?: string
+          screen_h?: number
+          screen_w?: number
+          timezone?: string
+          viewport_h?: number
+          viewport_w?: number
+          visitor_key?: string
+        }
+        Relationships: []
+      }
       employee_login_attempts: {
         Row: {
           created_at: string
