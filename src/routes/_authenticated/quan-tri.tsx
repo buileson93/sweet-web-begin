@@ -304,6 +304,7 @@ function AdminPage() {
                 {current === "live" && <LiveMonitor />}
                 {current === "results" && <ResultManager canEdit={canEdit} />}
                 {current === "unit-stats" && <UnitStats />}
+                {current === "devices" && <DeviceStats />}
 
                 {current === "history" && <EmployeeHistoryManager />}
                 {current === "reminders" && <ReminderManager />}
