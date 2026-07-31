@@ -22,8 +22,21 @@ export function ProductTour({ steps, storageKey = STORAGE_KEY }: { steps: TourSt
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (localStorage.getItem(storageKey)) return;
-    const t = setTimeout(() => setIndex(0), 900);
+    try {
+      if (localStorage.getItem(storageKey)) return;
+    } catch {
+      return;
+    }
+    const t = setTimeout(() => {
+      // Đánh dấu đã xem ngay khi mở lần đầu: dù người dùng thoát giữa chừng
+      // hay tải lại trang, hướng dẫn cũng không bật lại nữa.
+      try {
+        localStorage.setItem(storageKey, "1");
+      } catch {
+        /* bỏ qua khi storage bị chặn */
+      }
+      setIndex(0);
+    }, 900);
     return () => clearTimeout(t);
   }, [storageKey]);
 
@@ -35,7 +48,12 @@ export function ProductTour({ steps, storageKey = STORAGE_KEY }: { steps: TourSt
 
   const stop = useCallback(() => {
     setIndex(null);
-    if (typeof window !== "undefined") localStorage.setItem(storageKey, "1");
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(storageKey, "1");
+    } catch {
+      /* bỏ qua khi storage bị chặn */
+    }
   }, [storageKey]);
 
   useEffect(() => {
