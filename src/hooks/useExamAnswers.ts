@@ -98,7 +98,7 @@ export function useExamAnswers(opts: {
             setCurrent((c) => (c < session.questions.length - 1 ? c + 1 : c));
           },
           // Trả lời sai thì dừng lâu hơn để kịp đọc đáp án đúng.
-          isCorrect ? 1100 : 2600,
+          isCorrect ? 1100 : 4600,
         );
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Không chấm được câu này.");

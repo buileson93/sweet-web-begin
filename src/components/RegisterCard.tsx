@@ -34,6 +34,7 @@ import { startExam } from "@/lib/exam.functions";
 import { saveExamEntry } from "@/lib/examSession";
 import { verifyEmployeeFn } from "@/lib/employees.functions";
 import { formatDateTime, quizStatus, statusLabel } from "@/lib/format";
+import { QuizStatusBadge } from "@/components/QuizStatusBadge";
 import { cn } from "@/lib/utils";
 
 export type RegisterQuiz = {
@@ -317,16 +318,23 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                   <SelectValue placeholder="Chọn cuộc thi" />
                   {quizPulse > 0 ? <span className="tap-flash rounded-xl" aria-hidden /> : null}
                 </SelectTrigger>
-                <SelectContent className="max-w-[calc(100vw-1.5rem)]">
+                <SelectContent
+                  className="max-w-[calc(100vw-1.5rem)]"
+                  style={{ width: "var(--radix-select-trigger-width)" }}
+                >
                   {quizzes.map((q) => {
                     const st = quizStatus(q);
                     return (
-                      <SelectItem key={q.id} value={q.id} disabled={st !== "open"}>
-                        {q.title} — {statusLabel[st]}
+                      <SelectItem key={q.id} value={q.id} disabled={st !== "open"} className="py-2.5">
+                        <span className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                          <span className="min-w-0 truncate font-semibold">{q.title}</span>
+                          <QuizStatusBadge status={st} />
+                        </span>
                       </SelectItem>
                     );
                   })}
                 </SelectContent>
+
               </Select>
             )}
             {selected && selectedStatus !== "open" && (
