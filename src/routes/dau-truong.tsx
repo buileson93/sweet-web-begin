@@ -561,21 +561,19 @@ function OnlineList({
 
 
 /** Avatar 2D của chính mình trong đấu trường (đồng bộ với nhân vật đã tạo). */
-function ArenaSelfAvatar({ name, fallback }: { name: string; fallback?: string }) {
+function ArenaSelfAvatar({ profile }: { profile: ArenaProfile }) {
   const { identity } = usePlayerIdentity();
-  if (!identity)
-    return (
-      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10 text-2xl">
-        {fallback || "🧑‍✈️"}
-      </span>
-    );
+  // Ưu tiên dữ liệu máy chủ (luôn đúng), sau đó tới nhận diện lưu trên máy.
+  const avatarUrl = profile.avatarUrl || identity?.avatarUrl || "";
+  const avatarImage = profile.avatarImage || identity?.avatarImage || "";
   return (
     <AvatarBubble
-      name={name}
-      avatarUrl={identity.avatarUrl}
-      avatarImage={identity.avatarImage}
-      level={identity.level}
+      name={profile.displayName}
+      avatarUrl={avatarUrl}
+      avatarImage={avatarImage}
+      level={profile.level || identity?.level}
       size="md"
+      live
     />
   );
 }
