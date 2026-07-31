@@ -38,6 +38,8 @@ export type QuestionRow = {
   points: number;
   explanation: string;
   time_limit_seconds: number | null;
+  /** Thứ tự hiển thị ổn định trong cuộc thi (dùng khi tắt trộn câu hỏi). */
+  order_index: number;
 };
 
 export function shuffle<T>(input: T[]): T[] {
@@ -192,11 +194,17 @@ export function chosenTextOf(
   }
 }
 
-/** Bốc đề theo công thức: ưu tiên tỉ lệ độ khó, phần còn lại lấy ngẫu nhiên. */
+/**
+ * Bốc đề theo công thức: ưu tiên tỉ lệ độ khó, phần còn lại lấy ngẫu nhiên.
+ * Việc CHỌN câu luôn ngẫu nhiên trong từng nhóm độ khó để mỗi lượt thi ra đề khác nhau,
+ * nhưng THỨ TỰ câu chỉ bị trộn khi `shuffleQuestions = true`; ngược lại sắp lại
+ * theo thứ tự ổn định của pool (order_index, rồi id để hoà nhau vẫn xác định).
+ */
 export function pickByBlueprint(
   pool: QuestionRow[],
   wanted: number,
   blueprint: Blueprint,
+  shuffleQuestions: boolean,
 ): QuestionRow[] {
   const picked: QuestionRow[] = [];
   const used = new Set<string>();
@@ -230,5 +238,7 @@ export function pickByBlueprint(
       pool.filter((r) => !used.has(r.id)),
       wanted - picked.length,
     );
-  return shuffle(picked).slice(0, wanted);
+  const result = picked.slice(0, wanted);
+  if (shuffleQuestions) return shuffle(result);
+  return result.sort((a, b) => a.order_index - b.order_index || a.id.localeCompare(b.id));
 }
