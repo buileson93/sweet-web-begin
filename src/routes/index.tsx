@@ -112,33 +112,14 @@ function HomePage() {
 
       {/* Bố cục chia đôi: trái = vào phòng thi, phải = bảng xếp hạng trực tiếp */}
       <section className="grid gap-6 lg:grid-cols-12 lg:items-start">
-        <div className="flex flex-col gap-5 lg:col-span-7">
-          <div className="animate-pop relative">
-            {/* Máy bay bay vòng quanh cuốn sách tri thức */}
-            <div
-              className="pointer-events-none absolute -top-2 right-2 hidden size-28 place-items-center sm:grid lg:right-6"
-              aria-hidden
-            >
-              <BookOpen className="animate-book-flip size-9 text-primary/70 drop-shadow-sm" />
-              <span
-                className="animate-plane-orbit absolute grid place-items-center"
-                style={{ "--orbit": "3.4rem" } as React.CSSProperties}
-              >
-                <Plane className="size-5 text-accent drop-shadow-sm" />
-              </span>
-            </div>
-
-            <span className="type-eyebrow inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-75" />
-                <span className="relative inline-flex size-2 rounded-full bg-primary" />
-              </span>
-              Đấu trường tri thức VATM
-            </span>
+        <div className="flex min-w-0 flex-col gap-5 lg:col-span-7">
+          <div className="animate-pop relative min-w-0">
+...
             <h1 className="type-h1 mt-3 max-w-[20ch] text-pretty uppercase [hyphens:none] sm:pr-28">
-              <span className="block whitespace-nowrap">Chinh phục bầu trời</span>
-              <span className="block whitespace-nowrap text-primary">kiến thức</span>
+              <span className="block sm:whitespace-nowrap">Chinh phục bầu trời</span>
+              <span className="block text-primary sm:whitespace-nowrap">kiến thức</span>
             </h1>
+
             <p className="type-lead mt-2 max-w-xl text-balance text-muted-foreground">
               Thi thử không giới hạn — mỗi lượt là một lần vững kiến thức hơn.
             </p>
