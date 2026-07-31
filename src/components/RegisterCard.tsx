@@ -13,7 +13,6 @@ import {
   LogIn,
   Plane,
   Play,
-  RefreshCw,
   Repeat,
   ShieldCheck,
   Trophy,
