@@ -202,7 +202,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
 
 
 
-      <div className="mt-4 space-y-3.5">
+      <div className="space-y-3.5">
         {!lockedQuizId && (
           <div className="space-y-1.5">
             <Label htmlFor="quiz">Cuộc thi</Label>
@@ -381,6 +381,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           <Link to="/huong-dan" className="type-meta hover:text-foreground">
             Luật chơi
           </Link>
+        </div>
         </div>
       </div>
     </div>
