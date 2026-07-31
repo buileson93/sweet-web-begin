@@ -175,7 +175,6 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   });
 
   async function exportExcel() {
-    const XLSX = await import("xlsx");
     const data = [
       [
         "Họ tên",
@@ -200,10 +199,7 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
         r.disqualified ? "Huỷ (gian lận)" : "Hợp lệ",
       ]),
     ];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "KetQua");
-    XLSX.writeFile(wb, "ket-qua-thi.xlsx");
+    await downloadXlsx([{ name: "KetQua", data }], "ket-qua-thi.xlsx");
   }
 
   return (

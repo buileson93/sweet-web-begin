@@ -96,15 +96,11 @@ export function UnitStats() {
   const chartRows = useMemo(() => rows.slice(0, 12), [rows]);
 
   async function exportExcel() {
-    const XLSX = await import("xlsx");
     const data = [
       ["Đơn vị", "Lượt thi", "Số thí sinh", "Điểm TB (%)", "Tỉ lệ đạt (%)", "Cao nhất (%)"],
       ...rows.map((r) => [r.unit, r.attempts, r.candidates, r.avgPercent, r.passRate, r.best]),
     ];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "ThongKeDonVi");
-    XLSX.writeFile(wb, "thong-ke-don-vi.xlsx");
+    await downloadXlsx([{ name: "ThongKeDonVi", data }], "thong-ke-don-vi.xlsx");
   }
 
   return (

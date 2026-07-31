@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Database, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -73,16 +72,28 @@ export function BackupManager() {
           `backup-${stamp}.json`,
         );
       } else {
-        const wb = XLSX.utils.book_new();
-        for (const [key, rows] of Object.entries(dump)) {
-          const flat = rows.map((r) =>
-            Object.fromEntries(
-              Object.entries(r).map(([k, v]) => [k, v && typeof v === "object" ? JSON.stringify(v) : v]),
+        await downloadXlsx(
+          Object.entries(dump).map(([key, rows]) => ({
+            name: key.slice(0, 31),
+            data: rowsToSheetData(
+              rows.map((r) =>
+                Object.fromEntries(
+                  Object.entries(r).map(([k, v]) => [
+                    k,
+                    v === null || v === undefined
+                      ? ""
+                      : typeof v === "object"
+                        ? JSON.stringify(v)
+                        : typeof v === "number"
+                          ? v
+                          : String(v),
+                  ]),
+                ),
+              ),
             ),
-          );
-          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(flat), key.slice(0, 31));
-        }
-        XLSX.writeFile(wb, `backup-${stamp}.xlsx`);
+          })),
+          `backup-${stamp}.xlsx`,
+        );
       }
       const totalRows = Object.values(dump).reduce((n, r) => n + r.length, 0);
       toast.success(`Đã xuất ${totalRows.toLocaleString("vi-VN")} dòng dữ liệu.`);
