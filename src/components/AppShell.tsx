@@ -56,9 +56,37 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
           <div className="lg:hidden">
             <SiteHeader />
           </div>
-          <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">{children}</main>
-          <SiteFooter />
+          <main className="min-w-0 flex-1 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-10 lg:py-10 lg:pb-10">
+            {children}
+          </main>
+          <div className="hidden lg:block">
+            <SiteFooter />
+          </div>
         </div>
+
+        {/* Thanh tab dưới cùng — kiểu ứng dụng di động */}
+        <nav
+          aria-label="Điều hướng chính"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+        >
+          <ul className="grid grid-cols-4">
+            {navItems.map((item) => (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  {...(item.to === "/quan-tri" ? { search: {} } : {})}
+                  aria-label={item.label}
+                  className="flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors active:scale-95"
+                  activeProps={{ className: "text-primary" }}
+                  activeOptions={{ exact: item.to === "/" }}
+                >
+                  <item.icon className="size-5" strokeWidth={2} absoluteStrokeWidth />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         {/* Panel phụ */}
         {aside && (
