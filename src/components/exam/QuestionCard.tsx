@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Frown, Send, ThumbsUp, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Frown, Send, ThumbsUp, Wand2, Zap } from "lucide-react";
 
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,10 @@ export function QuestionCard({
   fiftyBusy,
   fiftyLeft,
   fiftyUsed,
+  x2Left,
+  x2Busy,
+  x2Active,
+  onX2,
   onFifty,
   onAnswer,
   onPrev,
@@ -42,6 +46,12 @@ export function QuestionCard({
   fiftyBusy: boolean;
   fiftyLeft: number;
   fiftyUsed: boolean;
+  /** Số lượt X2 còn lại trong lượt thi. */
+  x2Left: number;
+  x2Busy: boolean;
+  /** Câu đang xem có đang được nhân đôi điểm không. */
+  x2Active: boolean;
+  onX2: () => void;
   onFifty: () => void;
   onAnswer: (value: AnswerValue) => void;
   onPrev: () => void;
@@ -129,8 +139,21 @@ export function QuestionCard({
 
 
       {/* Vật phẩm trợ giúp */}
+      <div className="mt-4 flex flex-wrap gap-2">
+          <Button
+            variant={x2Active ? "default" : "outline"}
+            size="sm"
+            className={cn("rounded-full", x2Active && "shadow-[var(--shadow-gold)]")}
+            disabled={x2Busy || disabled || (x2Left <= 0 && !x2Active)}
+            onClick={onX2}
+            title="Nhân đôi điểm câu này, cộng dồn với điểm thưởng combo"
+          >
+            <Zap className="size-4" />
+            {x2Active ? "Đang X2 câu này" : `X2 điểm (${x2Left})`}
+          </Button>
+        </div>
       {settings.allowFiftyFifty || settings.allowSkip ? (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-2">
           {settings.allowFiftyFifty ? (
             <Button
               variant="outline"
