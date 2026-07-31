@@ -4,6 +4,8 @@ import { AlertTriangle, ArrowLeft, CalendarClock, ListChecks, ShieldCheck, Timer
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { CountdownBadge } from "@/components/CountdownBadge";
+import { QuizParticipation } from "@/components/QuizParticipation";
 import { RegisterCard } from "@/components/RegisterCard";
 import { ErrorState, PageContainer, StatusPill } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
@@ -87,8 +89,15 @@ function QuizDetailPage() {
             <h1 className="type-h1 mt-4">{quiz?.title ?? "Không tìm thấy cuộc thi"}</h1>
           )}
           {status && (
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <StatusPill status={status} className="bg-primary-foreground/15 text-primary-foreground" />
+              {status === "upcoming" && (
+                <CountdownBadge
+                  target={quiz?.start_time}
+                  size="lg"
+                  className="ml-2 bg-primary-foreground/15 text-primary-foreground"
+                />
+              )}
             </div>
           )}
         </PageContainer>
@@ -149,6 +158,14 @@ function QuizDetailPage() {
                       </div>
                     ))}
                   </dl>
+                </section>
+
+                <section className="card-elevated p-6">
+                  <h2 className="type-h2">Tình hình dự thi</h2>
+                  <p className="type-meta mt-1">Danh sách nhân viên đã dự thi và những người cần nhắc nhở.</p>
+                  <div className="mt-4">
+                    <QuizParticipation quizId={quiz.id} />
+                  </div>
                 </section>
 
                 <section className="card-elevated p-6">
