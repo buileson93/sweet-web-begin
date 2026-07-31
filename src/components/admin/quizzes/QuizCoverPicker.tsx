@@ -3,6 +3,8 @@ import { ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { AssetLibrary } from "@/components/admin/AssetLibrary";
+
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/questionImage";
