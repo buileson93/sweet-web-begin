@@ -1,15 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Coins, Flame, Loader2, Swords, Trophy, User, X, Zap } from "lucide-react";
+import { Coins, Flame, Loader2, Search, Send, Swords, Trophy, User, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import { CredentialInput } from "@/components/CredentialInput";
+import { AvatarBubble } from "@/components/player/AvatarBubble";
+import { usePlayerIdentity } from "@/hooks/usePlayerIdentity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
-import { arenaHome, arenaQuickMatch, arenaRespondInvite, arenaSignIn } from "@/lib/arena.functions";
+import {
+  arenaHome,
+  arenaInvite,
+  arenaQuickMatch,
+  arenaRespondInvite,
+  arenaSearchOpponents,
+  arenaSignIn,
+} from "@/lib/arena.functions";
 import { clearArenaToken, getArenaToken, saveArenaToken } from "@/lib/arena/client";
 import type { ArenaProfile } from "@/lib/arena/types";
 import { getDeviceId } from "@/lib/deviceId";
@@ -235,6 +244,8 @@ function ArenaLobby() {
         </section>
       ) : null}
 
+      <ChallengeByName token={token} />
+
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="space-y-2">
           <SectionHeading title="Bảng xếp hạng Elo" />
@@ -309,6 +320,108 @@ function ArenaLobby() {
   );
 }
 
+/** Avatar 2D của chính mình trong đấu trường (đồng bộ với nhân vật đã tạo). */
+function ArenaSelfAvatar({ name, fallback }: { name: string; fallback?: string }) {
+  const { identity } = usePlayerIdentity();
+  if (!identity)
+    return (
+      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10 text-2xl">
+        {fallback || "🧑‍✈️"}
+      </span>
+    );
+  return (
+    <AvatarBubble
+      name={name}
+      avatarUrl={identity.avatarUrl}
+      avatarImage={identity.avatarImage}
+      level={identity.level}
+      size="md"
+    />
+  );
+}
+
+/** Tìm đồng nghiệp theo tên và gửi lời mời thách đấu. */
+function ChallengeByName({ token }: { token: string }) {
+  const runSearch = useServerFn(arenaSearchOpponents);
+  const runInvite = useServerFn(arenaInvite);
+  const [q, setQ] = useState("");
+  const [rows, setRows] = useState<Awaited<ReturnType<typeof arenaSearchOpponents>>>([]);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) {
+      setRows([]);
+      return;
+    }
+    let alive = true;
+    const timer = setTimeout(async () => {
+      setBusy(true);
+      try {
+        const res = await runSearch({ data: { token, query: term } });
+        if (alive) setRows(res);
+      } catch {
+        if (alive) setRows([]);
+      } finally {
+        if (alive) setBusy(false);
+      }
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [q, runSearch, token]);
+
+  return (
+    <section className="space-y-2">
+      <SectionHeading title="Thách đấu theo tên" />
+      <div className="relative">
+        <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Nhập tên đồng nghiệp…"
+          aria-label="Tìm đồng nghiệp để thách đấu"
+          className="rounded-xl pl-9"
+        />
+        {busy ? <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" /> : null}
+      </div>
+      <ul className="space-y-1.5">
+        {rows.map((r) => (
+          <li key={r.employeeId} className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2">
+            <AvatarBubble name={r.fullName} avatarUrl={r.avatarUrl} avatarImage={r.avatarImage} size="sm" level={r.level} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">{r.fullName}</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {r.unit} • Cấp {r.level} • Elo {r.elo}
+              </span>
+            </span>
+            <Button
+              size="sm"
+              className="shrink-0 rounded-full"
+              onClick={async () => {
+                try {
+                  await runInvite({ data: { token, toEmployeeId: r.employeeId, deviceHash: getDeviceId() } });
+                  toast.success(`Đã gửi lời mời tới ${r.fullName}.`);
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Không gửi được lời mời.");
+                }
+              }}
+            >
+              <Send className="mr-1 size-4" /> Mời
+            </Button>
+          </li>
+        ))}
+        {q.trim().length >= 2 && !busy && rows.length === 0 ? (
+          <li className="rounded-xl border border-dashed p-3 text-center text-sm text-muted-foreground">
+            Không tìm thấy đồng nghiệp phù hợp.
+          </li>
+        ) : null}
+      </ul>
+    </section>
+  );
+}
+
 function ProfileStrip({ profile }: { profile: ArenaProfile }) {
   const items = [
     { icon: Trophy, label: "Elo", value: profile.elo },
@@ -319,9 +432,7 @@ function ProfileStrip({ profile }: { profile: ArenaProfile }) {
   return (
     <div className="rounded-2xl border bg-card/80 p-4 shadow-sm backdrop-blur">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="grid size-12 place-items-center rounded-full bg-primary/10 text-2xl">
-          {profile.avatar || "🧑‍✈️"}
-        </span>
+        <ArenaSelfAvatar name={profile.displayName} fallback={profile.avatar} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{profile.displayName}</p>
           <p className="truncate text-xs text-muted-foreground">{profile.unit}</p>
