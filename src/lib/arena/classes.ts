@@ -8,7 +8,7 @@
  *   thêm sát thương, lớp bị khắc chế bị trừ bớt.
  */
 
-export type ClassId = "kiem_si" | "phap_su" | "ve_binh";
+export type ClassId = "chien_binh" | "phap_su" | "cung_thu";
 
 export type ClassDef = {
   id: ClassId;
@@ -33,47 +33,54 @@ export const COUNTER_BONUS = 0.2;
 
 export const CLASSES: ClassDef[] = [
   {
-    id: "kiem_si",
-    name: "Kiếm sĩ",
-    icon: "⚔️",
-    tagline: "Ra đòn nhanh và nặng, đổi lại chịu đòn kém.",
-    attackMul: 1.15,
-    defenseMul: 1.1,
-    beats: "phap_su",
-    strength: "Sát thương cao nhất",
-    weakness: "Nhận đòn đau hơn",
-    accent: "danger",
+    id: "chien_binh",
+    name: "Chiến binh",
+    icon: "🛡️",
+    tagline: "Giáp dày, lì đòn, càng về cuối càng đáng sợ.",
+    attackMul: 0.95,
+    defenseMul: 0.82,
+    beats: "cung_thu",
+    strength: "Chịu đòn tốt nhất",
+    weakness: "Ra đòn nhẹ hơn",
+    accent: "primary",
   },
   {
     id: "phap_su",
     name: "Pháp sư",
     icon: "🔮",
-    tagline: "Cân bằng, mạnh khi giữ được chuỗi trả lời đúng.",
-    attackMul: 1.05,
-    defenseMul: 0.95,
-    beats: "ve_binh",
-    strength: "Công thủ toàn diện",
-    weakness: "Không nổi trội mặt nào",
+    tagline: "Sát thương phép bùng nổ, nhưng thân mỏng.",
+    attackMul: 1.18,
+    defenseMul: 1.12,
+    beats: "chien_binh",
+    strength: "Sát thương cao nhất",
+    weakness: "Nhận đòn đau hơn",
     accent: "warning",
   },
   {
-    id: "ve_binh",
-    name: "Vệ binh",
-    icon: "🛡️",
-    tagline: "Lì đòn, sống sót tới cuối để lật kèo.",
-    attackMul: 0.9,
-    defenseMul: 0.78,
-    beats: "kiem_si",
-    strength: "Chịu đòn tốt nhất",
-    weakness: "Ra đòn nhẹ hơn",
-    accent: "primary",
+    id: "cung_thu",
+    name: "Cung thủ",
+    icon: "🏹",
+    tagline: "Nhanh và chuẩn, cân bằng giữa công và thủ.",
+    attackMul: 1.06,
+    defenseMul: 0.96,
+    beats: "phap_su",
+    strength: "Công thủ toàn diện",
+    weakness: "Không nổi trội mặt nào",
+    accent: "danger",
   },
 ];
 
-export const DEFAULT_CLASS: ClassId = "phap_su";
+export const DEFAULT_CLASS: ClassId = "cung_thu";
+
+/** Mã lớp cũ (bản thử nghiệm) quy về 3 lớp chính thức. */
+const LEGACY_ALIASES: Record<string, ClassId> = {
+  kiem_si: "cung_thu",
+  ve_binh: "chien_binh",
+};
 
 export function classById(id: string | null | undefined): ClassDef {
-  return CLASSES.find((c) => c.id === id) ?? CLASSES.find((c) => c.id === DEFAULT_CLASS)!;
+  const key = id ? (LEGACY_ALIASES[id] ?? id) : "";
+  return CLASSES.find((c) => c.id === key) ?? CLASSES.find((c) => c.id === DEFAULT_CLASS)!;
 }
 
 export type CounterVerdict = "counter" | "countered" | "even";

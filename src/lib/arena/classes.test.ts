@@ -23,43 +23,43 @@ describe("lớp chiến binh", () => {
   });
 
   it("xét khắc chế đúng chiều bao–búa–kéo", () => {
-    expect(counterVerdict("kiem_si", "phap_su")).toBe("counter");
-    expect(counterVerdict("phap_su", "kiem_si")).toBe("countered");
-    expect(counterVerdict("ve_binh", "ve_binh")).toBe("even");
-    expect(counterVerdict("phap_su", "ve_binh")).toBe("counter");
-    expect(counterVerdict("ve_binh", "kiem_si")).toBe("counter");
+    expect(counterVerdict("cung_thu", "phap_su")).toBe("counter");
+    expect(counterVerdict("phap_su", "cung_thu")).toBe("countered");
+    expect(counterVerdict("chien_binh", "chien_binh")).toBe("even");
+    expect(counterVerdict("phap_su", "chien_binh")).toBe("counter");
+    expect(counterVerdict("chien_binh", "cung_thu")).toBe("counter");
   });
 
-  it("kiếm sĩ đánh đau hơn vệ binh trên cùng một đòn gốc", () => {
-    const kiem = applyClassDamage("kiem_si", "phap_su", 10).damage;
-    const ve = applyClassDamage("ve_binh", "phap_su", 10).damage;
+  it("cung thủ đánh đau hơn chiến binh trên cùng một đòn gốc", () => {
+    const kiem = applyClassDamage("cung_thu", "phap_su", 10).damage;
+    const ve = applyClassDamage("chien_binh", "phap_su", 10).damage;
     expect(kiem).toBeGreaterThan(ve);
   });
 
-  it("vệ binh chịu đòn nhẹ hơn khi cùng một người đánh", () => {
-    const vaoVeBinh = applyClassDamage("kiem_si", "ve_binh", 20).damage;
-    const vaoPhapSu = applyClassDamage("kiem_si", "phap_su", 20).damage;
+  it("chiến binh chịu đòn nhẹ hơn khi cùng một người đánh", () => {
+    const vaoVeBinh = applyClassDamage("cung_thu", "chien_binh", 20).damage;
+    const vaoPhapSu = applyClassDamage("cung_thu", "phap_su", 20).damage;
     expect(vaoVeBinh).toBeLessThan(vaoPhapSu);
-    expect(classById("ve_binh").defenseMul).toBeLessThan(classById("kiem_si").defenseMul);
+    expect(classById("chien_binh").defenseMul).toBeLessThan(classById("cung_thu").defenseMul);
   });
 
   it("khắc chế cộng thêm sát thương so với đối đầu cùng lớp", () => {
-    const counter = applyClassDamage("ve_binh", "kiem_si", 20);
-    const even = applyClassDamage("ve_binh", "ve_binh", 20);
+    const counter = applyClassDamage("chien_binh", "cung_thu", 20);
+    const even = applyClassDamage("chien_binh", "chien_binh", 20);
     expect(counter.verdict).toBe("counter");
     expect(counter.damage).toBeGreaterThan(even.damage);
     expect(counter.label).toContain("khắc chế");
   });
 
   it("bị khắc chế thì sát thương giảm và có diễn giải", () => {
-    const e = applyClassDamage("phap_su", "kiem_si", 20);
+    const e = applyClassDamage("phap_su", "cung_thu", 20);
     expect(e.verdict).toBe("countered");
     expect(e.label).toContain("hoá giải");
   });
 
   it("đòn 0 sát thương giữ nguyên 0, đòn có sát thương luôn tối thiểu 1", () => {
-    expect(applyClassDamage("kiem_si", "ve_binh", 0).damage).toBe(0);
-    expect(applyClassDamage("ve_binh", "phap_su", 1).damage).toBeGreaterThanOrEqual(1);
+    expect(applyClassDamage("cung_thu", "chien_binh", 0).damage).toBe(0);
+    expect(applyClassDamage("chien_binh", "phap_su", 1).damage).toBeGreaterThanOrEqual(1);
   });
 
   it("sát thương luôn là số nguyên", () => {
