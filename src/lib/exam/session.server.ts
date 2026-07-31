@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
 import { mapStartExamError } from "@/lib/attempts";
+import { deviceCooldownMessage } from "@/lib/deviceLock";
 import { verifyEmployee } from "@/lib/employees.server";
 import {
   PASS_PERCENT_DEFAULT,
@@ -22,12 +23,16 @@ import {
   type StartExamResult,
 } from "@/lib/exam/types";
 
+/** Thời gian nguội khi đổi người thi trên cùng một thiết bị (phút). */
+export const DEVICE_COOLDOWN_MINUTES = 30;
+
 export async function startExamSession(input: {
   quizId: string;
   name: string;
   credential: string;
   extraCredential?: string;
   roomPassword?: string;
+  deviceId?: string;
 }): Promise<StartExamResult> {
   // Bắt buộc đối chiếu danh bạ nhân viên: sai thông tin thì không ghi nhận lượt thi.
   const employee = await verifyEmployee({
@@ -38,6 +43,23 @@ export async function startExamSession(input: {
   const name = employee.fullName;
   const birthYear = employee.birthYear;
   const unit = employee.unitName ?? "";
+
+  // Chống thi hộ: một thiết bị chỉ phục vụ một nhân viên. Chính nhân viên đó
+  // thi bao nhiêu lượt cũng được; đổi sang người khác phải chờ hết thời gian nguội.
+  const deviceId = (input.deviceId ?? "").trim();
+  if (deviceId.length >= 8) {
+    const { data: claim, error: claimError } = await supabaseAdmin.rpc("claim_exam_device", {
+      p_device_id: deviceId,
+      p_employee_id: employee.id,
+      p_candidate_name: name,
+      p_cooldown_minutes: DEVICE_COOLDOWN_MINUTES,
+    });
+    if (claimError) throw new Error(claimError.message);
+    const lock = claim?.[0];
+    if (lock && lock.allowed === false) {
+      throw new Error(deviceCooldownMessage(lock.wait_seconds ?? 0, lock.holder_name ?? ""));
+    }
+  }
 
   const { data: quiz, error: quizError } = await supabaseAdmin
     .from("quizzes")

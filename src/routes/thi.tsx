@@ -13,9 +13,12 @@ import { ExamHeader } from "@/components/exam/ExamHeader";
 import { ExamResult } from "@/components/exam/ExamResult";
 import { QuestionCard } from "@/components/exam/QuestionCard";
 import { QuestionMap } from "@/components/exam/QuestionMap";
+import { AmbientFx } from "@/components/exam/AmbientFx";
+import { ComboFx } from "@/components/exam/ComboFx";
 
 import { abandonExam, startExam, submitExam } from "@/lib/exam.functions";
 import type { SubmitExamResult } from "@/lib/exam.server";
+import { getDeviceId } from "@/lib/deviceId";
 import { EXAM_CURRENT_KEY, examKey, readExamEntry } from "@/lib/examSession";
 import { useExamAnswers } from "@/hooks/useExamAnswers";
 import { useExamAutosave } from "@/hooks/useExamAutosave";
@@ -145,6 +148,7 @@ function ExamPage() {
     requestFifty,
     feedback,
     combo,
+    comboEvent,
     instant,
     locked,
     handleAnswer,
@@ -190,6 +194,7 @@ function ExamPage() {
           name: entry.name,
           credential: entry.credential,
           extraCredential: entry.extraCredential,
+          deviceId: getDeviceId(),
         },
       });
       sessionStorage.setItem(examKey(next.sessionId), JSON.stringify(next));
@@ -226,7 +231,9 @@ function ExamPage() {
   const progress = Math.round((answeredCount / total) * 100);
 
   return (
-    <div className="no-select min-h-[100dvh] bg-background pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8">
+    <div className="no-select relative min-h-[100dvh] bg-background pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8">
+      <AmbientFx />
+      <ComboFx event={comboEvent} />
       {sending && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/85 backdrop-blur-sm">
           <div className="card-elevated flex flex-col items-center gap-2 rounded-2xl px-7 py-5 text-center">

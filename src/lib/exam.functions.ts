@@ -10,6 +10,8 @@ const credentialSchema = z.object({
 const startSchema = credentialSchema.extend({
   quizId: z.string().uuid(),
   roomPassword: z.string().max(60).optional(),
+  /** Mã thiết bị (localStorage) dùng để chống thi hộ. */
+  deviceId: z.string().max(80).optional(),
 });
 
 /** Đáp án có thể là số, mảng số, chuỗi hoặc bảng ánh xạ (tuỳ loại câu hỏi). */

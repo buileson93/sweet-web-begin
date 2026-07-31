@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { checkAnswer, requestFiftyFifty } from "@/lib/exam.functions";
 import type { StartExamResult } from "@/lib/exam.server";
+import { COMBO_MIN } from "@/lib/comboFx";
 import type { AnswerValue } from "@/lib/questionKinds";
 
 /**
@@ -25,6 +26,8 @@ export function useExamAnswers(opts: {
   /** Phản hồi tức thì cho từng câu (chỉ ở chế độ chốt đáp án một lần). */
   const [feedback, setFeedback] = useState<Record<string, "correct" | "wrong">>({});
   const [combo, setCombo] = useState(0);
+  /** Sự kiện kích hoạt hiệu ứng combo (mỗi lần trả lời đúng liên tiếp). */
+  const [comboEvent, setComboEvent] = useState<{ id: number; combo: number } | null>(null);
 
   const fiftyLeft = 2 - Object.keys(fifty).length;
   const requestFifty = useCallback(async () => {
@@ -63,7 +66,11 @@ export function useExamAnswers(opts: {
         setFeedback((f) => ({ ...f, [String(idx)]: res.correct ? "correct" : "wrong" }));
         setCombo((c) => {
           const next = res.correct ? c + 1 : 0;
-          if (res.correct && next >= 3) toast.success(`Combo x${next}! Điểm thưởng đang tăng.`);
+          if (res.correct && next >= COMBO_MIN) {
+            setComboEvent({ id: Date.now() + idx, combo: next });
+          } else {
+            setComboEvent(null);
+          }
           return next;
         });
         setTimeout(() => {
@@ -82,6 +89,7 @@ export function useExamAnswers(opts: {
     setFifty({});
     setFeedback({});
     setCombo(0);
+    setComboEvent(null);
   }, []);
 
   return {
@@ -91,6 +99,7 @@ export function useExamAnswers(opts: {
     requestFifty,
     feedback,
     combo,
+    comboEvent,
     instant,
     locked,
     handleAnswer,
