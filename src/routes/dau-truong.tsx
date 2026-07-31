@@ -113,6 +113,27 @@ function ArenaLobby() {
     };
   }, [token, loadHome]);
 
+  // Nhịp tim 20 giây: máy chủ xác nhận ai đang trực tuyến, đồng thời báo ván đang dang dở.
+  useEffect(() => {
+    if (!token) return;
+    let alive = true;
+    const ping = async () => {
+      try {
+        const res = await beat({ data: { token } });
+        if (alive) setPresence(res);
+      } catch {
+        /* bỏ qua nhịp lỗi, lần sau thử lại */
+      }
+    };
+    void ping();
+    const id = window.setInterval(ping, 20_000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [token, beat]);
+
+
   // Tìm trận: hỏi lại mỗi 3 giây, càng chờ lâu càng nới rộng khoảng Elo.
   useEffect(() => {
     if (!searching || !token) return;
