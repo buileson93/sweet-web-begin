@@ -225,7 +225,25 @@ export function LiveMonitor() {
             </tbody>
           </table>
         </div>
+
+        {/* Tải dần: mặc định chỉ dựng 25 dòng, bấm để lấy thêm */}
+        {page?.hasMore ? (
+          <div className="mt-3 flex justify-center">
+            <Button
+              variant="outline"
+              className="rounded-full"
+              disabled={query.isFetching}
+              onClick={() => setLimit((n) => Math.min(n + PAGE_SIZE, 100))}
+            >
+              {query.isFetching ? <Loader2 className="size-4 animate-spin" /> : <ChevronDown className="size-4" />}
+              Tải thêm {PAGE_SIZE} phiên
+            </Button>
+          </div>
+        ) : rows.length > PAGE_SIZE ? (
+          <p className="type-meta mt-3 text-center">Đã hiển thị toàn bộ {rows.length} phiên gần đây.</p>
+        ) : null}
       </QueryState>
+
 
       <Dialog open={Boolean(openId)} onOpenChange={(o) => setOpenId(o ? openId : null)}>
         <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
