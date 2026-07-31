@@ -10,6 +10,8 @@
  * - Ai hết máu trước thì thua (hạ gục). Hết câu mà cả hai còn máu thì so máu còn lại.
  */
 
+import { applyAttackSkill, applyDefenseSkill, type SkillId } from "@/lib/arena/skills";
+
 /** Máu khởi điểm của mỗi đấu thủ. */
 export const HP_START = 100;
 /** Số xúc xắc tung mỗi đòn và số mặt của mỗi viên. */
