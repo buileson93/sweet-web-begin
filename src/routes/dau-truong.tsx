@@ -46,6 +46,8 @@ import { clearArenaToken, getArenaToken, saveArenaToken } from "@/lib/arena/clie
 import { parseBusyError, type BusyInfo } from "@/lib/arena/rooms";
 import type { ArenaProfile } from "@/lib/arena/types";
 import { getDeviceId } from "@/lib/deviceId";
+import { allSpriteUrls } from "@/lib/arena/sprites";
+
 import { cn } from "@/lib/utils";
 
 
