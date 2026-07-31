@@ -12,10 +12,13 @@ import { cn } from "@/lib/utils";
 type Props = {
   value: string;
   onChange: (value: string) => void;
+  /** Cách đặt ảnh trong khung ngang: vừa khung (không méo, giữ trọn ảnh) hoặc lấp đầy (cắt bớt mép). */
+  fit?: "contain" | "cover";
+  onFitChange?: (value: "contain" | "cover") => void;
 };
 
 /** Chọn ảnh chìm cho thẻ cuộc thi: dùng ảnh dựng sẵn hoặc tải ảnh riêng lên. */
-export function QuizCoverPicker({ value, onChange }: Props) {
+export function QuizCoverPicker({ value, onChange, fit = "contain", onFitChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
@@ -66,6 +69,37 @@ export function QuizCoverPicker({ value, onChange }: Props) {
           </span>
         )}
       </div>
+
+      {/* Xem trước đúng tỉ lệ khung ngang của thẻ cuộc thi */}
+      <div className="relative aspect-[12/5] w-full max-w-sm overflow-hidden rounded-xl border border-border bg-secondary/40">
+        <img
+          src={resolveQuizCover(value)}
+          alt="Xem trước ảnh bìa"
+          loading="lazy"
+          decoding="async"
+          className={cn("size-full", fit === "cover" ? "object-cover" : "object-contain")}
+        />
+      </div>
+
+      {onFitChange && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground">Cách đặt ảnh:</span>
+          {([
+            { id: "contain", label: "Vừa khung (không méo)" },
+            { id: "cover", label: "Lấp đầy (cắt mép)" },
+          ] as const).map((o) => (
+            <Button
+              key={o.id}
+              type="button"
+              size="sm"
+              variant={fit === o.id ? "default" : "outline"}
+              onClick={() => onFitChange(o.id)}
+            >
+              {o.label}
+            </Button>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <input
