@@ -588,6 +588,47 @@ export async function submitExamSession(input: {
   };
 }
 
+/**
+ * Dọn các phiên thi bị bỏ dở: quá hạn hơn 1 phút mà vẫn đang "active".
+ * Chấm bằng ĐÁP ÁN ĐÃ LƯU trên máy chủ (submitExamSession sẽ tự bỏ qua đáp án máy khách vì đã quá ân hạn),
+ * ghi results, chuyển status sang "submitted" và cấp submit_token mới.
+ * An toàn khi chạy đồng thời: submitExamSession giành khoá bằng update ... eq("status", "active").
+ */
+export async function autoSubmitExpiredSessions(input?: {
+  limit?: number;
+}): Promise<{ found: number; submitted: number; failed: number }> {
+  const limit = Math.max(1, Math.min(100, input?.limit ?? 100));
+  const cutoff = new Date(Date.now() - 60_000).toISOString();
+
+  const { data, error } = await supabaseAdmin
+    .from("exam_sessions")
+    .select("id, submit_token")
+    .eq("status", "active")
+    .lt("expires_at", cutoff)
+    .order("expires_at", { ascending: true })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+
+  const sessions = data ?? [];
+  let submitted = 0;
+  let failed = 0;
+  for (const session of sessions) {
+    try {
+      await submitExamSession({
+        sessionId: session.id,
+        submitToken: session.submit_token,
+        answers: {},
+      });
+      submitted++;
+    } catch (err) {
+      // Một tiến trình khác có thể vừa chấm xong phiên này — bỏ qua, lần chạy sau sẽ không thấy nữa.
+      failed++;
+      console.error("autoSubmitExpiredSessions:", session.id, err);
+    }
+  }
+  return { found: sessions.length, submitted, failed };
+}
+
 export type HistoryQuestion = {
   question: string;
   correct: boolean;
