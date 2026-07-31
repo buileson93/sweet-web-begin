@@ -349,7 +349,7 @@ export type Database = {
           legacy_id: string | null
           max_attempts: number | null
           negative_marking: number
-          pass_score: number
+          pass_percent: number
           question_count: number
           room_password: string | null
           show_question_map: boolean
@@ -374,7 +374,7 @@ export type Database = {
           legacy_id?: string | null
           max_attempts?: number | null
           negative_marking?: number
-          pass_score?: number
+          pass_percent?: number
           question_count?: number
           room_password?: string | null
           show_question_map?: boolean
@@ -399,7 +399,7 @@ export type Database = {
           legacy_id?: string | null
           max_attempts?: number | null
           negative_marking?: number
-          pass_score?: number
+          pass_percent?: number
           question_count?: number
           room_password?: string | null
           show_question_map?: boolean
