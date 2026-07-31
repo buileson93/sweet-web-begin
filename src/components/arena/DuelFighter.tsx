@@ -134,11 +134,16 @@ export function DuelFighter({
       <div className="relative flex h-24 items-end justify-center overflow-hidden rounded-lg bg-gradient-to-b from-primary/5 to-muted/40">
         <span className="pointer-events-none absolute bottom-2 h-3 w-16 rounded-[50%] bg-foreground/15 blur-[2px]" />
         <ClassSprite
+          key={`${pose}-${dealt}-${hp}`}
           classId={player?.classId}
           action={pose}
           flip={!mine}
           size={128}
-          className="-mb-1"
+          className={cn(
+            "-mb-1",
+            pose === "attack" && (mine ? "animate-lunge-right" : "animate-lunge-left"),
+            pose === "hurt" && (mine ? "animate-recoil-left" : "animate-recoil-right"),
+          )}
         />
       </div>
       <HpBar hp={hp} hpStart={hpStart} mine={mine} />
