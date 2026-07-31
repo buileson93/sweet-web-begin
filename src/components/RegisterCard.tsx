@@ -318,12 +318,12 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                   <SelectValue placeholder="Chọn cuộc thi" />
                   {quizPulse > 0 ? <span className="tap-flash rounded-xl" aria-hidden /> : null}
                 </SelectTrigger>
-                <SelectContent className="max-w-[calc(100vw-1.5rem)]">
+                <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-1.5rem)]">
                   {quizzes.map((q) => {
                     const st = quizStatus(q);
                     return (
                       <SelectItem key={q.id} value={q.id} disabled={st !== "open"} className="py-2.5">
-                        <span className="flex min-w-0 items-center gap-2">
+                        <span className="flex w-full min-w-0 items-center justify-between gap-2">
                           <span className="truncate font-semibold">{q.title}</span>
                           <QuizStatusBadge status={st} />
                         </span>
