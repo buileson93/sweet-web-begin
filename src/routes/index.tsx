@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, quizStatus } from "@/lib/format";
+import { resolveQuizCover } from "@/lib/quizCover";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -64,7 +65,7 @@ function HomePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quizzes")
-        .select("id, title, description, start_time, end_time, is_active, question_count, duration_minutes, intro_markdown")
+        .select("id, title, description, start_time, end_time, is_active, question_count, duration_minutes, intro_markdown, cover_url")
         .neq("status", "draft")
         .order("start_time", { ascending: true });
       if (error) throw error;
