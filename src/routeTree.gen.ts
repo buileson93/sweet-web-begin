@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BangXepHangRouteImport } from './routes/bang-xep-hang'
 import { Route as HuongDanRouteImport } from './routes/huong-dan'
 import { Route as LichSuRouteImport } from './routes/lich-su'
+import { Route as NhanVatRouteImport } from './routes/nhan-vat'
 import { Route as ThiRouteImport } from './routes/thi'
 import { Route as AuthenticatedNhapDuLieuRouteImport } from './routes/_authenticated/nhap-du-lieu'
 import { Route as AuthenticatedNhatKyRouteImport } from './routes/_authenticated/nhat-ky'
@@ -53,6 +54,11 @@ const HuongDanRoute = HuongDanRouteImport.update({
 const LichSuRoute = LichSuRouteImport.update({
   id: '/lich-su',
   path: '/lich-su',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NhanVatRoute = NhanVatRouteImport.update({
+  id: '/nhan-vat',
+  path: '/nhan-vat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ThiRoute = ThiRouteImport.update({
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/bang-xep-hang': typeof BangXepHangRoute
   '/huong-dan': typeof HuongDanRoute
   '/lich-su': typeof LichSuRoute
+  '/nhan-vat': typeof NhanVatRoute
   '/thi': typeof ThiRoute
   '/nhap-du-lieu': typeof AuthenticatedNhapDuLieuRoute
   '/nhat-ky': typeof AuthenticatedNhatKyRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/bang-xep-hang': typeof BangXepHangRoute
   '/huong-dan': typeof HuongDanRoute
   '/lich-su': typeof LichSuRoute
+  '/nhan-vat': typeof NhanVatRoute
   '/thi': typeof ThiRoute
   '/nhap-du-lieu': typeof AuthenticatedNhapDuLieuRoute
   '/nhat-ky': typeof AuthenticatedNhatKyRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/bang-xep-hang': typeof BangXepHangRoute
   '/huong-dan': typeof HuongDanRoute
   '/lich-su': typeof LichSuRoute
+  '/nhan-vat': typeof NhanVatRoute
   '/thi': typeof ThiRoute
   '/_authenticated/nhap-du-lieu': typeof AuthenticatedNhapDuLieuRoute
   '/_authenticated/nhat-ky': typeof AuthenticatedNhatKyRoute
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/bang-xep-hang'
     | '/huong-dan'
     | '/lich-su'
+    | '/nhan-vat'
     | '/thi'
     | '/nhap-du-lieu'
     | '/nhat-ky'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/bang-xep-hang'
     | '/huong-dan'
     | '/lich-su'
+    | '/nhan-vat'
     | '/thi'
     | '/nhap-du-lieu'
     | '/nhat-ky'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/bang-xep-hang'
     | '/huong-dan'
     | '/lich-su'
+    | '/nhan-vat'
     | '/thi'
     | '/_authenticated/nhap-du-lieu'
     | '/_authenticated/nhat-ky'
@@ -221,6 +233,7 @@ export interface RootRouteChildren {
   BangXepHangRoute: typeof BangXepHangRoute
   HuongDanRoute: typeof HuongDanRoute
   LichSuRoute: typeof LichSuRoute
+  NhanVatRoute: typeof NhanVatRoute
   ThiRoute: typeof ThiRoute
   CuocThiQuizIdRoute: typeof CuocThiQuizIdRoute
   ApiPublicExamProgressRoute: typeof ApiPublicExamProgressRoute
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/lich-su'
       fullPath: '/lich-su'
       preLoaderRoute: typeof LichSuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nhan-vat': {
+      id: '/nhan-vat'
+      path: '/nhan-vat'
+      fullPath: '/nhan-vat'
+      preLoaderRoute: typeof NhanVatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/thi': {
@@ -369,6 +389,7 @@ const rootRouteChildren: RootRouteChildren = {
   BangXepHangRoute: BangXepHangRoute,
   HuongDanRoute: HuongDanRoute,
   LichSuRoute: LichSuRoute,
+  NhanVatRoute: NhanVatRoute,
   ThiRoute: ThiRoute,
   CuocThiQuizIdRoute: CuocThiQuizIdRoute,
   ApiPublicExamProgressRoute: ApiPublicExamProgressRoute,

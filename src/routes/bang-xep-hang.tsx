@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { AwardsBoard } from "@/components/AwardsBoard";
 import { LevelBoard } from "@/components/player/LevelBoard";
+import { PodiumStage } from "@/components/player/PodiumStage";
 
 import { EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 
@@ -100,6 +101,22 @@ function LeaderboardPage() {
     [all],
   );
 
+  // Khi chưa ai tạo nhân vật 3D thì lấy tạm 3 thí sinh dẫn đầu cho sân khấu vinh danh.
+  const podiumFallback = useMemo(
+    () =>
+      rows.slice(0, 3).map((r) => ({
+        employeeId: r.id,
+        displayName: r.candidate_name,
+        unit: r.unit ?? "",
+        level: 1,
+        xp: r.points ?? r.score,
+        examsPassed: 1,
+        avatarUrl: "",
+        avatarImage: "",
+      })),
+    [rows],
+  );
+
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const pageRows = useMemo(() => rows.slice((page - 1) * pageSize, page * pageSize), [rows, page]);
 
@@ -170,6 +187,7 @@ function LeaderboardPage() {
         <h2 className="font-heading text-sm font-extrabold uppercase tracking-widest text-muted-foreground">
           Vinh danh các hạng mục
         </h2>
+        <PodiumStage className="mt-3" fallback={podiumFallback} />
         <AwardsBoard className="mt-3" rows={awardRows} />
         <LevelBoard className="mt-3" />
 

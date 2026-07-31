@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { BookOpenCheck, Home, Settings2, Trophy } from "lucide-react";
+import { BookOpenCheck, Home, Settings2, Trophy, UserRoundCog } from "lucide-react";
 
 import { BrandMark } from "@/components/BrandLogo";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -10,9 +10,11 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { to: "/", label: "Trang chủ", icon: Home },
   { to: "/bang-xep-hang", label: "Bảng xếp hạng", icon: Trophy },
+  { to: "/nhan-vat", label: "Nhân vật", icon: UserRoundCog },
   { to: "/huong-dan", label: "Hướng dẫn", icon: BookOpenCheck },
   { to: "/quan-tri", label: "Quản trị", icon: Settings2 },
 ] as const;
+
 
 /**
  * Khung ứng dụng kiểu "game hub": thanh điều hướng biểu tượng bên trái (desktop),
