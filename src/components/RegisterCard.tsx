@@ -502,7 +502,16 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
               Đổi
             </button>
           </div>
-        ) : (
+        ) : null}
+
+        {verified ? (
+          <div className="flex justify-end">
+            <AvatarCreatorDialog name={trimmed} credential={credential.trim()} />
+          </div>
+        ) : null}
+
+        {verified ? null : (
+
           <Button
             variant="secondary"
             className="h-10 w-full rounded-xl"
