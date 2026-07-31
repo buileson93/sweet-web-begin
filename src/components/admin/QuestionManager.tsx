@@ -97,9 +97,11 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     return questions.filter(
       (q) =>
         (!kw || q.question.toLowerCase().includes(kw)) &&
-        (difficultyFilter === "all" || (q.difficulty ?? "medium") === difficultyFilter),
+        (difficultyFilter === "all" || (q.difficulty ?? "medium") === difficultyFilter) &&
+        (archiveFilter === "all" ||
+          (archiveFilter === "archived" ? Boolean(q.is_archived) : !q.is_archived)),
     );
-  }, [questions, keyword, difficultyFilter]);
+  }, [questions, keyword, difficultyFilter, archiveFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
@@ -112,7 +114,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   useEffect(() => {
     setPage(1);
     setSelected(new Set());
-  }, [quizId, keyword, difficultyFilter]);
+  }, [quizId, keyword, difficultyFilter, archiveFilter]);
 
   const allOnPageSelected = paged.length > 0 && paged.every((q) => selected.has(q.id));
 
@@ -134,15 +136,59 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     });
   }
 
-  const { save, remove, bulkRemove, bulkDifficulty, importFile } = useQuestionMutations({
+  const {
+    save,
+    remove,
+    archive,
+    duplicate,
+    reorder,
+    bulkRemove,
+    bulkDifficulty,
+    bulkPoints,
+    bulkTags,
+    bulkArchive,
+    bulkMoveQuiz,
+    importFile,
+  } = useQuestionMutations({
     quizId,
     questions,
     selected,
     setSelected,
     form,
     editing,
-    onSaved: () => setOpen(false),
+    onSaved: () => {
+      clearDraft(draftKey(quizId, editing?.id ?? null));
+      setOpen(false);
+    },
   });
+
+  const bulkBusy =
+    bulkDifficulty.isPending ||
+    bulkPoints.isPending ||
+    bulkTags.isPending ||
+    bulkArchive.isPending ||
+    bulkMoveQuiz.isPending;
+
+  /** Đổi chỗ số thứ tự với câu liền kề trong danh sách đã lọc. */
+  function moveRow(row: QuestionRow, delta: -1 | 1) {
+    const index = filtered.findIndex((q) => q.id === row.id);
+    const neighbour = filtered[index + delta];
+    if (!neighbour) return;
+    const a = row.order_index ?? index;
+    const b = neighbour.order_index ?? index + delta;
+    reorder.mutate(
+      a === b
+        ? [
+            { id: row.id, order_index: index + delta },
+            { id: neighbour.id, order_index: index },
+          ]
+        : [
+            { id: row.id, order_index: b },
+            { id: neighbour.id, order_index: a },
+          ],
+    );
+  }
+
 
   async function exportExcel() {
     const rows = [
