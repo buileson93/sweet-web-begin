@@ -363,6 +363,15 @@ export async function inviteToDuel(input: {
     .select("id")
     .single();
   if (error) throw new Error(error.message);
+
+  // Báo ngay cho đồng nghiệp được mời (kênh riêng của họ) để hiện hộp thoại nhận lời.
+  await broadcastToEmployee(input.toEmployeeId, "invite.new", {
+    inviteId: data.id,
+    duelId,
+    fromEmployeeId: input.employeeId,
+    fromName: player.display_name,
+    expiresAt: new Date(Date.now() + 120_000).toISOString(),
+  });
   return { inviteId: data.id, duelId };
 }
 
@@ -388,6 +397,10 @@ export async function respondInvite(input: {
   if (!input.accept) {
     await supabaseAdmin.from("duel_invites").update({ status: "declined" }).eq("id", invite.id);
     await broadcastDuel(invite.duel_id, "lobby.update", { declined: true });
+    await broadcastToEmployee(invite.from_employee_id, "invite.declined", {
+      inviteId: invite.id,
+      duelId: invite.duel_id,
+    });
     return { ok: true, duelId: null as string | null };
   }
 
@@ -397,6 +410,10 @@ export async function respondInvite(input: {
     deviceHash: input.deviceHash,
   });
   await supabaseAdmin.from("duel_invites").update({ status: "accepted" }).eq("id", invite.id);
+  await broadcastToEmployee(invite.from_employee_id, "invite.accepted", {
+    inviteId: invite.id,
+    duelId: invite.duel_id,
+  });
   return { ok: true, duelId: invite.duel_id as string | null };
 }
 
