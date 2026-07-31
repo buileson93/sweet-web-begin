@@ -11,7 +11,7 @@ export const DEFAULT_EXAM_SETTINGS: ExamSettings = {
   allowSkip: false,
   streakBonus: false,
   showQuestionMap: true,
-  passScore: 50,
+  passPercent: 50,
 };
 
 type StorageLike = Pick<Storage, "getItem" | "removeItem">;

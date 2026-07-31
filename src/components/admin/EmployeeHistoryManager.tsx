@@ -21,7 +21,7 @@ import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /** Ngưỡng đạt: 50% số điểm (đồng bộ với máy chủ chấm bài). */
-const PASS_RATIO = 0.5;
+
 
 type ResultRow = {
   id: string;
@@ -94,7 +94,7 @@ export function EmployeeHistoryManager() {
       const pct = percentOf(r);
       cur.attempts += 1;
       cur.totalScore += r.score;
-      if (!r.disqualified && pct >= PASS_RATIO * 100) cur.passed += 1;
+      if (!r.disqualified && isPassed(r.score, r.total, PASS_PERCENT_DEFAULT)) cur.passed += 1;
       cur.bestPercent = Math.max(cur.bestPercent, r.disqualified ? 0 : pct);
       if (r.submitted_at > cur.lastAt) cur.lastAt = r.submitted_at;
       cur.rows.push(r);
@@ -129,7 +129,7 @@ export function EmployeeHistoryManager() {
       "Cuộc thi": r.quiz_title,
       "Điểm": `${r.score}/${r.total}`,
       "Tỷ lệ (%)": percentOf(r),
-      "Kết quả": r.disqualified ? "Huỷ" : percentOf(r) >= PASS_RATIO * 100 ? "Đạt" : "Chưa đạt",
+      "Kết quả": r.disqualified ? "Huỷ" : isPassed(r.score, r.total, PASS_PERCENT_DEFAULT) ? "Đạt" : "Chưa đạt",
       "Thời gian làm (giây)": r.time_seconds,
       "Thời điểm nộp": formatDateTime(r.submitted_at),
     }));
@@ -267,12 +267,12 @@ export function EmployeeHistoryManager() {
                         "status-pill",
                         r.disqualified
                           ? "bg-destructive/12 text-destructive"
-                          : pct >= PASS_RATIO * 100
+                          : isPassed(r.score, r.total, PASS_PERCENT_DEFAULT)
                             ? "bg-success/15 text-success"
                             : "bg-warning/15 text-warning-foreground",
                       )}
                     >
-                      {r.disqualified ? "Huỷ kết quả" : pct >= PASS_RATIO * 100 ? "Đạt" : "Chưa đạt"}
+                      {r.disqualified ? "Huỷ kết quả" : isPassed(r.score, r.total, PASS_PERCENT_DEFAULT) ? "Đạt" : "Chưa đạt"}
                     </span>
                     <span>{pct}%</span>
                     <span>· {Math.round(r.time_seconds / 60)} phút</span>

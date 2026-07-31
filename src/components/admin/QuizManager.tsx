@@ -34,7 +34,7 @@ type QuizRow = {
   duration_minutes: number;
   shuffle_options: boolean;
   shuffle_questions: boolean;
-  pass_score: number;
+  pass_percent: number;
   room_password: string | null;
   max_attempts: number | null;
   allow_fifty_fifty: boolean;
@@ -55,7 +55,7 @@ const emptyForm = {
   duration_minutes: 20,
   shuffle_options: true,
   shuffle_questions: true,
-  pass_score: 0,
+  pass_percent: 50,
   room_password: "",
   max_attempts: 0,
   allow_fifty_fifty: false,
@@ -110,7 +110,7 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
         duration_minutes: Number(form.duration_minutes) || 20,
         shuffle_options: form.shuffle_options,
         shuffle_questions: form.shuffle_questions,
-        pass_score: Number(form.pass_score) || 0,
+        pass_percent: Math.min(100, Math.max(0, Number(form.pass_percent) || 0)),
         room_password: form.room_password.trim() || null,
         max_attempts: Number(form.max_attempts) > 0 ? Number(form.max_attempts) : null,
         allow_fifty_fifty: form.allow_fifty_fifty,
@@ -193,7 +193,7 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
       duration_minutes: quiz.duration_minutes,
       shuffle_options: quiz.shuffle_options,
       shuffle_questions: quiz.shuffle_questions ?? true,
-      pass_score: quiz.pass_score ?? 0,
+      pass_percent: quiz.pass_percent ?? 50,
       room_password: quiz.room_password ?? "",
       max_attempts: quiz.max_attempts ?? 0,
       allow_fifty_fifty: quiz.allow_fifty_fifty ?? false,
@@ -353,13 +353,16 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Điểm đạt (số câu đúng, 0 = mặc định 50%)</Label>
+                <Label>Điểm đạt (%)</Label>
                 <Input
                   type="number"
                   min={0}
-                  value={form.pass_score}
-                  onChange={(e) => setForm({ ...form, pass_score: Number(e.target.value) })}
+                  max={100}
+                  step={5}
+                  value={form.pass_percent}
+                  onChange={(e) => setForm({ ...form, pass_percent: Number(e.target.value) })}
                 />
+                <p className="text-xs text-muted-foreground">Ví dụ 50 = phải đúng từ 50% số câu trở lên</p>
               </div>
               <div className="space-y-2">
                 <Label>Số lượt thi tối đa (0 = không giới hạn)</Label>

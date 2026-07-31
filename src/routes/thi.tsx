@@ -754,7 +754,7 @@ function ResultView({
                 )}
                 {result.disqualified
                   ? "Không tính vào bảng xếp hạng"
-                  : `Mức đạt từ ${Math.round(result.passRatio * 100)}% · thời gian ${formatSeconds(result.timeSeconds)}`}
+                  : `Đạt khi ≥ ${result.passPercent}% · thời gian ${formatSeconds(result.timeSeconds)}`}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="type-meta inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/10 px-3 py-1 text-primary-foreground/85">
