@@ -90,9 +90,10 @@ describe("computeXpGain", () => {
 
 describe("levelTitle", () => {
   it("trả danh hiệu theo cấp", () => {
-    expect(levelTitle(1)).toBe("Tân binh");
-    expect(levelTitle(3)).toBe("Tân binh chăm chỉ");
+    expect(levelTitle(1)).toBe("Tân binh sân đỗ");
+    expect(levelTitle(3)).toBe("Nhân viên chăm chỉ");
     expect(levelTitle(5)).toBe("Học viên xuất sắc");
+    expect(levelTitle(10)).toBe("Huyền thoại bầu trời");
     expect(levelTitle(30)).toBe("Huyền thoại bầu trời");
   });
 });

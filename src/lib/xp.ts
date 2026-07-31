@@ -65,13 +65,35 @@ export function computeXpGain(input: XpInput): number {
   return Math.round(xp);
 }
 
+export type LevelTier = {
+  level: number;
+  title: string;
+  reward: string;
+  /** Lớp màu (design token) cho huy hiệu cấp bậc. */
+  tone: string;
+};
+
+/** 10 cấp bậc dựng sẵn, mỗi cấp là một phần thưởng danh hiệu. */
+export const LEVEL_TIERS: LevelTier[] = [
+  { level: 1, title: "Tân binh sân đỗ", reward: "Mở khoá hồ sơ nhân vật 3D", tone: "bg-muted text-muted-foreground" },
+  { level: 2, title: "Học viên tập sự", reward: "Huy hiệu đồng trên bảng xếp hạng", tone: "bg-amber-100 text-amber-800" },
+  { level: 3, title: "Nhân viên chăm chỉ", reward: "Khung ảnh đại diện màu đồng", tone: "bg-amber-200 text-amber-900" },
+  { level: 4, title: "Kỹ thuật viên tin cậy", reward: "Hiệu ứng chuỗi đúng nâng cao", tone: "bg-sky-100 text-sky-800" },
+  { level: 5, title: "Học viên xuất sắc", reward: "Khung ảnh đại diện màu bạc", tone: "bg-slate-200 text-slate-800" },
+  { level: 6, title: "Kiểm soát viên lành nghề", reward: "Danh hiệu hiển thị cạnh tên", tone: "bg-teal-100 text-teal-800" },
+  { level: 7, title: "Phi công kỳ cựu", reward: "Khung ảnh đại diện màu vàng", tone: "bg-yellow-200 text-yellow-900" },
+  { level: 8, title: "Cơ trưởng tri thức", reward: "Hiệu ứng ánh vàng khi vào phòng thi", tone: "bg-orange-200 text-orange-900" },
+  { level: 9, title: "Chỉ huy bầu trời", reward: "Khung bạch kim + ưu tiên vinh danh", tone: "bg-indigo-200 text-indigo-900" },
+  { level: 10, title: "Huyền thoại bầu trời", reward: "Vương miện huyền thoại vĩnh viễn", tone: "surface-gold" },
+];
+
+/** Cấp bậc (1–10) tương ứng với cấp độ hiện tại. */
+export function levelTier(level: number): LevelTier {
+  const l = Math.min(LEVEL_TIERS.length, Math.max(1, Math.floor(level || 1)));
+  return LEVEL_TIERS[l - 1];
+}
+
 /** Danh hiệu hiển thị theo cấp độ. */
 export function levelTitle(level: number): string {
-  if (level >= 30) return "Huyền thoại bầu trời";
-  if (level >= 20) return "Cơ trưởng tri thức";
-  if (level >= 14) return "Kiểm soát viên bậc thầy";
-  if (level >= 9) return "Phi công kỳ cựu";
-  if (level >= 5) return "Học viên xuất sắc";
-  if (level >= 3) return "Tân binh chăm chỉ";
-  return "Tân binh";
+  return levelTier(level).title;
 }

@@ -19,6 +19,7 @@ import { AppShell } from "@/components/AppShell";
 import { AvatarBubble, type AvatarBubbleSize } from "@/components/player/AvatarBubble";
 import { AvatarCreatorDialog } from "@/components/player/AvatarCreatorDialog";
 import { LevelBar } from "@/components/player/LevelBar";
+import { LevelLadder } from "@/components/player/LevelLadder";
 import { EmptyState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -201,6 +202,13 @@ function CharacterPage() {
                 ))}
               </div>
             </div>
+          </section>
+
+          <section className="mt-5">
+            <h2 className="font-heading mb-3 inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-tight">
+              <Sparkles className="size-4 text-primary" /> 10 cấp bậc &amp; phần thưởng
+            </h2>
+            <LevelLadder level={profile.level} />
           </section>
 
           <section className="mt-5">
