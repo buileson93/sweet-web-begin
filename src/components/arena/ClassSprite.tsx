@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { classById } from "@/lib/arena/classes";
 import { SPRITE_FRAME, spriteClip, type SpriteAction } from "@/lib/arena/sprites";
@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * Nhân vật pixel-art chạy hoạt ảnh theo hành động (đứng thở / ra đòn / trúng đòn).
- * Dùng requestAnimationFrame + background-position nên rất nhẹ, không tạo DOM thừa.
+ * Hoạt ảnh chạy hoàn toàn bằng ref + background-position: không setState mỗi khung
+ * nên không gây re-render 60fps (rất quan trọng khi mạng chậm / máy yếu).
  */
 export function ClassSprite({
   classId,
@@ -25,36 +26,46 @@ export function ClassSprite({
 }) {
   const clip = spriteClip(classId, action);
   const idleClip = spriteClip(classId, "idle");
-  const [frame, setFrame] = useState(0);
-  const [done, setDone] = useState(false);
-  const startRef = useRef(0);
+  const layerRef = useRef<HTMLDivElement | null>(null);
+  const scale = size / SPRITE_FRAME;
 
   useEffect(() => {
-    setFrame(0);
-    setDone(false);
-    startRef.current = 0;
+    const el = layerRef.current;
+    if (!el) return;
     let raf = 0;
+    let start = 0;
+    let lastKey = "";
+    let current = clip;
+
+    const paint = (c: typeof clip, i: number) => {
+      const key = `${c.url}#${i}`;
+      if (key === lastKey) return;
+      lastKey = key;
+      el.style.backgroundImage = `url("${c.url}")`;
+      el.style.backgroundSize = `${c.frames * SPRITE_FRAME * scale}px ${SPRITE_FRAME * scale}px`;
+      el.style.backgroundPosition = `-${i * SPRITE_FRAME * scale}px 0px`;
+    };
+
+    paint(current, 0);
+
     const step = (t: number) => {
-      if (!startRef.current) startRef.current = t;
-      const elapsed = t - startRef.current;
-      const per = clip.durationMs / clip.frames;
-      const i = Math.floor(elapsed / per);
-      if (!clip.loop && i >= clip.frames) {
-        setFrame(clip.frames - 1);
-        setDone(true);
-        return;
+      if (!start) start = t;
+      const per = current.durationMs / current.frames;
+      const i = Math.floor((t - start) / per);
+      if (!current.loop && i >= current.frames) {
+        // Hết hoạt ảnh một lần (đánh / trúng đòn) thì quay lại tư thế đứng.
+        current = idleClip;
+        start = t;
+        paint(current, 0);
+      } else {
+        paint(current, i % current.frames);
       }
-      setFrame(i % clip.frames);
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [clip]);
+  }, [clip, idleClip, scale]);
 
-  // Hết hoạt ảnh một lần (đánh / trúng đòn) thì quay lại tư thế đứng.
-  const active = done && !clip.loop ? idleClip : clip;
-  const shown = done && !clip.loop ? 0 : frame;
-  const scale = size / SPRITE_FRAME;
   const def = classById(classId);
 
   return (
@@ -65,12 +76,10 @@ export function ClassSprite({
       aria-label={`Nhân vật lớp ${def.name}`}
     >
       <div
+        ref={layerRef}
         className="h-full w-full"
         style={{
-          backgroundImage: `url("${active.url}")`,
           backgroundRepeat: "no-repeat",
-          backgroundSize: `${active.frames * SPRITE_FRAME * scale}px ${SPRITE_FRAME * scale}px`,
-          backgroundPosition: `-${shown * SPRITE_FRAME * scale}px 0px`,
           imageRendering: "pixelated",
           transform: flip ? "scaleX(-1)" : undefined,
         }}
@@ -78,3 +87,4 @@ export function ClassSprite({
     </div>
   );
 }
+
