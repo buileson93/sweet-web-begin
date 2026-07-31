@@ -550,6 +550,7 @@ export async function answerRound(input: {
   duelId: string;
   roundIndex: number;
   value: unknown;
+  skill?: string | null;
 }) {
   // Chống spam: tối đa 1 yêu cầu / 300ms cho mỗi người.
   const key = `${input.employeeId}:${input.duelId}`;
@@ -570,6 +571,9 @@ export async function answerRound(input: {
   const q = await questionAt(duel, input.roundIndex);
   if (!q) throw new Error("Không tìm thấy câu hỏi.");
 
+  // Kỹ năng: máy chủ tự kiểm tra thời gian hồi, trình duyệt không tự phong.
+  const skill = await validateSkill(duel.id, input.employeeId, input.roundIndex, input.skill);
+
   const isCorrect = gradeOne(q.row, q.order, input.value as never);
   const msTaken = Math.max(0, Math.min(now - servedAt, duel.seconds_per_round * 1000));
   const streak = await currentStreak(duel.id, input.employeeId, input.roundIndex, isCorrect);
@@ -584,11 +588,13 @@ export async function answerRound(input: {
     is_correct: isCorrect,
     ms_taken: msTaken,
     points,
+    skill: skill ?? "",
   });
   if (error) {
     if (error.code === "23505") throw new Error("Bạn đã trả lời câu này rồi.");
     throw new Error(error.message);
   }
+
 
   const players = await loadPlayers(duel.id);
   const me = players.find((p) => p.employee_id === input.employeeId);
