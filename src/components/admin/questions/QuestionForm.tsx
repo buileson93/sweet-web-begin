@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { ImagePlus, Loader2, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { ImagePlus, Loader2, RotateCcw, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,20 +27,19 @@ import {
   type Difficulty,
   type QuestionKind,
 } from "@/lib/questionKinds";
+import { MAX_TIME_LIMIT_SECONDS, hasBlockingErrors, validateQuestionDraft } from "@/lib/questionValidation";
 
+import { FieldMessage } from "./FieldMessage";
 import { FillBlankEditor } from "./FillBlankEditor";
 import { MatchingEditor } from "./MatchingEditor";
 import { MultiChoiceEditor } from "./MultiChoiceEditor";
 import { OrderingEditor } from "./OrderingEditor";
 import { SingleChoiceEditor } from "./SingleChoiceEditor";
 import { TrueFalseEditor } from "./TrueFalseEditor";
-import type { QuestionFormState } from "./types";
+import type { EditorProps, QuestionFormState } from "./types";
 
 /** Chọn bộ soạn đáp án theo loại câu hỏi. */
-function AnswerEditor(props: {
-  form: QuestionFormState;
-  setForm: React.Dispatch<React.SetStateAction<QuestionFormState>>;
-}) {
+function AnswerEditor(props: EditorProps) {
   switch (props.form.kind) {
     case "fill_blank":
       return <FillBlankEditor {...props} />;
@@ -62,6 +61,8 @@ export function QuestionForm({
   open,
   onOpenChange,
   editing,
+  editingId,
+  existing,
   form,
   setForm,
   uploadStage,
@@ -70,10 +71,15 @@ export function QuestionForm({
   onRemoveImage,
   onSave,
   saving,
+  draftAvailable,
+  onRestoreDraft,
+  onDiscardDraft,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editing: boolean;
+  editingId?: string | null;
+  existing: { id: string; question: string }[];
   form: QuestionFormState;
   setForm: React.Dispatch<React.SetStateAction<QuestionFormState>>;
   uploadStage: "idle" | "compressing" | "uploading";
@@ -82,11 +88,20 @@ export function QuestionForm({
   onRemoveImage: () => void;
   onSave: () => void;
   saving: boolean;
+  draftAvailable: boolean;
+  onRestoreDraft: () => void;
+  onDiscardDraft: () => void;
 }) {
   const imageRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const uploading = uploadStage !== "idle";
   const stageLabel = uploadStage === "compressing" ? "Đang nén..." : "Đang tải lên...";
+
+  const validation = useMemo(
+    () => validateQuestionDraft(form, existing, editingId ?? null),
+    [form, existing, editingId],
+  );
+  const blocked = hasBlockingErrors(validation);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -95,6 +110,20 @@ export function QuestionForm({
           <DialogTitle>{editing ? "Sửa câu hỏi" : "Thêm câu hỏi"}</DialogTitle>
           <DialogDescription>Chọn phương án đúng bằng nút bên trái.</DialogDescription>
         </DialogHeader>
+
+        {draftAvailable ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm">
+            <RotateCcw className="size-4 text-warning" />
+            <span className="font-medium">Có bản nháp chưa lưu. Khôi phục?</span>
+            <Button size="sm" className="rounded-full" onClick={onRestoreDraft}>
+              Khôi phục
+            </Button>
+            <Button size="sm" variant="ghost" className="rounded-full" onClick={onDiscardDraft}>
+              Bỏ qua
+            </Button>
+          </div>
+        ) : null}
+
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Nội dung câu hỏi</Label>
@@ -103,6 +132,7 @@ export function QuestionForm({
               value={form.question}
               onChange={(e) => setForm({ ...form, question: e.target.value })}
             />
+            <FieldMessage error={validation.errors.question} warning={validation.warnings.question} />
           </div>
           <div className="space-y-2">
             <Label>Ảnh minh hoạ (không bắt buộc)</Label>
@@ -245,6 +275,7 @@ export function QuestionForm({
                 value={form.points}
                 onChange={(e) => setForm({ ...form, points: Number(e.target.value) })}
               />
+              <FieldMessage error={validation.errors.points} />
             </div>
             <div className="space-y-2">
               <Label>Số thứ tự</Label>
@@ -258,12 +289,33 @@ export function QuestionForm({
                 Dùng khi cuộc thi tắt &quot;Xáo trộn câu hỏi&quot;: số nhỏ hiện trước.
               </p>
             </div>
+            <div className="space-y-2">
+              <Label>Giới hạn thời gian riêng (giây)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={MAX_TIME_LIMIT_SECONDS}
+                placeholder="Để trống = dùng giờ chung"
+                value={form.time_limit_seconds}
+                onChange={(e) => setForm({ ...form, time_limit_seconds: e.target.value })}
+              />
+              <p className="type-meta">
+                Bỏ trống hoặc 0 = dùng thời gian chung của cuộc thi. Tối đa{" "}
+                {MAX_TIME_LIMIT_SECONDS} giây.
+              </p>
+              <FieldMessage error={validation.errors.time_limit_seconds} />
+            </div>
           </div>
 
           <p className="type-meta">{QUESTION_KINDS.find((k) => k.value === form.kind)?.hint}</p>
 
           {/* Đáp án theo từng loại */}
-          <AnswerEditor form={form} setForm={setForm} />
+          <AnswerEditor
+            form={form}
+            setForm={setForm}
+            errors={validation.errors}
+            warnings={validation.warnings}
+          />
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
@@ -288,7 +340,7 @@ export function QuestionForm({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Huỷ
           </Button>
-          <Button onClick={onSave} disabled={saving}>
+          <Button onClick={onSave} disabled={saving || blocked}>
             Lưu
           </Button>
         </DialogFooter>
