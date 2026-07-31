@@ -318,7 +318,10 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                   <SelectValue placeholder="Chọn cuộc thi" />
                   {quizPulse > 0 ? <span className="tap-flash rounded-xl" aria-hidden /> : null}
                 </SelectTrigger>
-                <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-1.5rem)]">
+                <SelectContent
+                  className="max-w-[calc(100vw-1.5rem)]"
+                  style={{ width: "var(--radix-select-trigger-width)" }}
+                >
                   {quizzes.map((q) => {
                     const st = quizStatus(q);
                     return (
