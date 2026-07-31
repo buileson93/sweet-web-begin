@@ -31,13 +31,11 @@ export function useDeviceTracking() {
     // Hoãn lại để không tranh tài nguyên với lần render đầu tiên.
     const timer = window.setTimeout(() => {
       const payload = collectDeviceVisit(pathname);
-      void supabase
-        .from("device_visits")
-        .insert(payload)
-        .then(({ error }) => {
-          if (error) console.warn("Không ghi được thống kê thiết bị:", error.message);
-        });
+      void recordDeviceVisit({ data: payload }).catch((err) => {
+        console.warn("Không ghi được thống kê thiết bị:", err);
+      });
     }, 1200);
+
 
     return () => window.clearTimeout(timer);
   }, [pathname]);
