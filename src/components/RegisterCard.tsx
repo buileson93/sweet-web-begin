@@ -329,6 +329,16 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                 </SelectContent>
               </Select>
             )}
+            {selected && selectedStatus !== "open" && (
+              <p className="flex items-center gap-1.5 text-xs font-medium text-destructive">
+                <Clock className="size-3.5 shrink-0" />
+                {selectedStatus === "upcoming"
+                  ? `Chưa đến giờ mở — mở lúc ${formatDateTime(selected.start_time)}`
+                  : selectedStatus === "closed"
+                    ? "Cuộc thi đã kết thúc"
+                    : "Cuộc thi đang tạm dừng"}
+              </p>
+            )}
           </div>
         )}
 
@@ -462,7 +472,15 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           {submitting ? "Đang tạo phiên thi..." : "Bắt đầu làm bài"}
         </Button>
 
-        <p className={cn("type-meta text-center", canStart && "text-success")}>{hint}</p>
+        <p
+          className={cn(
+            "type-meta flex items-center justify-center gap-1.5 text-center",
+            canStart && "text-success",
+          )}
+        >
+          {canStart ? <BadgeCheck className="size-3.5 shrink-0" /> : <AlertCircle className="size-3.5 shrink-0" />}
+          {hint}
+        </p>
 
         <div className="flex items-center justify-center gap-3 border-t border-border pt-3">
           <Link to="/lich-su" className="type-meta inline-flex items-center gap-1.5 hover:text-foreground">
