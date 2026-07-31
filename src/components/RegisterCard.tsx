@@ -326,7 +326,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                     const st = quizStatus(q);
                     return (
                       <SelectItem key={q.id} value={q.id} disabled={st !== "open"} className="py-2.5">
-                        <span className="flex w-full min-w-0 items-center justify-between gap-2">
+                        <span className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                           <span className="min-w-0 truncate font-semibold">{q.title}</span>
                           <QuizStatusBadge status={st} />
                         </span>
