@@ -543,12 +543,70 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
           }
         >
           <div className="space-y-3">
-            {filtered.map((q, idx) => (
+            {/* Thanh chọn nhiều + thao tác hàng loạt */}
+            {canEdit ? (
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-2.5">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                  <Checkbox checked={allOnPageSelected} onCheckedChange={togglePage} aria-label="Chọn cả trang" />
+                  Chọn cả trang
+                </label>
+                {selected.size > 0 ? (
+                  <>
+                    <span className="type-meta">Đã chọn {selected.size} câu</span>
+                    <Select onValueChange={(v) => bulkDifficulty.mutate(v as Difficulty)}>
+                      <SelectTrigger className="h-8 w-40 rounded-full">
+                        <SelectValue placeholder="Đổi độ khó…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DIFFICULTIES.map((d) => (
+                          <SelectItem key={d.value} value={d.value}>
+                            {d.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={bulkRemove.isPending}
+                      onClick={() => {
+                        if (confirm(`Xoá ${selected.size} câu hỏi đã chọn?`)) bulkRemove.mutate();
+                      }}
+                    >
+                      {bulkRemove.isPending ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="size-4" />
+                      )}
+                      Xoá đã chọn
+                    </Button>
+                    <Button size="sm" variant="ghost" className="rounded-full" onClick={() => setSelected(new Set())}>
+                      Bỏ chọn
+                    </Button>
+                  </>
+                ) : (
+                  <span className="type-meta">Tích chọn để xoá hoặc đổi độ khó hàng loạt.</span>
+                )}
+              </div>
+            ) : null}
+
+            {paged.map((q, idx) => (
               <div key={q.id} className="card-elevated p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="font-semibold leading-relaxed">
-                    {idx + 1}. {q.question}
-                  </p>
+                  <div className="flex min-w-0 items-start gap-3">
+                    {canEdit ? (
+                      <Checkbox
+                        className="mt-1"
+                        checked={selected.has(q.id)}
+                        onCheckedChange={() => toggleOne(q.id)}
+                        aria-label={`Chọn câu ${(safePage - 1) * PAGE_SIZE + idx + 1}`}
+                      />
+                    ) : null}
+                    <p className="font-semibold leading-relaxed">
+                      {(safePage - 1) * PAGE_SIZE + idx + 1}. {q.question}
+                    </p>
+                  </div>
                   <div className={cn("flex shrink-0 gap-1", !canEdit && "hidden")}>
                     <Button size="icon" variant="ghost" aria-label="Sửa" onClick={() => openEdit(q)}>
                       <Pencil className="size-4" />
@@ -592,7 +650,36 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
                 </ul>
               </div>
             ))}
+
+            {pageCount > 1 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border px-4 py-3">
+                <span className="type-meta">
+                  Trang {safePage} / {pageCount} — {filtered.length} câu hỏi
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={safePage <= 1}
+                    onClick={() => setPage(safePage - 1)}
+                  >
+                    Trang trước
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={safePage >= pageCount}
+                    onClick={() => setPage(safePage + 1)}
+                  >
+                    Trang sau
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
+
         </QueryState>
       </AdminSection>
 
