@@ -28,26 +28,22 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
             <Link to="/" aria-label="Trang chủ" className="animate-bob">
               <BrandMark className="size-12 rounded-2xl" />
             </Link>
-            <nav className="flex flex-col gap-3">
+            <nav className="flex flex-col gap-2">
               {navItems.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
-                  title={item.label}
                   aria-label={item.label}
-                  className="grid size-12 place-items-center rounded-2xl text-sidebar-foreground/60 transition-all hover:-translate-y-0.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  activeProps={{
-                    className: cn(
-                      "grid size-12 place-items-center rounded-2xl bg-sidebar-foreground/15 text-sidebar-foreground",
-                      "shadow-[inset_0_0_0_1px_var(--sidebar-border)]",
-                    ),
-                  }}
+                  className="nav-rail-item"
+                  activeProps={{ className: cn("nav-rail-item", "nav-rail-item-active") }}
                   activeOptions={{ exact: item.to === "/" }}
                 >
-                  <item.icon className="size-5" />
+                  <item.icon className="relative" strokeWidth={1.75} absoluteStrokeWidth />
+                  <span className="nav-rail-label">{item.label}</span>
                 </Link>
               ))}
             </nav>
+
           </div>
           <span className="grid size-11 place-items-center rounded-2xl surface-gold shadow-[var(--shadow-gold)]">
             <Trophy className="size-5" />
