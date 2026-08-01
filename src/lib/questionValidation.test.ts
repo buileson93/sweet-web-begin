@@ -179,3 +179,24 @@ describe("validateQuestionDraft — ordering", () => {
     expect(r.errors.options).toContain("trùng");
   });
 });
+
+describe("mô tả ảnh (alt)", () => {
+  it("cảnh báo khi có ảnh nhưng chưa nhập mô tả", () => {
+    const r = validateQuestionDraft(draft({ image_url: "tmp/a.webp", image_alt: "  " }), [], null);
+    expect(r.warnings.image_alt).toBeTruthy();
+    expect(hasBlockingErrors(r)).toBe(false);
+  });
+
+  it("không cảnh báo khi đã có mô tả", () => {
+    const r = validateQuestionDraft(
+      draft({ image_url: "tmp/a.webp", image_alt: "Sơ đồ đường lăn" }),
+      [],
+      null,
+    );
+    expect(r.warnings.image_alt).toBeUndefined();
+  });
+
+  it("không cảnh báo khi câu hỏi không có ảnh", () => {
+    expect(validateQuestionDraft(draft(), [], null).warnings.image_alt).toBeUndefined();
+  });
+});
