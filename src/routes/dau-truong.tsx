@@ -36,7 +36,9 @@ import { usePlayerIdentity } from "@/hooks/usePlayerIdentity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
+import { AppShell } from "@/components/AppShell";
+import { PageHero, SectionHeading } from "@/components/ui-kit";
+
 import {
   arenaEndActive,
   arenaHome,
