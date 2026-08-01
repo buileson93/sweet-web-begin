@@ -11,11 +11,12 @@ export type DuelConnectionStatus = "live" | "syncing" | "retrying" | "offline";
 type Options = { duelId: string; token: string; enabled?: boolean };
 
 /** Cửa sổ gom sự kiện: nhiều broadcast liên tiếp chỉ tạo MỘT lần đồng bộ. */
-const BATCH_WINDOW_MS = 70;
+const BATCH_WINDOW_MS = 30;
 /** Khoảng cách tối thiểu giữa hai lần hỏi máy chủ (trừ khi ép buộc). */
-const MIN_GAP_MS = 350;
+const MIN_GAP_MS = 120;
 /** Ping vượt ngưỡng này thì ghi nhật ký "độ trễ cao". */
 const SLOW_PING_MS = 900;
+
 
 export type DuelNetStats = {
   /** Độ trễ vòng lặp gần nhất (ms). */
