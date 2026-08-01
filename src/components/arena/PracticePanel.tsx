@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
-import { Bot, Castle, BookOpen, Loader2, Sparkles } from "lucide-react";
+import { Bot, BookOpen, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { DueBadge } from "@/components/arena/DueBadge";
@@ -83,16 +82,6 @@ export function PracticePanel({
         <DueBadge />
         <span className="ml-auto text-xs text-muted-foreground">Không tính xếp hạng</span>
       </div>
-
-      <Link
-        to="/dau-truong/leo-thap"
-        className="mb-3 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm transition hover:border-primary hover:bg-primary/10"
-      >
-        <Castle className="size-4 text-primary" />
-        <span className="font-medium">Tháp Không Lưu (TWR ATC)</span>
-        <span className="type-meta">Ôn nghiệp vụ điều hành bay · 5 tầng</span>
-      </Link>
-
 
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
         <div className="min-w-0 space-y-1.5">
