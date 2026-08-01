@@ -12,7 +12,7 @@ import {
 } from "@/lib/grading";
 import { QUESTION_COLUMNS } from "@/lib/exam/types";
 import type { AnswerValue } from "@/lib/questionKinds";
-import { offerBoons, BOONS, QUESTIONS_PER_RUN, QUESTIONS_PER_STAGE, START_HP, STAGES_PER_RUN, STOP_WRONG_RATIO } from "@/lib/tower/config";
+import { offerBoons, BOONS, ATC_BANK_QUIZ_ID, QUESTIONS_PER_RUN, QUESTIONS_PER_STAGE, START_HP, STAGES_PER_RUN, STOP_WRONG_RATIO } from "@/lib/tower/config";
 import { seededRandom, towerDamage } from "@/lib/tower/rng";
 import { logReviews } from "@/lib/review/log.server";
 import { applyReviewBatch } from "@/lib/tower/due.server";
@@ -137,7 +137,7 @@ export async function startTowerRun(input: {
       .select(QUESTION_COLUMNS)
       .eq("is_archived", false)
       .limit(400);
-    if (input.quizId) q = q.eq("quiz_id", input.quizId);
+    q = q.eq("quiz_id", input.quizId ?? ATC_BANK_QUIZ_ID);
     const { data } = await q;
     const have = new Set(rows.map((r) => r.id));
     for (const r of ((data ?? []) as unknown as QuestionRow[])) {

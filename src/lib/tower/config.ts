@@ -1,4 +1,6 @@
 /** Cấu hình Tháp Không Lưu (TWR ATC) — dữ liệu hoá, thêm nội dung không cần sửa code. */
+/** Ngân hàng câu hỏi chuyên ngành KSVKL dùng mặc định cho Tháp Không Lưu. */
+export const ATC_BANK_QUIZ_ID = "00000000-0000-4a7c-9000-00000000a7c1";
 export const STAGES_PER_RUN = 5;
 export const QUESTIONS_PER_STAGE = 5;
 export const QUESTIONS_PER_RUN = STAGES_PER_RUN * QUESTIONS_PER_STAGE;
