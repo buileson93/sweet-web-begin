@@ -20,6 +20,9 @@ import { toast } from "sonner";
 
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { TowerMap } from "@/components/tower/TowerMap";
+import { HpBar } from "@/components/tower/HpBar";
+import { InventorySheet } from "@/components/tower/InventorySheet";
+import { TowerGuide } from "@/components/tower/TowerGuide";
 import { BlessingCards } from "@/components/tower/BlessingCards";
 import { CurseOffer } from "@/components/tower/CurseOffer";
 import { ScoreSources } from "@/components/tower/ScoreSources";
@@ -149,54 +152,25 @@ function readResume(): Resume | null {
   }
 }
 
-function HpBarLite({ hp, max, shield }: { hp: number; max: number; shield: number }) {
-  const pct = Math.max(0, Math.min(100, (hp / (max || START_HP)) * 100));
+/** Thanh trạng thái hành trình: máu, xu, di vật, lời nguyền — dính đầu màn hình trên điện thoại. */
+function RunBar({ run }: { run: TowerRun }) {
   return (
-    <div className="flex items-center gap-2">
-      <Heart className="size-4 text-destructive" />
-      <div className="h-2.5 w-28 overflow-hidden rounded-full bg-muted sm:w-40">
-        <div className="h-full rounded-full bg-destructive transition-[width] duration-500" style={{ width: `${pct}%` }} />
+    <div className="sticky top-1 z-30 flex flex-wrap items-center gap-2 rounded-2xl border bg-card/90 px-2.5 py-2 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/70">
+      <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+        Tầng {Math.min(run.floor, FLOORS)}/{FLOORS}
+      </span>
+      <HpBar hp={run.hp} max={run.maxHp} shield={run.shield} className="grow basis-40" />
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
+        <Coins className="size-3" /> {run.coins}
+      </span>
+      <div className="ml-auto flex items-center gap-1">
+        <InventorySheet run={run} />
+        <TowerGuide />
       </div>
-      <span className="type-meta tabular-nums">{hp}</span>
-      {shield > 0 ? (
-        <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold text-sky-600">
-          <Shield className="size-3" /> {shield}
-        </span>
-      ) : null}
     </div>
   );
 }
 
-/** Thanh trạng thái hành trình: máu, xu, di vật, lời nguyền. */
-function RunBar({ run }: { run: TowerRun }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-        Tầng {Math.min(run.floor, FLOORS)}/{FLOORS}
-      </span>
-      <HpBarLite hp={run.hp} max={run.maxHp} shield={run.shield} />
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
-        <Coins className="size-3" /> {run.coins}
-      </span>
-      {run.relics.map((id) => {
-        const r = relicById(id);
-        return r ? (
-          <span key={id} title={`${r.name} — ${r.desc}`} className="rounded-full bg-muted px-2 py-0.5 text-[11px]">
-            {r.icon} {r.name}
-          </span>
-        ) : null;
-      })}
-      {run.curses.map((id) => {
-        const c = curseById(id);
-        return c ? (
-          <span key={id} title={c.desc} className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">
-            {c.icon} {c.name}
-          </span>
-        ) : null;
-      })}
-    </div>
-  );
-}
 
 function TowerPage() {
   const openTower = useServerFn(openTowerFn);
@@ -817,6 +791,7 @@ function TowerPage() {
             Vào tháp tu luyện
           </Button>
           <div className="mt-2 flex flex-wrap justify-center gap-2">
+            <TowerGuide />
             <Button asChild size="sm" variant="ghost">
               <Link to="/dau-truong/bang-thap">Bảng xếp hạng tháp</Link>
             </Button>
@@ -824,6 +799,7 @@ function TowerPage() {
               <Link to="/dau-truong/thong-ke-thap">Thống kê hành trình</Link>
             </Button>
           </div>
+
         </section>
       )}
 
@@ -906,18 +882,31 @@ function TowerPage() {
                     key={`${room.kind}-${i}`}
                     type="button"
                     onClick={() => enterRoom(i)}
-                    className="group rounded-xl border p-3 text-left transition hover:-translate-y-0.5 hover:border-primary hover:shadow-lg"
+                    style={{ animationDelay: `${i * 90}ms` }}
+                    className={cn(
+                      "group relative min-h-20 touch-manipulation overflow-hidden rounded-2xl border p-3 text-left",
+                      "animate-fade-in bg-gradient-to-br from-primary/10 to-transparent",
+                      "transition-transform duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-lg active:scale-[0.98]",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    )}
                   >
-                    <div className="text-xl transition group-hover:scale-110">{meta.icon}</div>
-                    <div className={cn("mt-1 text-sm font-semibold", meta.tone)}>
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-primary/10 blur-xl transition-opacity duration-300 group-hover:opacity-100 sm:opacity-0"
+                    />
+                    <div className="relative text-2xl transition-transform duration-200 group-hover:scale-110">
+                      {meta.icon}
+                    </div>
+                    <div className={cn("relative mt-1 text-sm font-semibold", meta.tone)}>
                       {bossHere ? bossHere.name : meta.label}
                     </div>
-                    <div className="type-meta mt-0.5">{bossHere ? bossHere.rule : meta.desc}</div>
+                    <div className="type-meta relative mt-0.5">{bossHere ? bossHere.rule : meta.desc}</div>
                   </button>
                 );
               })}
             </div>
           ) : null}
+
         </section>
       )}
 
