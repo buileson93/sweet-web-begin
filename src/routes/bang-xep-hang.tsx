@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeResults } from "@/hooks/useRealtimeResults";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
 import { formatDateTime, formatSeconds } from "@/lib/format";
+import { rankResults } from "@/lib/leaderboard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/bang-xep-hang")({
@@ -54,10 +55,12 @@ function LeaderboardPage() {
     queryFn: async () => {
       let query = supabase
         .from("results")
-        .select("id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, best_streak")
+        .select(
+          "id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, max_points, best_streak",
+        )
         .eq("disqualified", false)
-        // Xếp hạng theo ĐIỂM SỐ (đã tính thưởng combo, X2), sau đó tới số câu đúng và thời gian.
-        .order("points", { ascending: false })
+        // Lấy thô rồi xếp hạng ở rankResults (theo TỈ LỆ ĐÚNG) vì điểm thưởng combo
+        // giữa các cấu hình cuộc thi không so sánh trực tiếp được với nhau.
         .order("score", { ascending: false })
         .order("time_seconds", { ascending: true })
         .limit(500);
@@ -76,12 +79,9 @@ function LeaderboardPage() {
   const all = resultsQuery.data ?? [];
   const rows = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-    // Chỉ xếp hạng bài đạt từ 50% số câu trở lên; dưới ngưỡng này coi là chưa đạt.
-    return all.filter(
-      (r) =>
-        r.total > 0 &&
-        r.score / r.total >= 0.5 &&
-        (!kw || r.candidate_name.toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw)),
+    // rankResults đã loại bài dưới 50% và sắp xếp công bằng theo tỉ lệ đúng.
+    return rankResults(all).filter(
+      (r) => !kw || r.candidate_name.toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
     );
   }, [all, keyword]);
 
