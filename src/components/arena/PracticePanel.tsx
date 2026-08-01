@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+
 import { Bot, Castle, BookOpen, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
