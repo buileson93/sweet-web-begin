@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Crown, Flame, HelpCircle, Skull, Store, Swords, type LucideIcon } from "lucide-react";
 
 import { bossAt } from "@/lib/tower/bosses";
 import { FLOORS, ROOM_META, type Room, type RoomKind } from "@/lib/tower/map";
@@ -10,6 +11,15 @@ function columnsFor(count: number): number[] {
   if (count === 2) return [26, 74];
   return [16, 50, 84];
 }
+
+const NODE_ICON: Record<RoomKind, LucideIcon> = {
+  combat: Swords,
+  elite: Skull,
+  event: HelpCircle,
+  shop: Store,
+  campfire: Flame,
+  boss: Crown,
+};
 
 const NODE_TONE: Record<RoomKind, { ring: string; glow: string; fill: string }> = {
   combat: { ring: "border-sky-400/70", glow: "shadow-[0_0_18px_-4px_oklch(0.72_0.14_240)]", fill: "bg-sky-500/15" },
@@ -70,7 +80,9 @@ export function TowerMap({ map, floor, path, canPick, onPick, className }: Props
                   className="pointer-events-none h-8 w-full sm:h-10"
                 >
                   {cols.map((x) =>
-                    upperCols.map((ux) => (
+                    upperCols
+                      .filter((ux) => Math.abs(ux - x) <= 40)
+                      .map((ux) => (
                       <line
                         key={`${x}-${ux}`}
                         x1={x}
@@ -84,7 +96,7 @@ export function TowerMap({ map, floor, path, canPick, onPick, className }: Props
                           state === "past" ? "stroke-primary/50" : state === "current" ? "stroke-primary/70" : "stroke-foreground/15",
                         )}
                       />
-                    )),
+                      )),
                   )}
                 </svg>
               ) : null}
@@ -106,6 +118,7 @@ export function TowerMap({ map, floor, path, canPick, onPick, className }: Props
                     const taken = state === "past" && takenKind === room.kind;
                     const active = state === "current" && canPick;
                     const label = boss ? boss.name : meta.label;
+                    const Icon = NODE_ICON[room.kind];
 
                     return (
                       <button
@@ -128,7 +141,12 @@ export function TowerMap({ map, floor, path, canPick, onPick, className }: Props
                           !active && "cursor-default",
                         )}
                       >
-                        <span className="transition-transform duration-300 group-hover:scale-110">{meta.icon}</span>
+                        <Icon
+                          className={cn(
+                            "size-5 transition-transform duration-300 group-hover:scale-110 sm:size-6",
+                            meta.tone,
+                          )}
+                        />
                         {active ? (
                           <span
                             aria-hidden
