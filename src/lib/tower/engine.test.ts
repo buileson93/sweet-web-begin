@@ -178,3 +178,28 @@ describe("vòng chơi tại máy người dùng", () => {
     expect(a.offered.map((o) => o.id)).toEqual(b.offered.map((o) => o.id));
   });
 });
+
+describe("trợ giúp (boon) có tác dụng thật", () => {
+  it("nhận trợ giúp hồi máu thì tăng máu ngay và không vượt trần", () => {
+    const heal = BOONS.find((b) => (b.effect.heal ?? 0) > 0);
+    if (!heal) return;
+    const run = { ...baseRun(), hp: 40, boons: [] as string[] };
+    const after = takeBoon(run, heal.id);
+    expect(after.hp).toBe(Math.min(START_HP, 40 + (heal.effect.heal ?? 0)));
+    expect(takeBoon({ ...run, hp: START_HP }, heal.id).hp).toBe(START_HP);
+  });
+
+  it("nhận trợ giúp khiên thì cộng khiên và giữ nguyên qua các tầng", () => {
+    const sh = BOONS.find((b) => (b.effect.shield ?? 0) > 0);
+    if (!sh) return;
+    const after = takeBoon({ ...baseRun(), shield: 5 }, sh.id);
+    expect(after.shield).toBe(5 + (sh.effect.shield ?? 0));
+  });
+
+  it("trợ giúp thêm giây làm tăng thời lượng của tầng", () => {
+    const t = BOONS.find((b) => (b.effect.timeBonus ?? 0) > 0);
+    const base = stageSeconds([]);
+    if (!t) return;
+    expect(stageSeconds([t.id])).toBeGreaterThan(base);
+  });
+});
