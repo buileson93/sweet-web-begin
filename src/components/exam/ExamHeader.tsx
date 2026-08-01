@@ -1,3 +1,4 @@
+import type { AutosaveStatus } from "@/hooks/useExamAutosave";
 import { AlertTriangle, CheckCircle2, Loader2, LogOut, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export function ExamHeader({
   showCombo: boolean;
   remaining: number;
   progress: number;
-  saveStatus: "idle" | "saving" | "saved" | "offline";
+  saveStatus: AutosaveStatus;
   lastSavedAt: Date | null;
   onExit: () => void;
 }) {
