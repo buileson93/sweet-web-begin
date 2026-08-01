@@ -124,3 +124,34 @@ export const getOrgWeakTopicsFn = createServerFn({ method: "POST" })
     const { getOrgWeakTopics } = await import("@/lib/tower/topics.server");
     return getOrgWeakTopics(data);
   });
+
+/** Ghi điểm hành trình Leo Tháp — máy chủ tự tính lại điểm, không tin số từ máy khách. */
+export const submitTowerRunScoreFn = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    credentialSchema
+      .extend({
+        seed: z.string().max(80),
+        daily: z.boolean(),
+        floors: z.number().int().min(0).max(12),
+        hp: z.number().int().min(0).max(500),
+        relics: z.array(z.string().max(40)).max(20),
+        curses: z.array(z.string().max(40)).max(10),
+        ascension: z.number().int().min(0).max(10),
+        win: z.boolean(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { submitRunScore } = await import("@/lib/tower/score.server");
+    return submitRunScore(data);
+  });
+
+/** Bảng xếp hạng hành trình: hạt hằng ngày hoặc hạt tự do. */
+export const getTowerBoardFn = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ board: z.enum(["hang-ngay", "tu-do"]).default("tu-do") }).parse(input ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const { readTowerBoard } = await import("@/lib/tower/score.server");
+    return readTowerBoard(data.board);
+  });
