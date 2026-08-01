@@ -2,9 +2,11 @@ import { useEffect, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { reportEvent } from "@/lib/exam.functions";
+import { MAX_EXEMPT_EVENTS_PER_SESSION, isQuotaExempt } from "@/lib/integrity";
 
-/** Số sự kiện hành vi tối đa gửi lên máy chủ trong một phiên thi. */
+/** Số sự kiện tối đa gửi lên máy chủ trong một phiên thi (không tính loại được miễn quota). */
 export const MAX_EVENTS = 20;
+
 
 /**
  * Ghi nhận hành vi trong phòng thi: chỉ BÁO CÁO cho máy chủ,
@@ -32,19 +34,25 @@ export function useIntegrityWatch(opts: {
     const isTouch =
       typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches === true;
     let sent = 0;
+    let sentExempt = 0;
     let hiddenAt = 0;
     let lastSentAt = 0;
 
     const report = (kind: string, detail: Record<string, unknown> = {}) => {
-      if (submittedRef.current() || sent >= MAX_EVENTS) return;
+      if (submittedRef.current()) return;
+      const exempt = isQuotaExempt(kind);
+      // Quota tách riêng: rời tab / mở nhiều tab luôn được ghi nhận, không bị "đốt" bởi copy/paste.
+      if (exempt ? sentExempt >= MAX_EXEMPT_EVENTS_PER_SESSION : sent >= MAX_EVENTS) return;
       const now = Date.now();
-      if (now - lastSentAt < 800) return; // debounce
+      if (!exempt && now - lastSentAt < 800) return; // debounce (không áp cho loại nặng)
       lastSentAt = now;
-      sent += 1;
+      if (exempt) sentExempt += 1;
+      else sent += 1;
       void runReportEvent({
         data: { sessionId, submitToken, kind, detail },
       }).catch(() => undefined);
     };
+
 
     const onVisibility = () => {
       if (document.visibilityState === "hidden") {

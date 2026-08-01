@@ -29,10 +29,25 @@ export type ExamEventDetail = {
 export const DISQUALIFY_THRESHOLD_DEFAULT = 6;
 /** Số sự kiện tối đa ghi nhận cho một phiên thi (chống spam). */
 export const MAX_EVENTS_PER_SESSION = 20;
+/**
+ * Hai loại sự kiện nặng nhất được MIỄN quota chống spam:
+ * nếu tính chung, thí sinh chỉ cần bấm Ctrl+C 20 lần đầu giờ là "đốt" hết quota
+ * rồi rời tab thoải mái mà không bị ghi nhận.
+ */
+export const QUOTA_EXEMPT_KINDS: readonly string[] = ["tab_hidden", "multi_tab"];
+/** Trần riêng (rất rộng) cho các loại được miễn quota, chỉ để chặn lạm dụng. */
+export const MAX_EXEMPT_EVENTS_PER_SESSION = 200;
+
+/** Sự kiện này có bị tính vào quota 20 bản ghi/phiên hay không. */
+export function isQuotaExempt(kind: string): boolean {
+  return QUOTA_EXEMPT_KINDS.includes(kind);
+}
 
 export function isExamEventKind(value: string): value is ExamEventKind {
   return (EXAM_EVENT_KINDS as readonly string[]).includes(value);
 }
+
+
 
 /**
  * Trọng số phạt cho từng sự kiện.

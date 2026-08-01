@@ -1,3 +1,4 @@
+import { ErrorState } from "@/components/ui-kit";
 import { useMemo, useRef, useState } from "react";
 import { readXlsxRows } from "@/lib/xlsxIo";
 import { createFileRoute } from "@tanstack/react-router";
@@ -27,6 +28,11 @@ export const Route = createFileRoute("/_authenticated/nhap-du-lieu")({
     ],
   }),
   component: ImportPage,
+  errorComponent: ({ error }) => (
+    <div className="mx-auto max-w-2xl px-4 py-16">
+      <ErrorState error={error} />
+    </div>
+  ),
 });
 
 type Row = Record<string, string>;

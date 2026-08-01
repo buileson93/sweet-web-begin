@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   DISQUALIFY_THRESHOLD_DEFAULT,
   isExamEventKind,
+  isQuotaExempt,
+  MAX_EXEMPT_EVENTS_PER_SESSION,
+  MAX_EVENTS_PER_SESSION,
   scoreEvent,
   shouldDisqualify,
 } from "./integrity";
@@ -69,5 +72,18 @@ describe("shouldDisqualify", () => {
     const score = scoreEvent("tab_hidden", { hiddenMs: 2_000 }) + scoreEvent("window_blur", { documentVisible: true });
     expect(score).toBe(0);
     expect(shouldDisqualify(score, 6, true)).toBe(false);
+  });
+});
+
+describe("quota sự kiện", () => {
+  it("miễn quota cho hai loại nặng nhất để không bị đốt bởi copy/paste", () => {
+    expect(isQuotaExempt("tab_hidden")).toBe(true);
+    expect(isQuotaExempt("multi_tab")).toBe(true);
+    expect(isQuotaExempt("copy")).toBe(false);
+    expect(isQuotaExempt("window_blur")).toBe(false);
+  });
+
+  it("quota riêng của loại được miễn rộng hơn quota chung", () => {
+    expect(MAX_EXEMPT_EVENTS_PER_SESSION).toBeGreaterThan(MAX_EVENTS_PER_SESSION);
   });
 });
