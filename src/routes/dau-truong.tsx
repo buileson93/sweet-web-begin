@@ -152,7 +152,10 @@ function ArenaLobby() {
       }
     };
     void pull();
-    const id = window.setInterval(pull, 6000);
+    // Sảnh chỉ cần làm mới thưa; bỏ qua nhịp khi tab đang ẩn để đỡ tải máy chủ.
+    const id = window.setInterval(() => {
+      if (!document.hidden) void pull();
+    }, 12_000);
     return () => {
       alive = false;
       window.clearInterval(id);

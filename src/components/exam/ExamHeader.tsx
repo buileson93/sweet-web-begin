@@ -1,4 +1,7 @@
+import { memo, useSyncExternalStore } from "react";
+
 import type { AutosaveStatus } from "@/hooks/useExamAutosave";
+import type { ExamClockStore } from "@/hooks/useExamTimer";
 import { AlertTriangle, CheckCircle2, Loader2, LogOut, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +16,7 @@ export function ExamHeader({
   total,
   combo,
   showCombo,
-  remaining,
+  clock,
   progress,
   saveStatus,
   lastSavedAt,
@@ -24,14 +27,12 @@ export function ExamHeader({
   total: number;
   combo: number;
   showCombo: boolean;
-  remaining: number;
+  clock: ExamClockStore;
   progress: number;
   saveStatus: AutosaveStatus;
   lastSavedAt: Date | null;
   onExit: () => void;
 }) {
-  const lowTime = remaining <= 60;
-
   return (
     <header className="surface-hero sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-2.5">
@@ -55,17 +56,7 @@ export function ExamHeader({
             Combo x{combo}
           </span>
         ) : null}
-        <div
-          className={cn(
-            "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-base font-bold tabular-nums",
-            lowTime
-              ? "animate-pulse-ring bg-destructive text-destructive-foreground"
-              : "bg-primary-foreground/10 text-primary-foreground",
-          )}
-        >
-          <Timer className="size-4" />
-          {formatSeconds(remaining)}
-        </div>
+        <ExamClock clock={clock} />
       </div>
       <div className="mx-auto flex max-w-5xl items-center px-3 pb-1.5 sm:px-4">
         <span
@@ -103,3 +94,25 @@ export function ExamHeader({
     </header>
   );
 }
+
+/**
+ * Component lá của đồng hồ: chỉ nó render lại mỗi giây,
+ * phần còn lại của phòng thi đứng yên (đỡ giật trên máy yếu).
+ */
+const ExamClock = memo(function ExamClock({ clock }: { clock: ExamClockStore }) {
+  const remaining = useSyncExternalStore(clock.subscribe, clock.get, clock.get);
+  const lowTime = remaining <= 60;
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-base font-bold tabular-nums",
+        lowTime
+          ? "animate-pulse-ring bg-destructive text-destructive-foreground"
+          : "bg-primary-foreground/10 text-primary-foreground",
+      )}
+    >
+      <Timer className="size-4" />
+      {formatSeconds(remaining)}
+    </div>
+  );
+});

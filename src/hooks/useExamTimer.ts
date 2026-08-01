@@ -1,6 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getServerTime } from "@/lib/exam.functions";
+
+/** Nguồn phát số giây còn lại cho component đồng hồ (useSyncExternalStore). */
+export type ExamClockStore = {
+  get: () => number;
+  subscribe: (fn: () => void) => () => void;
+};
 
 /** Chu kỳ đồng bộ lại giờ máy chủ (chống trôi khi máy sleep hoặc đổi giờ hệ thống). */
 const RESYNC_MS = 60_000;
@@ -19,8 +25,28 @@ export function useExamTimer(opts: {
   canAutoSubmit: () => boolean;
   onTimeUp: () => void;
 }) {
-  const [remaining, setRemaining] = useState(0);
   const [timeUp, setTimeUp] = useState(false);
+  /**
+   * Số giây còn lại nằm ở store ngoài (không phải state) để mỗi nhịp 1 giây
+   * chỉ render lại đúng component đồng hồ, không render lại cả cây phòng thi.
+   */
+  const remainingRef = useRef(0);
+  const listenersRef = useRef(new Set<() => void>());
+  const setRemaining = useCallback((value: number) => {
+    if (remainingRef.current === value) return;
+    remainingRef.current = value;
+    listenersRef.current.forEach((fn) => fn());
+  }, []);
+  const clock = useMemo<ExamClockStore>(
+    () => ({
+      get: () => remainingRef.current,
+      subscribe: (fn: () => void) => {
+        listenersRef.current.add(fn);
+        return () => listenersRef.current.delete(fn);
+      },
+    }),
+    [],
+  );
   /** Hết giờ: chỉ cho phép gọi nộp bài TỰ ĐỘNG đúng một lần, kể cả khi lần gọi trước lỗi. */
   const firedRef = useRef(false);
   /** Chênh lệch giờ máy chủ - giờ máy người dùng (ms). */
@@ -81,5 +107,5 @@ export function useExamTimer(opts: {
     };
   }, [expiresAt, serverNow, active]);
 
-  return { remaining, timeUp };
+  return { clock, timeUp };
 }

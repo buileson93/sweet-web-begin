@@ -284,7 +284,9 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
     const start = () => {
       window.clearInterval(id);
       if (document.hidden) return;
-      id = window.setInterval(() => scheduleRefresh(), live ? 4000 : 1200);
+      // Broadcast lo phần realtime; polling chỉ là lưới an toàn khi mất gói
+      // nên hạ nhịp để 100 người online không tạo ~100 req/s.
+      id = window.setInterval(() => scheduleRefresh(), live ? 8000 : 2500);
     };
     const onVisible = () => {
       if (!document.hidden) void refresh(true);

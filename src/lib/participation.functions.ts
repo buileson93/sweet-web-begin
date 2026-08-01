@@ -1,15 +1,32 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 const schema = z.object({ quizId: z.string().uuid() });
+
+/** Chỉ quản trị viên / cán bộ tổ chức thi mới được xem danh bạ dự thi. */
+async function assertCanViewRoster(context: { supabase: any; userId: string }) {
+  const [admin, staff] = await Promise.all([
+    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "staff" }),
+  ]);
+  if (admin.error || staff.error) throw new Error("Không kiểm tra được quyền truy cập.");
+  if (!admin.data && !staff.data) {
+    throw new Error("Bạn không có quyền xem danh sách dự thi.");
+  }
+}
 
 /**
  * Danh sách nhân viên đã dự thi và chưa dự thi của một cuộc thi.
  * Chỉ trả về họ tên và đơn vị (không kèm số điện thoại/ngày sinh) để nhắc nhở dự thi.
  */
 export const getQuizParticipation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => schema.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // Dùng supabaseAdmin (bỏ qua RLS) nên BẮT BUỘC chặn quyền trước khi đọc danh bạ.
+    await assertCanViewRoster(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { splitParticipation } = await import("@/lib/participation");
 
