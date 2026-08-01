@@ -75,7 +75,8 @@ export function gradeLocal(question: BankQuestion, value: AnswerValue | undefine
       const pairs = question.pairs;
       if (!pairs.length) return 0;
       const map = value as Record<string, number>;
-      const ok = pairs.every((_, left) => map[String(left)] === left);
+      // answerIndices[left] = vị trí hiển thị của vế phải đúng (đã xáo sẵn).
+      const ok = pairs.every((_, left) => map[String(left)] === question.answerIndices[left]);
       return ok ? 1 : 0;
     }
     case "ordering": {
