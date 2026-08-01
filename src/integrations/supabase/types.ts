@@ -835,6 +835,7 @@ export type Database = {
           difficulty: Database["public"]["Enums"]["question_difficulty"]
           explanation: string
           id: string
+          image_alt: string
           image_url: string | null
           is_archived: boolean
           kind: Database["public"]["Enums"]["question_kind"]
@@ -858,6 +859,7 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["question_difficulty"]
           explanation?: string
           id?: string
+          image_alt?: string
           image_url?: string | null
           is_archived?: boolean
           kind?: Database["public"]["Enums"]["question_kind"]
@@ -881,6 +883,7 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["question_difficulty"]
           explanation?: string
           id?: string
+          image_alt?: string
           image_url?: string | null
           is_archived?: boolean
           kind?: Database["public"]["Enums"]["question_kind"]
