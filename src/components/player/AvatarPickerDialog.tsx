@@ -51,8 +51,10 @@ export function AvatarPickerDialog({
   const [style, setStyle] = useState<AvatarStyleId>(initial.style);
   const [seed, setSeed] = useState(initial.seed);
   const [background, setBackground] = useState(initial.background);
+  const [options, setOptions] = useState<AvatarOptions>(initial.options ?? {});
   const seeds = useMemo(() => suggestSeeds(name || "VATM", 12), [name]);
-  const spec = { style, seed, background };
+  const groups = useMemo(() => optionGroups(style), [style]);
+  const spec = { style, seed, background, options };
   const runSave = useServerFn(savePlayerAvatar);
 
   const save = useMutation({
@@ -65,15 +67,23 @@ export function AvatarPickerDialog({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Không lưu được nhân vật"),
   });
 
+  // Đổi phong cách thì các tuỳ chỉnh cũ không còn hợp lệ nữa.
+  function pickStyle(next: AvatarStyleId) {
+    setStyle(next);
+    setOptions({});
+  }
+
   // Mở lại hộp thoại thì quay về đúng nhân vật đang dùng, không giữ lựa chọn dở dang.
   function handleOpenChange(next: boolean) {
     if (next) {
       setStyle(initial.style);
       setSeed(initial.seed);
       setBackground(initial.background);
+      setOptions(initial.options ?? {});
     }
     setOpen(next);
   }
+
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
