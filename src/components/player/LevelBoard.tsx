@@ -17,33 +17,25 @@ export function LevelBoard({ className }: { className?: string }) {
     staleTime: 60_000,
   });
 
-  const rows = query.data ?? [];
+  const rows = (query.data ?? []).slice(0, 6);
   if (query.isLoading) {
-    return <div className={cn("h-40 animate-pulse rounded-2xl bg-secondary", className)} />;
+    return <div className={cn("h-24 animate-pulse rounded-2xl bg-secondary", className)} />;
   }
   if (rows.length === 0) return null;
 
   return (
-    <section className={cn("rounded-2xl border border-border bg-card p-4", className)}>
-      <h2 className="font-heading mb-3 inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-tight">
-        <Trophy className="size-4 text-gold" /> Cấp độ chinh phục bầu trời
+    <section className={cn("rounded-2xl border border-border bg-card p-3", className)}>
+      <h2 className="font-heading mb-2 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-tight text-muted-foreground">
+        <Trophy className="size-3.5 text-gold" /> Cấp độ người chơi
       </h2>
-      <ol className="space-y-2">
+      <ol className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
         {rows.map((p, i) => (
-          <li key={p.employeeId} className="flex items-center gap-3">
-            <span className="font-mono w-5 text-right text-xs text-muted-foreground">{i + 1}</span>
-            <AvatarBubble
-              name={p.displayName}
-              avatarUrl={p.avatarUrl}
-              avatarImage={p.avatarImage}
-              size="sm"
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-bold">{p.displayName}</span>
-              <span className="type-meta block truncate">{p.unit || "Chưa rõ đơn vị"}</span>
-            </span>
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs font-extrabold text-primary">
-              <Star className="size-3.5" /> {p.level}
+          <li key={p.employeeId} className="flex items-center gap-2 rounded-xl bg-secondary/50 px-2 py-1.5">
+            <span className="font-mono w-4 text-right text-[11px] text-muted-foreground">{i + 1}</span>
+            <AvatarBubble name={p.displayName} avatarUrl={p.avatarUrl} avatarImage={p.avatarImage} size="sm" />
+            <span className="min-w-0 flex-1 truncate text-xs font-bold">{p.displayName}</span>
+            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-extrabold text-primary">
+              <Star className="size-3" /> {p.level}
             </span>
           </li>
         ))}
@@ -51,3 +43,4 @@ export function LevelBoard({ className }: { className?: string }) {
     </section>
   );
 }
+
