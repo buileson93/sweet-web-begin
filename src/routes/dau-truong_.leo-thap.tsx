@@ -1053,7 +1053,7 @@ function TowerPage() {
                         toast.message(res.message);
                         if (res.run.finished) finishRun(res.run);
                       }}
-                      className="rounded-xl border p-3 text-left text-sm transition hover:border-primary"
+                      className="rounded-xl border p-3 text-left text-sm transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <div className="font-semibold">{c.label}</div>
                       <div className="type-meta">{c.hint}</div>
@@ -1081,7 +1081,7 @@ function TowerPage() {
                   setRun(res.run);
                   toast.message(res.message);
                 }}
-                className="rounded-xl border p-3 text-left text-sm transition hover:border-primary"
+                className="rounded-xl border p-3 text-left text-sm transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <div className="font-semibold">
                   {r.icon} {r.name}
@@ -1131,7 +1131,7 @@ function TowerPage() {
 
       {/* Rút kinh nghiệm + ban phước + lời nguyền */}
       {run && outcome && (
-        <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
+        <section className="space-y-4 rounded-2xl border bg-card/70 p-6" aria-live="polite" aria-label="Kết quả phòng vừa qua">
           <SectionHeading title="Góc rút kinh nghiệm" />
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive">
@@ -1270,7 +1270,7 @@ function TowerPage() {
                   aria-label={`Câu ${i + 1}${done ? " — đã trả lời" : " — chưa trả lời"}`}
                   aria-current={i === idx}
                   className={cn(
-                    "size-8 rounded-lg border text-xs font-semibold transition",
+                    "size-8 rounded-lg border text-xs font-semibold transition","focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     i === idx && "ring-2 ring-primary",
                     done ? "border-primary/40 bg-primary/10 text-primary" : "bg-background text-muted-foreground",
                   )}
