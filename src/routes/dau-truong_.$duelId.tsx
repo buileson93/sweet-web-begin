@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Dices, Link2, Loader2, LogOut, RotateCcw, Share2, Swords, X } from "lucide-react";
@@ -14,7 +14,6 @@ import { DiagnosticsDialog } from "@/components/arena/DiagnosticsDialog";
 import { SkillBar } from "@/components/arena/SkillBar";
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { PageContainer } from "@/components/ui-kit";
 import { useDuelChannel } from "@/hooks/useDuelChannel";
 import {
