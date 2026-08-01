@@ -469,7 +469,7 @@ export async function chooseClass(input: {
     .update({ preferred_class: chosen })
     .eq("employee_id", input.employeeId);
   await bumpVersion(duel.id);
-  await broadcastDuel(duel.id, "lobby.update", { duelId: duel.id });
+  await broadcastWithState(duel.id, [{ event: "lobby.update", payload: { duelId: duel.id } }]);
   return { ok: true, classId: chosen };
 }
 
@@ -1146,10 +1146,10 @@ export async function leaveDuel(input: { employeeId: string; duelId: string }) {
     .is("left_at", null);
   await bumpVersion(duel.id);
   await broadcastWithState(duel.id, [
-    { event: "player.left", payload: {
-    employeeId: input.employeeId,
-    graceMs: DISCONNECT_GRACE_MS,
-    } },
+    {
+      event: "player.left",
+      payload: { employeeId: input.employeeId, graceMs: DISCONNECT_GRACE_MS },
+    },
   ]);
 
   if (duel.status === "waiting" || duel.status === "countdown") {
