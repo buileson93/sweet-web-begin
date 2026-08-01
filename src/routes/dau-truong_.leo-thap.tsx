@@ -53,6 +53,7 @@ import { START_HP } from "@/lib/tower/config";
 import { bossAt } from "@/lib/tower/bosses";
 import { curseById } from "@/lib/tower/curses";
 import { FLOORS, mapFor, ROOM_META } from "@/lib/tower/map";
+import { COMBO_REWARDS, ROOM_RULES } from "@/lib/tower/rooms";
 import { ASCENSION_RULES, canBuy, UNLOCKS } from "@/lib/tower/meta";
 import { dailySeed } from "@/lib/tower/rng";
 import { BOARD_LABEL, runCoins, type Board } from "@/lib/tower/score";
@@ -60,10 +61,12 @@ import { vnDayKey } from "@/lib/arena/rules";
 import { RARITY_LABEL, relicById } from "@/lib/tower/relics";
 import {
   buyAtShop,
+  challengeQuestion,
   chooseRoom,
+  floorChoices,
+  resolveChallenge,
   createRun,
   eventAt,
-  floorOptions,
   gradeStage,
   leaveRoom,
   resolveEvent,
@@ -558,10 +561,12 @@ function TowerPage() {
     }
   }
 
-  /** Bước vào phòng đã chọn ở tầng hiện tại. */
-  function enterRoom(i: number) {
+  /** Bước vào phòng đã chọn ở tầng hiện tại (nhận chỉ số nút trên bản đồ). */
+  function enterRoom(nodeIndex: number) {
     if (!run) return;
-    const next = chooseRoom(run, i);
+    const at = floorChoices(run).findIndex((c) => c.index === nodeIndex);
+    if (at < 0) return;
+    const next = chooseRoom(run, at);
     setRun(next);
     setIdx(0);
     setAnswers({});
@@ -782,7 +787,7 @@ function TowerPage() {
           {daily && (
             <div className="mt-3 text-left">
               <p className="mb-2 text-sm font-semibold">Bản đồ hôm nay — xem trước 12 tầng</p>
-              <TowerMap map={previewMap} floor={1} path={[]} canPick={false} preview />
+              <TowerMap map={previewMap} floor={1} trail={[]} canPick={false} preview />
             </div>
           )}
 
@@ -868,20 +873,20 @@ function TowerPage() {
           <TowerMap
             map={run.map}
             floor={run.floor}
-            path={run.path}
+            trail={run.trail}
             canPick={Boolean(showPicker)}
             onPick={(i) => enterRoom(i)}
           />
           {showPicker ? (
             <div className="grid gap-2 sm:grid-cols-3">
-              {floorOptions(run).map((room, i) => {
+              {floorChoices(run).map(({ index, room }, i) => {
                 const meta = ROOM_META[room.kind];
                 const bossHere = room.kind === "boss" ? bossAt(run.floor) : undefined;
                 return (
                   <button
-                    key={`${room.kind}-${i}`}
+                    key={`${room.kind}-${index}`}
                     type="button"
-                    onClick={() => enterRoom(i)}
+                    onClick={() => enterRoom(index)}
                     style={{ animationDelay: `${i * 90}ms` }}
                     className={cn(
                       "group relative min-h-20 touch-manipulation overflow-hidden rounded-2xl border p-3 text-left",
@@ -900,7 +905,7 @@ function TowerPage() {
                     <div className={cn("relative mt-1 text-sm font-semibold", meta.tone)}>
                       {bossHere ? bossHere.name : meta.label}
                     </div>
-                    <div className="type-meta relative mt-0.5">{bossHere ? bossHere.rule : meta.desc}</div>
+                    <div className="type-meta relative mt-0.5">{bossHere ? bossHere.rule : ROOM_RULES[room.kind].rule}</div>
                   </button>
                 );
               })}
