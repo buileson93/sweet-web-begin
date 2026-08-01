@@ -4,6 +4,8 @@ import {
   DISQUALIFY_THRESHOLD_DEFAULT,
   isExamEventKind,
   isQuotaExempt,
+  leaveAllowance,
+  shouldForceRestart,
   MAX_EXEMPT_EVENTS_PER_SESSION,
   MAX_EVENTS_PER_SESSION,
   scoreEvent,
