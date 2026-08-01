@@ -107,6 +107,7 @@ export function buildMap(seed: string): MapNode[][] {
       // 4. Tránh cạnh cắt nhau: kéo dần đích về cùng cột nếu phát hiện cắt.
       let guard = 0;
       while (
+        !isBoss(f + 2) &&
         guard++ < COLS &&
         edges.some((e) => e.f === f && crosses(e.from, e.to, col, nextCol))
       ) {
