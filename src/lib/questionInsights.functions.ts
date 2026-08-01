@@ -44,3 +44,15 @@ export const getQuestionInsights = createServerFn({ method: "POST" })
       return questionInsights(data.questionId);
     },
   );
+
+/** Khôi phục câu hỏi về một phiên bản cũ (chỉ quản trị viên / người soạn đề). */
+export const restoreQuestionVersionFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ questionId: z.string().uuid(), versionId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ version: number }> => {
+    await assertQuestionEditor(context);
+    const { restoreQuestionVersion } = await import("@/lib/questionInsights.server");
+    return restoreQuestionVersion(data);
+  });

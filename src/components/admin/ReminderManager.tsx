@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BellRing, Download, FileSpreadsheet, PartyPopper } from "lucide-react";
+import { BellRing, ClipboardCopy, Download, MailPlus, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
 import { normalizeKey } from "@/lib/csv";
+import { buildContactList, buildReminderMessage, formatDeadline } from "@/lib/reminder";
+
 
 /** Danh sách nhân viên chưa tham gia một cuộc thi, dùng để nhắc nhở. */
 export function ReminderManager() {
@@ -20,7 +22,10 @@ export function ReminderManager() {
   const quizzesQuery = useQuery({
     queryKey: ["admin-quiz-titles"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("quizzes").select("id, title").order("start_time");
+      const { data, error } = await supabase
+        .from("quizzes")
+        .select("id, title, end_time")
+        .order("start_time");
       if (error) throw error;
       return data;
     },
@@ -33,12 +38,13 @@ export function ReminderManager() {
       const [{ data: employees, error: empError }, { data: results, error: resError }] = await Promise.all([
         supabase
           .from("employees")
-          .select("id, full_name, position, unit_name")
+          .select("id, full_name, position, unit_name, phone")
           .eq("is_active", true)
           .order("full_name")
           .limit(2000),
         supabase.from("results").select("employee_id, score, total").eq("quiz_id", quizId).limit(5000),
       ]);
+
       if (empError) throw empError;
       if (resError) throw resError;
       const joined = new Set((results ?? []).map((r) => r.employee_id).filter(Boolean) as string[]);
@@ -59,7 +65,9 @@ export function ReminderManager() {
     );
   }, [pending, keyword]);
 
-  const quizTitle = (quizzesQuery.data ?? []).find((q) => q.id === quizId)?.title ?? "";
+  const quiz = (quizzesQuery.data ?? []).find((q) => q.id === quizId);
+  const quizTitle = quiz?.title ?? "";
+  const deadline = formatDeadline(quiz?.end_time ?? null);
 
   function exportRows(): ExportRow[] {
     return rows.map((e, i) => ({
@@ -67,7 +75,10 @@ export function ReminderManager() {
       "Họ và tên": e.full_name,
       "Chức vụ": e.position ?? "",
       "Đơn vị": e.unit_name ?? "",
+      "Điện thoại": e.phone ?? "",
       "Cuộc thi": quizTitle,
+      "Hạn chót": deadline,
+      "Nội dung nhắc": buildReminderMessage(e, quizTitle, deadline),
       "Trạng thái": "Chưa tham gia",
     }));
   }
@@ -85,6 +96,19 @@ export function ReminderManager() {
     });
     toast.success(`Đã tải xuống danh sách ${rows.length} nhân viên.`);
   }
+
+  /** Sao chép danh sách liên hệ để dán thẳng vào Zalo nhóm hoặc Outlook. */
+  async function handleCopy() {
+    if (rows.length === 0) return toast.error("Không có dữ liệu để sao chép.");
+    const text = buildContactList(rows);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`Đã sao chép ${rows.length} liên hệ vào bộ nhớ tạm.`);
+    } catch {
+      toast.error("Trình duyệt chặn sao chép — hãy dùng nút tải CSV.");
+    }
+  }
+
 
   return (
     <AdminSection
@@ -118,11 +142,14 @@ export function ReminderManager() {
       }
       actions={
         <>
+          <Button className="rounded-full" disabled={rows.length === 0} onClick={() => void handleCopy()}>
+            <ClipboardCopy className="size-4" /> Sao chép liên hệ
+          </Button>
+          <Button variant="outline" className="rounded-full" disabled={rows.length === 0} onClick={() => void handleExport("xlsx")} title="Excel kèm sẵn nội dung nhắc để trộn thư">
+            <MailPlus className="size-4" /> Trộn thư
+          </Button>
           <Button variant="outline" className="rounded-full" disabled={rows.length === 0} onClick={() => void handleExport("csv")}>
             <Download className="size-4" /> CSV
-          </Button>
-          <Button variant="outline" className="rounded-full" disabled={rows.length === 0} onClick={() => void handleExport("xlsx")}>
-            <FileSpreadsheet className="size-4" /> Excel
           </Button>
         </>
       }
@@ -157,8 +184,9 @@ export function ReminderManager() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{e.full_name}</p>
                   <p className="type-meta truncate">
-                    {[e.position, e.unit_name].filter(Boolean).join(" · ") || "Chưa cập nhật đơn vị"}
+                    {[e.position, e.unit_name, e.phone].filter(Boolean).join(" · ") || "Chưa cập nhật đơn vị"}
                   </p>
+
                 </div>
                 <span className="status-pill bg-warning/15 text-warning-foreground">Chưa thi</span>
               </div>

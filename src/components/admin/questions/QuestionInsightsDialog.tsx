@@ -1,8 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BarChart3, History, Loader2 } from "lucide-react";
+import { AlertTriangle, BarChart3, History, Loader2, RotateCcw } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getQuestionInsights } from "@/lib/questionInsights.functions";
+import { logAudit } from "@/lib/audit";
+import {
+  getQuestionInsights,
+  restoreQuestionVersionFn,
+} from "@/lib/questionInsights.functions";
+import { questionQualityFlags } from "@/lib/questionInsights";
 
 const DIFFICULTY_TEXT: Record<string, string> = {
   easy: "Dễ (thực tế)",
@@ -30,14 +38,47 @@ export function QuestionInsightsDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const fetchInsights = useServerFn(getQuestionInsights);
+  const runRestore = useServerFn(restoreQuestionVersionFn);
+  const queryClient = useQueryClient();
+  const [restoringId, setRestoringId] = useState<string | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["question-insights", questionId],
     enabled: Boolean(questionId),
     queryFn: () => fetchInsights({ data: { questionId: questionId as string } }),
   });
 
+  async function handleRestore(versionId: string, version: number) {
+    if (!questionId) return;
+    if (!window.confirm(`Khôi phục câu hỏi về phiên bản ${version}? Bản hiện tại vẫn được lưu lại.`)) return;
+    setRestoringId(versionId);
+    try {
+      await runRestore({ data: { questionId, versionId } });
+      await logAudit({
+        action: "restore",
+        entity: "question",
+        entityId: questionId,
+        entityLabel: question,
+        details: { version },
+      });
+      toast.success(`Đã khôi phục về phiên bản ${version}.`);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["question-insights", questionId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-questions"] }),
+      ]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không khôi phục được phiên bản.");
+    } finally {
+      setRestoringId(null);
+    }
+  }
+
+
   const stats = data?.stats;
   const versions = data?.versions ?? [];
+  const flags = stats
+    ? questionQualityFlags({ attempts: stats.attempts, correct: stats.correct, blank: stats.blank })
+    : [];
+
 
   return (
     <Dialog open={Boolean(questionId)} onOpenChange={onOpenChange}>
@@ -87,6 +128,27 @@ export function QuestionInsightsDialog({
               </div>
             </div>
 
+            {flags.length > 0 && (
+              <div className="space-y-2">
+                {flags.map((f) => (
+                  <div
+                    key={f.code}
+                    className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${
+                      f.tone === "danger"
+                        ? "border-destructive/40 bg-destructive/10"
+                        : "border-warning/40 bg-warning/10"
+                    }`}
+                  >
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                    <div>
+                      <p className="font-semibold">{f.label}</p>
+                      <p className="text-muted-foreground">{f.hint}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div>
               <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
                 <History className="size-4" /> Lịch sử phiên bản ({versions.length})
@@ -104,6 +166,20 @@ export function QuestionInsightsDialog({
                         </span>
                       </div>
                       <p className="line-clamp-3 text-muted-foreground">{v.question}</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 rounded-full"
+                        disabled={restoringId !== null}
+                        onClick={() => void handleRestore(v.id, v.version)}
+                      >
+                        {restoringId === v.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <RotateCcw className="size-4" />
+                        )}
+                        Khôi phục phiên bản này
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -111,6 +187,7 @@ export function QuestionInsightsDialog({
             </div>
           </div>
         )}
+
       </DialogContent>
     </Dialog>
   );

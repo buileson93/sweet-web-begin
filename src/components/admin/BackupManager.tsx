@@ -6,37 +6,79 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 
-/** Các bảng có thể sao lưu (chỉ đọc bằng quyền quản trị). */
+/** Các bảng có thể sao lưu (chỉ đọc bằng quyền quản trị) kèm cột thời gian để lọc khoảng. */
 const TABLES = [
-  { key: "quizzes", label: "Cuộc thi" },
-  { key: "questions", label: "Câu hỏi" },
-  { key: "units", label: "Đơn vị" },
-  { key: "employees", label: "Nhân sự" },
-  { key: "results", label: "Kết quả" },
-  { key: "audit_logs", label: "Nhật ký" },
+  { key: "quizzes", label: "Cuộc thi", timeCol: "created_at" },
+  { key: "questions", label: "Câu hỏi", timeCol: "created_at" },
+  { key: "units", label: "Đơn vị", timeCol: "created_at" },
+  { key: "employees", label: "Nhân sự", timeCol: "created_at" },
+  { key: "results", label: "Kết quả", timeCol: "submitted_at" },
+  { key: "audit_logs", label: "Nhật ký", timeCol: "created_at" },
 ] as const;
 
 type TableKey = (typeof TABLES)[number]["key"];
 
 const PAGE = 1000;
+/**
+ * Trần an toàn cho một lần xuất phía trình duyệt. Vượt ngưỡng này tab sẽ hết bộ nhớ,
+ * nên chặn sớm và yêu cầu thu hẹp khoảng thời gian thay vì để trình duyệt treo.
+ */
+const MAX_ROWS_PER_TABLE = 50_000;
 
-/** Tải toàn bộ dữ liệu một bảng theo từng trang để tránh giới hạn 1000 dòng. */
-async function fetchAll(table: TableKey) {
+type Range = { from: string; to: string };
+
+function timeColOf(table: TableKey) {
+  return TABLES.find((t) => t.key === table)!.timeCol;
+}
+
+/** Áp bộ lọc khoảng thời gian (nếu có) lên truy vấn của một bảng. */
+function applyRange<T>(query: T, table: TableKey, range: Range): T {
+  const col = timeColOf(table);
+  let q = query as never as {
+    gte: (c: string, v: string) => unknown;
+    lte: (c: string, v: string) => unknown;
+  };
+  if (range.from) q = (q.gte(col, new Date(range.from).toISOString()) as typeof q);
+  if (range.to) {
+    const end = new Date(range.to);
+    end.setHours(23, 59, 59, 999);
+    q = q.lte(col, end.toISOString()) as typeof q;
+  }
+  return q as never as T;
+}
+
+/** Đếm trước số dòng để chặn những lần xuất chắc chắn làm treo trình duyệt. */
+async function countRows(table: TableKey, range: Range) {
+  const { count, error } = await applyRange(
+    supabase.from(table).select("*", { count: "exact", head: true }),
+    table,
+    range,
+  );
+  if (error) throw new Error(`${table}: ${error.message}`);
+  return count ?? 0;
+}
+
+/** Tải dữ liệu một bảng theo từng trang để tránh giới hạn 1000 dòng. */
+async function fetchAll(table: TableKey, range: Range) {
   const rows: Record<string, unknown>[] = [];
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from(table)
-      .select("*")
-      .range(from, from + PAGE - 1);
+    const { data, error } = await applyRange(
+      supabase.from(table).select("*").order(timeColOf(table), { ascending: true }),
+      table,
+      range,
+    ).range(from, from + PAGE - 1);
     if (error) throw new Error(`${table}: ${error.message}`);
     rows.push(...((data ?? []) as Record<string, unknown>[]));
     if (!data || data.length < PAGE) break;
+    if (rows.length >= MAX_ROWS_PER_TABLE) break;
   }
   return rows;
 }
+
 
 function download(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
@@ -51,6 +93,7 @@ function download(blob: Blob, name: string) {
 export function BackupManager() {
   const [selected, setSelected] = useState<TableKey[]>(TABLES.map((t) => t.key));
   const [busy, setBusy] = useState<"json" | "xlsx" | null>(null);
+  const [range, setRange] = useState<Range>({ from: "", to: "" });
 
   const toggle = (key: TableKey) =>
     setSelected((s) => (s.includes(key) ? s.filter((k) => k !== key) : [...s, key]));
@@ -62,9 +105,20 @@ export function BackupManager() {
     }
     setBusy(format);
     try {
+      // Đếm trước: xuất phía trình duyệt gom hết vào RAM nên phải chặn sớm.
+      for (const key of selected) {
+        const n = await countRows(key, range);
+        if (n > MAX_ROWS_PER_TABLE) {
+          throw new Error(
+            `Bảng "${TABLES.find((t) => t.key === key)?.label}" có ${n.toLocaleString("vi-VN")} dòng — vượt giới hạn ${MAX_ROWS_PER_TABLE.toLocaleString("vi-VN")} dòng cho một lần xuất. Hãy thu hẹp khoảng thời gian rồi tải thành nhiều đợt.`,
+          );
+        }
+      }
+
       const stamp = new Date().toISOString().slice(0, 19).replaceAll(":", "-");
       const dump: Record<string, Record<string, unknown>[]> = {};
-      for (const key of selected) dump[key] = await fetchAll(key);
+      for (const key of selected) dump[key] = await fetchAll(key, range);
+
 
       if (format === "json") {
         download(
@@ -127,7 +181,23 @@ export function BackupManager() {
             </label>
           ))}
         </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="space-y-1.5 text-sm font-medium">
+            <span className="text-muted-foreground">Từ ngày</span>
+            <Input type="date" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} />
+          </label>
+          <label className="space-y-1.5 text-sm font-medium">
+            <span className="text-muted-foreground">Đến ngày</span>
+            <Input type="date" value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} />
+          </label>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Để trống hai ô ngày sẽ sao lưu toàn bộ. Mỗi bảng tối đa{" "}
+          {MAX_ROWS_PER_TABLE.toLocaleString("vi-VN")} dòng cho một lần tải — vượt ngưỡng hãy chia nhỏ theo khoảng thời
+          gian.
+        </p>
         <div className="flex flex-wrap gap-2">
+
           <Button onClick={() => void run("json")} disabled={busy !== null}>
             {busy === "json" ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
             Tải JSON
