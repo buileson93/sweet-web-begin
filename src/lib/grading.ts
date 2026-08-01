@@ -370,6 +370,38 @@ export function estimatePoints(score: number, bestStreak: number, rules = DEFAUL
 }
 
 /**
+ * Chuỗi đúng liên tiếp TỐI THIỂU chắc chắn đạt được với `score`/`total` câu đúng.
+ * Dùng cho các bài thi CŨ không lưu `best_streak`: dù xếp câu sai xen kẽ đều nhất
+ * thì vẫn phải tồn tại một chuỗi dài ít nhất bằng giá trị này.
+ */
+export function minBestStreak(score: number, total: number): number {
+  const correct = Math.max(0, Math.floor(score || 0));
+  const all = Math.max(0, Math.floor(total || 0));
+  if (!correct) return 0;
+  const wrong = Math.max(0, all - correct);
+  return Math.ceil(correct / (wrong + 1));
+}
+
+/** Điểm tối đa lý thuyết của một bài (đúng hết, chuỗi liền mạch). */
+export function maxPointsFor(total: number, rules = DEFAULT_SCORE_RULES): number {
+  return estimatePoints(total, total, rules);
+}
+
+/**
+ * Điểm quy đổi công bằng giữa các cuộc thi cũ/mới: luôn dùng chuỗi thực tế nếu có,
+ * ngược lại lấy chuỗi tối thiểu suy ra từ số câu đúng.
+ */
+export function fairPoints(
+  score: number,
+  total: number,
+  bestStreak: number,
+  rules = DEFAULT_SCORE_RULES,
+): number {
+  const streak = Math.max(Math.max(0, Math.floor(bestStreak || 0)), minBestStreak(score, total));
+  return estimatePoints(score, streak, rules);
+}
+
+/**
  * Hoán vị một mảng phụ (ảnh, giải thích...) theo đúng thứ tự phương án đã trộn.
  * `order[i]` là chỉ số gốc của phương án đang đứng ở vị trí i.
  */

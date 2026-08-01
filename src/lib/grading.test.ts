@@ -500,3 +500,24 @@ describe("chấm điểm một phần câu nhiều đáp án", () => {
     expect(gradeFraction(multi(), order, [])).toBe(0);
   });
 });
+
+describe("quy đổi điểm công bằng cho bài thi cũ", () => {
+  it("suy ra chuỗi tối thiểu từ số câu đúng", () => {
+    expect(minBestStreak(19, 20)).toBe(10);
+    expect(minBestStreak(20, 20)).toBe(20);
+    expect(minBestStreak(0, 20)).toBe(0);
+    expect(minBestStreak(12, 20)).toBe(2);
+  });
+
+  it("bài 19/20 phải nhiều điểm hơn bài 12/20 dù chuỗi ghi nhận thấp hơn", () => {
+    expect(fairPoints(19, 20, 0)).toBeGreaterThan(fairPoints(12, 20, 9));
+  });
+
+  it("không hạ điểm của bài đã có chuỗi thực tế cao hơn", () => {
+    expect(fairPoints(12, 20, 9)).toBe(estimatePoints(12, 9));
+  });
+
+  it("điểm tối đa dùng chung thang cho mọi cuộc thi", () => {
+    expect(maxPointsFor(20)).toBe(estimatePoints(20, 20));
+  });
+});
