@@ -1956,11 +1956,6 @@ body.fx-shaking {
   0%, 100% { opacity: 0.35; }
   50% { opacity: 0.85; }
 }
-.tower-node--live { animation: tower-bob 2.6s ease-in-out infinite; }
-@keyframes tower-bob {
-  0%, 100% { transform: translate(-50%, -50%); }
-  50% { transform: translate(-50%, calc(-50% - 3px)); }
-}
 .tower-node__pulse { animation: tower-pulse 2s ease-out infinite; }
 @keyframes tower-pulse {
   0% { opacity: 0.8; transform: scale(1); }

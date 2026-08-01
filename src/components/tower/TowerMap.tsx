@@ -124,7 +124,7 @@ export function TowerMap({ map, floor, path, canPick, onPick, className }: Props
                           state === "future" && "opacity-35 grayscale",
                           state === "past" && (taken ? "opacity-95" : "opacity-25 grayscale"),
                           taken && "ring-2 ring-primary/60",
-                          active && cn("cursor-pointer hover:scale-115 hover:-rotate-3", tone.glow, "tower-node--live"),
+                          active && cn("cursor-pointer hover:scale-110", tone.glow),
                           !active && "cursor-default",
                         )}
                       >
