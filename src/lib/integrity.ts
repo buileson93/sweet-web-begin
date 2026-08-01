@@ -27,6 +27,10 @@ export type ExamEventDetail = {
 
 /** Ngưỡng huỷ bài mặc định khi cuộc thi bật chế độ nghiêm ngặt. */
 export const DISQUALIFY_THRESHOLD_DEFAULT = 6;
+/** Rời màn hình thi từ mốc này trở lên là bị ghi nhận. */
+export const TAB_HIDDEN_MIN_MS = 1_500;
+/** Mất focus cửa sổ (mà trang vẫn hiển thị) kéo dài từ mốc này mới bị ghi nhận nhẹ. */
+export const WINDOW_BLUR_MIN_MS = 4_000;
 /** Số sự kiện tối đa ghi nhận cho một phiên thi (chống spam). */
 export const MAX_EVENTS_PER_SESSION = 20;
 /**
@@ -58,13 +62,16 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
   switch (kind) {
     case "tab_hidden": {
       const ms = Number(detail.hiddenMs ?? 0);
-      if (!Number.isFinite(ms) || ms < 3_000) return 0; // thông báo / xoay màn hình
+      if (!Number.isFinite(ms) || ms < TAB_HIDDEN_MIN_MS) return 0; // chớp nhoáng: thông báo / xoay màn hình
       if (ms <= 15_000) return 2;
       return 4;
     }
-    // Mất focus cửa sổ mà trang vẫn hiển thị (bàn phím ảo, thanh địa chỉ): không phạt.
-    case "window_blur":
-      return detail.documentVisible === false ? 2 : 0;
+    // Mất focus cửa sổ: nếu tab đã ẩn thì phạt; nếu trang vẫn hiển thị chỉ phạt nhẹ khi kéo dài.
+    case "window_blur": {
+      if (detail.documentVisible === false) return 2;
+      const ms = Number(detail.blurredMs ?? 0);
+      return Number.isFinite(ms) && ms >= WINDOW_BLUR_MIN_MS ? 1 : 0;
+    }
     case "copy":
     case "paste":
       return 3;

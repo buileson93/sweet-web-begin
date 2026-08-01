@@ -11,14 +11,15 @@ import {
 } from "./integrity";
 
 describe("scoreEvent", () => {
-  it("bỏ qua việc ẩn tab dưới 3 giây (thông báo, cuộc gọi chớp nhoáng, xoay màn hình)", () => {
+  it("bỏ qua việc ẩn tab dưới 1,5 giây (thông báo, xoay màn hình)", () => {
     expect(scoreEvent("tab_hidden", { hiddenMs: 0 })).toBe(0);
-    expect(scoreEvent("tab_hidden", { hiddenMs: 2_000 })).toBe(0);
-    expect(scoreEvent("tab_hidden", { hiddenMs: 2_999 })).toBe(0);
+    expect(scoreEvent("tab_hidden", { hiddenMs: 1_000 })).toBe(0);
+    expect(scoreEvent("tab_hidden", { hiddenMs: 1_499 })).toBe(0);
     expect(scoreEvent("tab_hidden", {})).toBe(0);
   });
 
-  it("phạt 2 điểm khi ẩn tab 3–15 giây", () => {
+  it("phạt 2 điểm khi ẩn tab 1,5–15 giây", () => {
+    expect(scoreEvent("tab_hidden", { hiddenMs: 1_500 })).toBe(2);
     expect(scoreEvent("tab_hidden", { hiddenMs: 3_000 })).toBe(2);
     expect(scoreEvent("tab_hidden", { hiddenMs: 15_000 })).toBe(2);
   });
@@ -28,10 +29,13 @@ describe("scoreEvent", () => {
     expect(scoreEvent("tab_hidden", { hiddenMs: 120_000 })).toBe(4);
   });
 
-  it("không phạt window_blur khi trang vẫn hiển thị", () => {
+  it("window_blur: bỏ qua khi ngắn, phạt nhẹ khi mất focus kéo dài", () => {
     expect(scoreEvent("window_blur", { documentVisible: true })).toBe(0);
     expect(scoreEvent("window_blur", {})).toBe(0);
+    expect(scoreEvent("window_blur", { documentVisible: true, blurredMs: 4_000 })).toBe(1);
+    expect(scoreEvent("window_blur", { documentVisible: false })).toBe(2);
   });
+
 
   it("phạt copy/paste 3 điểm, multi_tab 5 điểm, fullscreen_exit 2 điểm", () => {
     expect(scoreEvent("copy")).toBe(3);
@@ -68,8 +72,10 @@ describe("shouldDisqualify", () => {
     expect(shouldDisqualify(DISQUALIFY_THRESHOLD_DEFAULT - 1, 0, true)).toBe(false);
   });
 
-  it("một cuộc gọi 2 giây trên điện thoại không đủ để bị huỷ bài", () => {
-    const score = scoreEvent("tab_hidden", { hiddenMs: 2_000 }) + scoreEvent("window_blur", { documentVisible: true });
+  it("một thông báo chớp nhoáng (1 giây) không đủ để bị huỷ bài", () => {
+    const score =
+      scoreEvent("tab_hidden", { hiddenMs: 1_000 }) +
+      scoreEvent("window_blur", { documentVisible: true });
     expect(score).toBe(0);
     expect(shouldDisqualify(score, 6, true)).toBe(false);
   });

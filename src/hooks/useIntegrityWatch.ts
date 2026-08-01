@@ -2,7 +2,12 @@ import { useEffect, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { reportEvent } from "@/lib/exam.functions";
-import { MAX_EXEMPT_EVENTS_PER_SESSION, isQuotaExempt } from "@/lib/integrity";
+import {
+  MAX_EXEMPT_EVENTS_PER_SESSION,
+  TAB_HIDDEN_MIN_MS,
+  WINDOW_BLUR_MIN_MS,
+  isQuotaExempt,
+} from "@/lib/integrity";
 
 /** Số sự kiện tối đa gửi lên máy chủ trong một phiên thi (không tính loại được miễn quota). */
 export const MAX_EVENTS = 20;
@@ -31,11 +36,12 @@ export function useIntegrityWatch(opts: {
 
   useEffect(() => {
     if (!active || !sessionId || !submitToken) return;
-    const isTouch =
-      typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches === true;
     let sent = 0;
     let sentExempt = 0;
     let hiddenAt = 0;
+    let hiddenReported = false;
+    let hiddenTimer: ReturnType<typeof setTimeout> | null = null;
+    let blurTimer: ReturnType<typeof setTimeout> | null = null;
     let lastSentAt = 0;
 
     const report = (kind: string, detail: Record<string, unknown> = {}) => {
@@ -53,23 +59,66 @@ export function useIntegrityWatch(opts: {
       }).catch(() => undefined);
     };
 
+    const clearHiddenTimer = () => {
+      if (hiddenTimer) clearTimeout(hiddenTimer);
+      hiddenTimer = null;
+    };
+    const clearBlurTimer = () => {
+      if (blurTimer) clearTimeout(blurTimer);
+      blurTimer = null;
+    };
 
-    const onVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        hiddenAt = Date.now();
+    /** Ghi nhận NGAY khi vừa chạm ngưỡng, không chờ thí sinh quay lại. */
+    const startHidden = () => {
+      if (hiddenAt) return;
+      hiddenAt = Date.now();
+      hiddenReported = false;
+      clearHiddenTimer();
+      hiddenTimer = setTimeout(() => {
+        hiddenReported = true;
+        report("tab_hidden", { hiddenMs: TAB_HIDDEN_MIN_MS, pending: true });
+      }, TAB_HIDDEN_MIN_MS);
+    };
+
+    const endHidden = () => {
+      clearHiddenTimer();
+      if (!hiddenAt) return;
+      const hiddenMs = Date.now() - hiddenAt;
+      hiddenAt = 0;
+      if (hiddenMs < TAB_HIDDEN_MIN_MS) return;
+      // Đã ghi nhận lúc chạm ngưỡng: chỉ ghi bổ sung khi rời đi quá lâu.
+      if (hiddenReported && hiddenMs <= 15_000) {
+        violationRef.current();
         return;
       }
-      const hiddenMs = hiddenAt ? Date.now() - hiddenAt : 0;
-      hiddenAt = 0;
-      // Dưới 3 giây (thông báo đẩy, cuộc gọi chớp nhoáng, xoay màn hình) thì bỏ qua hoàn toàn.
-      if (hiddenMs < 3_000) return;
       report("tab_hidden", { hiddenMs });
       violationRef.current();
     };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") startHidden();
+      else endHidden();
+    };
+    const onPageHide = () => startHidden();
     const onBlur = () => {
-      // Trên thiết bị cảm ứng, blur xảy ra liên tục (bàn phím ảo, thanh địa chỉ) — không ghi nhận.
-      if (isTouch || document.visibilityState === "hidden") return;
-      report("window_blur", { documentVisible: document.visibilityState === "visible" });
+      if (document.visibilityState === "hidden") {
+        startHidden();
+        return;
+      }
+      // Trang vẫn hiển thị (bàn phím ảo, thanh địa chỉ): chỉ ghi nhận nếu mất focus kéo dài.
+      clearBlurTimer();
+      const startedAt = Date.now();
+      blurTimer = setTimeout(() => {
+        if (document.hasFocus?.()) return;
+        report("window_blur", {
+          documentVisible: document.visibilityState === "visible",
+          blurredMs: Date.now() - startedAt,
+        });
+      }, WINDOW_BLUR_MIN_MS);
+    };
+    const onFocus = () => {
+      clearBlurTimer();
+      endHidden();
     };
     const block = (e: Event) => {
       e.preventDefault();
@@ -92,6 +141,8 @@ export function useIntegrityWatch(opts: {
 
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("pagehide", onPageHide);
     document.addEventListener("contextmenu", block);
     document.addEventListener("copy", block);
     document.addEventListener("cut", block);
@@ -100,8 +151,12 @@ export function useIntegrityWatch(opts: {
     window.addEventListener("beforeunload", warn);
 
     return () => {
+      clearHiddenTimer();
+      clearBlurTimer();
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pagehide", onPageHide);
       document.removeEventListener("contextmenu", block);
       document.removeEventListener("copy", block);
       document.removeEventListener("cut", block);
