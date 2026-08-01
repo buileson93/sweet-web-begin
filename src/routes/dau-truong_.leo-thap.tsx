@@ -880,18 +880,31 @@ function TowerPage() {
                     key={`${room.kind}-${i}`}
                     type="button"
                     onClick={() => enterRoom(i)}
-                    className="group rounded-xl border p-3 text-left transition hover:-translate-y-0.5 hover:border-primary hover:shadow-lg"
+                    style={{ animationDelay: `${i * 90}ms` }}
+                    className={cn(
+                      "group relative min-h-20 touch-manipulation overflow-hidden rounded-2xl border p-3 text-left",
+                      "animate-fade-in bg-gradient-to-br from-primary/10 to-transparent",
+                      "transition-transform duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-lg active:scale-[0.98]",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    )}
                   >
-                    <div className="text-xl transition group-hover:scale-110">{meta.icon}</div>
-                    <div className={cn("mt-1 text-sm font-semibold", meta.tone)}>
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-primary/10 blur-xl transition-opacity duration-300 group-hover:opacity-100 sm:opacity-0"
+                    />
+                    <div className="relative text-2xl transition-transform duration-200 group-hover:scale-110">
+                      {meta.icon}
+                    </div>
+                    <div className={cn("relative mt-1 text-sm font-semibold", meta.tone)}>
                       {bossHere ? bossHere.name : meta.label}
                     </div>
-                    <div className="type-meta mt-0.5">{bossHere ? bossHere.rule : meta.desc}</div>
+                    <div className="type-meta relative mt-0.5">{bossHere ? bossHere.rule : meta.desc}</div>
                   </button>
                 );
               })}
             </div>
           ) : null}
+
         </section>
       )}
 
