@@ -190,6 +190,8 @@ export async function submitExamSession(input: {
 
     const fraction = gradeFraction(row, order, value);
     const correct = fraction >= 1;
+    statItems.push({ id: row.id, fraction, answered });
+
     if (correct) {
       score++;
       streak++;
