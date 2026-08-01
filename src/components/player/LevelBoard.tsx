@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Star, Trophy } from "lucide-react";
 
 import { getTopPlayers } from "@/lib/player.functions";
+import { cachedFetch } from "@/lib/cache/ttlCache";
 import { cn } from "@/lib/utils";
 
 /** Bảng xếp hạng kinh nghiệm: càng thi nhiều, càng đúng nhiều thì cấp càng cao. */
@@ -10,7 +11,8 @@ export function LevelBoard({ className }: { className?: string }) {
   const runTop = useServerFn(getTopPlayers);
   const query = useQuery({
     queryKey: ["top-players"],
-    queryFn: () => runTop({ data: { limit: 10 } }),
+    // Bảng xếp hạng không cần realtime: dùng lại kết quả 60 giây, kể cả khi tải lại trang.
+    queryFn: () => cachedFetch("vatm:top-players:10", 60_000, () => runTop({ data: { limit: 10 } })),
     staleTime: 60_000,
   });
 
