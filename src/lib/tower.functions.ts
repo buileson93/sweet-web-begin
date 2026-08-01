@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 const credentialSchema = z.object({
   name: z.string().min(2).max(120),
   credential: z.string().min(4).max(20),
@@ -59,4 +61,33 @@ export const finishTower = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { finishTowerRun } = await import("@/lib/tower/run.server");
     return finishTowerRun(data);
+  });
+
+/** Bản đồ năng lực cá nhân + dự báo sẵn sàng thi (chỉ tham khảo). */
+export const getSkillMapFn = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => credentialSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { getSkillMap } = await import("@/lib/tower/topics.server");
+    return getSkillMap(data);
+  });
+
+/** Báo cáo chủ đề yếu toàn đơn vị — chỉ quản trị viên, chỉ đọc, có phân trang. */
+export const getOrgWeakTopicsFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        page: z.number().int().min(1).max(1000).optional(),
+        pageSize: z.number().int().min(5).max(50).optional(),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const admin = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!admin.data) throw new Error("Bạn không có quyền xem báo cáo này.");
+    const { getOrgWeakTopics } = await import("@/lib/tower/topics.server");
+    return getOrgWeakTopics(data);
   });

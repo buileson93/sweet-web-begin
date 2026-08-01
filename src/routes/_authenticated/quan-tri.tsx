@@ -39,6 +39,7 @@ import { BackupManager } from "@/components/admin/BackupManager";
 import { LiveMonitor } from "@/components/admin/LiveMonitor";
 import { UnitStats } from "@/components/admin/UnitStats";
 import { DeviceStats } from "@/components/admin/DeviceStats";
+import { TopicReport } from "@/components/admin/TopicReport";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui-kit";
@@ -318,7 +319,12 @@ function AdminPage() {
                 {current === "employees" && <EmployeeManager canEdit={canManageSystem} />}
                 {current === "live" && <LiveMonitor />}
                 {current === "results" && <ResultManager canEdit={canEdit} />}
-                {current === "unit-stats" && <UnitStats />}
+                {current === "unit-stats" && (
+                  <div className="space-y-6">
+                    <UnitStats />
+                    <TopicReport />
+                  </div>
+                )}
                 {current === "devices" && <DeviceStats />}
 
                 {current === "history" && <EmployeeHistoryManager />}

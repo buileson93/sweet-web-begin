@@ -20,6 +20,8 @@ export type Database = {
           default_seconds: number
           enabled: boolean
           id: boolean
+          tower_enabled: boolean
+          tower_locked_until: string | null
           updated_at: string
         }
         Insert: {
@@ -27,6 +29,8 @@ export type Database = {
           default_seconds?: number
           enabled?: boolean
           id?: boolean
+          tower_enabled?: boolean
+          tower_locked_until?: string | null
           updated_at?: string
         }
         Update: {
@@ -34,6 +38,8 @@ export type Database = {
           default_seconds?: number
           enabled?: boolean
           id?: boolean
+          tower_enabled?: boolean
+          tower_locked_until?: string | null
           updated_at?: string
         }
         Relationships: []
