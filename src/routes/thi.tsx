@@ -143,7 +143,7 @@ function ExamPage() {
     [answers, clearLocal, runSubmit, session],
   );
 
-  const { remaining, timeUp } = useExamTimer({
+  const { clock, timeUp } = useExamTimer({
     expiresAt: session?.expiresAt,
     serverNow: session?.serverNow,
     active: Boolean(session) && !result,
@@ -289,7 +289,7 @@ function ExamPage() {
         total={total}
         combo={combo}
         showCombo={instant && combo >= 2}
-        remaining={remaining}
+        clock={clock}
         progress={progress}
         saveStatus={saveStatus}
         lastSavedAt={lastSavedAt}
