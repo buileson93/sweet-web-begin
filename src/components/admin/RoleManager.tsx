@@ -38,6 +38,13 @@ export function RoleManager() {
     mutationFn: (vars: { email: string; role: "admin" | "editor" | "staff" }) => runGrant({ data: vars }),
     onSuccess: (res) => {
       toast.success(`Đã cấp quyền ${ROLE_LABEL[res.role]} cho ${res.email}.`);
+      // Cấp/thu hồi quyền là hành vi nhạy cảm — ghi nhật ký bằng action riêng để lọc nhanh.
+      void logAudit({
+        action: "role_grant",
+        entity: "role",
+        entityLabel: `${res.email} → ${ROLE_LABEL[res.role] ?? res.role}`,
+        details: { email: res.email, role: res.role },
+      });
       setEmail("");
       void qc.invalidateQueries({ queryKey: ["admin-accounts"] });
     },
@@ -45,13 +52,22 @@ export function RoleManager() {
   });
 
   const revokeMutation = useMutation({
-    mutationFn: (vars: { userId: string; role: "admin" | "editor" | "staff" }) => runRevoke({ data: vars }),
-    onSuccess: () => {
+    mutationFn: (vars: { userId: string; role: "admin" | "editor" | "staff"; email?: string }) =>
+      runRevoke({ data: { userId: vars.userId, role: vars.role } }),
+    onSuccess: (_res, vars) => {
       toast.success("Đã thu hồi quyền.");
+      void logAudit({
+        action: "role_revoke",
+        entity: "role",
+        entityId: vars.userId,
+        entityLabel: `${vars.email ?? vars.userId} → ${ROLE_LABEL[vars.role] ?? vars.role}`,
+        details: { userId: vars.userId, role: vars.role },
+      });
       void qc.invalidateQueries({ queryKey: ["admin-accounts"] });
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Không thu hồi được quyền."),
   });
+
 
   return (
     <div className="space-y-6">
