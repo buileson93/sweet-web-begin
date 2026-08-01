@@ -155,3 +155,24 @@ export const getTowerBoardFn = createServerFn({ method: "POST" })
     const { readTowerBoard } = await import("@/lib/tower/score.server");
     return readTowerBoard(data.board);
   });
+
+/** Bảng xếp hạng chi tiết: theo ngày, lọc thăng thiên, kèm hạt và di vật. */
+export const getTowerBoardDetailFn = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        board: z.enum(["hang-ngay", "tu-do"]).default("hang-ngay"),
+        dayKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        ascension: z.number().int().min(0).max(10).optional(),
+        limit: z.number().int().min(1).max(100).optional(),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const { readTowerBoardDetail, readTowerBoardDays } = await import("@/lib/tower/score.server");
+    const [rows, days] = await Promise.all([
+      readTowerBoardDetail(data),
+      readTowerBoardDays(data.board),
+    ]);
+    return { rows, days };
+  });
