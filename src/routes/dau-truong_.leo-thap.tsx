@@ -1044,52 +1044,28 @@ function TowerPage() {
           </ul>
 
           {!summary && run.offered.length > 0 && (
-            <div>
-              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-                <Sparkles className="size-4 text-amber-500" /> Ban phước — chọn một di vật
-              </p>
-              <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Ban phước di vật">
-                {run.offered.map((b) => (
-                  <button
-                    key={b.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={pickedRelic === b.id}
-                    onClick={() => setPickedRelic(b.id)}
-                    className={cn(
-                      "rounded-xl border p-3 text-left text-sm transition hover:border-primary",
-                      pickedRelic === b.id && "border-primary bg-primary/5 ring-2 ring-primary/30",
-                    )}
-                  >
-                    <div className="font-semibold">
-                      {b.icon} {b.name}
-                    </div>
-                    <div className="type-meta">{b.desc}</div>
-                    <div className="type-meta opacity-70">{RARITY_LABEL[b.rarity]}</div>
-                  </button>
-                ))}
-              </div>
-              <p className="type-meta mt-2">Bỏ qua cũng được — đổi lại bạn nhận 25 xu.</p>
-            </div>
+            <BlessingCards
+              offered={run.offered}
+              picked={pickedRelic}
+              onPick={setPickedRelic}
+              onConfirm={continueUp}
+              onSkip={() => {
+                setPickedRelic(undefined);
+                const next = skipBlessing(run);
+                setRun(next);
+                setOutcome(null);
+                if (next.finished) finishRun(next);
+              }}
+            />
           )}
 
           {!summary && run.curseOffer && (
-            <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3">
-              <p className="text-sm font-semibold">
-                {curseById(run.curseOffer.curseId)?.icon} Lời nguyền: {curseById(run.curseOffer.curseId)?.name}
-              </p>
-              <p className="type-meta">
-                {curseById(run.curseOffer.curseId)?.desc} — nhận để đổi lấy {run.curseOffer.coins} xu.
-              </p>
-              <div className="mt-2 flex gap-2">
-                <Button size="sm" variant="destructive" onClick={() => setRun(takeCurse(run, true))}>
-                  Nhận lời nguyền
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setRun(takeCurse(run, false))}>
-                  Từ chối
-                </Button>
-              </div>
-            </div>
+            <CurseOffer
+              curseId={run.curseOffer.curseId}
+              coins={run.curseOffer.coins}
+              onAccept={() => setRun(takeCurse(run, true))}
+              onDecline={() => setRun(takeCurse(run, false))}
+            />
           )}
 
           {!summary && (
