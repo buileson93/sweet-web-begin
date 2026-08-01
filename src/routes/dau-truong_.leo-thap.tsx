@@ -598,7 +598,9 @@ function TowerPage() {
     setAnswers({});
     setNote("");
     setChallengeValue(undefined);
+    setMapOpen(false);
     deadlineRef.current = next.room && next.room.questions > 0 ? Date.now() + roomSeconds(next) * 1000 : 0;
+    toTop();
   }
 
   /** Rời màn rút kinh nghiệm: nhận di vật đã chọn rồi lên tầng tiếp theo. */
@@ -608,6 +610,7 @@ function TowerPage() {
     setRun(next);
     setOutcome(null);
     setPickedRelic(undefined);
+    toTop();
     if (next.finished) finishRun(next);
   }
 
@@ -629,6 +632,9 @@ function TowerPage() {
   // Phòng không giao tranh chỉ mở nội dung sau khi trả lời câu thử thách kiến thức.
   const challengeQ = run && run.room && run.challenge && !run.challenge.done ? challengeQuestion(run) : null;
   const nonCombat = run?.room && run.room.questions === 0 && run.challenge?.done ? run.room.kind : null;
+  /** Đang ở trong một phòng: che bản đồ để người chơi chỉ thấy nội dung cần xử lý. */
+  const inRoom = Boolean(run && !summary && !outcome && run.room);
+
 
   function submitChallenge() {
     if (!run) return;
