@@ -151,10 +151,6 @@ export function ReminderManager() {
           <Button variant="outline" className="rounded-full" disabled={rows.length === 0} onClick={() => void handleExport("csv")}>
             <Download className="size-4" /> CSV
           </Button>
-
-          <Button variant="outline" className="rounded-full" disabled={rows.length === 0} onClick={() => void handleExport("xlsx")}>
-            <FileSpreadsheet className="size-4" /> Excel
-          </Button>
         </>
       }
     >
