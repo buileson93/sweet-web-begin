@@ -135,13 +135,21 @@ export async function reportExamEvent(input: {
   if (!isExamEventKind(input.kind))
     return { ok: false, integrityScore: session.integrity_score ?? 0 };
 
-  // Chống spam: mỗi phiên chỉ ghi tối đa MAX_EVENTS_PER_SESSION sự kiện.
-  const { count } = await supabaseAdmin
+  // Chống spam theo NHÓM: các loại nặng (tab_hidden, multi_tab) có quota riêng rất rộng
+  // để không bị "đốt" bởi việc bấm Ctrl+C liên tục đầu giờ.
+  const exempt = isQuotaExempt(input.kind);
+  let countQuery = supabaseAdmin
     .from("exam_events")
     .select("id", { count: "exact", head: true })
     .eq("session_id", session.id);
-  if ((count ?? 0) >= MAX_EVENTS_PER_SESSION)
+  countQuery = exempt
+    ? countQuery.in("kind", QUOTA_EXEMPT_KINDS as string[])
+    : countQuery.not("kind", "in", `(${QUOTA_EXEMPT_KINDS.join(",")})`);
+  const { count } = await countQuery;
+  const limit = exempt ? MAX_EXEMPT_EVENTS_PER_SESSION : MAX_EVENTS_PER_SESSION;
+  if ((count ?? 0) >= limit)
     return { ok: false, integrityScore: session.integrity_score ?? 0 };
+
 
   const detail = (input.detail ?? {}) as ExamEventDetail;
   const weight = scoreEvent(input.kind, detail);
