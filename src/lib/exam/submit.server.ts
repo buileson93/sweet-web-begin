@@ -12,6 +12,7 @@ import {
   lateness,
   type QuestionRow,
   scoreForAnswer,
+  reorderByDisplay,
   type ScoreRules,
 } from "@/lib/grading";
 import { type AnswerValue } from "@/lib/questionKinds";
