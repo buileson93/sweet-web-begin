@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { BookOpenCheck, Home, Settings2, Swords, Trophy, UserRoundCog } from "lucide-react";
 
+import { BetaBadge } from "@/components/BetaBadge";
 import { BrandMark } from "@/components/BrandLogo";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -11,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/", label: "Trang chủ", icon: Home },
-  { to: "/dau-truong", label: "Đấu trường", icon: Swords },
+  { to: "/dau-truong", label: "Đấu trường", icon: Swords, beta: true },
   { to: "/bang-xep-hang", label: "Bảng xếp hạng", icon: Trophy },
   { to: "/nhan-vat", label: "Nhân vật", icon: UserRoundCog },
   { to: "/huong-dan", label: "Hướng dẫn", icon: BookOpenCheck },
@@ -51,6 +52,9 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
                   activeOptions={{ exact: item.to === "/" }}
                 >
                   <item.icon className="relative" strokeWidth={1.75} absoluteStrokeWidth />
+                  {"beta" in item && item.beta ? (
+                    <BetaBadge compact className="absolute -right-1 -top-1" />
+                  ) : null}
                 </Link>
 
               ))}
@@ -105,7 +109,12 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
                   activeProps={{ className: "text-primary" }}
                   activeOptions={{ exact: item.to === "/" }}
                 >
-                  <item.icon className="size-5" strokeWidth={2} absoluteStrokeWidth />
+                  <span className="relative">
+                    <item.icon className="size-5" strokeWidth={2} absoluteStrokeWidth />
+                    {"beta" in item && item.beta ? (
+                      <BetaBadge compact className="absolute -right-4 -top-2" />
+                    ) : null}
+                  </span>
                   <span className="truncate">{item.label}</span>
                 </Link>
               </li>
