@@ -16,6 +16,8 @@ import { offerBoons, BOONS, QUESTIONS_PER_RUN, QUESTIONS_PER_STAGE, START_HP, ST
 import { seededRandom, towerDamage } from "@/lib/tower/rng";
 import { logReviews } from "@/lib/review/log.server";
 import { applyReviewBatch } from "@/lib/tower/due.server";
+import { applyTopicResults, readTopicRatings } from "@/lib/tower/topics.server";
+import { pickAdaptive } from "@/lib/tower/topics";
 
 export type TowerQuestion = {
   id: string;
@@ -91,6 +93,15 @@ export async function startTowerRun(input: {
 }) {
   const employee = await verifyEmployee(input);
 
+  // Cờ cấu hình: ban tổ chức có thể tạm khoá Leo Tháp trong khung giờ thi chính thức.
+  const { data: settings } = await supabaseAdmin
+    .from("arena_settings")
+    .select("tower_enabled, tower_locked_until")
+    .maybeSingle();
+  const lockedUntil = settings?.tower_locked_until ? new Date(settings.tower_locked_until) : null;
+  if (settings?.tower_enabled === false || (lockedUntil && lockedUntil > new Date()))
+    throw new Error("Leo Tháp đang tạm khoá để ưu tiên tài nguyên cho kỳ thi. Bạn quay lại sau nhé.");
+
   // Đóng các phiên còn treo để không tồn tại hai phiên song song.
   await supabaseAdmin
     .from("tower_runs")
@@ -139,7 +150,14 @@ export async function startTowerRun(input: {
 
   const seed = `${employee.id}:${Date.now()}`;
   const rand = seededRandom(seed);
-  const picked = shuffle(rows, Math.floor(rand() * 1e9)).slice(0, QUESTIONS_PER_RUN);
+  // Chọn thích ứng: nhắm xác suất đúng ~0,8 theo Elo chủ đề, rồi trộn thứ tự hiển thị.
+  const ratings = await readTopicRatings(employee.id);
+  const adaptive = pickAdaptive(
+    rows.map((r) => ({ ...r, tags: r.tags ?? [], difficulty: String(r.difficulty) })),
+    ratings,
+    QUESTIONS_PER_RUN,
+  ) as QuestionRow[];
+  const picked = shuffle(adaptive, Math.floor(rand() * 1e9)).slice(0, QUESTIONS_PER_RUN);
 
   const optionOrders = picked.map((row) => {
     const n = baseOptions(row).length;
@@ -306,6 +324,17 @@ export async function submitTowerStage(input: {
   await applyReviewBatch(
     run.employee_id as string,
     results.map((r) => ({ questionId: r.questionId, correct: r.correct })),
+  );
+  await applyTopicResults(
+    run.employee_id as string,
+    results.map((r) => {
+      const row = byId.get(r.questionId);
+      return {
+        tags: row?.tags ?? [],
+        difficulty: String(row?.difficulty ?? "medium"),
+        fraction: r.fraction,
+      };
+    }),
   );
 
   return {
