@@ -38,7 +38,7 @@ export function registerOfflineWorker(): void {
     !import.meta.env.PROD ||
     window.self !== window.top ||
     isPreviewHost(window.location.hostname) ||
-    new URLSearchParams(window.location.search).has("sw") ;
+    new URLSearchParams(window.location.search).get("sw") === "off";
 
   if (refused) {
     void unregisterAppWorkers();
