@@ -141,14 +141,19 @@ type Resume = {
   idx: number;
   answers: Record<string, AnswerValue>;
   deadline: number;
+  savedAt?: number;
 };
+
+/** Tiến trình còn hiệu lực trong 24 giờ — đóng tab hay hết pin vẫn quay lại được. */
+const RESUME_TTL_MS = 24 * 60 * 60 * 1000;
 
 function readResume(): Resume | null {
   try {
-    const raw = window.sessionStorage.getItem(RESUME_KEY);
+    const raw = window.localStorage.getItem(RESUME_KEY) ?? window.sessionStorage.getItem(RESUME_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Resume;
     if (!parsed?.run?.questions?.length || parsed.run.finished) return null;
+    if (parsed.savedAt && Date.now() - parsed.savedAt > RESUME_TTL_MS) return null;
     // Hành trình lưu từ bản cũ (bản đồ chưa có đồ thị) thì bỏ, tránh lỗi khi đọc lối đi.
     if (!Array.isArray(parsed.run.trail) || !Array.isArray(parsed.run.map?.[0]?.[0]?.next)) return null;
     return parsed;
@@ -156,6 +161,16 @@ function readResume(): Resume | null {
     return null;
   }
 }
+
+function clearResume() {
+  try {
+    window.localStorage.removeItem(RESUME_KEY);
+    window.sessionStorage.removeItem(RESUME_KEY);
+  } catch {
+    /* không xoá được thì lần sau đọc vẫn có TTL chặn */
+  }
+}
+
 
 /** Thanh trạng thái hành trình: máu, xu, di vật, lời nguyền — dính đầu màn hình trên điện thoại. */
 function RunBar({ run }: { run: TowerRun }) {
