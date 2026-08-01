@@ -206,23 +206,33 @@ function DuelRoom() {
           player={me}
           hpStart={state.hpStart}
           mine
+          roundKey={state.lastResult?.roundIndex ?? state.currentRound}
           skill={state.lastResult?.lines.find((l) => l.employeeId === me?.employeeId)?.skill}
         />
-        <div className="flex shrink-0 flex-col items-center gap-1 text-xs text-muted-foreground">
+        <div className="flex w-16 shrink-0 flex-col items-center gap-1 text-center text-xs text-muted-foreground sm:w-auto">
           <Swords className="size-5 text-primary" />
-          <span>
+          <span className="leading-tight">
             Câu {Math.min(state.currentRound + 1, state.roundCount)}/{state.roundCount}
           </span>
           <RankedBadge isRanked={state.isRanked} note={state.rankedNote} />
-          <ConnectionBadge status={connectionStatus} latency={latency} />
-          <NetStatsWidget stats={stats} onOpenLog={() => setDiagOpen(true)} />
+          <div className="hidden flex-col items-center gap-1 sm:flex">
+            <ConnectionBadge status={connectionStatus} latency={latency} />
+            <NetStatsWidget stats={stats} onOpenLog={() => setDiagOpen(true)} />
+          </div>
         </div>
         <DuelFighter
           player={foe}
           hpStart={state.hpStart}
+          roundKey={state.lastResult?.roundIndex ?? state.currentRound}
           skill={state.lastResult?.lines.find((l) => l.employeeId === foe?.employeeId)?.skill}
         />
       </header>
+
+      {/* Trên điện thoại, chỉ số mạng nằm dưới khung đấu cho khỏi bóp méo bố cục. */}
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:hidden">
+        <ConnectionBadge status={connectionStatus} latency={latency} />
+        <NetStatsWidget stats={stats} onOpenLog={() => setDiagOpen(true)} />
+      </div>
 
       <BattleDice dice={dice} />
 
@@ -390,13 +400,25 @@ function WaitingPanel({
 }) {
   const [left, setLeft] = useState(0);
   // 15 giây chọn lớp trước khi vào trận; hết giờ thì chốt lớp đang chọn.
-  const [pick, setPick] = useState(15);
+  // Mốc hết giờ được neo theo phòng nên F5 hay chuyển tab đều không kéo dài thêm.
+  const pickKey = `arena:pick-deadline:${state.duelId}`;
+  const pickDeadline = useMemo(() => {
+    const saved = Number(window.sessionStorage.getItem(pickKey) ?? 0);
+    if (saved > Date.now() - 60_000 && saved > 0) return saved;
+    const next = Date.now() + 15_000;
+    window.sessionStorage.setItem(pickKey, String(next));
+    return next;
+  }, [pickKey]);
+  const [pick, setPick] = useState(() => Math.max(0, Math.ceil((pickDeadline - Date.now()) / 1000)));
   const lockedClass = state.status === "countdown" || pick <= 0 || Boolean(me?.ready);
   useEffect(() => {
     if (state.status !== "waiting") return;
-    const id = window.setInterval(() => setPick((v) => (v > 0 ? v - 1 : 0)), 1000);
+    const id = window.setInterval(
+      () => setPick(Math.max(0, Math.ceil((pickDeadline - Date.now()) / 1000))),
+      500,
+    );
     return () => window.clearInterval(id);
-  }, [state.status]);
+  }, [state.status, pickDeadline]);
   useEffect(() => {
     if (state.status !== "countdown" || !state.startedAt) return;
     const target = toClientTime(state.startedAt);
