@@ -297,7 +297,7 @@ function TowerMapBase({ map, floor, trail, canPick, onPick, preview = false, cla
       </ul>
 
       <p className="type-meta relative mt-2 text-center text-foreground/60">
-        Tầng 4 · 8 · 12 là trùm, mọi lối đi đều hội tụ; tầng ngay trước đó luôn là lửa trại để chuẩn bị.
+        Tầng 4 · 8 · 12 là sự cố lớn, mọi lối đi đều hội tụ; tầng ngay trước đó luôn là phòng nghỉ ca để chuẩn bị.
       </p>
     </div>
   );

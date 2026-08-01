@@ -63,7 +63,7 @@ export function simulateRun(
   while (!run.finished && guard++ < FLOORS * 6) {
     const options = floorOptions(run);
     if (!options.length) break;
-    // Máu thấp thì ưu tiên lửa trại, còn lại ưu tiên phòng có câu hỏi để lên điểm.
+    // An toàn thấp thì ưu tiên phòng nghỉ ca, còn lại ưu tiên phòng có câu hỏi để lên điểm.
     const lowHp = run.hp / run.maxHp < 0.5;
     const idx = lowHp
       ? Math.max(0, options.findIndex((r) => r.kind === "campfire"))
@@ -80,7 +80,7 @@ export function simulateRun(
       });
       run = gradeStage(run, answers).run;
       if (run.finished) break;
-      // Nhận di vật đầu tiên được mời; lời nguyền nhẹ thì nhận để đổi xu.
+      // Nhận trang bị đầu tiên được mời; yếu tố bất lợi nhẹ thì nhận để đổi tín chỉ.
       if (run.offered.length) run = takeRelic(run, run.offered[0]?.id);
       if (run.offered.length) run = skipBlessing(run);
       if (run.curseOffer) run = takeCurse(run, run.curseOffer.coins >= 80);

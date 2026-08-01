@@ -11,8 +11,8 @@ type Props = {
 };
 
 /**
- * Thanh máu hành trình: hiển thị máu hiện tại, phần khiên chồng lên, và nháy đỏ
- * khi vừa mất máu / nháy xanh khi vừa hồi máu để người chơi thấy rõ hậu quả mỗi câu.
+ * Thanh an toàn hành trình: hiển thị an toàn hiện tại, phần lớp bảo vệ chồng lên, và nháy đỏ
+ * khi vừa mất an toàn / nháy xanh khi vừa hồi an toàn để người chơi thấy rõ hậu quả mỗi câu.
  */
 export function HpBar({ hp, max, shield, className }: Props) {
   const total = max || 1;
@@ -44,7 +44,7 @@ export function HpBar({ hp, max, shield, className }: Props) {
       aria-valuemin={0}
       aria-valuemax={total}
       aria-valuenow={hp}
-      aria-label={`Máu ${hp} trên ${total}${shield > 0 ? `, khiên ${shield}` : ""}`}
+      aria-label={`An toàn ${hp} trên ${total}${shield > 0 ? `, lớp bảo vệ ${shield}` : ""}`}
     >
       <Heart
         className={cn(

@@ -20,8 +20,8 @@ export function seededRandom(seed: string | number): () => number {
 }
 
 /**
- * Thứ tự tính sát thương — KHOÁ CỨNG, có kiểm thử:
- * xúc xắc → combo → trợ học → ràng buộc.
+ * Thứ tự tính điểm xử lý — KHOÁ CỨNG, có kiểm thử:
+ * lượt bốc thăm → combo → trợ học → ràng buộc.
  */
 export function towerDamage(input: {
   roll: number;
@@ -29,7 +29,7 @@ export function towerDamage(input: {
   damageBonus: number;
   cap?: number;
 }): number {
-  let dmg = Math.max(1, Math.round(input.roll)); // 1) xúc xắc
+  let dmg = Math.max(1, Math.round(input.roll)); // 1) lượt bốc thăm
   dmg += Math.min(6, Math.max(0, input.combo - 1) * 2); // 2) combo
   dmg += Math.max(0, input.damageBonus); // 3) trợ học
   return Math.min(input.cap ?? 40, dmg); // 4) ràng buộc
@@ -43,7 +43,7 @@ export function branch(seed: string, purpose: string): () => number {
   return seededRandom(`${seed}::${purpose}`);
 }
 
-/** Hạt của thử thách hằng ngày: cả cơ quan cùng một bản đồ, cùng di vật. */
+/** Hạt của thử thách hằng ngày: cả cơ quan cùng một bản đồ, cùng trang bị. */
 export function dailySeed(dayKey: string, salt = "twr"): string {
   return `daily:${salt}:${dayKey}`;
 }

@@ -1,7 +1,7 @@
 /**
  * Tiến trình meta — thứ giữ chân người chơi giữa các hành trình.
  *
- * Nguyên tắc: xu chỉ dùng để MỞ RỘNG lựa chọn (mở di vật mới vào bể rút, mở lớp,
+ * Nguyên tắc: tín chỉ chỉ dùng để MỞ RỘNG lựa chọn (mở trang bị mới vào bể rút, mở lớp,
  * mở độ thăng thiên), tuyệt đối không bán sức mạnh trực tiếp — tránh cảm giác trả tiền để thắng.
  */
 import { RELICS } from "@/lib/tower/relics";
@@ -18,7 +18,7 @@ export type Unlock = {
   needWins?: number;
 };
 
-/** Di vật khoá sẵn — phải mở mới xuất hiện trong bể rút. */
+/** Trang bị khoá sẵn — phải mở mới xuất hiện trong bể rút. */
 export const LOCKED_RELIC_IDS = ["nghich-luu", "bao-to", "doc-4444", "khien-bang"];
 
 export const UNLOCKS: Unlock[] = [
@@ -28,32 +28,32 @@ export const UNLOCKS: Unlock[] = [
       id: `relic:${id}`,
       kind: "relic" as const,
       name: `${r?.icon ?? "🎁"} ${r?.name ?? id}`,
-      desc: `Đưa di vật vào bể rút: ${r?.desc ?? ""}`,
+      desc: `Đưa trang bị vào bể rút: ${r?.desc ?? ""}`,
       cost: r?.rarity === "huyenthoai" ? 600 : 350,
     };
   }),
-  { id: "class:ky-su", kind: "class", name: "🛠️ Kỹ sư trực canh", desc: "Lớp thứ 4: khởi đầu với khiên 20 máu", cost: 500 },
+  { id: "class:ky-su", kind: "class", name: "🛠️ Kỹ sư trực canh", desc: "Lớp thứ 4: khởi đầu với lớp bảo vệ 20 an toàn", cost: 500 },
   { id: "class:hoa-tieu", kind: "class", name: "🧭 Hoa tiêu", desc: "Lớp thứ 5: +10% thời gian mỗi câu", cost: 800 },
   { id: "ascension", kind: "ascension", name: "🌗 Độ thăng thiên", desc: "Mở cấp khó 1→10, mỗi cấp thêm một luật khó hơn", cost: 0, needWins: 1 },
 ];
 
-/** Bể di vật khả dụng theo danh sách đã mở khoá. */
+/** Bể trang bị khả dụng theo danh sách đã mở khoá. */
 export function relicPoolIds(unlocked: string[]): string[] {
   return RELICS.filter((r) => !LOCKED_RELIC_IDS.includes(r.id) || unlocked.includes(`relic:${r.id}`)).map((r) => r.id);
 }
 
 /** Luật thêm vào theo cấp thăng thiên (1→10). */
 export const ASCENSION_RULES: string[] = [
-  "Cấp 1 — Máu khởi đầu −10",
-  "Cấp 2 — Sát thương nhận +10%",
-  "Cấp 3 — Lửa trại chỉ hồi 20% máu",
-  "Cấp 4 — Tinh anh xuất hiện dày hơn",
+  "Cấp 1 — An toàn khởi đầu −10",
+  "Cấp 2 — Điểm xử lý nhận +10%",
+  "Cấp 3 — Phòng nghỉ ca chỉ hồi 20% an toàn",
+  "Cấp 4 — Tình huống phức tạp xuất hiện dày hơn",
   "Cấp 5 — Thời gian mỗi câu −10%",
-  "Cấp 6 — Cửa hàng đắt thêm 50%",
-  "Cấp 7 — Trùm thêm 20% máu",
-  "Cấp 8 — Bắt buộc mang 1 lời nguyền",
-  "Cấp 9 — Chỉ còn 2 di vật để chọn",
-  "Cấp 10 — Máu khởi đầu −25, không hồi sinh",
+  "Cấp 6 — Kho khí tài đắt thêm 50%",
+  "Cấp 7 — Sự cố lớn thêm 20% an toàn",
+  "Cấp 8 — Bắt buộc mang 1 yếu tố bất lợi",
+  "Cấp 9 — Chỉ còn 2 trang bị để chọn",
+  "Cấp 10 — An toàn khởi đầu −25, không hồi sinh",
 ];
 
 export type AscensionMods = {

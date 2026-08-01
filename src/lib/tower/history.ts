@@ -75,7 +75,7 @@ export function historySummary(rows: RunRecord[]) {
   };
 }
 
-/** Đếm tần suất di vật / lời nguyền để soi độ cân bằng. */
+/** Đếm tần suất trang bị / yếu tố bất lợi để soi độ cân bằng. */
 export function frequency(rows: RunRecord[], field: "relics" | "curses"): { id: string; count: number }[] {
   const map = new Map<string, number>();
   for (const r of rows) for (const id of r[field]) map.set(id, (map.get(id) ?? 0) + 1);

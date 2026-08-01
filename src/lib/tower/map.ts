@@ -8,7 +8,7 @@
  * 3. Hai lối đi đi qua cùng một ô thì dùng chung một nút (gộp).
  * 4. Trước khi nối, kiểm tra cạnh mới có cắt cạnh đã có không; cắt thì kéo về gần.
  * 5. Gán loại phòng theo trọng số + ràng buộc (không trùng loại với phòng cha,
- *    cửa hàng/lửa trại không xuất hiện quá sớm, tầng trước trùm luôn là lửa trại).
+ *    kho khí tài/phòng nghỉ ca không xuất hiện quá sớm, tầng trước sự cố lớn luôn là phòng nghỉ ca).
  *
  * Cùng một hạt luôn cho cùng một bản đồ — nền tảng của thử thách hằng ngày.
  */
@@ -18,7 +18,7 @@ export type RoomKind = "combat" | "elite" | "event" | "shop" | "campfire" | "bos
 
 export type Room = {
   kind: RoomKind;
-  /** Số câu hỏi trắc nghiệm phải trả lời trong phòng (phòng không giao tranh = 0). */
+  /** Số câu hỏi trắc nghiệm phải trả lời trong phòng (phòng không xử lý tình huống = 0). */
   questions: number;
   /** Bậc khó cộng thêm khi chọn câu hỏi. */
   harder: number;
@@ -37,18 +37,18 @@ export const FLOORS = 12;
 export const COLS = 5;
 /** Số lối đi thả xuống lưới; càng nhiều thì bản đồ càng rậm. */
 const PATHS = 6;
-/** Tầng trùm, đánh số từ 1 — mỗi tầng này chỉ có duy nhất một nút (mọi lối hội tụ). */
+/** Tầng sự cố lớn, đánh số từ 1 — mỗi tầng này chỉ có duy nhất một nút (mọi lối hội tụ). */
 export const BOSS_FLOORS = [4, 8, 12] as const;
 const isBoss = (f: number) => (BOSS_FLOORS as readonly number[]).includes(f);
 const PRE_BOSS = BOSS_FLOORS.map((f) => f - 1);
 
 export const ROOM_META: Record<RoomKind, { icon: string; label: string; desc: string; tone: string }> = {
-  combat: { icon: "⚔️", label: "Giao tranh", desc: "5 câu · sai −8 máu · đúng liên tiếp gây sát thương tăng dần", tone: "text-primary" },
-  elite: { icon: "💀", label: "Tinh anh", desc: "7 câu khó hơn · sai −12 máu · thưởng di vật hiếm", tone: "text-destructive" },
-  event: { icon: "❓", label: "Sự kiện", desc: "1 câu thử thách · đúng được thưởng · sai −5 máu", tone: "text-amber-500" },
-  shop: { icon: "🏪", label: "Cửa hàng", desc: "1 câu mặc cả · đúng được giảm 30% giá · không mất máu", tone: "text-emerald-500" },
-  campfire: { icon: "🔥", label: "Lửa trại", desc: "1 câu ôn bài · đúng hồi thêm máu · không mất máu", tone: "text-orange-500" },
-  boss: { icon: "👑", label: "Trùm", desc: "7 câu · sai −15 máu · có luật riêng", tone: "text-yellow-500" },
+  combat: { icon: "✈️", label: "Xử lý tình huống", desc: "5 câu · sai −8 an toàn · đúng liên tiếp gây điểm xử lý tăng dần", tone: "text-primary" },
+  elite: { icon: "🌩️", label: "Tình huống phức tạp", desc: "7 câu khó hơn · sai −12 an toàn · thưởng trang bị hiếm", tone: "text-destructive" },
+  event: { icon: "❓", label: "Sự kiện", desc: "1 câu thử thách · đúng được thưởng · sai −5 an toàn", tone: "text-amber-500" },
+  shop: { icon: "🧰", label: "Kho khí tài", desc: "1 câu mặc cả · đúng được giảm 30% giá · không mất an toàn", tone: "text-emerald-500" },
+  campfire: { icon: "☕", label: "Phòng nghỉ ca", desc: "1 câu ôn bài · đúng hồi thêm an toàn · không mất an toàn", tone: "text-orange-500" },
+  boss: { icon: "🚨", label: "Sự cố lớn", desc: "7 câu · sai −15 an toàn · có luật riêng", tone: "text-yellow-500" },
 };
 
 const ROOM: Record<RoomKind, Room> = {
@@ -60,7 +60,7 @@ const ROOM: Record<RoomKind, Room> = {
   boss: { kind: "boss", questions: 7, harder: 1 },
 };
 
-/** Trọng số loại phòng theo độ sâu — càng lên cao càng nhiều tinh anh. */
+/** Trọng số loại phòng theo độ sâu — càng lên cao càng nhiều tình huống phức tạp. */
 function weightsFor(floor: number): { item: RoomKind; weight: number }[] {
   const deep = floor >= 9 ? 2 : floor >= 5 ? 1 : 0;
   return [
@@ -98,7 +98,7 @@ export function buildMap(seed: string): MapNode[][] {
   for (let p = 0; p < PATHS; p++) {
     let col = Math.floor(rand() * COLS) % COLS;
     for (let f = 0; f < FLOORS; f++) {
-      // Tầng trùm hội tụ về cột giữa.
+      // Tầng sự cố lớn hội tụ về cột giữa.
       if (isBoss(f + 1)) col = Math.floor(COLS / 2);
       cellAt(f, col);
       if (f === FLOORS - 1) break;
@@ -137,7 +137,7 @@ export function buildMap(seed: string): MapNode[][] {
         continue;
       }
       if (PRE_BOSS.includes(floor)) {
-        cell.kind = "campfire"; // Luôn có chỗ chuẩn bị trước khi gặp trùm.
+        cell.kind = "campfire"; // Luôn có chỗ chuẩn bị trước khi gặp sự cố lớn.
         continue;
       }
       const parents = (grid[f - 1] ?? []).filter((p) => p.next.has(cell.col)).map((p) => p.kind);
@@ -151,7 +151,7 @@ export function buildMap(seed: string): MapNode[][] {
       }
       cell.kind = kind;
     }
-    // Mỗi tầng luôn còn ít nhất một phòng có câu hỏi giao tranh để hành trình không đứng yên.
+    // Mỗi tầng luôn còn ít nhất một phòng có câu hỏi xử lý tình huống để hành trình không đứng yên.
     const row = grid[f]!;
     if (floor > 1 && !isBoss(floor) && !PRE_BOSS.includes(floor) && !row.some((c) => ROOM[c.kind!].questions > 0)) {
       row[0]!.kind = "combat";

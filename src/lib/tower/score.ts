@@ -1,7 +1,7 @@
 /**
  * Điểm hành trình và bảng xếp hạng Leo Tháp.
  * Công thức khoá cứng, có kiểm thử:
- *   tầng vượt × 100 + máu còn lại × 2 + số di vật × 15 + bậc lời nguyền × 30
+ *   tầng vượt × 100 + an toàn còn lại × 2 + số trang bị × 15 + bậc yếu tố bất lợi × 30
  */
 import { curseRank } from "@/lib/tower/curses";
 
@@ -24,7 +24,7 @@ export function runScore(input: RunScoreInput): number {
   return Math.round(base * asc);
 }
 
-/** Xu thưởng cuối hành trình, đã tính hệ số di vật/lời nguyền. */
+/** Tín chỉ thưởng cuối hành trình, đã tính hệ số trang bị/yếu tố bất lợi. */
 export function runCoins(score: number, coinPct: number): number {
   return Math.max(0, Math.round((score / 10) * (1 + coinPct)));
 }
@@ -45,9 +45,9 @@ export function scoreBreakdown(input: RunScoreInput): { parts: ScorePart[]; tota
   const mult = 1 + Math.max(0, input.ascension ?? 0) * 0.05;
   const raw: ScorePart[] = [
     { key: "floors", label: "Tầng đã vượt", value: Math.max(0, input.floorsCleared) * 100, hint: "100 điểm mỗi tầng" },
-    { key: "hp", label: "Máu còn lại", value: Math.max(0, input.hp) * 2, hint: "2 điểm mỗi máu" },
-    { key: "relics", label: "Di vật mang theo", value: input.relics.length * 15, hint: "15 điểm mỗi di vật" },
-    { key: "curses", label: "Lời nguyền gánh chịu", value: curseRank(input.curses) * 30, hint: "30 điểm mỗi bậc" },
+    { key: "hp", label: "An toàn còn lại", value: Math.max(0, input.hp) * 2, hint: "2 điểm mỗi an toàn" },
+    { key: "relics", label: "Trang bị mang theo", value: input.relics.length * 15, hint: "15 điểm mỗi trang bị" },
+    { key: "curses", label: "Yếu tố bất lợi gánh chịu", value: curseRank(input.curses) * 30, hint: "30 điểm mỗi bậc" },
   ];
   const total = runScore(input);
   const scaled = raw.map((p) => ({ ...p, value: Math.round(p.value * mult) }));

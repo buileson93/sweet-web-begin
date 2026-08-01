@@ -1,8 +1,8 @@
 /**
  * Bộ máy Leo Tháp chạy tại máy người dùng — thuần, không mạng, không Supabase.
  *
- * Toàn bộ hành trình dựng lại được từ MỘT hạt ngẫu nhiên: bản đồ, di vật rút được,
- * lời nguyền, phòng sự kiện. Nhờ vậy có thử thách hằng ngày, chống gian lận và xem lại.
+ * Toàn bộ hành trình dựng lại được từ MỘT hạt ngẫu nhiên: bản đồ, trang bị rút được,
+ * yếu tố bất lợi, phòng sự kiện. Nhờ vậy có thử thách hằng ngày, chống gian lận và xem lại.
  */
 import type { AnswerValue } from "@/lib/questionKinds";
 import type { BankQuestion, QuestionBank } from "@/lib/tower/bank";
@@ -38,7 +38,7 @@ export type TowerRun = {
   /** Nút đang đứng ở tầng hiện tại (null khi chưa chọn). */
   node: number | null;
   room: Room | null;
-  /** Câu thử thách của phòng không giao tranh: chỉ số câu + kết quả. */
+  /** Câu thử thách của phòng không xử lý tình huống: chỉ số câu + kết quả. */
   challenge: { slot: number; done: boolean; correct: boolean } | null;
   /** Chỉ số câu hỏi của phòng đang chơi (trỏ vào `questions`). */
   slots: number[];
@@ -58,7 +58,7 @@ export type TowerRun = {
   finished: boolean;
   win: boolean;
   score: number;
-  /** Danh sách di vật đã mở khoá ở tiến trình meta (rỗng = chỉ dùng bể mặc định). */
+  /** Danh sách trang bị đã mở khoá ở tiến trình meta (rỗng = chỉ dùng bể mặc định). */
   unlockedPool?: string[];
   /** Nhật ký diễn biến — đủ để dựng lại toàn bộ hành trình từ hạt. */
   log: RunEvent[];
@@ -97,19 +97,19 @@ export type StageOutcome = {
   }[];
   damage: number;
   softStop: boolean;
-  /** Máu đã mất trong phòng (sau mọi hệ số) — hiển thị cho người chơi thấy rõ. */
+  /** An toàn đã mất trong phòng (sau mọi hệ số) — hiển thị cho người chơi thấy rõ. */
   hpLost: number;
   /** Các mốc chuỗi đúng đã đạt trong phòng. */
   combos: ComboReward[];
 };
 
 const ROOM_LABEL: Record<RoomKind, string> = {
-  combat: "giao tranh",
-  elite: "tinh anh",
+  combat: "xử lý tình huống",
+  elite: "tình huống phức tạp",
   event: "sự kiện",
-  shop: "cửa hàng",
-  campfire: "lửa trại",
-  boss: "trùm",
+  shop: "kho khí tài",
+  campfire: "phòng nghỉ ca",
+  boss: "sự cố lớn",
 };
 
 /** Nối một mốc vào nhật ký, tự tính mốc thời gian tương đối. */
@@ -183,7 +183,7 @@ export function pickRunQuestions(
   return pool;
 }
 
-/** Tổng hợp mọi hệ số đang tác động lên hành trình: di vật + lời nguyền + trùm + thăng thiên. */
+/** Tổng hợp mọi hệ số đang tác động lên hành trình: trang bị + yếu tố bất lợi + sự cố lớn + thăng thiên. */
 export function runModifiers(run: TowerRun) {
   const relics = relicTotals(run.relics);
   const curses = curseTotals(run.curses);
@@ -206,7 +206,7 @@ export function runModifiers(run: TowerRun) {
   };
 }
 
-/** Số giây cho phòng đang chơi, đã tính di vật, lời nguyền và luật trùm. */
+/** Số giây cho phòng đang chơi, đã tính trang bị, yếu tố bất lợi và luật sự cố lớn. */
 export function roomSeconds(run: TowerRun): number {
   const n = run.room?.questions ?? 0;
   const mods = runModifiers(run);
@@ -262,7 +262,7 @@ export function createRun(
     log: [],
   };
   run.log.push({ t: 0, floor: 1, kind: "start", label: "Bước vào tháp", detail: `Hạt ${seed}`, hp: maxHp });
-  // Thăng thiên cấp 8 trở lên: bắt buộc mang một lời nguyền ngay từ cửa tháp.
+  // Thăng thiên cấp 8 trở lên: bắt buộc mang một yếu tố bất lợi ngay từ cửa tháp.
   if (asc.forcedCurse) {
     const forced = offerCurse(branch(seed, "forced-curse"));
     if (forced) run.curses = [forced.curse.id];
@@ -311,7 +311,7 @@ export function chooseRoom(run: TowerRun, index: number): TowerRun {
   };
 }
 
-/** Câu thử thách kiến thức của phòng không giao tranh. */
+/** Câu thử thách kiến thức của phòng không xử lý tình huống. */
 export function challengeQuestion(run: TowerRun): BankQuestion | null {
   if (!run.challenge) return null;
   const i = run.slots[run.challenge.slot];
@@ -319,8 +319,8 @@ export function challengeQuestion(run: TowerRun): BankQuestion | null {
 }
 
 /**
- * Chấm câu thử thách của phòng sự kiện / cửa hàng / lửa trại.
- * Sai ở phòng sự kiện mất máu theo LUẬT PHÒNG; hai phòng kia chỉ mất ưu đãi.
+ * Chấm câu thử thách của phòng sự kiện / kho khí tài / phòng nghỉ ca.
+ * Sai ở phòng sự kiện mất an toàn theo LUẬT PHÒNG; hai phòng kia chỉ mất ưu đãi.
  */
 export function resolveChallenge(
   run: TowerRun,
@@ -350,11 +350,11 @@ export function resolveChallenge(
     }
     if (kind === "event") {
       coins += 40;
-      message = "Trả lời đúng — bạn nhận 40 xu và được chọn phương án tốt hơn.";
+      message = "Trả lời đúng — bạn nhận 40 tín chỉ và được chọn phương án tốt hơn.";
     } else if (kind === "shop") {
-      message = "Mặc cả thành công — mọi món trong cửa hàng giảm 30%.";
+      message = "Mặc cả thành công — mọi món trong kho khí tài giảm 30%.";
     } else {
-      message = "Ôn bài chuẩn — lửa trại hồi thêm 10% máu tối đa.";
+      message = "Ôn bài chuẩn — phòng nghỉ ca hồi thêm 10% an toàn tối đa.";
     }
   } else {
     const loss = wrongDamage(kind, mods.damageTakenPct, mods.damageReducePct);
@@ -365,10 +365,10 @@ export function resolveChallenge(
     }
     message =
       kind === "event"
-        ? `Chưa đúng — bạn mất ${loss} máu và bỏ lỡ phần thưởng.`
+        ? `Chưa đúng — bạn mất ${loss} an toàn và bỏ lỡ phần thưởng.`
         : kind === "shop"
-          ? "Chưa đúng — cửa hàng giữ nguyên giá gốc."
-          : "Chưa đúng — lửa trại chỉ hồi mức cơ bản.";
+          ? "Chưa đúng — kho khí tài giữ nguyên giá gốc."
+          : "Chưa đúng — phòng nghỉ ca chỉ hồi mức cơ bản.";
   }
 
   const next: TowerRun = {
@@ -405,7 +405,7 @@ export function resolveChallenge(
   };
 }
 
-/** Khép lại hành trình khi gục ngã ngoài phòng giao tranh. */
+/** Khép lại hành trình khi phải dừng ca ngoài phòng xử lý tình huống. */
 function endRun(run: TowerRun): TowerRun {
   const next: TowerRun = { ...run, hp: 0, finished: true, win: false, room: null, slots: [], challenge: null };
   next.log = logged(run, { floor: run.floor, kind: "end", label: "Hành trình khép lại", hp: 0 });
@@ -425,7 +425,7 @@ export function roomQuestions(run: TowerRun): BankQuestion[] {
   return slots.map((i) => run.questions[i]!).filter(Boolean);
 }
 
-/** Chấm phòng giao tranh / tinh anh / trùm ngay tại máy — 0 ms, không gọi máy chủ. */
+/** Chấm phòng xử lý tình huống / tình huống phức tạp / sự cố lớn ngay tại máy — 0 ms, không gọi máy chủ. */
 export function gradeStage(
   run: TowerRun,
   answers: Record<string, AnswerValue>,
@@ -472,7 +472,7 @@ export function gradeStage(
     } else {
       combo = 0;
       if (blocks > 0) {
-        blocks--; // Khiên băng chặn đứng một đòn mỗi tầng.
+        blocks--; // Vùng đệm an toàn chặn đứng một đòn mỗi tầng.
       } else {
         const raw = wrongDamage(kind, mods.damageTakenPct, mods.damageReducePct);
         // Trần thiệt hại mỗi phòng: sai cả phòng vẫn còn cửa đi tiếp.
@@ -497,7 +497,7 @@ export function gradeStage(
     };
   });
 
-  // Nghịch lưu: lần đầu gục ngã được hồi sinh (trừ thăng thiên cấp 10).
+  // Phương án dự phòng: lần đầu phải dừng ca được hồi sinh (trừ thăng thiên cấp 10).
   if (hp <= 0 && !revived && mods.relics.revivePct > 0 && !mods.noRevive) {
     hp = Math.round(run.maxHp * mods.relics.revivePct);
     revived = true;
@@ -509,7 +509,7 @@ export function gradeStage(
   const finished = !cleared || nextFloor > FLOORS;
   const win = cleared && nextFloor > FLOORS;
 
-  // Xu nhặt được: tinh anh và trùm trả nhiều hơn.
+  // Tín chỉ nhặt được: tình huống phức tạp và sự cố lớn trả nhiều hơn.
   const base = run.room?.kind === "boss" ? 90 : run.room?.kind === "elite" ? 55 : 30;
   const coinGain = cleared ? Math.round(base * (1 + mods.coinPct)) : 0;
 
@@ -535,7 +535,7 @@ export function gradeStage(
     floor: run.floor,
     kind: "combat",
     label: `Tầng ${run.floor} — ${correctCount}/${slice.length} câu đúng`,
-    detail: `Gây ${damage} sát thương${cleared ? "" : " · gục ngã"}`,
+    detail: `Gây ${damage} điểm xử lý${cleared ? "" : " · phải dừng ca"}`,
     hp: next.hp,
   });
   if (finished) {
@@ -559,7 +559,7 @@ export function gradeStage(
   return { run: next, outcome: { results, damage, softStop: !cleared, hpLost, combos } };
 }
 
-/** Ban phước sau mỗi tầng thắng: rút 3 di vật theo trọng số hiếm, kèm cơ hội nhận lời nguyền. */
+/** Hỗ trợ kíp trực sau mỗi tầng thắng: rút 3 trang bị theo trọng số hiếm, kèm cơ hội nhận yếu tố bất lợi. */
 export function withBlessing(run: TowerRun): TowerRun {
   const prevFloor = run.floor - 1;
   const kind = run.path[run.path.length - 1];
@@ -594,7 +594,7 @@ export function takeRelic(run: TowerRun, relicId: string | undefined): TowerRun 
     log: logged(run, {
       floor: run.floor,
       kind: "relic",
-      label: `Nhận di vật ${relic.name}`,
+      label: `Nhận trang bị ${relic.name}`,
       detail: relic.desc,
       hp: run.hp,
     }),
@@ -606,18 +606,18 @@ export function skipBlessing(run: TowerRun): TowerRun {
     ...run,
     offered: [],
     coins: run.coins + 25,
-    log: logged(run, { floor: run.floor, kind: "skip", label: "Bỏ qua ban phước", detail: "+25 xu", hp: run.hp }),
+    log: logged(run, { floor: run.floor, kind: "skip", label: "Bỏ qua hỗ trợ kíp trực", detail: "+25 tín chỉ", hp: run.hp }),
   };
 }
 
-/** Nhận lời nguyền để đổi lấy xu (và về sau là di vật hiếm hơn). */
+/** Nhận yếu tố bất lợi để đổi lấy tín chỉ (và về sau là trang bị hiếm hơn). */
 export function takeCurse(run: TowerRun, accept: boolean): TowerRun {
   if (!run.curseOffer) return run;
   if (!accept) {
     return {
       ...run,
       curseOffer: null,
-      log: logged(run, { floor: run.floor, kind: "curse", label: "Từ chối lời nguyền", hp: run.hp }),
+      log: logged(run, { floor: run.floor, kind: "curse", label: "Từ chối yếu tố bất lợi", hp: run.hp }),
     };
   }
   const taken = run.curseOffer;
@@ -629,19 +629,19 @@ export function takeCurse(run: TowerRun, accept: boolean): TowerRun {
     log: logged(run, {
       floor: run.floor,
       kind: "curse",
-      label: `Gánh lời nguyền ${taken.curseId}`,
-      detail: `+${taken.coins} xu`,
+      label: `Gánh yếu tố bất lợi ${taken.curseId}`,
+      detail: `+${taken.coins} tín chỉ`,
       hp: run.hp,
     }),
   };
 }
 
-/** Lửa trại: hồi máu hoặc nâng cấp một di vật (nhân đôi hiệu ứng cộng thẳng). */
+/** Phòng nghỉ ca: hồi an toàn hoặc nâng cấp một trang bị (nhân đôi hiệu ứng cộng thẳng). */
 export function restAtCampfire(run: TowerRun, choice: "heal" | "upgrade"): TowerRun {
   const mods = runModifiers(run);
   const asc = ascensionMods(run.ascension);
   let next = { ...run };
-  const bonusPct = run.challenge?.correct ? 0.1 : 0; // Trả lời đúng câu ôn bài thì hồi thêm 10% máu tối đa.
+  const bonusPct = run.challenge?.correct ? 0.1 : 0; // Trả lời đúng câu ôn bài thì hồi thêm 10% an toàn tối đa.
   if (choice === "heal" && !mods.noHeal) {
     next.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * (asc.campfireHealPct + bonusPct)));
   } else {
@@ -650,7 +650,7 @@ export function restAtCampfire(run: TowerRun, choice: "heal" | "upgrade"): Tower
   next.log = logged(run, {
     floor: run.floor,
     kind: "campfire",
-    label: choice === "heal" && !mods.noHeal ? "Lửa trại — hồi máu" : "Lửa trại — rèn khiên",
+    label: choice === "heal" && !mods.noHeal ? "Phòng nghỉ ca — hồi an toàn" : "Phòng nghỉ ca — rèn lớp bảo vệ",
     hp: next.hp,
   });
   next = advanceNonCombat(next);
@@ -671,9 +671,9 @@ export const EVENTS: TowerEvent[] = [
     id: "ruong-bay",
     icon: "🧰",
     title: "Rương bẫy trong phòng thiết bị",
-    text: "Một rương đồ nghề cũ không rõ của ai. Mở ra có thể trúng xu, cũng có thể dính bụi bẩn.",
+    text: "Một rương đồ nghề cũ không rõ của ai. Mở ra có thể trúng tín chỉ, cũng có thể dính bụi bẩn.",
     choices: [
-      { id: "open", label: "Mở rương", hint: "50% được 80 xu, 50% mất 10 máu" },
+      { id: "open", label: "Mở rương", hint: "50% được 80 tín chỉ, 50% mất 10 an toàn" },
       { id: "leave", label: "Đi tiếp", hint: "An toàn tuyệt đối" },
     ],
   },
@@ -683,7 +683,7 @@ export const EVENTS: TowerEvent[] = [
     title: "Đổi sức lấy tri thức",
     text: "Một huấn luyện viên già đề nghị dạy bạn một mẹo nghề, đổi lại là một buổi trực đêm.",
     choices: [
-      { id: "trade", label: "Nhận lời", hint: "−15 máu, +60 xu" },
+      { id: "trade", label: "Nhận lời", hint: "−15 an toàn, +60 tín chỉ" },
       { id: "leave", label: "Từ chối", hint: "Không mất gì" },
     ],
   },
@@ -693,7 +693,7 @@ export const EVENTS: TowerEvent[] = [
     title: "Câu đố của đài chỉ huy",
     text: "Bảng điện tử nhấp nháy một dãy ký hiệu. Đoán đúng thì được thưởng.",
     choices: [
-      { id: "guess", label: "Thử đoán", hint: "50% +khiên 20, 50% mất 20 xu" },
+      { id: "guess", label: "Thử đoán", hint: "50% +lớp bảo vệ 20, 50% mất 20 tín chỉ" },
       { id: "leave", label: "Bỏ qua", hint: "Giữ nguyên hiện trạng" },
     ],
   },
@@ -716,22 +716,22 @@ export function resolveEvent(run: TowerRun, choiceId: string): { run: TowerRun; 
     if (ev.id === "ruong-bay") {
       if (lucky) {
         next.coins += 80;
-        message = "Rương đầy xu lẻ — bạn nhặt được 80 xu.";
+        message = "Rương đầy tín chỉ lẻ — bạn nhặt được 80 tín chỉ.";
       } else {
         next.hp = Math.max(1, next.hp - 10);
-        message = "Nắp rương bật vào tay — bạn mất 10 máu.";
+        message = "Nắp rương bật vào tay — bạn mất 10 an toàn.";
       }
     } else if (ev.id === "hien-mau") {
       next.hp = Math.max(1, next.hp - 15);
       next.coins += 60;
-      message = "Một đêm trực đổi lấy mẹo nghề: −15 máu, +60 xu.";
+      message = "Một đêm trực đổi lấy mẹo nghề: −15 an toàn, +60 tín chỉ.";
     } else {
       if (lucky) {
         next.shield += 20;
-        message = "Đoán trúng! Bạn nhận khiên 20 máu.";
+        message = "Đoán trúng! Bạn nhận lớp bảo vệ 20 an toàn.";
       } else {
         next.coins = Math.max(0, next.coins - 20);
-        message = "Đoán trượt, mất 20 xu tiền cược.";
+        message = "Đoán trượt, mất 20 tín chỉ tiền cược.";
       }
     }
   }
@@ -740,11 +740,11 @@ export function resolveEvent(run: TowerRun, choiceId: string): { run: TowerRun; 
   return { run: next, message };
 }
 
-/** Hàng hoá cửa hàng, sinh theo hạt của tầng. */
+/** Hàng hoá kho khí tài, sinh theo hạt của tầng. */
 export function shopStock(run: TowerRun): { relics: Relic[]; healCost: number; cleanseCost: number } {
   const asc = ascensionMods(run.ascension);
   const rand = branch(run.seed, `shop-${run.floor}`);
-  // Mặc cả thành công (đúng câu thử thách cửa hàng) thì giảm 30% mọi giá.
+  // Mặc cả thành công (đúng câu thử thách kho khí tài) thì giảm 30% mọi giá.
   const scale = (1 + asc.shopCostPct) * (run.challenge?.correct ? 0.7 : 1);
   return {
     relics: offerRelics(rand, run.relics, "thuong", 2),
@@ -767,7 +767,7 @@ export function buyAtShop(
     const relic = stock.relics.find((r) => r.id === action.relicId);
     if (!relic) return { run, message: "Món này đã bán hết." };
     const cost = price(relic.rarity);
-    if (run.coins < cost) return { run, message: "Không đủ xu." };
+    if (run.coins < cost) return { run, message: "Không đủ tín chỉ." };
     return {
       run: {
         ...run,
@@ -780,18 +780,18 @@ export function buyAtShop(
     };
   }
   if (action.kind === "heal") {
-    if (run.coins < stock.healCost) return { run, message: "Không đủ xu." };
-    if (mods.noHeal) return { run, message: "Hồi máu đang bị vô hiệu." };
+    if (run.coins < stock.healCost) return { run, message: "Không đủ tín chỉ." };
+    if (mods.noHeal) return { run, message: "Hồi an toàn đang bị vô hiệu." };
     return {
       run: { ...run, coins: run.coins - stock.healCost, hp: Math.min(run.maxHp, run.hp + 30) },
-      message: "Hồi 30 máu.",
+      message: "Hồi 30 an toàn.",
     };
   }
-  if (run.coins < stock.cleanseCost) return { run, message: "Không đủ xu." };
-  if (!run.curses.includes(action.curseId)) return { run, message: "Bạn không mang lời nguyền này." };
+  if (run.coins < stock.cleanseCost) return { run, message: "Không đủ tín chỉ." };
+  if (!run.curses.includes(action.curseId)) return { run, message: "Bạn không mang yếu tố bất lợi này." };
   return {
     run: { ...run, coins: run.coins - stock.cleanseCost, curses: run.curses.filter((c) => c !== action.curseId) },
-    message: "Đã gỡ lời nguyền.",
+    message: "Đã gỡ yếu tố bất lợi.",
   };
 }
 
@@ -799,7 +799,7 @@ export function leaveRoom(run: TowerRun): TowerRun {
   return advanceNonCombat(run);
 }
 
-/** Rời phòng không giao tranh: lên tầng và mở ban phước nhẹ. */
+/** Rời phòng không xử lý tình huống: lên tầng và mở hỗ trợ kíp trực nhẹ. */
 function advanceNonCombat(run: TowerRun): TowerRun {
   const nextFloor = run.floor + 1;
   const finished = nextFloor > FLOORS;

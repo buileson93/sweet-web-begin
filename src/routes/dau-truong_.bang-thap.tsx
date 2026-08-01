@@ -156,7 +156,7 @@ function TowerBoardPage() {
                 <div className="type-meta">{r.unit}</div>
                 <div className="mt-1 text-2xl font-bold tabular-nums">{r.score}</div>
                 <div className="type-meta">
-                  {r.floors} tầng · {r.hp} máu · thăng thiên {r.ascension}
+                  {r.floors} tầng · {r.hp} an toàn · thăng thiên {r.ascension}
                 </div>
               </div>
             ))}
@@ -170,9 +170,9 @@ function TowerBoardPage() {
                   <th className="p-2">Người chơi</th>
                   <th className="p-2">Điểm</th>
                   <th className="p-2">Tầng</th>
-                  <th className="p-2">Máu</th>
+                  <th className="p-2">An toàn</th>
                   <th className="p-2">TT</th>
-                  <th className="p-2">Di vật</th>
+                  <th className="p-2">Trang bị</th>
                   <th className="p-2">Hạt</th>
                 </tr>
               </thead>
@@ -194,7 +194,7 @@ function TowerBoardPage() {
                       <span className="text-base" title={r.relicIds.map((id) => relicById(id)?.name ?? id).join(", ")}>
                         {r.relicIds.slice(0, 5).map((id) => relicById(id)?.icon ?? "•").join(" ")}
                       </span>
-                      {r.curses > 0 && <span className="type-meta ml-1">· {r.curses} lời nguyền</span>}
+                      {r.curses > 0 && <span className="type-meta ml-1">· {r.curses} yếu tố bất lợi</span>}
                     </td>
                     <td className="p-2 font-mono text-xs opacity-70">{r.seed}</td>
                   </tr>
@@ -207,7 +207,7 @@ function TowerBoardPage() {
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline">
-          <Link to="/dau-truong/leo-thap">Vào tháp tu luyện</Link>
+          <Link to="/dau-truong/leo-thap">Vào tháp huấn luyện</Link>
         </Button>
         <Button asChild variant="ghost">
           <Link to="/dau-truong/thong-ke-thap">Thống kê hành trình của tôi</Link>
