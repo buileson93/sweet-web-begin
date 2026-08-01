@@ -92,6 +92,7 @@ function download(blob: Blob, name: string) {
 export function BackupManager() {
   const [selected, setSelected] = useState<TableKey[]>(TABLES.map((t) => t.key));
   const [busy, setBusy] = useState<"json" | "xlsx" | null>(null);
+  const [range, setRange] = useState<Range>({ from: "", to: "" });
 
   const toggle = (key: TableKey) =>
     setSelected((s) => (s.includes(key) ? s.filter((k) => k !== key) : [...s, key]));
@@ -103,9 +104,20 @@ export function BackupManager() {
     }
     setBusy(format);
     try {
+      // Đếm trước: xuất phía trình duyệt gom hết vào RAM nên phải chặn sớm.
+      for (const key of selected) {
+        const n = await countRows(key, range);
+        if (n > MAX_ROWS_PER_TABLE) {
+          throw new Error(
+            `Bảng "${TABLES.find((t) => t.key === key)?.label}" có ${n.toLocaleString("vi-VN")} dòng — vượt giới hạn ${MAX_ROWS_PER_TABLE.toLocaleString("vi-VN")} dòng cho một lần xuất. Hãy thu hẹp khoảng thời gian rồi tải thành nhiều đợt.`,
+          );
+        }
+      }
+
       const stamp = new Date().toISOString().slice(0, 19).replaceAll(":", "-");
       const dump: Record<string, Record<string, unknown>[]> = {};
-      for (const key of selected) dump[key] = await fetchAll(key);
+      for (const key of selected) dump[key] = await fetchAll(key, range);
+
 
       if (format === "json") {
         download(
