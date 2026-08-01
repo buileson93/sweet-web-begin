@@ -72,8 +72,10 @@ describe("shouldDisqualify", () => {
     expect(shouldDisqualify(DISQUALIFY_THRESHOLD_DEFAULT - 1, 0, true)).toBe(false);
   });
 
-  it("một cuộc gọi 2 giây trên điện thoại không đủ để bị huỷ bài", () => {
-    const score = scoreEvent("tab_hidden", { hiddenMs: 2_000 }) + scoreEvent("window_blur", { documentVisible: true });
+  it("một thông báo chớp nhoáng (1 giây) không đủ để bị huỷ bài", () => {
+    const score =
+      scoreEvent("tab_hidden", { hiddenMs: 1_000 }) +
+      scoreEvent("window_blur", { documentVisible: true });
     expect(score).toBe(0);
     expect(shouldDisqualify(score, 6, true)).toBe(false);
   });
