@@ -128,6 +128,27 @@ export function QuestionInsightsDialog({
               </div>
             </div>
 
+            {flags.length > 0 && (
+              <div className="space-y-2">
+                {flags.map((f) => (
+                  <div
+                    key={f.code}
+                    className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${
+                      f.tone === "danger"
+                        ? "border-destructive/40 bg-destructive/10"
+                        : "border-warning/40 bg-warning/10"
+                    }`}
+                  >
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                    <div>
+                      <p className="font-semibold">{f.label}</p>
+                      <p className="text-muted-foreground">{f.hint}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div>
               <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
                 <History className="size-4" /> Lịch sử phiên bản ({versions.length})
@@ -145,6 +166,20 @@ export function QuestionInsightsDialog({
                         </span>
                       </div>
                       <p className="line-clamp-3 text-muted-foreground">{v.question}</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 rounded-full"
+                        disabled={restoringId !== null}
+                        onClick={() => void handleRestore(v.id, v.version)}
+                      >
+                        {restoringId === v.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <RotateCcw className="size-4" />
+                        )}
+                        Khôi phục phiên bản này
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -152,6 +187,7 @@ export function QuestionInsightsDialog({
             </div>
           </div>
         )}
+
       </DialogContent>
     </Dialog>
   );
