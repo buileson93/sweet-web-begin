@@ -56,6 +56,8 @@ export function QuestionCard({
   onX2: () => void;
   onFifty: () => void;
   onAnswer: (value: AnswerValue) => void;
+  /** Chốt đáp án cho câu cần nhiều thao tác (chế độ chấm ngay). */
+  onConfirm?: () => void;
   onPrev: () => void;
   onNext: () => void;
   onSubmit: () => void;
