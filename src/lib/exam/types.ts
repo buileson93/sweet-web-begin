@@ -56,6 +56,8 @@ export type ReviewItem = {
   /** Mô tả ảnh cho trình đọc màn hình. */
   imageAlt?: string;
   correct: boolean;
+  /** Tỉ lệ đúng 0–1 (câu nhiều đáp án có thể đúng một phần). */
+  fraction?: number;
   answered: boolean;
   /** Mô tả đáp án người thi đã chọn, dạng chữ. */
   chosenText: string;
@@ -102,6 +104,8 @@ export type SubmitExamResult = {
 export type HistoryQuestion = {
   question: string;
   correct: boolean;
+  /** Tỉ lệ đúng 0–1 (câu nhiều đáp án có thể đúng một phần). */
+  fraction?: number;
   answered: boolean;
   chosenText: string | null;
   correctText: string;
