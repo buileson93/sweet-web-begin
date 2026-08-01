@@ -15,16 +15,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AVATAR_BACKGROUNDS,
   AVATAR_STYLES,
   decodeAvatar,
   encodeAvatar,
+  optionGroups,
+  optionValueLabel,
   suggestSeeds,
+  type AvatarOptions,
   type AvatarStyleId,
 } from "@/lib/avatar2d";
 import { savePlayerAvatar, type PlayerProfile } from "@/lib/player.functions";
 import { cn } from "@/lib/utils";
+
 
 /**
  * Chọn nhân vật 2D (SVG dựng tại chỗ) rồi lưu vào hồ sơ người chơi.
