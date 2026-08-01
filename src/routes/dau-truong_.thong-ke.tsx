@@ -22,6 +22,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
+import { SkillMapPanel } from "@/components/arena/SkillMapPanel";
 import { arenaMyStats } from "@/lib/arena.functions";
 import { getArenaToken } from "@/lib/arena/client";
 import { cn } from "@/lib/utils";
