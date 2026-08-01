@@ -306,18 +306,20 @@ function TowerPage() {
     return () => cancelAnimationFrame(raf);
   }, [inCombat]);
 
+  // Lưu tiến trình (tầng, phòng đã qua, máu, di vật, chuỗi combo) để quay lại không mất trạng thái.
   useEffect(() => {
     if (!run || summary) {
-      window.sessionStorage.removeItem(RESUME_KEY);
+      clearResume();
       return;
     }
-    const payload: Resume = { run, idx, answers, deadline: deadlineRef.current };
+    const payload: Resume = { run, idx, answers, deadline: deadlineRef.current, savedAt: Date.now() };
     try {
-      window.sessionStorage.setItem(RESUME_KEY, JSON.stringify(payload));
+      window.localStorage.setItem(RESUME_KEY, JSON.stringify(payload));
     } catch {
       /* bộ nhớ đầy thì bỏ qua, không chặn người chơi */
     }
   }, [run, idx, answers, summary]);
+
 
   useEffect(() => {
     try {
