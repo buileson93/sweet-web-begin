@@ -71,9 +71,9 @@ function TowerBoardPage() {
   return (
     <ArenaPage>
       <ArenaHero
-        icon={<Trophy className="size-6" />}
+        icon={Trophy}
         title="Bảng xếp hạng Tháp Không Lưu"
-        subtitle="Xem theo ngày, lọc theo bậc thăng thiên và soi kỹ từng hành trình."
+        description="Xem theo ngày, lọc theo bậc thăng thiên và soi kỹ từng hành trình."
       />
 
       <section className="space-y-3 rounded-2xl border bg-card/70 p-4 sm:p-5">
