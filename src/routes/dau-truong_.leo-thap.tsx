@@ -36,7 +36,7 @@ import { CredentialInput } from "@/components/CredentialInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { AnswerValue } from "@/lib/questionKinds";
-import { bankIsStale, type QuestionBank } from "@/lib/tower/bank";
+import { bankIsStale, bankQuizzes, filterBankByQuizzes, type QuestionBank } from "@/lib/tower/bank";
 import { QUESTIONS_PER_STAGE, START_HP, STAGES_PER_RUN, stageName } from "@/lib/tower/config";
 import {
   createRun,
@@ -87,6 +87,9 @@ export const Route = createFileRoute("/dau-truong_/leo-thap")({
 
 /** Khoá lưu ca trực đang dở để F5 hoặc khoá máy không mất bài. */
 const RESUME_KEY = "vatm:tower:resume";
+
+/** Ghi nhớ các bộ đề đã chọn cho ca trực sau. */
+const PACKS_KEY = "vatm:tower:packs";
 
 type Resume = {
   run: TowerRun;
@@ -149,6 +152,7 @@ function TowerPage() {
   const [offline, setOffline] = useState(false);
   const [pending, setPending] = useState(false);
   const [dueCount, setDueCount] = useState(0);
+  const [packs, setPacks] = useState<string[]>([]);
 
   const [run, setRun] = useState<TowerRun | null>(null);
   const [idx, setIdx] = useState(0);
@@ -179,6 +183,12 @@ function TowerPage() {
     if (ident) {
       setFormName(ident.name);
       setFormCredential(ident.credential);
+    }
+    try {
+      const raw = window.localStorage.getItem(PACKS_KEY);
+      if (raw) setPacks(JSON.parse(raw) as string[]);
+    } catch {
+      /* không đọc được thì mặc định dùng cả gói */
     }
     const resume = readResume();
     if (resume) {
@@ -367,10 +377,36 @@ function TowerPage() {
     setEntry({ name, credential });
   }
 
+  /** Lưu lựa chọn bộ đề; mảng rỗng nghĩa là dùng tất cả. */
+  function savePacks(next: string[]) {
+    const all = next.length === quizList.length ? [] : next;
+    setPacks(all);
+    try {
+      window.localStorage.setItem(PACKS_KEY, JSON.stringify(all));
+    } catch {
+      /* không lưu được thì vẫn dùng cho phiên hiện tại */
+    }
+  }
+
+  function togglePack(id: string) {
+    const current = packs.length ? packs : quizList.map((q) => q.id);
+    const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
+    if (!next.length) {
+      toast.error("Giữ ít nhất một bộ đề để vào ca trực.");
+      return;
+    }
+    savePacks(next);
+  }
+
   function begin() {
     if (!bank) return;
     try {
-      const fresh = createRun(bank, state, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      const scoped = filterBankByQuizzes(bank, packs);
+      if (!scoped.questions.length) {
+        toast.error("Các bộ đề đang chọn chưa có câu hỏi — hãy chọn thêm bộ đề khác.");
+        return;
+      }
+      const fresh = createRun(scoped, state, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
       setRun(fresh);
       setIdx(0);
       setAnswers({});
@@ -398,6 +434,11 @@ function TowerPage() {
   const inStagePos = idx - stageFrom + 1;
   const totalStages = run ? Math.ceil(run.questions.length / QUESTIONS_PER_STAGE) : STAGES_PER_RUN;
   const totals = useMemo(() => runBoonTotals(run?.boons ?? []), [run?.boons]);
+  const quizList = useMemo(() => bankQuizzes(bank), [bank]);
+  const scopedCount = useMemo(
+    () => (bank ? filterBankByQuizzes(bank, packs).questions.length : 0),
+    [bank, packs],
+  );
   const blanks = run
     ? run.questions.slice(stageFrom, stageFrom + QUESTIONS_PER_STAGE).filter((_, i) => {
         const v = answers[String(stageFrom + i)];
@@ -469,13 +510,55 @@ function TowerPage() {
           <p className="type-meta mt-1">
             {loading
               ? "Đang chuẩn bị gói nghiệp vụ cho bạn…"
-              : `${dueCount} thẻ đang đến hạn ôn · ${bank?.questions.length ?? 0} câu trong gói`}
+              : `${dueCount} thẻ đang đến hạn ôn · ${scopedCount} câu sẽ dùng cho ca trực`}
           </p>
           {!loading && !bank?.questions.length && (
             <p className="type-meta mt-1 text-amber-600">
               Gói nghiệp vụ chưa có câu hỏi nào — hãy thử lại khi có mạng.
             </p>
           )}
+
+          {quizList.length > 1 && (
+            <div className="mt-5 rounded-xl border bg-background/60 p-4 text-left">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold">Chọn bộ đề cho ca trực (có thể chọn nhiều)</p>
+                <button
+                  type="button"
+                  onClick={() => savePacks([])}
+                  className="type-meta underline underline-offset-2 transition hover:text-primary"
+                >
+                  Chọn tất cả
+                </button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {quizList.map((q) => {
+                  const on = packs.length === 0 || packs.includes(q.id);
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => togglePack(q.id)}
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                        on
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-primary/50",
+                      )}
+                    >
+                      {q.title} <span className="tabular-nums opacity-70">· {q.count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="type-meta mt-2">
+                {packs.length === 0
+                  ? "Đang trộn câu hỏi của tất cả bộ đề."
+                  : `Đang trộn ${packs.length} bộ đề đã chọn.`}
+              </p>
+            </div>
+          )}
+
           <Button className="mt-4" disabled={loading || !bank?.questions.length} onClick={begin}>
             {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Castle className="mr-2 size-4" />}
             Vào ca trực

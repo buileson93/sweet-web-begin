@@ -9,6 +9,8 @@ import { applyResults, dueCardIds, emptyState, mergeStates, normalizeState, prun
 
 const base = (over: Partial<BankQuestion> = {}): BankQuestion => ({
   id: "q1",
+  quizId: "quiz-1",
+  quizTitle: "Bộ đề mẫu",
   kind: "single",
   question: "Câu hỏi",
   options: ["A", "B", "C", "D"],
