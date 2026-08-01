@@ -21,6 +21,10 @@ export default defineConfig({
         manifest: false,
         workbox: {
           globPatterns: ["**/*.{js,css,woff2,png,svg,ico}"],
+          // Thư viện nặng chỉ dùng ở khu quản trị: để runtime cache tải khi cần,
+          // tránh bắt thí sinh tải hàng chục MB ngay lần đầu.
+          globIgnores: ["**/{exceljs,mammoth,katex,recharts,archiver,dicebear}*"],
+          maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
           navigateFallbackDenylist: [/^\/~oauth/, /^\/_serverFn/, /^\/api\//],
           runtimeCaching: [
             {
