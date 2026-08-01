@@ -16,6 +16,8 @@ export type SkillDef = {
   /** "attack" đánh mạnh hơn khi mình gây sát thương, "defend" giảm sát thương nhận. */
   role: "attack" | "defend";
   description: string;
+  /** Khoảng hiệu quả hiển thị cho người chơi (không dùng để tính toán). */
+  range: string;
 };
 
 /** Số lượt câu hỏi phải chờ sau khi dùng một kỹ năng. */
@@ -28,6 +30,7 @@ export const SKILLS: SkillDef[] = [
     icon: "💥",
     role: "attack",
     description: "Cộng thêm 3–8 sát thương ngẫu nhiên cho đòn đánh của câu này.",
+    range: "+3–8 sát thương",
   },
   {
     id: "chi_mang",
@@ -35,6 +38,7 @@ export const SKILLS: SkillDef[] = [
     icon: "🎯",
     role: "attack",
     description: "60% cơ hội nhân đôi sát thương; nếu hụt vẫn được +2.",
+    range: "60% ×2 · hụt vẫn +2",
   },
   {
     id: "khien_thep",
@@ -42,6 +46,7 @@ export const SKILLS: SkillDef[] = [
     icon: "🛡️",
     role: "defend",
     description: "Chặn 30–70% sát thương phải nhận ở câu này.",
+    range: "Chặn 30–70% sát thương",
   },
 ];
 
