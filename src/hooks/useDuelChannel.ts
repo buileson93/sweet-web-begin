@@ -274,7 +274,7 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
       void supabase.removeChannel(channel);
     };
     // `attempt` tăng lên nghĩa là cần dựng lại kênh realtime.
-  }, [duelId, enabled, refresh, scheduleRefresh, attempt, log]);
+  }, [duelId, enabled, refresh, scheduleRefresh, applySnapshot, attempt, log]);
 
   // Nhịp dự phòng: nhanh khi mất Realtime, chậm khi kênh còn sống,
   // và ngưng hẳn khi người dùng chuyển tab để không đốt tài nguyên máy chủ.
