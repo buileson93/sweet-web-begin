@@ -4,6 +4,7 @@ import {
   gradeOne,
   optionImagesOf,
   permuteByOrder,
+  reorderByDisplay,
   pickByBlueprint,
   type QuestionRow,
   DEFAULT_SCORE_RULES,
