@@ -44,7 +44,7 @@ export function useIntegrityWatch(opts: {
       // Quota tách riêng: rời tab / mở nhiều tab luôn được ghi nhận, không bị "đốt" bởi copy/paste.
       if (exempt ? sentExempt >= MAX_EXEMPT_EVENTS_PER_SESSION : sent >= MAX_EVENTS) return;
       const now = Date.now();
-      if (now - lastSentAt < 800) return; // debounce
+      if (!exempt && now - lastSentAt < 800) return; // debounce (không áp cho loại nặng)
       lastSentAt = now;
       if (exempt) sentExempt += 1;
       else sent += 1;
