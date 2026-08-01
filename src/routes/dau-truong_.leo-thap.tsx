@@ -273,12 +273,18 @@ function TowerPage() {
       setRun(resume.run);
       setIdx(resume.idx);
       setAnswers(resume.answers);
-      deadlineRef.current = resume.deadline;
-      toast.message("Đã khôi phục hành trình đang dở của bạn.");
+      // Đồng hồ cũ đã hết hạn thì cấp lại trọn thời gian phòng, tránh nộp ngay khi vừa mở lại.
+      const fresh = resume.run.room && resume.run.room.questions > 0;
+      deadlineRef.current =
+        resume.deadline > Date.now() ? resume.deadline : fresh ? Date.now() + roomSeconds(resume.run) * 1000 : 0;
+      toast.message(
+        `Đã khôi phục hành trình: tầng ${Math.min(resume.run.floor, FLOORS)}/${FLOORS} · ${resume.run.hp}/${resume.run.maxHp} máu · ${resume.run.relics.length} di vật.`,
+      );
     }
   }, []);
 
   const inCombat = Boolean(run && !summary && !outcome && run.room && run.room.questions > 0);
+
 
   // Đồng hồ: chỉ chạy vòng rAF khi thật sự đang làm bài, ghi thẳng vào DOM.
   useEffect(() => {
