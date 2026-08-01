@@ -9,34 +9,75 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 
-/** Các bảng có thể sao lưu (chỉ đọc bằng quyền quản trị). */
+/** Các bảng có thể sao lưu (chỉ đọc bằng quyền quản trị) kèm cột thời gian để lọc khoảng. */
 const TABLES = [
-  { key: "quizzes", label: "Cuộc thi" },
-  { key: "questions", label: "Câu hỏi" },
-  { key: "units", label: "Đơn vị" },
-  { key: "employees", label: "Nhân sự" },
-  { key: "results", label: "Kết quả" },
-  { key: "audit_logs", label: "Nhật ký" },
+  { key: "quizzes", label: "Cuộc thi", timeCol: "created_at" },
+  { key: "questions", label: "Câu hỏi", timeCol: "created_at" },
+  { key: "units", label: "Đơn vị", timeCol: "created_at" },
+  { key: "employees", label: "Nhân sự", timeCol: "created_at" },
+  { key: "results", label: "Kết quả", timeCol: "submitted_at" },
+  { key: "audit_logs", label: "Nhật ký", timeCol: "created_at" },
 ] as const;
 
 type TableKey = (typeof TABLES)[number]["key"];
 
 const PAGE = 1000;
+/**
+ * Trần an toàn cho một lần xuất phía trình duyệt. Vượt ngưỡng này tab sẽ hết bộ nhớ,
+ * nên chặn sớm và yêu cầu thu hẹp khoảng thời gian thay vì để trình duyệt treo.
+ */
+const MAX_ROWS_PER_TABLE = 50_000;
 
-/** Tải toàn bộ dữ liệu một bảng theo từng trang để tránh giới hạn 1000 dòng. */
-async function fetchAll(table: TableKey) {
+type Range = { from: string; to: string };
+
+function timeColOf(table: TableKey) {
+  return TABLES.find((t) => t.key === table)!.timeCol;
+}
+
+/** Áp bộ lọc khoảng thời gian (nếu có) lên truy vấn của một bảng. */
+function applyRange<T>(query: T, table: TableKey, range: Range): T {
+  const col = timeColOf(table);
+  let q = query as never as {
+    gte: (c: string, v: string) => unknown;
+    lte: (c: string, v: string) => unknown;
+  };
+  if (range.from) q = (q.gte(col, new Date(range.from).toISOString()) as typeof q);
+  if (range.to) {
+    const end = new Date(range.to);
+    end.setHours(23, 59, 59, 999);
+    q = q.lte(col, end.toISOString()) as typeof q;
+  }
+  return q as never as T;
+}
+
+/** Đếm trước số dòng để chặn những lần xuất chắc chắn làm treo trình duyệt. */
+async function countRows(table: TableKey, range: Range) {
+  const { count, error } = await applyRange(
+    supabase.from(table).select("*", { count: "exact", head: true }),
+    table,
+    range,
+  );
+  if (error) throw new Error(`${table}: ${error.message}`);
+  return count ?? 0;
+}
+
+/** Tải dữ liệu một bảng theo từng trang để tránh giới hạn 1000 dòng. */
+async function fetchAll(table: TableKey, range: Range) {
   const rows: Record<string, unknown>[] = [];
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from(table)
-      .select("*")
-      .range(from, from + PAGE - 1);
+    const { data, error } = await applyRange(
+      supabase.from(table).select("*").order(timeColOf(table), { ascending: true }),
+      table,
+      range,
+    ).range(from, from + PAGE - 1);
     if (error) throw new Error(`${table}: ${error.message}`);
     rows.push(...((data ?? []) as Record<string, unknown>[]));
     if (!data || data.length < PAGE) break;
+    if (rows.length >= MAX_ROWS_PER_TABLE) break;
   }
   return rows;
 }
+
 
 function download(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
