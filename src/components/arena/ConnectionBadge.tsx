@@ -1,5 +1,6 @@
 import { CloudCog, RefreshCw, Wifi, WifiOff } from "lucide-react";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export type DuelConnectionStatus = "live" | "syncing" | "retrying" | "offline";
@@ -24,14 +25,28 @@ export function ConnectionBadge({
   const Icon = meta.icon;
 
   return (
-    <div
-      className={cn("flex items-center gap-1.5 rounded-full border bg-card px-2 py-1 text-[10px] font-semibold", meta.tone)}
-      title={bad ? "Độ trễ cao, nên chờ kết nối ổn định trước khi chốt đáp án" : meta.label}
-      role="status"
-    >
-      <Icon className={cn("size-3", (status === "syncing" || status === "retrying") && "animate-spin")} />
-      <span className="hidden sm:inline">{meta.label}</span>
-      <span className="font-mono tabular-nums">{latency === null ? "—" : `${latency}ms`}</span>
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className={cn(
+            "flex cursor-help items-center gap-1.5 rounded-full border bg-card px-2 py-1 text-[10px] font-semibold",
+            meta.tone,
+          )}
+          role="status"
+        >
+          <Icon className={cn("size-3", (status === "syncing" || status === "retrying") && "animate-spin")} />
+          <span className="hidden sm:inline">{meta.label}</span>
+          <span className="font-mono tabular-nums">{latency === null ? "—" : `${latency}ms`}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="max-w-56">
+        <p className="font-semibold">{meta.label}</p>
+        <p>
+          {bad
+            ? "Độ trễ cao — nên chờ đường truyền ổn định rồi hãy chốt đáp án."
+            : "Độ trễ giữa máy bạn và máy chủ trận đấu."}
+        </p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
