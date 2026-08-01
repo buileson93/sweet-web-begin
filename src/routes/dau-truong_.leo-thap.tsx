@@ -802,10 +802,26 @@ function TowerPage() {
             </div>
           </div>
 
+          {/* Xem trước toàn bộ 12 tầng của hạt hằng ngày trước khi bước vào. */}
+          {daily && (
+            <div className="mt-3 text-left">
+              <p className="mb-2 text-sm font-semibold">Bản đồ hôm nay — xem trước 12 tầng</p>
+              <TowerMap map={previewMap} floor={1} path={[]} canPick={false} preview />
+            </div>
+          )}
+
           <Button className="mt-4" disabled={loading || !bank?.questions.length} onClick={begin}>
             {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Castle className="mr-2 size-4" />}
             Vào tháp tu luyện
           </Button>
+          <div className="mt-2 flex flex-wrap justify-center gap-2">
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/dau-truong/bang-thap">Bảng xếp hạng tháp</Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/dau-truong/thong-ke-thap">Thống kê hành trình</Link>
+            </Button>
+          </div>
         </section>
       )}
 
