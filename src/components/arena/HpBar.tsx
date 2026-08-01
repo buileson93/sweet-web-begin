@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Heart } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 /** Thanh máu của một đấu thủ: có vệt "máu vừa mất" trượt theo kiểu game turn-based. */
-export function HpBar({
+export const HpBar = memo(function HpBar({
   hp,
   hpStart,
   mine,
@@ -63,4 +63,4 @@ export function HpBar({
       </p>
     </div>
   );
-}
+})

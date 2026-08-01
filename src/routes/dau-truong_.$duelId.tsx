@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Dices, Link2, Loader2, LogOut, RotateCcw, Share2, Swords, X } from "lucide-react";
@@ -14,7 +14,6 @@ import { DiagnosticsDialog } from "@/components/arena/DiagnosticsDialog";
 import { SkillBar } from "@/components/arena/SkillBar";
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { PageContainer } from "@/components/ui-kit";
 import { useDuelChannel } from "@/hooks/useDuelChannel";
 import {
@@ -92,6 +91,8 @@ function DuelRoom() {
   const [dice, setDice] = useState<number[]>([]);
   const [camShake, setCamShake] = useState(0);
   const expiringRef = useRef(false);
+  /** Dải diễn biến trong khung đấu — thay cho "bão" toast mỗi lượt. */
+  const [battleLog, setBattleLog] = useState<{ id: number; tone: string; text: string }[]>([]);
 
   // Mỗi câu mới thì xoá lựa chọn cũ.
   useEffect(() => {
@@ -108,7 +109,7 @@ function DuelRoom() {
   const me = state?.players.find((p) => p.employeeId === state?.you);
   const foe = state?.players.find((p) => p.employeeId !== me?.employeeId);
 
-  // Thông báo trực tiếp: trúng đòn, ăn combo, đối thủ sắp gục.
+  // Diễn biến trận: gộp mọi thông báo của một lượt vào MỘT dải log (không toast).
   useEffect(() => {
     const r = state?.lastResult;
     if (!state || !r || r.roundIndex === announced.current) return;
@@ -131,19 +132,45 @@ function DuelRoom() {
     }
     const mineLine = r.lines.find((l) => l.employeeId === state.you);
     const foeLine = r.lines.find((l) => l.employeeId !== state.you);
-    for (const n of r.skillNotes ?? []) toast.message(n.label);
-    if (r.timedOut) toast.warning("⏱️ Hết giờ — không ai gây sát thương.");
+    const entries: { tone: string; text: string }[] = [];
+    for (const n of r.skillNotes ?? []) entries.push({ tone: "skill", text: `✨ ${n.label}` });
+    if (r.timedOut) entries.push({ tone: "warn", text: "⏱️ Hết giờ — không ai gây sát thương." });
     else if ((mineLine?.damage ?? 0) > 0)
-      toast.success(`⚔️ Bạn gây ${mineLine!.damage} sát thương!`);
+      entries.push({ tone: "good", text: `⚔️ Bạn gây ${mineLine!.damage} sát thương!` });
     else if ((foeLine?.damage ?? 0) > 0)
-      toast.error(`💔 Bạn nhận ${foeLine!.damage} sát thương!`);
+      entries.push({ tone: "bad", text: `💔 Bạn nhận ${foeLine!.damage} sát thương!` });
     const foeHp = foeLine?.hp ?? state.hpStart;
     const myHp = mineLine?.hp ?? state.hpStart;
     if (foeHp > 0 && foeHp <= state.hpStart * 0.25)
-      toast.warning(`🔥 Đối thủ chỉ còn ${foeHp} máu — dứt điểm thôi!`);
+      entries.push({ tone: "warn", text: `🔥 Đối thủ chỉ còn ${foeHp} máu — dứt điểm thôi!` });
     if (myHp > 0 && myHp <= state.hpStart * 0.25)
-      toast.warning(`🩸 Bạn chỉ còn ${myHp} máu — cẩn thận!`);
-  }, [state]);
+      entries.push({ tone: "warn", text: `🩸 Bạn chỉ còn ${myHp} máu — cẩn thận!` });
+    if (entries.length) {
+      const base = Date.now();
+      setBattleLog((prev) =>
+        [...entries.map((e, i) => ({ ...e, id: base + i })), ...prev].slice(0, 4),
+      );
+    }
+  }, [state, clock]);
+
+  // Hết thời gian công bố kết quả: nhắc máy chủ sang câu tiếp ngay, không chờ nhịp watchdog.
+  // Máy chủ vẫn tự kiểm giờ nên lời nhắc này không thể làm sai luật.
+  useEffect(() => {
+    const r = state?.lastResult;
+    if (!state || !r?.resolvedAt || state.status !== "playing") return;
+    if (r.roundIndex !== state.currentRound) return;
+    const end = clock.toClientTime(r.resolvedAt) + 3_000;
+    const id = window.setTimeout(
+      () => {
+        void closeExpired({ data: { token, duelId, roundIndex: state.currentRound } }).catch(
+          () => undefined,
+        );
+      },
+      Math.max(150, end - Date.now() + 150),
+    );
+    return () => window.clearTimeout(id);
+  }, [state, clock, closeExpired, token, duelId]);
+
 
   if (!token || !state)
     return (
@@ -192,6 +219,30 @@ function DuelRoom() {
       </header>
 
       <BattleDice dice={dice} />
+
+      {battleLog.length > 0 ? (
+        <ul
+          className="space-y-1 rounded-xl border bg-card/70 p-2 text-xs"
+          aria-live="polite"
+          aria-label="Diễn biến trận đấu"
+        >
+          {battleLog.map((l) => (
+            <li
+              key={l.id}
+              className={cn(
+                "animate-fade-in",
+                l.tone === "good" && "text-primary",
+                l.tone === "bad" && "text-destructive",
+                l.tone === "warn" && "text-amber-500",
+                l.tone === "skill" && "text-muted-foreground",
+              )}
+            >
+              {l.text}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
 
       {state.status === "waiting" || state.status === "countdown" ? (
         <WaitingPanel
@@ -402,7 +453,67 @@ function WaitingPanel({
   );
 }
 
+/**
+ * Đồng hồ lượt đấu — chạy bằng requestAnimationFrame và ghi thẳng vào DOM.
+ * Không dùng state nên không kéo theo việc vẽ lại câu hỏi/kỹ năng/nhân vật mỗi 100ms.
+ */
+const RoundClock = memo(function RoundClock({
+  endAt,
+  total,
+  round,
+  onExpire,
+}: {
+  endAt: number;
+  total: number;
+  round: number;
+  onExpire: () => void;
+}) {
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const textRef = useRef<HTMLParagraphElement | null>(null);
+  const expireRef = useRef(onExpire);
+  expireRef.current = onExpire;
+
+  useEffect(() => {
+    if (!endAt) return;
+    let raf = 0;
+    let fired = false;
+    const step = () => {
+      const remain = Math.max(0, endAt - Date.now());
+      const pct = total > 0 ? (remain / total) * 100 : 0;
+      if (barRef.current) {
+        barRef.current.style.width = `${pct}%`;
+        barRef.current.style.backgroundColor =
+          pct < 30 ? "hsl(var(--destructive))" : "hsl(var(--primary))";
+      }
+      if (textRef.current)
+        textRef.current.textContent =
+          remain <= 0 ? "⏱️ Hết giờ — đang chốt lượt…" : `${(remain / 1000).toFixed(1)}s`;
+      if (remain <= 0) {
+        if (!fired) {
+          fired = true;
+          expireRef.current();
+        }
+        return;
+      }
+      // Tab ẩn thì trình duyệt tự dừng rAF — không đốt CPU nền.
+      raf = requestAnimationFrame(step);
+    };
+    step();
+    return () => cancelAnimationFrame(raf);
+  }, [endAt, total, round]);
+
+  return (
+    <div className="space-y-1">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+        <div ref={barRef} className="h-full w-full rounded-full bg-primary" />
+      </div>
+      <p ref={textRef} className="text-right font-mono text-xs text-muted-foreground" />
+    </div>
+  );
+});
+
 function RoundPanel({
+
   state,
   value,
   locked,
@@ -427,44 +538,27 @@ function RoundPanel({
 }) {
   const q = state.question!;
   const total = state.secondsPerRound * 1000;
-  const [remain, setRemain] = useState(total);
-  const expiredRound = useRef(-1);
-  useEffect(() => {
-    if (!state.roundServedAt) return;
-    const end = toClientTime(state.roundServedAt) + total;
-    const update = () => {
-      const next = Math.max(0, end - Date.now());
-      setRemain(next);
-      if (next <= 0 && expiredRound.current !== state.currentRound) {
-        expiredRound.current = state.currentRound;
-        // Hết giờ: khoá giao diện ngay tại máy, chỉ chờ máy chủ chốt lượt (không chờ mới phản hồi).
-        window.setTimeout(onExpire, 400);
-      }
-    };
-    update();
-    const id = window.setInterval(update, 100);
-    return () => window.clearInterval(id);
-  }, [state.currentRound, state.roundServedAt, toClientTime, total, onExpire]);
+  // Đồng hồ chạy bằng requestAnimationFrame, ghi thẳng vào DOM (không setState 10 lần/giây).
+  // React chỉ vẽ lại đúng MỘT lần cho mỗi câu: lúc hết giờ.
+  const [timeUp, setTimeUp] = useState(false);
+  const endAt = state.roundServedAt ? toClientTime(state.roundServedAt) + total : 0;
+  useEffect(() => setTimeUp(false), [state.currentRound]);
 
-  const pct = useMemo(() => Math.round((remain / total) * 100), [remain, total]);
   const single = q.kind === "single" || q.kind === "true_false";
-  // Dự đoán phía client: hết giờ là khoá liền, không đợi máy chủ trả lời.
-  const timeUp = remain <= 0;
   const frozen = locked || timeUp;
 
   return (
     <div className="space-y-3 rounded-2xl border bg-card p-4">
-      <div className="space-y-1">
-        <Progress value={pct} className={cn(pct < 30 && "[&>div]:bg-destructive")} />
-        <p
-          className={cn(
-            "text-right font-mono text-xs",
-            timeUp ? "font-bold text-destructive" : "text-muted-foreground",
-          )}
-        >
-          {timeUp ? "⏱️ Hết giờ — đang chốt lượt…" : `${(remain / 1000).toFixed(1)}s`}
-        </p>
-      </div>
+      <RoundClock
+        endAt={endAt}
+        total={total}
+        round={state.currentRound}
+        onExpire={() => {
+          setTimeUp(true);
+          onExpire();
+        }}
+      />
+
       <div className="space-y-1">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Kỹ năng — nạp trước khi chốt đáp án

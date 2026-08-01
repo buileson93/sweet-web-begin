@@ -11,11 +11,12 @@ export type DuelConnectionStatus = "live" | "syncing" | "retrying" | "offline";
 type Options = { duelId: string; token: string; enabled?: boolean };
 
 /** Cửa sổ gom sự kiện: nhiều broadcast liên tiếp chỉ tạo MỘT lần đồng bộ. */
-const BATCH_WINDOW_MS = 70;
+const BATCH_WINDOW_MS = 30;
 /** Khoảng cách tối thiểu giữa hai lần hỏi máy chủ (trừ khi ép buộc). */
-const MIN_GAP_MS = 350;
+const MIN_GAP_MS = 120;
 /** Ping vượt ngưỡng này thì ghi nhật ký "độ trễ cao". */
 const SLOW_PING_MS = 900;
+
 
 export type DuelNetStats = {
   /** Độ trễ vòng lặp gần nhất (ms). */
@@ -193,20 +194,51 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
     });
   }, []);
 
+  /**
+   * Áp thẳng ảnh chụp trạng thái đi kèm broadcast — KHÔNG tốn thêm vòng HTTP.
+   * Chỉ nhận khi phiên bản mới hơn; hụt phiên bản thì mới hỏi lại máy chủ.
+   */
+  const applySnapshot = useCallback(
+    (incoming: DuelState) => {
+      const verdict = classifyVersion(versionRef.current, incoming.version);
+      if (verdict !== "apply") return true;
+      versionRef.current = incoming.version;
+      predictedOn.current = null;
+      const at = eventAtRef.current;
+      eventAtRef.current = null;
+      setState((prev) => ({ ...incoming, you: prev?.you ?? incoming.you }));
+      setConnectionStatus(liveRef.current ? "live" : "retrying");
+      if (at !== null) setStats((s) => ({ ...s, eventLag: Date.now() - at }));
+      return true;
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!enabled) return;
     void refresh(true);
 
     let retryTimer = 0;
     const channel = supabase
-      .channel(`duel:${duelId}`, { config: { broadcast: { self: true } } })
-      .on("broadcast", { event: "*" }, () => scheduleRefresh(false, true))
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "duels", filter: `id=eq.${duelId}` },
-        () => scheduleRefresh(false, true),
-      )
+      // `self: false`: người gửi không tự kích hoạt thêm một lần đồng bộ nữa.
+      .channel(`duel:${duelId}`, { config: { broadcast: { self: false } } })
+      .on("broadcast", { event: "*" }, (msg) => {
+        if (eventAtRef.current === null) eventAtRef.current = Date.now();
+        const payload = (msg as { payload?: unknown }).payload;
+        // Máy chủ gửi kèm nguyên trạng thái -> vẽ ngay, khỏi gọi lại máy chủ.
+        if (
+          (msg as { event?: string }).event === "state.sync" &&
+          payload &&
+          typeof payload === "object" &&
+          typeof (payload as DuelState).version === "number"
+        ) {
+          applySnapshot(payload as DuelState);
+          return;
+        }
+        scheduleRefresh(false, true);
+      })
       .subscribe((status) => {
+
         const connected = status === "SUBSCRIBED";
         liveRef.current = connected;
         setLive(connected);
@@ -242,7 +274,7 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
       void supabase.removeChannel(channel);
     };
     // `attempt` tăng lên nghĩa là cần dựng lại kênh realtime.
-  }, [duelId, enabled, refresh, scheduleRefresh, attempt, log]);
+  }, [duelId, enabled, refresh, scheduleRefresh, applySnapshot, attempt, log]);
 
   // Nhịp dự phòng: nhanh khi mất Realtime, chậm khi kênh còn sống,
   // và ngưng hẳn khi người dùng chuyển tab để không đốt tài nguyên máy chủ.

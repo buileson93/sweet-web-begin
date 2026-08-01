@@ -3,11 +3,10 @@
  * Máy chủ là nguồn sự thật: kể cả khi mọi trình duyệt đều đóng, trận vẫn tự chạy đúng luật.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { DISCONNECT_GRACE_MS, closeRound, finishDuel, startPlaying } from "@/lib/arena/duel.server";
+import { DISCONNECT_GRACE_MS, advanceDuel, finishDuel } from "@/lib/arena/duel.server";
 import { softResetElo } from "@/lib/arena/rules";
 import { broadcastDuel } from "@/lib/arena/broadcast.server";
 
-const NETWORK_GRACE_MS = 1_500;
 /** Trận quá thời lượng này thì cưỡng bức kết thúc. */
 const MAX_DUEL_MS = 30 * 60_000;
 /** Phòng chờ quá thời gian này mà không đủ người thì huỷ. */
@@ -19,23 +18,20 @@ export async function tickDuels() {
   let finished = 0;
   let cancelled = 0;
 
-  // 1) Đếm ngược xong -> phát câu đầu tiên.
+  // 1) Đếm ngược xong -> phát câu đầu tiên (máy trạng thái tự kiểm giờ).
   const { data: counting } = await supabaseAdmin
     .from("duels")
-    .select("id, started_at")
+    .select("id")
     .eq("status", "countdown")
     .limit(50);
   for (const d of counting ?? []) {
-    if (d.started_at && Date.parse(d.started_at) <= now) {
-      await startPlaying(d.id);
-    }
+    if ((await advanceDuel(d.id)).advanced) closed++;
   }
 
-
-  // 2) Câu quá hạn -> chốt câu, sang câu tiếp.
+  // 2) Hết giờ câu hoặc hết thời gian công bố kết quả -> bước tiếp.
   const { data: playing } = await supabaseAdmin
     .from("duels")
-    .select("id, current_round, round_served_at, seconds_per_round, started_at")
+    .select("id, started_at")
     .eq("status", "playing")
     .limit(50);
   for (const d of playing ?? []) {
@@ -44,14 +40,9 @@ export async function tickDuels() {
       finished++;
       continue;
     }
-    if (!d.round_served_at) continue;
-    const deadline =
-      Date.parse(d.round_served_at) + d.seconds_per_round * 1000 + NETWORK_GRACE_MS;
-    if (now > deadline) {
-      await closeRound(d.id, d.current_round);
-      closed++;
-    }
+    if ((await advanceDuel(d.id)).advanced) closed++;
   }
+
 
   // 3) Rời trận quá 20 giây -> xử thua kỹ thuật.
   const { data: leftRows } = await supabaseAdmin
