@@ -1209,27 +1209,37 @@ function TowerPage() {
 
       {/* Phòng giao tranh / tinh anh / trùm */}
       {run && !summary && !outcome && run.room && perRoom > 0 && question && (
-        <section className="space-y-4 rounded-2xl border bg-card/70 p-5">
+        <section
+          className="space-y-4 rounded-2xl border bg-card/70 p-5"
+          aria-label={`${boss ? boss.name : ROOM_META[run.room.kind].label} — câu ${idx + 1} trên ${perRoom}`}
+        >
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-              {ROOM_META[run.room.kind].icon} {boss ? boss.name : ROOM_META[run.room.kind].label} · câu {idx + 1}/{perRoom}
+              <span aria-hidden>{ROOM_META[run.room.kind].icon} </span>
+              {boss ? boss.name : ROOM_META[run.room.kind].label} · câu {idx + 1}/{perRoom}
             </span>
             {run.combo > 1 ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
-                <Flame className="size-3" /> Chuỗi {run.combo}
+              <span
+                aria-live="polite"
+                className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600"
+              >
+                <Flame className="size-3" aria-hidden /> Chuỗi {run.combo}
               </span>
             ) : null}
+            <span className="sr-only">Thời gian còn lại của phòng</span>
             <span
               ref={clockRef}
+              aria-live="off"
               className={cn("ml-auto font-mono text-sm tabular-nums", lowTime && "font-bold text-destructive")}
             />
           </div>
           {boss && <p className="type-meta text-destructive">{boss.rule}</p>}
           <p className="type-meta">{ROOM_RULES[run.room.kind].rule}</p>
-          <ul className="flex flex-wrap gap-1.5">
+          <ul className="flex flex-wrap gap-1.5" aria-label="Mốc thưởng khi trả lời đúng liên tiếp">
             {COMBO_REWARDS.map((c) => (
               <li
                 key={c.at}
+                aria-current={run.combo >= c.at ? "true" : undefined}
                 className={cn(
                   "rounded-full border px-2 py-0.5 text-[11px] font-medium transition",
                   run.combo >= c.at
@@ -1241,7 +1251,12 @@ function TowerPage() {
               </li>
             ))}
           </ul>
-          {note && <p className="type-meta">{note}</p>}
+          {note && (
+            <p className="type-meta" aria-live="polite">
+              {note}
+            </p>
+          )}
+
 
           <div className="flex flex-wrap gap-1.5">
             {roomQs.map((_, i) => {
