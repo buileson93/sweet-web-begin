@@ -18,7 +18,6 @@ import { Route as HuongDanRouteImport } from './routes/huong-dan'
 import { Route as LichSuRouteImport } from './routes/lich-su'
 import { Route as NhanVatRouteImport } from './routes/nhan-vat'
 import { Route as ThiRouteImport } from './routes/thi'
-import { Route as TowermapDemoRouteImport } from './routes/towermap-demo'
 import { Route as AuthenticatedNhapDuLieuRouteImport } from './routes/_authenticated/nhap-du-lieu'
 import { Route as AuthenticatedNhatKyRouteImport } from './routes/_authenticated/nhat-ky'
 import { Route as AuthenticatedQuanTriRouteImport } from './routes/_authenticated/quan-tri'
@@ -77,11 +76,6 @@ const NhanVatRoute = NhanVatRouteImport.update({
 const ThiRoute = ThiRouteImport.update({
   id: '/thi',
   path: '/thi',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TowermapDemoRoute = TowermapDemoRouteImport.update({
-  id: '/towermap-demo',
-  path: '/towermap-demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedNhapDuLieuRoute = AuthenticatedNhapDuLieuRouteImport.update({
@@ -169,7 +163,6 @@ export interface FileRoutesByFullPath {
   '/lich-su': typeof LichSuRoute
   '/nhan-vat': typeof NhanVatRoute
   '/thi': typeof ThiRoute
-  '/towermap-demo': typeof TowermapDemoRoute
   '/nhap-du-lieu': typeof AuthenticatedNhapDuLieuRoute
   '/nhat-ky': typeof AuthenticatedNhatKyRoute
   '/quan-tri': typeof AuthenticatedQuanTriRoute
@@ -195,7 +188,6 @@ export interface FileRoutesByTo {
   '/lich-su': typeof LichSuRoute
   '/nhan-vat': typeof NhanVatRoute
   '/thi': typeof ThiRoute
-  '/towermap-demo': typeof TowermapDemoRoute
   '/nhap-du-lieu': typeof AuthenticatedNhapDuLieuRoute
   '/nhat-ky': typeof AuthenticatedNhatKyRoute
   '/quan-tri': typeof AuthenticatedQuanTriRoute
@@ -223,7 +215,6 @@ export interface FileRoutesById {
   '/lich-su': typeof LichSuRoute
   '/nhan-vat': typeof NhanVatRoute
   '/thi': typeof ThiRoute
-  '/towermap-demo': typeof TowermapDemoRoute
   '/_authenticated/nhap-du-lieu': typeof AuthenticatedNhapDuLieuRoute
   '/_authenticated/nhat-ky': typeof AuthenticatedNhatKyRoute
   '/_authenticated/quan-tri': typeof AuthenticatedQuanTriRoute
@@ -251,7 +242,6 @@ export interface FileRouteTypes {
     | '/lich-su'
     | '/nhan-vat'
     | '/thi'
-    | '/towermap-demo'
     | '/nhap-du-lieu'
     | '/nhat-ky'
     | '/quan-tri'
@@ -277,7 +267,6 @@ export interface FileRouteTypes {
     | '/lich-su'
     | '/nhan-vat'
     | '/thi'
-    | '/towermap-demo'
     | '/nhap-du-lieu'
     | '/nhat-ky'
     | '/quan-tri'
@@ -304,7 +293,6 @@ export interface FileRouteTypes {
     | '/lich-su'
     | '/nhan-vat'
     | '/thi'
-    | '/towermap-demo'
     | '/_authenticated/nhap-du-lieu'
     | '/_authenticated/nhat-ky'
     | '/_authenticated/quan-tri'
@@ -332,7 +320,6 @@ export interface RootRouteChildren {
   LichSuRoute: typeof LichSuRoute
   NhanVatRoute: typeof NhanVatRoute
   ThiRoute: typeof ThiRoute
-  TowermapDemoRoute: typeof TowermapDemoRoute
   CuocThiQuizIdRoute: typeof CuocThiQuizIdRoute
   DauTruongDuelIdRoute: typeof DauTruongDuelIdRoute
   DauTruongLeoThapRoute: typeof DauTruongLeoThapRoute
@@ -410,13 +397,6 @@ declare module '@tanstack/react-router' {
       path: '/thi'
       fullPath: '/thi'
       preLoaderRoute: typeof ThiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/towermap-demo': {
-      id: '/towermap-demo'
-      path: '/towermap-demo'
-      fullPath: '/towermap-demo'
-      preLoaderRoute: typeof TowermapDemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/nhap-du-lieu': {
@@ -552,7 +532,6 @@ const rootRouteChildren: RootRouteChildren = {
   LichSuRoute: LichSuRoute,
   NhanVatRoute: NhanVatRoute,
   ThiRoute: ThiRoute,
-  TowermapDemoRoute: TowermapDemoRoute,
   CuocThiQuizIdRoute: CuocThiQuizIdRoute,
   DauTruongDuelIdRoute: DauTruongDuelIdRoute,
   DauTruongLeoThapRoute: DauTruongLeoThapRoute,
