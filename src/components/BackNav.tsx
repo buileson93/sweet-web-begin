@@ -9,7 +9,9 @@ export function BackNav() {
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const hidden = pathname === "/" || pathname.startsWith("/thi");
+  // Đấu trường đã có khung ứng dụng + thanh điều hướng riêng nên không cần nút nổi.
+  const hidden = pathname === "/" || pathname.startsWith("/thi") || pathname.startsWith("/dau-truong");
+
   if (hidden) return null;
 
   return (
