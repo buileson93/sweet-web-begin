@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Castle, Heart, Loader2, Sparkles, Trophy } from "lucide-react";
+import { ArrowLeft, Castle, Heart, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { QuestionInput } from "@/components/exam/QuestionInput";
@@ -179,9 +179,9 @@ function TowerPage() {
   return (
     <PageContainer>
       <PageHero
-        icon={<Castle className="size-6" />}
+        icon={Castle}
         title="Leo Tháp Tri Thức"
-        subtitle="Ôn đúng câu bạn sắp quên — mỗi phiên 5 chặng, mỗi chặng 5 câu."
+        description="Ôn đúng câu bạn sắp quên — mỗi phiên 5 chặng, mỗi chặng 5 câu."
       />
 
       <div className="mb-4">
@@ -218,7 +218,7 @@ function TowerPage() {
 
       {run && summary && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
-          <SectionHeading title="Hôm nay bạn đã học được gì" icon={<Trophy className="size-5" />} />
+          <SectionHeading title="Hôm nay bạn đã học được gì" />
           <div className="grid gap-3 sm:grid-cols-4">
             {[
               { label: "Chặng đã qua", value: summary.stagesCleared },
@@ -245,10 +245,7 @@ function TowerPage() {
 
       {run && !summary && stageResult && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
-          <SectionHeading
-            title={`Góc sửa lỗi — chặng ${stage + 1}`}
-            icon={<Sparkles className="size-5" />}
-          />
+          <SectionHeading title={`Góc sửa lỗi — chặng ${stage + 1}`} />
           <ul className="space-y-2">
             {stageResult.results.map((r, i) => (
               <li
@@ -264,7 +261,7 @@ function TowerPage() {
                 {!r.correct && <div className="type-meta mt-1">Đáp án đúng: {r.correctText}</div>}
                 {r.explanation && (
                   <div className="mt-1 text-xs text-muted-foreground">
-                    <RichText text={r.explanation} />
+                    <RichText>{r.explanation}</RichText>
                   </div>
                 )}
               </li>
@@ -308,7 +305,7 @@ function TowerPage() {
           </div>
 
           <div className="text-base font-medium">
-            <RichText text={question.question} />
+            <RichText>{question.question}</RichText>
           </div>
 
           <QuestionInput
