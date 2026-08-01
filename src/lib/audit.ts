@@ -1,7 +1,19 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type AuditAction = "create" | "update" | "delete" | "import" | "export" | "login_success" | "login_failed";
-export type AuditEntity = "quiz" | "question" | "unit" | "result" | "employee";
+export type AuditAction =
+  | "create"
+  | "update"
+  | "delete"
+  | "import"
+  | "export"
+  | "restore"
+  | "login_success"
+  | "login_failed"
+  /** Hành vi nhạy cảm — tách riêng để truy vết nhanh khi có khiếu nại kết quả thi. */
+  | "role_grant"
+  | "role_revoke"
+  | "quiz_config";
+export type AuditEntity = "quiz" | "question" | "unit" | "result" | "employee" | "role";
 
 export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   create: "Tạo mới",
@@ -9,8 +21,12 @@ export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   delete: "Xoá",
   import: "Nhập hàng loạt",
   export: "Xuất báo cáo",
+  restore: "Khôi phục",
   login_success: "Đăng nhập nhanh",
   login_failed: "Đăng nhập thất bại",
+  role_grant: "Cấp quyền quản trị",
+  role_revoke: "Thu hồi quyền quản trị",
+  quiz_config: "Sửa cấu hình cuộc thi",
 };
 
 export const AUDIT_ENTITY_LABEL: Record<AuditEntity, string> = {
@@ -19,7 +35,9 @@ export const AUDIT_ENTITY_LABEL: Record<AuditEntity, string> = {
   unit: "Đơn vị",
   result: "Kết quả",
   employee: "Nhân viên",
+  role: "Phân quyền",
 };
+
 
 export type AuditLogRow = {
   id: string;
