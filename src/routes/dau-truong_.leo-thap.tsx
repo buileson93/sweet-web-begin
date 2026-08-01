@@ -223,7 +223,19 @@ function TowerPage() {
   const [outcome, setOutcome] = useState<StageOutcome | null>(null);
   const [pickedRelic, setPickedRelic] = useState<string | undefined>(undefined);
   const [note, setNote] = useState<string>("");
-  const [summary, setSummary] = useState<{ floors: number; score: number; correct: number; answered: number; win: boolean } | null>(
+  const [summary, setSummary] = useState<{
+    floors: number;
+    score: number;
+    correct: number;
+    answered: number;
+    win: boolean;
+    hp: number;
+    relics: string[];
+    curses: string[];
+    ascension: number;
+    seed: string;
+    log: TowerRun["log"];
+  } | null>(
     null,
   );
   const [confirmClose, setConfirmClose] = useState(false);
