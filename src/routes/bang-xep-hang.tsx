@@ -163,7 +163,7 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta text-primary-foreground/75">
-              Chỉ xếp hạng bài đạt từ 50% trở lên; đồng điểm ưu tiên thời gian làm bài ngắn hơn.
+              Chỉ xếp hạng bài đạt từ 50% trở lên. Xếp theo tỉ lệ câu đúng, sau đó tới điểm thưởng và thời gian làm bài.
             </p>
           </div>
         </div>
