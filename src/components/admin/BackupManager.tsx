@@ -180,7 +180,23 @@ export function BackupManager() {
             </label>
           ))}
         </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="space-y-1.5 text-sm font-medium">
+            <span className="text-muted-foreground">Từ ngày</span>
+            <Input type="date" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} />
+          </label>
+          <label className="space-y-1.5 text-sm font-medium">
+            <span className="text-muted-foreground">Đến ngày</span>
+            <Input type="date" value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} />
+          </label>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Để trống hai ô ngày sẽ sao lưu toàn bộ. Mỗi bảng tối đa{" "}
+          {MAX_ROWS_PER_TABLE.toLocaleString("vi-VN")} dòng cho một lần tải — vượt ngưỡng hãy chia nhỏ theo khoảng thời
+          gian.
+        </p>
         <div className="flex flex-wrap gap-2">
+
           <Button onClick={() => void run("json")} disabled={busy !== null}>
             {busy === "json" ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
             Tải JSON
