@@ -677,6 +677,83 @@ function TowerPage() {
             </div>
           )}
 
+
+          <div className="mt-5 grid gap-3 text-left sm:grid-cols-2">
+            <div className="rounded-xl border bg-background/60 p-4">
+              <p className="text-sm font-semibold">Thử thách hằng ngày</p>
+              <p className="type-meta mt-1">
+                Cùng một hạt ngẫu nhiên cho cả cơ quan: bản đồ, di vật và lời nguyền giống hệt nhau, ai chơi khéo hơn thì thắng.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Button size="sm" variant={daily ? "default" : "outline"} onClick={() => setDaily(true)}>
+                  Hạt hằng ngày
+                </Button>
+                <Button size="sm" variant={daily ? "outline" : "default"} onClick={() => setDaily(false)}>
+                  Hạt tự do
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-xl border bg-background/60 p-4">
+              <p className="text-sm font-semibold">Độ thăng thiên</p>
+              <p className="type-meta mt-1">
+                {meta.ascension === 0
+                  ? "Cấp 0 — luật tiêu chuẩn."
+                  : ASCENSION_RULES[meta.ascension - 1] ?? "Cấp cao nhất."}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {Array.from({ length: 11 }).map((_, lv) => (
+                  <button
+                    key={lv}
+                    type="button"
+                    disabled={lv > 0 && meta.wins < 1}
+                    onClick={() => setMeta((m) => ({ ...m, ascension: lv }))}
+                    className={cn(
+                      "size-8 rounded-lg border text-xs font-semibold transition disabled:opacity-40",
+                      meta.ascension === lv ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground",
+                    )}
+                  >
+                    {lv}
+                  </button>
+                ))}
+              </div>
+              {meta.wins < 1 && <p className="type-meta mt-1">Chinh phục đỉnh tháp một lần để mở độ thăng thiên.</p>}
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-xl border bg-background/60 p-4 text-left">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold">Kho mở khoá</p>
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-600">
+                <Coins className="size-3" /> {meta.coins} xu tích luỹ
+              </span>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {UNLOCKS.filter((u) => u.kind !== "ascension").map((u) => {
+                const owned = meta.unlocked.includes(u.id);
+                const buyable = canBuy(u, meta.coins, meta.wins, meta.unlocked);
+                return (
+                  <button
+                    key={u.id}
+                    type="button"
+                    disabled={!buyable}
+                    onClick={() =>
+                      setMeta((m) => ({ ...m, coins: m.coins - u.cost, unlocked: [...m.unlocked, u.id] }))
+                    }
+                    className={cn(
+                      "rounded-xl border p-3 text-left text-sm transition disabled:opacity-50",
+                      owned ? "border-emerald-500/40 bg-emerald-500/5" : "hover:border-primary",
+                    )}
+                  >
+                    <div className="font-semibold">{u.name}</div>
+                    <div className="type-meta">{u.desc}</div>
+                    <div className="type-meta opacity-70">{owned ? "Đã mở khoá" : `${u.cost} xu`}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <Button className="mt-4" disabled={loading || !bank?.questions.length} onClick={begin}>
             {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Castle className="mr-2 size-4" />}
             Vào tháp tu luyện
@@ -1006,6 +1083,38 @@ function TowerPage() {
               <Button onClick={() => (blanks > 0 ? setConfirmClose(true) : closeRoom(answers))}>Chốt phòng</Button>
             )}
           </div>
+        </section>
+      )}
+
+      {!run && entry && (
+        <section className="space-y-3 rounded-2xl border bg-card/70 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionHeading title="Bảng xếp hạng hành trình" />
+            <div className="flex gap-2">
+              {(["hang-ngay", "tu-do"] as Board[]).map((b) => (
+                <Button key={b} size="sm" variant={board === b ? "default" : "outline"} onClick={() => setBoard(b)}>
+                  {BOARD_LABEL[b]}
+                </Button>
+              ))}
+            </div>
+          </div>
+          {boardRows.length === 0 ? (
+            <p className="type-meta">Chưa có ai ghi tên vào bảng này. Hãy là người đầu tiên.</p>
+          ) : (
+            <ol className="space-y-1.5">
+              {boardRows.map((r) => (
+                <li key={`${r.rank}-${r.name}`} className="flex items-center gap-3 rounded-xl border bg-background/60 px-3 py-2 text-sm">
+                  <span className="w-6 text-center font-bold tabular-nums">{r.rank}</span>
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {r.name} {r.win ? "👑" : ""}
+                  </span>
+                  <span className="type-meta truncate">{r.unit}</span>
+                  <span className="tabular-nums font-semibold">{r.score}</span>
+                  <span className="type-meta tabular-nums">tầng {r.floors}</span>
+                </li>
+              ))}
+            </ol>
+          )}
         </section>
       )}
 
