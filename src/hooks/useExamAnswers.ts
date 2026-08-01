@@ -17,7 +17,7 @@ export function useExamAnswers(opts: {
   setCurrent: (updater: (c: number) => number) => void;
   setAnswers: (updater: (a: Record<string, AnswerValue>) => Record<string, AnswerValue>) => void;
 }) {
-  const { session, current, setCurrent, setAnswers } = opts;
+  const { session, current, setAnswers } = opts;
   const runFifty = useServerFn(requestFiftyFifty);
   const runX2 = useServerFn(requestDoublePoints);
   const runCheck = useServerFn(checkAnswer);
@@ -77,10 +77,15 @@ export function useExamAnswers(opts: {
   const locked = (idx: number) => instant && feedback[String(idx)] !== undefined;
 
   const handleAnswer = useCallback(
-    async (idx: number, value: AnswerValue) => {
+    async (idx: number, value: AnswerValue, opt?: { confirm?: boolean; kind?: string }) => {
       if (locked(idx)) return;
       setAnswers((a) => ({ ...a, [String(idx)]: value }));
       if (!instant || !session) return;
+      // Câu nhiều lựa chọn / điền / nối / sắp xếp chỉ chấm khi thí sinh bấm "Chốt đáp án",
+      // tránh bị khoá ngay lần bấm đầu tiên.
+      const kind = opt?.kind ?? session.questions[idx]?.kind;
+      const needsConfirm = kind !== "single" && kind !== "true_false";
+      if (needsConfirm && !opt?.confirm) return;
       try {
         const res = await runCheck({
           data: {
@@ -113,20 +118,15 @@ export function useExamAnswers(opts: {
           }
           return next;
         });
-        setTimeout(
-          () => {
-            setCurrent((c) => (c < session.questions.length - 1 ? c + 1 : c));
-          },
-          // Trả lời sai thì dừng lâu hơn để kịp đọc đáp án đúng.
-          isCorrect ? 1100 : 4600,
-        );
+        // KHÔNG tự chuyển câu: thí sinh tự bấm "Câu tiếp" sau khi đọc xong phản hồi.
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Không chấm được câu này.");
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [instant, feedback, runCheck, session, setAnswers, setCurrent],
+    [instant, feedback, runCheck, session, setAnswers],
   );
+
 
   /** Dọn trạng thái khi mở lượt thi mới. */
   const resetHelpers = useCallback(() => {

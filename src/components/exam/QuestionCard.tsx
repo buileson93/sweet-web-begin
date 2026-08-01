@@ -29,6 +29,7 @@ export function QuestionCard({
   onX2,
   onFifty,
   onAnswer,
+  onConfirm,
   onPrev,
   onNext,
   onSubmit,
@@ -55,6 +56,8 @@ export function QuestionCard({
   onX2: () => void;
   onFifty: () => void;
   onAnswer: (value: AnswerValue) => void;
+  /** Chốt đáp án cho câu cần nhiều thao tác (chế độ chấm ngay). */
+  onConfirm?: () => void;
   onPrev: () => void;
   onNext: () => void;
   onSubmit: () => void;
@@ -139,6 +142,16 @@ export function QuestionCard({
           ) : null}
         </div>
       ) : null}
+
+      {/* Câu nhiều đáp án/điền/nối/sắp xếp: chấm khi thí sinh tự chốt */}
+      {instant && !feedback && question.kind !== "single" && question.kind !== "true_false" ? (
+        <Button className="mt-4 rounded-full" disabled={value === undefined} onClick={onConfirm}>
+          <Send className="size-4" />
+          Chốt đáp án
+        </Button>
+      ) : null}
+
+
 
 
       {/* Vật phẩm trợ giúp */}
