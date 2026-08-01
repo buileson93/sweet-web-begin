@@ -23,6 +23,9 @@ export type QuestionDraftInput = {
   points?: number | string;
   time_limit_seconds?: number | string | null;
   difficulty?: Difficulty;
+  image_url?: string | null;
+  /** Mô tả ảnh cho trình đọc màn hình. */
+  image_alt?: string;
 };
 
 /** Tên trường có thể gắn lỗi/cảnh báo. */
@@ -33,7 +36,8 @@ export type QuestionField =
   | "accepted_answers"
   | "pairs"
   | "points"
-  | "time_limit_seconds";
+  | "time_limit_seconds"
+  | "image_alt";
 
 export type ValidationResult = {
   /** Lỗi chặn lưu. */
