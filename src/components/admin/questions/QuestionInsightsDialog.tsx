@@ -1,8 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BarChart3, History, Loader2 } from "lucide-react";
+import { AlertTriangle, BarChart3, History, Loader2, RotateCcw } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getQuestionInsights } from "@/lib/questionInsights.functions";
+import { logAudit } from "@/lib/audit";
+import {
+  getQuestionInsights,
+  restoreQuestionVersionFn,
+} from "@/lib/questionInsights.functions";
+import { questionQualityFlags } from "@/lib/questionInsights";
 
 const DIFFICULTY_TEXT: Record<string, string> = {
   easy: "Dễ (thực tế)",
@@ -30,11 +38,40 @@ export function QuestionInsightsDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const fetchInsights = useServerFn(getQuestionInsights);
+  const runRestore = useServerFn(restoreQuestionVersionFn);
+  const queryClient = useQueryClient();
+  const [restoringId, setRestoringId] = useState<string | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["question-insights", questionId],
     enabled: Boolean(questionId),
     queryFn: () => fetchInsights({ data: { questionId: questionId as string } }),
   });
+
+  async function handleRestore(versionId: string, version: number) {
+    if (!questionId) return;
+    if (!window.confirm(`Khôi phục câu hỏi về phiên bản ${version}? Bản hiện tại vẫn được lưu lại.`)) return;
+    setRestoringId(versionId);
+    try {
+      await runRestore({ data: { questionId, versionId } });
+      await logAudit({
+        action: "restore",
+        entity: "question",
+        entityId: questionId,
+        entityLabel: question,
+        details: { version },
+      });
+      toast.success(`Đã khôi phục về phiên bản ${version}.`);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["question-insights", questionId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-questions"] }),
+      ]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không khôi phục được phiên bản.");
+    } finally {
+      setRestoringId(null);
+    }
+  }
+
 
   const stats = data?.stats;
   const versions = data?.versions ?? [];
