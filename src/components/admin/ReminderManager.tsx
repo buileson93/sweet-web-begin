@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BellRing, Download, FileSpreadsheet, PartyPopper } from "lucide-react";
+import { BellRing, ClipboardCopy, Download, FileSpreadsheet, MailPlus, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
 import { normalizeKey } from "@/lib/csv";
+
 
 /** Danh sách nhân viên chưa tham gia một cuộc thi, dùng để nhắc nhở. */
 export function ReminderManager() {
