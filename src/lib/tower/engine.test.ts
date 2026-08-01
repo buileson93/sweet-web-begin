@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type { BankQuestion, QuestionBank } from "@/lib/tower/bank";
-import { QUESTIONS_PER_STAGE, START_HP } from "@/lib/tower/config";
-import { createRun, gradeStage, presentQuestion, pickRunQuestions } from "@/lib/tower/engine";
+import { BOONS, QUESTIONS_PER_STAGE, START_HP } from "@/lib/tower/config";
+import { createRun, gradeStage, presentQuestion, pickRunQuestions, stageSeconds, takeBoon, type TowerRun } from "@/lib/tower/engine";
 import { gradeLocal } from "@/lib/tower/grade.local";
 import { seededRandom } from "@/lib/tower/rng";
 import { applyResults, dueCardIds, emptyState, mergeStates, normalizeState, pruneState } from "@/lib/tower/state";
@@ -177,6 +177,20 @@ describe("vòng chơi tại máy người dùng", () => {
     expect(a.questions.map((q) => q.id)).toEqual(b.questions.map((q) => q.id));
     expect(a.offered.map((o) => o.id)).toEqual(b.offered.map((o) => o.id));
   });
+});
+
+const baseRun = (): TowerRun => ({
+  seed: "seed",
+  questions: [],
+  stage: 1,
+  hp: START_HP,
+  shield: 0,
+  combo: 0,
+  correct: 0,
+  answered: 0,
+  boons: [],
+  offered: [],
+  finished: false,
 });
 
 describe("trợ giúp (boon) có tác dụng thật", () => {
