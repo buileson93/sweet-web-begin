@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { getExamHistory } from "@/lib/exam.functions";
 import type { ExamHistory } from "@/lib/exam.server";
 import { formatDateTime, formatSeconds } from "@/lib/format";
+import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/lich-su")({

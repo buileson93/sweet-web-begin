@@ -32,6 +32,7 @@ import { getExamHistory } from "@/lib/exam.functions";
 import type { ExamHistory } from "@/lib/exam.server";
 import { formatDateTime, formatSeconds } from "@/lib/format";
 import { getPlayerProfile, type PlayerProfile } from "@/lib/player.functions";
+import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
 import { cn } from "@/lib/utils";
 
 
