@@ -167,6 +167,10 @@ export function QuestionForm({
               onChange={(e) => setForm({ ...form, question: e.target.value })}
             />
             <FieldMessage error={validation.errors.question} warning={validation.warnings.question} />
+            <p className="type-meta">
+              Hỗ trợ Markdown và công thức toán: **đậm**, *nghiêng*, `mã`, danh sách, bảng, $x^2$
+              (nội dòng) hoặc $$\\frac{a}{b}$$ (khối). Xem trước ở cột bên phải.
+            </p>
           </div>
           <div className="space-y-2">
             <Label>Ảnh minh hoạ (không bắt buộc)</Label>

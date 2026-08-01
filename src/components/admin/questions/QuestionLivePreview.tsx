@@ -3,6 +3,7 @@ import { RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { QuestionInput } from "@/components/exam/QuestionInput";
+import { RichText } from "@/components/RichText";
 import { questionImageSrc } from "@/lib/questionImage";
 import { shuffle } from "@/lib/grading";
 import type { AnswerValue } from "@/lib/questionKinds";
@@ -56,9 +57,13 @@ export function QuestionLivePreview({ form }: { form: QuestionFormState }) {
         </Button>
       </div>
       <div className="card-elevated p-4">
-        <p className="text-base font-semibold leading-relaxed">
-          {form.question.trim() || "Nội dung câu hỏi sẽ hiện ở đây..."}
-        </p>
+        <div className="text-base font-semibold leading-relaxed">
+          {form.question.trim() ? (
+            <RichText>{form.question}</RichText>
+          ) : (
+            "Nội dung câu hỏi sẽ hiện ở đây..."
+          )}
+        </div>
         {src ? (
           <img
             src={src}
@@ -74,10 +79,24 @@ export function QuestionLivePreview({ form }: { form: QuestionFormState }) {
           onChange={setValue}
         />
         {form.explanation.trim() ? (
-          <p className="mt-3 rounded-xl bg-secondary px-3 py-2 text-sm">
+          <div className="mt-3 rounded-xl bg-secondary px-3 py-2 text-sm">
             <span className="font-semibold">Giải thích: </span>
-            {form.explanation}
-          </p>
+            <RichText inline>{form.explanation}</RichText>
+          </div>
+        ) : null}
+        {form.option_explanations.some((t) => (t ?? "").trim()) ? (
+          <ul className="mt-2 space-y-1 rounded-xl border border-border px-3 py-2">
+            {form.options.map((opt, i) =>
+              (form.option_explanations[i] ?? "").trim() ? (
+                <li key={i} className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">
+                    {String.fromCharCode(65 + i)}. {opt || "(chưa có nội dung)"}:{" "}
+                  </span>
+                  <RichText inline>{form.option_explanations[i]}</RichText>
+                </li>
+              ) : null,
+            )}
+          </ul>
         ) : null}
       </div>
     </div>
