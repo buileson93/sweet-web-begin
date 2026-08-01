@@ -104,3 +104,21 @@ export function shouldDisqualify(
     Number.isFinite(threshold) && threshold > 0 ? threshold : DISQUALIFY_THRESHOLD_DEFAULT;
   return score >= limit;
 }
+
+/** Số lần rời màn hình được tha thứ: máy tính 0, điện thoại 1 (có thể có cuộc gọi/thông báo). */
+export function leaveAllowance(isMobile: boolean): number {
+  return isMobile ? 1 : 0;
+}
+
+/** Đã vượt quá mức tha thứ => buộc thi lại từ đầu. */
+export function shouldForceRestart(violations: number, isMobile: boolean): boolean {
+  return violations > leaveAllowance(isMobile);
+}
+
+/** Nhận diện thiết bị di động (chỉ chạy phía máy khách). */
+export function isMobileDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const touch = (navigator.maxTouchPoints ?? 0) > 1;
+  return /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(ua) || touch;
+}

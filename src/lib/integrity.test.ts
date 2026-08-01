@@ -93,3 +93,15 @@ describe("quota sự kiện", () => {
     expect(MAX_EXEMPT_EVENTS_PER_SESSION).toBeGreaterThan(MAX_EVENTS_PER_SESSION);
   });
 });
+
+describe("chính sách rời màn hình", () => {
+  it("máy tính: rời 1 lần là buộc thi lại", () => {
+    expect(leaveAllowance(false)).toBe(0);
+    expect(shouldForceRestart(1, false)).toBe(true);
+  });
+  it("điện thoại: tha lần đầu, lần thứ hai buộc thi lại", () => {
+    expect(leaveAllowance(true)).toBe(1);
+    expect(shouldForceRestart(1, true)).toBe(false);
+    expect(shouldForceRestart(2, true)).toBe(true);
+  });
+});
