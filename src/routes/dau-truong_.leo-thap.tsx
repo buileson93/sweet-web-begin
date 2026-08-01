@@ -20,6 +20,11 @@ import { toast } from "sonner";
 
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { TowerMap } from "@/components/tower/TowerMap";
+import { BlessingCards } from "@/components/tower/BlessingCards";
+import { CurseOffer } from "@/components/tower/CurseOffer";
+import { ScoreSources } from "@/components/tower/ScoreSources";
+import { RunTimeline } from "@/components/tower/RunTimeline";
+import { saveRunRecord } from "@/lib/tower/history";
 import { RichText } from "@/components/RichText";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +49,7 @@ import { bankIsStale, bankQuizzes, filterBankByQuizzes, type QuestionBank } from
 import { START_HP } from "@/lib/tower/config";
 import { bossAt } from "@/lib/tower/bosses";
 import { curseById } from "@/lib/tower/curses";
-import { FLOORS, ROOM_META } from "@/lib/tower/map";
+import { FLOORS, mapFor, ROOM_META } from "@/lib/tower/map";
 import { ASCENSION_RULES, canBuy, UNLOCKS } from "@/lib/tower/meta";
 import { dailySeed } from "@/lib/tower/rng";
 import { BOARD_LABEL, runCoins, type Board } from "@/lib/tower/score";
@@ -218,7 +223,19 @@ function TowerPage() {
   const [outcome, setOutcome] = useState<StageOutcome | null>(null);
   const [pickedRelic, setPickedRelic] = useState<string | undefined>(undefined);
   const [note, setNote] = useState<string>("");
-  const [summary, setSummary] = useState<{ floors: number; score: number; correct: number; answered: number; win: boolean } | null>(
+  const [summary, setSummary] = useState<{
+    floors: number;
+    score: number;
+    correct: number;
+    answered: number;
+    win: boolean;
+    hp: number;
+    relics: string[];
+    curses: string[];
+    ascension: number;
+    seed: string;
+    log: TowerRun["log"];
+  } | null>(
     null,
   );
   const [confirmClose, setConfirmClose] = useState(false);
@@ -427,8 +444,38 @@ function TowerPage() {
         correct: finished.correct,
         answered: finished.answered,
         win: finished.win,
+        hp: finished.hp,
+        relics: finished.relics,
+        curses: finished.curses,
+        ascension: finished.ascension,
+        seed: finished.seed,
+        log: finished.log,
       });
       void pushSync(stateRef.current, floors);
+
+      // Lưu lại ngay tại máy để xem lại và thống kê được cả khi mất mạng.
+      const startedMs = Date.parse(finished.startedAt);
+      saveRunRecord({
+        id: `${finished.seed}-${startedMs}`,
+        seed: finished.seed,
+        daily: finished.daily,
+        ascension: finished.ascension,
+        startedAt: finished.startedAt,
+        finishedAt: new Date().toISOString(),
+        seconds: Number.isFinite(startedMs) ? Math.max(0, Math.round((Date.now() - startedMs) / 1000)) : 0,
+        floors,
+        hp: finished.hp,
+        maxHp: finished.maxHp,
+        correct: finished.correct,
+        answered: finished.answered,
+        coins: finished.coins,
+        relics: finished.relics,
+        curses: finished.curses,
+        win: finished.win,
+        score: finished.score,
+        log: finished.log,
+      });
+
 
       const earned = runCoins(finished.score, 0);
       setMeta((m) => ({
@@ -559,6 +606,8 @@ function TowerPage() {
   }
 
   const quizList = useMemo(() => bankQuizzes(bank), [bank]);
+  // Bản đồ hạt hằng ngày để xem trước — lấy từ bộ nhớ đệm theo hạt nên không tốn công dựng lại.
+  const previewMap = useMemo(() => mapFor(dailySeed(vnDayKey(Date.now()))), []);
   const scopedCount = useMemo(() => (bank ? filterBankByQuizzes(bank, packs).questions.length : 0), [bank, packs]);
   const mods = useMemo(() => (run ? runModifiers(run) : null), [run]);
   const roomQs = useMemo(() => (run && run.room ? roomQuestions(run) : []), [run]);
@@ -755,10 +804,26 @@ function TowerPage() {
             </div>
           </div>
 
+          {/* Xem trước toàn bộ 12 tầng của hạt hằng ngày trước khi bước vào. */}
+          {daily && (
+            <div className="mt-3 text-left">
+              <p className="mb-2 text-sm font-semibold">Bản đồ hôm nay — xem trước 12 tầng</p>
+              <TowerMap map={previewMap} floor={1} path={[]} canPick={false} preview />
+            </div>
+          )}
+
           <Button className="mt-4" disabled={loading || !bank?.questions.length} onClick={begin}>
             {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Castle className="mr-2 size-4" />}
             Vào tháp tu luyện
           </Button>
+          <div className="mt-2 flex flex-wrap justify-center gap-2">
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/dau-truong/bang-thap">Bảng xếp hạng tháp</Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/dau-truong/thong-ke-thap">Thống kê hành trình</Link>
+            </Button>
+          </div>
         </section>
       )}
 
@@ -778,11 +843,38 @@ function TowerPage() {
               </div>
             ))}
           </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border bg-background/60 p-3">
+              <p className="mb-2 text-sm font-semibold">Điểm đến từ đâu</p>
+              <ScoreSources
+                input={{
+                  floorsCleared: summary.floors,
+                  hp: summary.hp,
+                  relics: summary.relics,
+                  curses: summary.curses,
+                  ascension: summary.ascension,
+                }}
+              />
+              <p className="type-meta mt-2">Hạt hành trình: <span className="font-mono">{summary.seed}</span></p>
+            </div>
+            <div className="rounded-xl border bg-background/60 p-3">
+              <p className="mb-2 text-sm font-semibold">Xem lại diễn biến</p>
+              <div className="max-h-72 overflow-y-auto pr-1">
+                <RunTimeline log={summary.log} />
+              </div>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={begin}>
               <RefreshCw className="mr-2 size-4" /> Hành trình mới
             </Button>
             <Button asChild variant="outline">
+              <Link to="/dau-truong/thong-ke-thap">Thống kê &amp; xem lại</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/dau-truong/bang-thap">Bảng xếp hạng tháp</Link>
+            </Button>
+            <Button asChild variant="ghost">
               <Link to="/dau-truong">Nghỉ một chút</Link>
             </Button>
           </div>
@@ -970,52 +1062,28 @@ function TowerPage() {
           </ul>
 
           {!summary && run.offered.length > 0 && (
-            <div>
-              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-                <Sparkles className="size-4 text-amber-500" /> Ban phước — chọn một di vật
-              </p>
-              <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Ban phước di vật">
-                {run.offered.map((b) => (
-                  <button
-                    key={b.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={pickedRelic === b.id}
-                    onClick={() => setPickedRelic(b.id)}
-                    className={cn(
-                      "rounded-xl border p-3 text-left text-sm transition hover:border-primary",
-                      pickedRelic === b.id && "border-primary bg-primary/5 ring-2 ring-primary/30",
-                    )}
-                  >
-                    <div className="font-semibold">
-                      {b.icon} {b.name}
-                    </div>
-                    <div className="type-meta">{b.desc}</div>
-                    <div className="type-meta opacity-70">{RARITY_LABEL[b.rarity]}</div>
-                  </button>
-                ))}
-              </div>
-              <p className="type-meta mt-2">Bỏ qua cũng được — đổi lại bạn nhận 25 xu.</p>
-            </div>
+            <BlessingCards
+              offered={run.offered}
+              picked={pickedRelic}
+              onPick={setPickedRelic}
+              onConfirm={continueUp}
+              onSkip={() => {
+                setPickedRelic(undefined);
+                const next = skipBlessing(run);
+                setRun(next);
+                setOutcome(null);
+                if (next.finished) finishRun(next);
+              }}
+            />
           )}
 
           {!summary && run.curseOffer && (
-            <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3">
-              <p className="text-sm font-semibold">
-                {curseById(run.curseOffer.curseId)?.icon} Lời nguyền: {curseById(run.curseOffer.curseId)?.name}
-              </p>
-              <p className="type-meta">
-                {curseById(run.curseOffer.curseId)?.desc} — nhận để đổi lấy {run.curseOffer.coins} xu.
-              </p>
-              <div className="mt-2 flex gap-2">
-                <Button size="sm" variant="destructive" onClick={() => setRun(takeCurse(run, true))}>
-                  Nhận lời nguyền
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setRun(takeCurse(run, false))}>
-                  Từ chối
-                </Button>
-              </div>
-            </div>
+            <CurseOffer
+              curseId={run.curseOffer.curseId}
+              coins={run.curseOffer.coins}
+              onAccept={() => setRun(takeCurse(run, true))}
+              onDecline={() => setRun(takeCurse(run, false))}
+            />
           )}
 
           {!summary && (

@@ -11,7 +11,7 @@ import { bossAt } from "@/lib/tower/bosses";
 import { QUESTIONS_PER_RUN, SECONDS_PER_QUESTION, START_HP } from "@/lib/tower/config";
 import { curseTotals, offerCurse } from "@/lib/tower/curses";
 import { gradeLocal } from "@/lib/tower/grade.local";
-import { buildMap, FLOORS, isBossFloor, type Room, type RoomKind } from "@/lib/tower/map";
+import { buildMap, FLOORS, isBossFloor, mapFor, type Room, type RoomKind } from "@/lib/tower/map";
 import { ascensionMods, relicPoolIds } from "@/lib/tower/meta";
 import { offerRelics, RELICS, relicTotals, type Relic } from "@/lib/tower/relics";
 import { branch, seededRandom, towerDamage } from "@/lib/tower/rng";
@@ -53,6 +53,29 @@ export type TowerRun = {
   score: number;
   /** Danh sách di vật đã mở khoá ở tiến trình meta (rỗng = chỉ dùng bể mặc định). */
   unlockedPool?: string[];
+  /** Nhật ký diễn biến — đủ để dựng lại toàn bộ hành trình từ hạt. */
+  log: RunEvent[];
+};
+
+/** Một mốc diễn biến trong hành trình (dùng cho màn xem lại). */
+export type RunEvent = {
+  /** Thời điểm tương đối tính bằng giây kể từ lúc vào tháp. */
+  t: number;
+  floor: number;
+  kind:
+    | "start"
+    | "room"
+    | "combat"
+    | "relic"
+    | "skip"
+    | "curse"
+    | "campfire"
+    | "event"
+    | "shop"
+    | "end";
+  label: string;
+  detail?: string;
+  hp?: number;
 };
 
 export type StageOutcome = {
@@ -68,6 +91,21 @@ export type StageOutcome = {
   damage: number;
   softStop: boolean;
 };
+
+const ROOM_LABEL: Record<RoomKind, string> = {
+  combat: "giao tranh",
+  elite: "tinh anh",
+  event: "sự kiện",
+  shop: "cửa hàng",
+  campfire: "lửa trại",
+  boss: "trùm",
+};
+
+/** Nối một mốc vào nhật ký, tự tính mốc thời gian tương đối. */
+export function logged(run: TowerRun, ev: Omit<RunEvent, "t">): RunEvent[] {
+  const t = Math.max(0, Math.round((Date.now() - new Date(run.startedAt).getTime()) / 1000));
+  return [...(run.log ?? []), { t, ...ev }];
+}
 
 function shuffleIndices(n: number, rand: () => number): number[] {
   const arr = Array.from({ length: n }, (_, i) => i);
@@ -187,7 +225,7 @@ export function createRun(
     questions: picked,
     cursor: 0,
     floor: 1,
-    map: buildMap(seed),
+    map: mapFor(seed),
     path: [],
     room: null,
     slots: [],
@@ -207,7 +245,9 @@ export function createRun(
     finished: false,
     win: false,
     score: 0,
+    log: [],
   };
+  run.log.push({ t: 0, floor: 1, kind: "start", label: "Bước vào tháp", detail: `Hạt ${seed}`, hp: maxHp });
   // Thăng thiên cấp 8 trở lên: bắt buộc mang một lời nguyền ngay từ cửa tháp.
   if (asc.forcedCurse) {
     const forced = offerCurse(branch(seed, "forced-curse"));
@@ -239,6 +279,12 @@ export function chooseRoom(run: TowerRun, index: number): TowerRun {
     blocksLeft: mods.blockPerFloor,
     offered: [],
     curseOffer: null,
+    log: logged(run, {
+      floor: run.floor,
+      kind: "room",
+      label: `Tầng ${run.floor} — vào phòng ${ROOM_LABEL[room.kind]}`,
+      hp: run.hp,
+    }),
   };
 }
 
@@ -335,6 +381,22 @@ export function gradeStage(
     win,
   };
 
+  next.log = logged(run, {
+    floor: run.floor,
+    kind: "combat",
+    label: `Tầng ${run.floor} — ${correctCount}/${slice.length} câu đúng`,
+    detail: `Gây ${damage} sát thương${cleared ? "" : " · gục ngã"}`,
+    hp: next.hp,
+  });
+  if (finished) {
+    next.log = logged(next, {
+      floor: run.floor,
+      kind: "end",
+      label: win ? "Chinh phục đỉnh tháp" : "Hành trình khép lại",
+      detail: `Đúng ${next.correct}/${next.answered} câu`,
+      hp: next.hp,
+    });
+  }
   if (cleared && !finished) next = withBlessing(next);
   next.score = runScore({
     floorsCleared: Math.max(0, next.floor - 1),
@@ -379,22 +441,48 @@ export function takeRelic(run: TowerRun, relicId: string | undefined): TowerRun 
     offered: [],
     hp: Math.min(run.maxHp, run.hp + heal),
     shield: run.shield + (relic.effect.shield ?? 0),
+    log: logged(run, {
+      floor: run.floor,
+      kind: "relic",
+      label: `Nhận di vật ${relic.name}`,
+      detail: relic.desc,
+      hp: run.hp,
+    }),
   };
 }
 
 export function skipBlessing(run: TowerRun): TowerRun {
-  return { ...run, offered: [], coins: run.coins + 25 };
+  return {
+    ...run,
+    offered: [],
+    coins: run.coins + 25,
+    log: logged(run, { floor: run.floor, kind: "skip", label: "Bỏ qua ban phước", detail: "+25 xu", hp: run.hp }),
+  };
 }
 
 /** Nhận lời nguyền để đổi lấy xu (và về sau là di vật hiếm hơn). */
 export function takeCurse(run: TowerRun, accept: boolean): TowerRun {
   if (!run.curseOffer) return run;
-  if (!accept) return { ...run, curseOffer: null };
+  if (!accept) {
+    return {
+      ...run,
+      curseOffer: null,
+      log: logged(run, { floor: run.floor, kind: "curse", label: "Từ chối lời nguyền", hp: run.hp }),
+    };
+  }
+  const taken = run.curseOffer;
   return {
     ...run,
-    curses: [...run.curses, run.curseOffer.curseId],
-    coins: run.coins + run.curseOffer.coins,
+    curses: [...run.curses, taken.curseId],
+    coins: run.coins + taken.coins,
     curseOffer: null,
+    log: logged(run, {
+      floor: run.floor,
+      kind: "curse",
+      label: `Gánh lời nguyền ${taken.curseId}`,
+      detail: `+${taken.coins} xu`,
+      hp: run.hp,
+    }),
   };
 }
 
@@ -408,6 +496,12 @@ export function restAtCampfire(run: TowerRun, choice: "heal" | "upgrade"): Tower
   } else {
     next.shield = run.shield + 15;
   }
+  next.log = logged(run, {
+    floor: run.floor,
+    kind: "campfire",
+    label: choice === "heal" && !mods.noHeal ? "Lửa trại — hồi máu" : "Lửa trại — rèn khiên",
+    hp: next.hp,
+  });
   next = advanceNonCombat(next);
   return next;
 }
@@ -490,6 +584,7 @@ export function resolveEvent(run: TowerRun, choiceId: string): { run: TowerRun; 
     }
   }
   next = advanceNonCombat(next);
+  next.log = logged(run, { floor: run.floor, kind: "event", label: `Sự kiện: ${ev.title}`, detail: message, hp: next.hp });
   return { run: next, message };
 }
 

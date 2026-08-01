@@ -23,8 +23,10 @@ import { Route as AuthenticatedNhatKyRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedQuanTriRouteImport } from './routes/_authenticated/quan-tri'
 import { Route as CuocThiQuizIdRouteImport } from './routes/cuoc-thi.$quizId'
 import { Route as DauTruongDuelIdRouteImport } from './routes/dau-truong_.$duelId'
+import { Route as DauTruongBangThapRouteImport } from './routes/dau-truong_.bang-thap'
 import { Route as DauTruongLeoThapRouteImport } from './routes/dau-truong_.leo-thap'
 import { Route as DauTruongThongKeRouteImport } from './routes/dau-truong_.thong-ke'
+import { Route as DauTruongThongKeThapRouteImport } from './routes/dau-truong_.thong-ke-thap'
 import { Route as ApiPublicExamProgressRouteImport } from './routes/api/public/exam-progress'
 import { Route as DauTruongXemLaiDuelIdRouteImport } from './routes/dau-truong_.xem-lai.$duelId'
 import { Route as ApiPublicAnhBiaSplatRouteImport } from './routes/api/public/anh-bia.$'
@@ -103,6 +105,11 @@ const DauTruongDuelIdRoute = DauTruongDuelIdRouteImport.update({
   path: '/dau-truong/$duelId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DauTruongBangThapRoute = DauTruongBangThapRouteImport.update({
+  id: '/dau-truong_/bang-thap',
+  path: '/dau-truong/bang-thap',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DauTruongLeoThapRoute = DauTruongLeoThapRouteImport.update({
   id: '/dau-truong_/leo-thap',
   path: '/dau-truong/leo-thap',
@@ -111,6 +118,11 @@ const DauTruongLeoThapRoute = DauTruongLeoThapRouteImport.update({
 const DauTruongThongKeRoute = DauTruongThongKeRouteImport.update({
   id: '/dau-truong_/thong-ke',
   path: '/dau-truong/thong-ke',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DauTruongThongKeThapRoute = DauTruongThongKeThapRouteImport.update({
+  id: '/dau-truong_/thong-ke-thap',
+  path: '/dau-truong/thong-ke-thap',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicExamProgressRoute = ApiPublicExamProgressRouteImport.update({
@@ -168,8 +180,10 @@ export interface FileRoutesByFullPath {
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/dau-truong/$duelId': typeof DauTruongDuelIdRoute
+  '/dau-truong/bang-thap': typeof DauTruongBangThapRoute
   '/dau-truong/leo-thap': typeof DauTruongLeoThapRoute
   '/dau-truong/thong-ke': typeof DauTruongThongKeRoute
+  '/dau-truong/thong-ke-thap': typeof DauTruongThongKeThapRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/dau-truong/xem-lai/$duelId': typeof DauTruongXemLaiDuelIdRoute
   '/api/public/anh-bia/$': typeof ApiPublicAnhBiaSplatRoute
@@ -193,8 +207,10 @@ export interface FileRoutesByTo {
   '/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/dau-truong/$duelId': typeof DauTruongDuelIdRoute
+  '/dau-truong/bang-thap': typeof DauTruongBangThapRoute
   '/dau-truong/leo-thap': typeof DauTruongLeoThapRoute
   '/dau-truong/thong-ke': typeof DauTruongThongKeRoute
+  '/dau-truong/thong-ke-thap': typeof DauTruongThongKeThapRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/dau-truong/xem-lai/$duelId': typeof DauTruongXemLaiDuelIdRoute
   '/api/public/anh-bia/$': typeof ApiPublicAnhBiaSplatRoute
@@ -220,8 +236,10 @@ export interface FileRoutesById {
   '/_authenticated/quan-tri': typeof AuthenticatedQuanTriRoute
   '/cuoc-thi/$quizId': typeof CuocThiQuizIdRoute
   '/dau-truong_/$duelId': typeof DauTruongDuelIdRoute
+  '/dau-truong_/bang-thap': typeof DauTruongBangThapRoute
   '/dau-truong_/leo-thap': typeof DauTruongLeoThapRoute
   '/dau-truong_/thong-ke': typeof DauTruongThongKeRoute
+  '/dau-truong_/thong-ke-thap': typeof DauTruongThongKeThapRoute
   '/api/public/exam-progress': typeof ApiPublicExamProgressRoute
   '/dau-truong_/xem-lai/$duelId': typeof DauTruongXemLaiDuelIdRoute
   '/api/public/anh-bia/$': typeof ApiPublicAnhBiaSplatRoute
@@ -247,8 +265,10 @@ export interface FileRouteTypes {
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/dau-truong/$duelId'
+    | '/dau-truong/bang-thap'
     | '/dau-truong/leo-thap'
     | '/dau-truong/thong-ke'
+    | '/dau-truong/thong-ke-thap'
     | '/api/public/exam-progress'
     | '/dau-truong/xem-lai/$duelId'
     | '/api/public/anh-bia/$'
@@ -272,8 +292,10 @@ export interface FileRouteTypes {
     | '/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/dau-truong/$duelId'
+    | '/dau-truong/bang-thap'
     | '/dau-truong/leo-thap'
     | '/dau-truong/thong-ke'
+    | '/dau-truong/thong-ke-thap'
     | '/api/public/exam-progress'
     | '/dau-truong/xem-lai/$duelId'
     | '/api/public/anh-bia/$'
@@ -298,8 +320,10 @@ export interface FileRouteTypes {
     | '/_authenticated/quan-tri'
     | '/cuoc-thi/$quizId'
     | '/dau-truong_/$duelId'
+    | '/dau-truong_/bang-thap'
     | '/dau-truong_/leo-thap'
     | '/dau-truong_/thong-ke'
+    | '/dau-truong_/thong-ke-thap'
     | '/api/public/exam-progress'
     | '/dau-truong_/xem-lai/$duelId'
     | '/api/public/anh-bia/$'
@@ -322,8 +346,10 @@ export interface RootRouteChildren {
   ThiRoute: typeof ThiRoute
   CuocThiQuizIdRoute: typeof CuocThiQuizIdRoute
   DauTruongDuelIdRoute: typeof DauTruongDuelIdRoute
+  DauTruongBangThapRoute: typeof DauTruongBangThapRoute
   DauTruongLeoThapRoute: typeof DauTruongLeoThapRoute
   DauTruongThongKeRoute: typeof DauTruongThongKeRoute
+  DauTruongThongKeThapRoute: typeof DauTruongThongKeThapRoute
   ApiPublicExamProgressRoute: typeof ApiPublicExamProgressRoute
   DauTruongXemLaiDuelIdRoute: typeof DauTruongXemLaiDuelIdRoute
   ApiPublicAnhBiaSplatRoute: typeof ApiPublicAnhBiaSplatRoute
@@ -434,6 +460,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DauTruongDuelIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dau-truong_/bang-thap': {
+      id: '/dau-truong_/bang-thap'
+      path: '/dau-truong/bang-thap'
+      fullPath: '/dau-truong/bang-thap'
+      preLoaderRoute: typeof DauTruongBangThapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dau-truong_/leo-thap': {
       id: '/dau-truong_/leo-thap'
       path: '/dau-truong/leo-thap'
@@ -446,6 +479,13 @@ declare module '@tanstack/react-router' {
       path: '/dau-truong/thong-ke'
       fullPath: '/dau-truong/thong-ke'
       preLoaderRoute: typeof DauTruongThongKeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dau-truong_/thong-ke-thap': {
+      id: '/dau-truong_/thong-ke-thap'
+      path: '/dau-truong/thong-ke-thap'
+      fullPath: '/dau-truong/thong-ke-thap'
+      preLoaderRoute: typeof DauTruongThongKeThapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/exam-progress': {
@@ -534,8 +574,10 @@ const rootRouteChildren: RootRouteChildren = {
   ThiRoute: ThiRoute,
   CuocThiQuizIdRoute: CuocThiQuizIdRoute,
   DauTruongDuelIdRoute: DauTruongDuelIdRoute,
+  DauTruongBangThapRoute: DauTruongBangThapRoute,
   DauTruongLeoThapRoute: DauTruongLeoThapRoute,
   DauTruongThongKeRoute: DauTruongThongKeRoute,
+  DauTruongThongKeThapRoute: DauTruongThongKeThapRoute,
   ApiPublicExamProgressRoute: ApiPublicExamProgressRoute,
   DauTruongXemLaiDuelIdRoute: DauTruongXemLaiDuelIdRoute,
   ApiPublicAnhBiaSplatRoute: ApiPublicAnhBiaSplatRoute,
