@@ -267,13 +267,22 @@ function ArenaLobby() {
         <PageHero
           title={
             <span className="inline-flex flex-wrap items-center gap-2">
-              Đấu trường 1vs1 <BetaBadge />
+              Đấu trường <BetaBadge />
             </span>
           }
           description="10 câu tốc chiến, ai nhanh và đúng hơn thì thắng."
         />
-        <div className="arena-panel arena-radar mx-auto mt-6 w-full max-w-md p-5">
-          <div className="space-y-4">
+        <div className="arena-panel arena-radar mx-auto mt-6 w-full max-w-md overflow-hidden p-0">
+          <div className="flex flex-col items-center gap-1 border-b border-border/60 bg-gradient-to-b from-primary/10 to-transparent px-6 py-6 text-center">
+            <span className="grid size-12 place-items-center rounded-2xl bg-primary/15 text-primary shadow-[var(--shadow-ring)]">
+              <Swords className="size-6" />
+            </span>
+            <p className="font-heading mt-2 text-lg font-extrabold">Vào sân đấu</p>
+            <p className="type-meta max-w-xs">
+              Nhập đúng thông tin đã đăng ký để ghép cặp và tính điểm Elo cho bạn.
+            </p>
+          </div>
+          <div className="space-y-4 p-6">
             <div className="space-y-1.5">
               <Label htmlFor="arena-name" className="flex items-center gap-2">
                 <User className="size-4 text-primary" /> Họ và tên
@@ -284,10 +293,15 @@ function ArenaLobby() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nguyễn Văn A"
                 autoComplete="name"
+                className="h-11 rounded-xl"
               />
             </div>
             <CredentialInput value={credential} onChange={setCredential} onEnter={handleSignIn} />
-            <Button className="cta-glow w-full rounded-full" onClick={handleSignIn} disabled={busy}>
+            <Button
+              className="cta-glow h-11 w-full rounded-full text-base"
+              onClick={handleSignIn}
+              disabled={busy}
+            >
               {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Swords className="mr-2 size-4" />}
               Vào đấu trường
             </Button>
@@ -302,7 +316,7 @@ function ArenaLobby() {
       <PageHero
         title={
           <span className="inline-flex flex-wrap items-center gap-2">
-            Đấu trường 1vs1 <BetaBadge />
+            Đấu trường <BetaBadge />
           </span>
         }
         description="So tài cùng đồng nghiệp, leo hạng Elo và sưu tầm huy hiệu."
