@@ -28,6 +28,9 @@ import { useExamTimer } from "@/hooks/useExamTimer";
 import { useIntegrityWatch } from "@/hooks/useIntegrityWatch";
 import { isAnswered } from "@/lib/questionKinds";
 
+/** Backoff khi nộp bài thất bại vì mạng/máy chủ. */
+const SUBMIT_BACKOFF_MS = [2_000, 5_000, 15_000];
+
 export const Route = createFileRoute("/thi")({
   ssr: false,
   head: () => ({
@@ -65,6 +68,8 @@ function ExamPage() {
   const [exitOpen, setExitOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  /** Số lần đang thử nộp lại (0 = lần đầu) — hiển thị "đang nộp lại..." cho thí sinh. */
+  const [submitRetry, setSubmitRetry] = useState(0);
   const [retaking, setRetaking] = useState(false);
   const submittedRef = useRef(false);
 
@@ -94,25 +99,45 @@ function ExamPage() {
       if (!session || submittedRef.current) return;
       submittedRef.current = true;
       setSending(true);
+      setSubmitRetry(0);
+      const payload = {
+        sessionId: session.sessionId,
+        // Mã nộp bài dùng một lần do máy chủ cấp khi mở phiên thi.
+        submitToken: session.submitToken,
+        answers,
+        disqualified: opts?.disqualified,
+        disqualifyReason: opts?.reason,
+      };
       try {
-        const res = await runSubmit({
-          data: {
-            sessionId: session.sessionId,
-            // Mã nộp bài dùng một lần do máy chủ cấp khi mở phiên thi.
-            submitToken: session.submitToken,
-            answers,
-            disqualified: opts?.disqualified,
-            disqualifyReason: opts?.reason,
-          },
-        });
-        clearLocal(session.sessionId);
-        setResult(res);
-        window.scrollTo({ top: 0 });
-      } catch (error) {
+        // Nộp bài có thử lại theo backoff 2s/5s/15s — mất mạng đúng lúc nộp là tình huống căng nhất.
+        let lastError: unknown = null;
+        for (let attempt = 0; attempt < SUBMIT_BACKOFF_MS.length + 1; attempt += 1) {
+          try {
+            const res = await runSubmit({ data: payload });
+            clearLocal(session.sessionId);
+            setResult(res);
+            window.scrollTo({ top: 0 });
+            return;
+          } catch (error) {
+            lastError = error;
+            const message = error instanceof Error ? error.message : "";
+            // Lỗi nghiệp vụ (phiên không hợp lệ, đã nộp...) thì thử lại cũng vô ích.
+            if (/không hợp lệ|đã nộp|không tìm thấy/i.test(message)) break;
+            const wait = SUBMIT_BACKOFF_MS[attempt];
+            if (wait === undefined) break;
+            setSubmitRetry(attempt + 1);
+            await new Promise((r) => setTimeout(r, wait));
+          }
+        }
         submittedRef.current = false;
-        toast.error(error instanceof Error ? error.message : "Nộp bài thất bại, vui lòng thử lại.");
+        toast.error(
+          lastError instanceof Error
+            ? lastError.message
+            : "Nộp bài thất bại, vui lòng thử lại.",
+        );
       } finally {
         setSending(false);
+        setSubmitRetry(0);
       }
     },
     [answers, clearLocal, runSubmit, session],
@@ -246,7 +271,14 @@ function ExamPage() {
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/85 backdrop-blur-sm">
           <div className="card-elevated flex flex-col items-center gap-2 rounded-2xl px-7 py-5 text-center">
             <Loader2 className="size-5 animate-spin text-accent" />
-            <p className="font-heading text-sm font-bold">Đang chấm bài...</p>
+            <p className="font-heading text-sm font-bold">
+              {submitRetry > 0 ? `Đang nộp lại... (lần ${submitRetry})` : "Đang chấm bài..."}
+            </p>
+            {submitRetry > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Mạng đang chập chờn — hệ thống tự gửi lại, đừng tắt trang.
+              </p>
+            )}
           </div>
         </div>
       )}
