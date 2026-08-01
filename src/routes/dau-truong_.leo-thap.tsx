@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 
 import { QuestionInput } from "@/components/exam/QuestionInput";
+import { TowerMap } from "@/components/tower/TowerMap";
 import { RichText } from "@/components/RichText";
 import { Button } from "@/components/ui/button";
 import {
