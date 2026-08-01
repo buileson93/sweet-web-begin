@@ -65,6 +65,7 @@ function HistoryPage() {
     try {
       const res = await runHistory({ data: { name: name.trim(), credential: credential.trim() } });
       setData(res);
+      saveQuickLogin({ name: name.trim(), credential: credential.trim() });
       setOpenId(res.attempts[0]?.sessionId ?? null);
     } catch (error) {
       setData(null);

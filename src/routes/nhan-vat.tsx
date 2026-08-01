@@ -101,6 +101,7 @@ function CharacterPage() {
       ]);
       const merged = { ...p, displayName: p.displayName || employee.fullName || name.trim() };
       setProfile(merged);
+      saveQuickLogin({ name: name.trim(), credential: credential.trim() });
       setHistory(h);
       savePlayer(merged);
     } catch (error) {
