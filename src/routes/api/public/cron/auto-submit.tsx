@@ -30,15 +30,8 @@ export const Route = createFileRoute("/api/public/cron/auto-submit")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        // Đọc biến môi trường bên trong handler (môi trường được nạp theo từng request).
-        const secret = process.env.CRON_SECRET;
-        if (!secret) {
-          return Response.json(
-            { error: "Chưa cấu hình CRON_SECRET trên máy chủ." },
-            { status: 503 },
-          );
-        }
-        if (request.headers.get("x-cron-secret") !== secret) {
+        const { verifyCronRequest } = await import("@/lib/cronAuth.server");
+        if (!(await verifyCronRequest(request))) {
           return Response.json({ error: "Không có quyền." }, { status: 401 });
         }
 
