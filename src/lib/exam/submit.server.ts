@@ -326,6 +326,19 @@ export async function submitExamSession(input: {
         .then(() => undefined, () => undefined);
     }
 
+    // Nhật ký ôn tập + lịch ôn cá nhân (Leo Tháp). Lỗi ở đây KHÔNG ảnh hưởng kết quả thi.
+    if (!disqualified && statItems.length && session.employee_id) {
+      const { logReviews } = await import("@/lib/review/log.server");
+      const { applyReviewBatch } = await import("@/lib/tower/due.server");
+      await logReviews(session.employee_id, "exam", statItems);
+      await applyReviewBatch(
+        session.employee_id,
+        statItems.map((it) => ({ questionId: it.id, correct: it.answered && it.fraction >= 1 })),
+      );
+    }
+
+
+
 
 
     // Cộng kinh nghiệm / lên cấp cho nhân viên (Habitica style).
