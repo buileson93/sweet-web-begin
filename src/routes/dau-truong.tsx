@@ -592,7 +592,9 @@ function ArenaLobby() {
           </ul>
         </section>
       </div>
-    </PageContainer>
+    </div>
+    </AppShell>
+
   );
 }
 
