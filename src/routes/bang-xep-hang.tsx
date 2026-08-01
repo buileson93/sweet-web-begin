@@ -174,9 +174,10 @@ function LeaderboardPage() {
           Vinh danh các hạng mục
         </h2>
         <AwardsBoard className="mt-3" rows={awardRows} />
+        <ChampionBoard className="mt-3" rows={all} />
         <LevelBoard className="mt-3" />
-
       </div>
+
 
       <div className="mt-5">
           <div className="flex flex-col gap-2.5 sm:flex-row">
