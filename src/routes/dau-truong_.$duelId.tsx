@@ -402,7 +402,67 @@ function WaitingPanel({
   );
 }
 
+/**
+ * Đồng hồ lượt đấu — chạy bằng requestAnimationFrame và ghi thẳng vào DOM.
+ * Không dùng state nên không kéo theo việc vẽ lại câu hỏi/kỹ năng/nhân vật mỗi 100ms.
+ */
+const RoundClock = memo(function RoundClock({
+  endAt,
+  total,
+  round,
+  onExpire,
+}: {
+  endAt: number;
+  total: number;
+  round: number;
+  onExpire: () => void;
+}) {
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const textRef = useRef<HTMLParagraphElement | null>(null);
+  const expireRef = useRef(onExpire);
+  expireRef.current = onExpire;
+
+  useEffect(() => {
+    if (!endAt) return;
+    let raf = 0;
+    let fired = false;
+    const step = () => {
+      const remain = Math.max(0, endAt - Date.now());
+      const pct = total > 0 ? (remain / total) * 100 : 0;
+      if (barRef.current) {
+        barRef.current.style.width = `${pct}%`;
+        barRef.current.style.backgroundColor =
+          pct < 30 ? "hsl(var(--destructive))" : "hsl(var(--primary))";
+      }
+      if (textRef.current)
+        textRef.current.textContent =
+          remain <= 0 ? "⏱️ Hết giờ — đang chốt lượt…" : `${(remain / 1000).toFixed(1)}s`;
+      if (remain <= 0) {
+        if (!fired) {
+          fired = true;
+          expireRef.current();
+        }
+        return;
+      }
+      // Tab ẩn thì trình duyệt tự dừng rAF — không đốt CPU nền.
+      raf = requestAnimationFrame(step);
+    };
+    step();
+    return () => cancelAnimationFrame(raf);
+  }, [endAt, total, round]);
+
+  return (
+    <div className="space-y-1">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+        <div ref={barRef} className="h-full w-full rounded-full bg-primary" />
+      </div>
+      <p ref={textRef} className="text-right font-mono text-xs text-muted-foreground" />
+    </div>
+  );
+});
+
 function RoundPanel({
+
   state,
   value,
   locked,
