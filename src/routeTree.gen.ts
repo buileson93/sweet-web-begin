@@ -32,6 +32,7 @@ import { Route as ApiPublicAnhCauHoiSplatRouteImport } from './routes/api/public
 import { Route as ApiPublicCronAutoSubmitRouteImport } from './routes/api/public/cron/auto-submit'
 import { Route as ApiPublicCronDauTruongRouteImport } from './routes/api/public/cron/dau-truong'
 import { Route as ApiPublicCronDonAnhRouteImport } from './routes/api/public/cron/don-anh'
+import { Route as ApiPublicCronThongKeRouteImport } from './routes/api/public/cron/thong-ke'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -147,6 +148,11 @@ const ApiPublicCronDonAnhRoute = ApiPublicCronDonAnhRouteImport.update({
   path: '/api/public/cron/don-anh',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronThongKeRoute = ApiPublicCronThongKeRouteImport.update({
+  id: '/api/public/cron/thong-ke',
+  path: '/api/public/cron/thong-ke',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
   '/api/public/cron/dau-truong': typeof ApiPublicCronDauTruongRoute
   '/api/public/cron/don-anh': typeof ApiPublicCronDonAnhRoute
+  '/api/public/cron/thong-ke': typeof ApiPublicCronThongKeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -195,6 +202,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
   '/api/public/cron/dau-truong': typeof ApiPublicCronDauTruongRoute
   '/api/public/cron/don-anh': typeof ApiPublicCronDonAnhRoute
+  '/api/public/cron/thong-ke': typeof ApiPublicCronThongKeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/api/public/cron/auto-submit': typeof ApiPublicCronAutoSubmitRoute
   '/api/public/cron/dau-truong': typeof ApiPublicCronDauTruongRoute
   '/api/public/cron/don-anh': typeof ApiPublicCronDonAnhRoute
+  '/api/public/cron/thong-ke': typeof ApiPublicCronThongKeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/auto-submit'
     | '/api/public/cron/dau-truong'
     | '/api/public/cron/don-anh'
+    | '/api/public/cron/thong-ke'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/auto-submit'
     | '/api/public/cron/dau-truong'
     | '/api/public/cron/don-anh'
+    | '/api/public/cron/thong-ke'
   id:
     | '__root__'
     | '/'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/auto-submit'
     | '/api/public/cron/dau-truong'
     | '/api/public/cron/don-anh'
+    | '/api/public/cron/thong-ke'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -319,6 +331,7 @@ export interface RootRouteChildren {
   ApiPublicCronAutoSubmitRoute: typeof ApiPublicCronAutoSubmitRoute
   ApiPublicCronDauTruongRoute: typeof ApiPublicCronDauTruongRoute
   ApiPublicCronDonAnhRoute: typeof ApiPublicCronDonAnhRoute
+  ApiPublicCronThongKeRoute: typeof ApiPublicCronThongKeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -484,6 +497,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronDonAnhRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/thong-ke': {
+      id: '/api/public/cron/thong-ke'
+      path: '/api/public/cron/thong-ke'
+      fullPath: '/api/public/cron/thong-ke'
+      preLoaderRoute: typeof ApiPublicCronThongKeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -523,6 +543,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronAutoSubmitRoute: ApiPublicCronAutoSubmitRoute,
   ApiPublicCronDauTruongRoute: ApiPublicCronDauTruongRoute,
   ApiPublicCronDonAnhRoute: ApiPublicCronDonAnhRoute,
+  ApiPublicCronThongKeRoute: ApiPublicCronThongKeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

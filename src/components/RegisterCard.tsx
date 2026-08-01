@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
 import { getDeviceId } from "@/lib/deviceId";
 import { startExam } from "@/lib/exam.functions";
 import { saveExamEntry } from "@/lib/examSession";
@@ -152,6 +153,15 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
   const [submitting, setSubmitting] = useState(false);
   const [committed, setCommitted] = useState(false);
 
+  // Nhớ họ tên + 4 số cuối trong 3 giờ để không phải nhập lại mỗi lần vào phòng thi.
+  useEffect(() => {
+    const saved = readQuickLogin();
+    if (!saved) return;
+    setName((prev) => prev || saved.name);
+    setCredential((prev) => prev || saved.credential);
+    if (saved.extraCredential) setExtraCredential((prev) => prev || saved.extraCredential!);
+  }, []);
+
   const selected = useMemo(() => quizzes.find((q) => q.id === quizId), [quizzes, quizId]);
   const selectedStatus = selected ? quizStatus(selected) : null;
 
@@ -233,6 +243,11 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
       });
       setVerified(emp);
       setNeedExtra(false);
+      saveQuickLogin({
+        name: trimmed,
+        credential: credential.trim(),
+        extraCredential: extraCredential.trim() || undefined,
+      });
       toast.success(`Xin chào ${emp.fullName}!`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Không xác thực được thông tin.";

@@ -113,7 +113,31 @@ export async function getOrgWeakTopics(input: {
 }): Promise<{ rows: OrgTopicRow[]; total: number; page: number; pageSize: number }> {
   const pageSize = Math.min(50, Math.max(5, input.pageSize ?? 20));
   const page = Math.max(1, input.page ?? 1);
+  const from = (page - 1) * pageSize;
 
+  // Ưu tiên bảng tổng hợp sẵn (làm mới theo lịch) — phân trang ngay tại máy chủ.
+  const view = await supabaseAdmin
+    .from("org_topic_stats")
+    .select("tag, learners, avg_rating, games, correct", { count: "exact" })
+    .order("avg_rating", { ascending: true })
+    .range(from, from + pageSize - 1);
+
+  if (!view.error && view.data) {
+    const rows: OrgTopicRow[] = (
+      view.data as { tag: string; learners: number; avg_rating: number; games: number; correct: number }[]
+    ).map((r) => ({
+      tag: r.tag,
+      learners: Number(r.learners) || 0,
+      avgRating: Number(r.avg_rating) || START_RATING,
+      accuracy: Number(r.games) ? Math.round((Number(r.correct) / Number(r.games)) * 100) : 0,
+      mastery: masteryOf(Number(r.avg_rating) || START_RATING, Number(r.games) || 0),
+    }));
+    if (rows.length || (view.count ?? 0) > 0) {
+      return { rows, total: view.count ?? rows.length, page, pageSize };
+    }
+  }
+
+  // Dự phòng: bảng tổng hợp chưa sẵn sàng thì tính trực tiếp như trước.
   const { data } = await supabaseAdmin
     .from("topic_ratings")
     .select("tag, rating, games, correct")
@@ -144,7 +168,7 @@ export async function getOrgWeakTopics(input: {
     .sort((a, b) => a.avgRating - b.avgRating);
 
   return {
-    rows: all.slice((page - 1) * pageSize, page * pageSize),
+    rows: all.slice(from, from + pageSize),
     total: all.length,
     page,
     pageSize,

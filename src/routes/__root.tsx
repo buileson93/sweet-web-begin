@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/palette";
 import { useDeviceTracking } from "@/hooks/useDeviceTracking";
 import { registerOfflineWorker } from "@/lib/pwa/register";
@@ -155,10 +156,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {/* Provider tooltip đặt ở gốc để mọi Tooltip lẻ (sidebar, bảng...) đều dùng được. */}
+      <TooltipProvider delayDuration={150}>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </TooltipProvider>
       <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
   );
 }
+
 

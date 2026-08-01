@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BadgeCheck,
   CalendarClock,
@@ -32,6 +32,7 @@ import { getExamHistory } from "@/lib/exam.functions";
 import type { ExamHistory } from "@/lib/exam.server";
 import { formatDateTime, formatSeconds } from "@/lib/format";
 import { getPlayerProfile, type PlayerProfile } from "@/lib/player.functions";
+import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
 import { cn } from "@/lib/utils";
 
 
@@ -73,6 +74,15 @@ function CharacterPage() {
 
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
+
+  // Ghi nhớ đăng nhập nhanh trong 3 giờ.
+  useEffect(() => {
+    const quick = readQuickLogin();
+    if (!quick) return;
+    setName((prev) => prev || quick.name);
+    setCredential((prev) => prev || quick.credential);
+  }, []);
+
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [history, setHistory] = useState<ExamHistory | null>(null);
@@ -91,6 +101,7 @@ function CharacterPage() {
       ]);
       const merged = { ...p, displayName: p.displayName || employee.fullName || name.trim() };
       setProfile(merged);
+      saveQuickLogin({ name: name.trim(), credential: credential.trim() });
       setHistory(h);
       savePlayer(merged);
     } catch (error) {
@@ -148,7 +159,8 @@ function CharacterPage() {
         <>
           <section className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
             <div className="card-elevated flex flex-col items-center gap-3 rounded-2xl p-5">
-              <div className="grid h-56 w-full place-items-center rounded-2xl bg-gradient-to-b from-secondary/70 to-background p-4">
+              {/* Khung nhân vật vừa mắt trên điện thoại, không chiếm hết màn hình */}
+              <div className="grid h-32 w-full place-items-center rounded-2xl bg-gradient-to-b from-secondary/70 to-background p-3 sm:h-40">
                 <Avatar2D
                   value={profile.avatarUrl}
                   name={profile.displayName}
@@ -160,7 +172,7 @@ function CharacterPage() {
                 name={profile.displayName}
                 avatarUrl={profile.avatarUrl}
                 avatarImage={profile.avatarImage}
-                size="xl"
+                size="md"
                 live
               />
               <div className="text-center">

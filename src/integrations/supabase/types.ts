@@ -1616,6 +1616,16 @@ export type Database = {
         }
         Relationships: []
       }
+      org_topic_stats: {
+        Row: {
+          avg_rating: number | null
+          correct: number | null
+          games: number | null
+          learners: number | null
+          tag: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       award_player_xp: {
@@ -1655,6 +1665,7 @@ export type Database = {
         Returns: boolean
       }
       question_norm_key: { Args: { p_text: string }; Returns: string }
+      refresh_org_topic_stats: { Args: never; Returns: undefined }
       set_player_avatar: {
         Args: {
           p_avatar_image: string
