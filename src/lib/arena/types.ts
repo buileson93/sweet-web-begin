@@ -85,6 +85,11 @@ export type RoundResult = {
   timedOut?: boolean;
   /** Diễn giải hiệu ứng kỹ năng đã kích hoạt trong câu. */
   skillNotes?: { employeeId: string; skill: string | null; label: string }[];
+  /** Hết thời gian công bố kết quả thì kết thúc ván (thay vì phát câu tiếp). */
+  finishAfter?: boolean;
+  /** Người bị xử thua kỹ thuật do bỏ trống quá nhiều câu. */
+  noShowId?: string | null;
+
   lines: {
     employeeId: string;
     isCorrect: boolean;
