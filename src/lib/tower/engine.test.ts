@@ -14,6 +14,7 @@ import {
   takeRelic,
 } from "@/lib/tower/engine";
 import { BOSS_FLOORS, buildMap, FLOORS } from "@/lib/tower/map";
+import { ROOM_RULES } from "@/lib/tower/rooms";
 import { relicTotals } from "@/lib/tower/relics";
 import { runScore } from "@/lib/tower/score";
 import { gradeLocal } from "@/lib/tower/grade.local";
