@@ -227,7 +227,7 @@ export function ExamResult({
                 {questionImageSrc(item.imageUrl) ? (
                   <img
                     src={questionImageSrc(item.imageUrl)!}
-                    alt={`Hình minh hoạ câu ${number}`}
+                    alt={item.imageAlt || `Hình minh hoạ câu ${number}`}
                     loading="lazy"
                     className="mt-3 max-h-48 w-full rounded-xl border border-border object-contain"
                   />
