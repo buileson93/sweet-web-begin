@@ -186,7 +186,11 @@ function CharacterPage() {
                 name={name.trim()}
                 credential={credential.trim()}
                 currentUrl={profile.avatarUrl}
-                onSaved={(next) => setProfile(next)}
+                onSaved={(next) => {
+                  setProfile(next);
+                  // Đồng bộ nhân vật mới ra toàn hệ thống (header, trang chủ, đấu trường...)
+                  savePlayer(next);
+                }}
               />
             </div>
 
