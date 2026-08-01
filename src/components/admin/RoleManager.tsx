@@ -146,7 +146,11 @@ export function RoleManager() {
                         aria-label={`Thu hồi quyền ${ROLE_LABEL[r] ?? r}`}
                         className="ml-0.5 rounded-full p-0.5 hover:bg-destructive/15 hover:text-destructive"
                         onClick={() =>
-                          revokeMutation.mutate({ userId: a.userId, role: r as "admin" | "editor" | "staff" })
+                          revokeMutation.mutate({
+                            userId: a.userId,
+                            role: r as "admin" | "editor" | "staff",
+                            email: a.email,
+                          })
                         }
                       >
                         <X className="size-3" />
