@@ -48,7 +48,7 @@ function toTowerQuestion(row: QuestionRow, order: number[]): TowerQuestion {
     options: permuteByOrder(opts, order, ""),
     matchLeft: pairsOf(row).map((p) => p.left),
     imageUrl: row.image_url ?? null,
-    imageAlt: row.image_alt ?? "",
+    imageAlt: (row as { image_alt?: string }).image_alt ?? "",
     optionImages: permuteByOrder(optionImagesOf(row), order, ""),
   };
 }
