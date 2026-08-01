@@ -1,4 +1,4 @@
-import { ErrorState } from "@/components/ErrorState";
+import { ErrorState } from "@/components/ui-kit";
 import { useMemo, useRef, useState } from "react";
 import { readXlsxRows } from "@/lib/xlsxIo";
 import { createFileRoute } from "@tanstack/react-router";
