@@ -4,6 +4,8 @@ import {
   DISQUALIFY_THRESHOLD_DEFAULT,
   isExamEventKind,
   isQuotaExempt,
+  leaveAllowance,
+  shouldForceRestart,
   MAX_EXEMPT_EVENTS_PER_SESSION,
   MAX_EVENTS_PER_SESSION,
   scoreEvent,
@@ -11,14 +13,14 @@ import {
 } from "./integrity";
 
 describe("scoreEvent", () => {
-  it("bỏ qua việc ẩn tab dưới 1,5 giây (thông báo, xoay màn hình)", () => {
+  it("bỏ qua việc ẩn tab dưới 0,8 giây (thông báo, xoay màn hình)", () => {
     expect(scoreEvent("tab_hidden", { hiddenMs: 0 })).toBe(0);
-    expect(scoreEvent("tab_hidden", { hiddenMs: 1_000 })).toBe(0);
-    expect(scoreEvent("tab_hidden", { hiddenMs: 1_499 })).toBe(0);
+    expect(scoreEvent("tab_hidden", { hiddenMs: 500 })).toBe(0);
+    expect(scoreEvent("tab_hidden", { hiddenMs: 799 })).toBe(0);
     expect(scoreEvent("tab_hidden", {})).toBe(0);
   });
 
-  it("phạt 2 điểm khi ẩn tab 1,5–15 giây", () => {
+  it("phạt 2 điểm khi ẩn tab 0,8–15 giây", () => {
     expect(scoreEvent("tab_hidden", { hiddenMs: 1_500 })).toBe(2);
     expect(scoreEvent("tab_hidden", { hiddenMs: 3_000 })).toBe(2);
     expect(scoreEvent("tab_hidden", { hiddenMs: 15_000 })).toBe(2);
@@ -74,7 +76,7 @@ describe("shouldDisqualify", () => {
 
   it("một thông báo chớp nhoáng (1 giây) không đủ để bị huỷ bài", () => {
     const score =
-      scoreEvent("tab_hidden", { hiddenMs: 1_000 }) +
+      scoreEvent("tab_hidden", { hiddenMs: 500 }) +
       scoreEvent("window_blur", { documentVisible: true });
     expect(score).toBe(0);
     expect(shouldDisqualify(score, 6, true)).toBe(false);
@@ -91,5 +93,17 @@ describe("quota sự kiện", () => {
 
   it("quota riêng của loại được miễn rộng hơn quota chung", () => {
     expect(MAX_EXEMPT_EVENTS_PER_SESSION).toBeGreaterThan(MAX_EVENTS_PER_SESSION);
+  });
+});
+
+describe("chính sách rời màn hình", () => {
+  it("máy tính: rời 1 lần là buộc thi lại", () => {
+    expect(leaveAllowance(false)).toBe(0);
+    expect(shouldForceRestart(1, false)).toBe(true);
+  });
+  it("điện thoại: tha lần đầu, lần thứ hai buộc thi lại", () => {
+    expect(leaveAllowance(true)).toBe(1);
+    expect(shouldForceRestart(1, true)).toBe(false);
+    expect(shouldForceRestart(2, true)).toBe(true);
   });
 });

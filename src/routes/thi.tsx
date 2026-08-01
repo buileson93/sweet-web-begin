@@ -26,6 +26,7 @@ import { useExamAutosave } from "@/hooks/useExamAutosave";
 import { useExamRestore } from "@/hooks/useExamRestore";
 import { useExamTimer } from "@/hooks/useExamTimer";
 import { useIntegrityWatch } from "@/hooks/useIntegrityWatch";
+import { isMobileDevice, leaveAllowance, shouldForceRestart } from "@/lib/integrity";
 import { isAnswered } from "@/lib/questionKinds";
 
 /** Backoff khi nộp bài thất bại vì mạng/máy chủ. */
@@ -72,6 +73,11 @@ function ExamPage() {
   const [submitRetry, setSubmitRetry] = useState(0);
   const [retaking, setRetaking] = useState(false);
   const submittedRef = useRef(false);
+  const isMobileRef = useRef(false);
+  const restartRef = useRef<() => Promise<void> | void>(() => {});
+  useEffect(() => {
+    isMobileRef.current = isMobileDevice();
+  }, []);
 
   // Autosave đáp án lên máy chủ (delta, nhịp 12s, debounce 2s, tối đa 1 request/5s).
   const {
@@ -162,7 +168,14 @@ function ExamPage() {
     onHiddenViolation: () =>
       setViolations((v) => {
         const next = v + 1;
-        toast.warning(`Bạn đã rời khỏi màn hình thi ${next} lần — hành vi này được ghi nhận.`);
+        if (shouldForceRestart(next, isMobileRef.current)) {
+          toast.error("Bạn đã rời khỏi màn hình thi — bài thi bị huỷ và phải làm lại từ đầu.");
+          void restartRef.current();
+        } else {
+          toast.warning(
+            "Cảnh báo: rời khỏi màn hình thi. Lần tiếp theo bài thi sẽ bị huỷ và phải làm lại từ đầu.",
+          );
+        }
         return next;
       }),
   });
@@ -248,6 +261,26 @@ function ExamPage() {
     }
   }, [navigate, resetHelpers, runStart, setAnswers, setSession]);
 
+  /** Buộc thi lại từ đầu khi vi phạm rời màn hình: huỷ phiên hiện tại rồi mở phiên mới. */
+  const forceRestart = useCallback(async () => {
+    if (session && !submittedRef.current) {
+      submittedRef.current = true;
+      try {
+        await runAbandon({
+          data: { sessionId: session.sessionId, submitToken: session.submitToken },
+        });
+      } catch {
+        /* bỏ qua */
+      }
+      clearLocal(session.sessionId);
+    }
+    await retake();
+  }, [clearLocal, retake, runAbandon, session]);
+
+  useEffect(() => {
+    restartRef.current = forceRestart;
+  }, [forceRestart]);
+
   if (result) return <ExamResult result={result} onRetake={retake} retaking={retaking} />;
 
   if (!session) {
@@ -308,7 +341,10 @@ function ExamPage() {
         {violations > 0 && (
           <div className="mb-3 flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
             <AlertTriangle className="size-4 shrink-0" />
-            Bạn đã rời khỏi màn hình thi {violations} lần — hành vi này được ghi nhận.
+            Bạn đã rời khỏi màn hình thi {violations} lần.{" "}
+            {leaveAllowance(isMobileRef.current) > 0
+              ? "Rời thêm một lần nữa, bài thi sẽ bị huỷ và phải làm lại từ đầu."
+              : "Bài thi sẽ bị huỷ và phải làm lại từ đầu."}
           </div>
         )}
 
