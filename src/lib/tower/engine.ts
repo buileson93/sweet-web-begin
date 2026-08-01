@@ -9,6 +9,7 @@ import {
   BOONS,
   QUESTIONS_PER_RUN,
   QUESTIONS_PER_STAGE,
+  SECONDS_PER_QUESTION,
   START_HP,
   STAGES_PER_RUN,
   STOP_WRONG_RATIO,
@@ -159,8 +160,9 @@ export function gradeStage(
   const totals = boonTotals(run.boons);
   const rand = seededRandom(`${run.seed}:${run.stage}`);
 
-  let hp = run.hp + (run.stage === 0 ? totals.heal : 0);
-  let shield = Math.max(run.shield, totals.shield);
+  // Máu và khiên là tài nguyên mang sang nguyên trạng — trợ giúp đã cộng ngay lúc nhận.
+  let hp = run.hp;
+  let shield = run.shield;
   let combo = run.combo;
   let damage = 0;
   let correctCount = 0;
@@ -212,6 +214,22 @@ export function gradeStage(
 }
 
 export function takeBoon(run: TowerRun, boonId: string | undefined): TowerRun {
-  if (!boonId || run.boons.includes(boonId) || !BOONS.some((b) => b.id === boonId)) return run;
-  return { ...run, boons: [...run.boons, boonId] };
+  const b = BOONS.find((x) => x.id === boonId);
+  if (!b || run.boons.includes(b.id)) return run;
+  return {
+    ...run,
+    boons: [...run.boons, b.id],
+    hp: Math.min(START_HP, run.hp + (b.effect.heal ?? 0)),
+    shield: run.shield + (b.effect.shield ?? 0),
+  };
+}
+
+/** Số giây cho một tầng, đã cộng trợ giúp "thêm giây mỗi câu". */
+export function stageSeconds(boons: string[]): number {
+  return (SECONDS_PER_QUESTION + boonTotals(boons).timeBonus) * QUESTIONS_PER_STAGE;
+}
+
+/** Tổng hợp chỉ số trợ giúp để giao diện hiển thị được (khiên, sát thương, giây cộng thêm). */
+export function runBoonTotals(boons: string[]) {
+  return boonTotals(boons);
 }

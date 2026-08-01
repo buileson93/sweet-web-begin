@@ -1,5 +1,6 @@
 import { Activity, Gauge, RefreshCw, Timer } from "lucide-react";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { DuelNetStats } from "@/hooks/useDuelChannel";
 
@@ -47,11 +48,9 @@ export function NetStatsWidget({
   return (
     <div className={cn("flex flex-wrap items-stretch gap-1.5", className)}>
       {items.map((it) => (
-        <div
-          key={it.label}
-          title={it.hint}
-          className="flex min-w-[74px] flex-1 items-center gap-1.5 rounded-xl border bg-card/80 px-2 py-1 backdrop-blur"
-        >
+        <Tooltip key={it.label}>
+          <TooltipTrigger asChild>
+        <div className="flex min-w-[74px] flex-1 cursor-help items-center gap-1.5 rounded-xl border bg-card/80 px-2 py-1 backdrop-blur">
           <it.icon className={cn("size-3.5 shrink-0", it.tone)} />
           <span className="min-w-0">
             <span className={cn("block font-mono text-xs font-bold tabular-nums leading-tight", it.tone)}>
@@ -62,12 +61,18 @@ export function NetStatsWidget({
             </span>
           </span>
         </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p className="font-semibold">{it.label}</p>
+            <p>{it.hint}</p>
+          </TooltipContent>
+        </Tooltip>
       ))}
       {onOpenLog ? (
         <button
           type="button"
           onClick={onOpenLog}
-          title="Xem nhật ký sự cố của ván này"
+          aria-label="Xem nhật ký sự cố của ván này"
           className="flex items-center gap-1 rounded-xl border bg-card/80 px-2 py-1 text-[10px] font-semibold text-muted-foreground transition hover:text-primary"
         >
           <Activity className="size-3.5" />

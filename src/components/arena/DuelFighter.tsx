@@ -17,12 +17,15 @@ export const DuelFighter = memo(function DuelFighter({
   hpStart,
   mine,
   skill,
+  roundKey,
 }: {
   player?: DuelPlayerView;
   hpStart: number;
   mine?: boolean;
   /** Kỹ năng vừa kích hoạt ở câu gần nhất (hiện hiệu ứng bay lên). */
   skill?: string | null;
+  /** Số hiệu lượt đấu — đổi lượt mới cho phép hiện lại hiệu ứng kỹ năng. */
+  roundKey?: number;
 }) {
   const hp = player?.hp ?? hpStart;
   const [fx, setFx] = useState<Fx[]>([]);
@@ -31,6 +34,21 @@ export const DuelFighter = memo(function DuelFighter({
   const prevHp = useRef(hp);
   const prevDealt = useRef(player?.damageDealt ?? 0);
   const seq = useRef(0);
+  const timers = useRef<number[]>([]);
+
+  // Dọn hẹn giờ MỘT LẦN khi rời màn hình. Không dọn giữa các đòn,
+  // nếu không hiệu ứng cũ sẽ kẹt lại khi hai đòn nối nhau.
+  useEffect(
+    () => () => {
+      timers.current.forEach((t) => window.clearTimeout(t));
+      timers.current = [];
+    },
+    [],
+  );
+
+  const later = (fn: () => void, ms: number) => {
+    timers.current.push(window.setTimeout(fn, ms));
+  };
 
   // Ra đòn: khi tổng sát thương gây ra tăng lên.
   const dealt = player?.damageDealt ?? 0;
@@ -41,8 +59,7 @@ export const DuelFighter = memo(function DuelFighter({
     }
     prevDealt.current = dealt;
     setPose("attack");
-    const t = window.setTimeout(() => setPose("idle"), 800);
-    return () => window.clearTimeout(t);
+    later(() => setPose((p) => (p === "attack" ? "idle" : p)), 800);
   }, [dealt]);
 
   useEffect(() => {
@@ -54,14 +71,9 @@ export const DuelFighter = memo(function DuelFighter({
     setFx((f) => [...f, item]);
     setShake(diff);
     setPose("hurt");
-    const t1 = window.setTimeout(() => setFx((f) => f.filter((x) => x.id !== item.id)), 1100);
-    const t2 = window.setTimeout(() => setShake(0), 600);
-    const t3 = window.setTimeout(() => setPose("idle"), 800);
-    return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-      window.clearTimeout(t3);
-    };
+    later(() => setFx((f) => f.filter((x) => x.id !== item.id)), 1100);
+    later(() => setShake(0), 600);
+    later(() => setPose((p) => (p === "hurt" ? "idle" : p)), 800);
   }, [hp]);
 
   const def = skillById(skill);
@@ -70,9 +82,10 @@ export const DuelFighter = memo(function DuelFighter({
     seq.current += 1;
     const item: Fx = { id: seq.current, text: `${def.icon} ${def.name}`, tone: "skill" };
     setFx((f) => [...f, item]);
-    const t = window.setTimeout(() => setFx((f) => f.filter((x) => x.id !== item.id)), 1400);
-    return () => window.clearTimeout(t);
-  }, [def, player?.hp]);
+    later(() => setFx((f) => f.filter((x) => x.id !== item.id)), 1400);
+    // Chỉ phát lại khi sang lượt mới — không phát lại mỗi lần máu đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [def?.id, roundKey]);
 
   // Cường độ rung tăng dần theo mức sát thương phải nhận.
   const shakeClass =
@@ -196,7 +209,6 @@ export const DuelFighter = memo(function DuelFighter({
         {/* Bọc ngoài để nháy trắng (filter) không đè hoạt ảnh lao/giật (transform). */}
         <div className={cn(pose === "hurt" && "animate-sprite-flash")}>
           <ClassSprite
-            key={`${pose}-${dealt}-${hp}`}
             classId={player?.classId}
             action={pose}
             flip={!mine}

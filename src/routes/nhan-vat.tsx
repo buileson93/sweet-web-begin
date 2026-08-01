@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BadgeCheck,
   CalendarClock,
@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   Sparkles,
   Timer,
-  UserRoundCog,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -19,7 +18,6 @@ import { AppShell } from "@/components/AppShell";
 import { usePlayerIdentity } from "@/hooks/usePlayerIdentity";
 
 import { Avatar2D } from "@/components/player/Avatar2D";
-import { AvatarBubble, type AvatarBubbleSize } from "@/components/player/AvatarBubble";
 import { AvatarPickerDialog } from "@/components/player/AvatarPickerDialog";
 import { LevelBar } from "@/components/player/LevelBar";
 import { LevelLadder } from "@/components/player/LevelLadder";
@@ -59,13 +57,6 @@ function credentialOk(value: string) {
   return /^\d{4}$/.test(v) || /^\d{1,2}[/\-.]\d{1,2}[/\-.]\d{4}$/.test(v) || /^\d{8}$/.test(v);
 }
 
-const SIZE_DEMO: { size: AvatarBubbleSize; label: string }[] = [
-  { size: "xs", label: "Siêu nhỏ" },
-  { size: "sm", label: "Nhỏ" },
-  { size: "md", label: "Vừa" },
-  { size: "lg", label: "Lớn" },
-];
-
 function CharacterPage() {
   const runVerify = useServerFn(verifyEmployeeFn);
   const runProfile = useServerFn(getPlayerProfile);
@@ -75,6 +66,7 @@ function CharacterPage() {
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
 
+  const autoRan = useRef(false);
   // Ghi nhớ đăng nhập nhanh trong 3 giờ.
   useEffect(() => {
     const quick = readQuickLogin();
@@ -88,6 +80,15 @@ function CharacterPage() {
   const [history, setHistory] = useState<ExamHistory | null>(null);
 
   const canSubmit = name.trim().length >= 3 && credentialOk(credential);
+
+  // Đã nhớ đăng nhập nhanh thì mở hồ sơ luôn, khỏi bắt bấm lại.
+  useEffect(() => {
+    if (autoRan.current || profile || loading || !canSubmit) return;
+    if (!readQuickLogin()) return;
+    autoRan.current = true;
+    void handleEnter();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canSubmit, profile, loading]);
 
   async function handleEnter() {
     if (!canSubmit) return toast.error("Nhập họ tên và 4 số cuối điện thoại hoặc ngày sinh.");
@@ -124,7 +125,13 @@ function CharacterPage() {
       </header>
 
       <section className="card-elevated mt-5 rounded-2xl p-5">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_auto] sm:items-end">
+        <form
+          className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_auto] sm:items-end"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (canSubmit) void handleEnter();
+          }}
+        >
           <div className="space-y-1.5">
             <Label htmlFor="c-name">Họ và tên</Label>
             <Input
@@ -132,6 +139,7 @@ function CharacterPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nguyễn Văn A"
+              autoComplete="name"
               className="rounded-xl"
             />
           </div>
@@ -142,17 +150,16 @@ function CharacterPage() {
               value={credential}
               onChange={(e) => setCredential(e.target.value)}
               placeholder="1234 hoặc 01/01/1990"
+              inputMode="numeric"
+              autoComplete="off"
               className="rounded-xl"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && canSubmit) void handleEnter();
-              }}
             />
           </div>
-          <Button className="h-10 rounded-xl" disabled={loading || !canSubmit} onClick={() => void handleEnter()}>
+          <Button type="submit" className="h-10 rounded-xl" disabled={loading || !canSubmit}>
             {loading ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
-            {loading ? "Đang mở hồ sơ..." : "Mở hồ sơ"}
+            {loading ? "Đang mở hồ sơ..." : profile ? "Đổi người" : "Mở hồ sơ"}
           </Button>
-        </div>
+        </form>
       </section>
 
       {profile ? (
@@ -168,13 +175,6 @@ function CharacterPage() {
                 />
               </div>
 
-              <AvatarBubble
-                name={profile.displayName}
-                avatarUrl={profile.avatarUrl}
-                avatarImage={profile.avatarImage}
-                size="md"
-                live
-              />
               <div className="text-center">
                 <p className="font-heading inline-flex items-center gap-1.5 text-base font-extrabold">
                   <BadgeCheck className="size-4 text-success" /> {profile.displayName}
@@ -187,23 +187,6 @@ function CharacterPage() {
                 currentUrl={profile.avatarUrl}
                 onSaved={(next) => setProfile(next)}
               />
-              <div className="mt-2 w-full rounded-xl border border-border bg-secondary/50 p-3">
-                <p className="type-meta mb-2 inline-flex items-center gap-1.5">
-                  <UserRoundCog className="size-3.5" /> Các cỡ hiển thị của nhân vật
-                </p>
-                <div className="flex items-end justify-around gap-2">
-                  {SIZE_DEMO.map((s) => (
-                    <span key={s.size} className="flex flex-col items-center gap-1">
-                      <AvatarBubble
-                        name={profile.displayName}
-                        avatarImage={profile.avatarImage}
-                        size={s.size}
-                      />
-                      <span className="type-meta">{s.label}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
             </div>
 
             <div className="space-y-4">

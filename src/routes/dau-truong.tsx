@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
+  ArrowRight,
   BarChart3,
+  Castle,
   Coins,
   Flame,
   Loader2,
@@ -27,6 +29,7 @@ import { ShareChallenge } from "@/components/arena/ShareChallenge";
 import { BusyDuelDialog } from "@/components/arena/BusyDuelDialog";
 import { ClassPicker, useWarriorClass } from "@/components/arena/ClassPicker";
 import { PracticePanel } from "@/components/arena/PracticePanel";
+import { DueBadge } from "@/components/arena/DueBadge";
 import { useArenaInviteChannel } from "@/hooks/useArenaInviteChannel";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
 import { usePlayerIdentity } from "@/hooks/usePlayerIdentity";
@@ -392,6 +395,30 @@ function ArenaLobby() {
       <ClassPicker value={classId} onChange={chooseClass} disabled={searching} />
 
       <ShareChallenge token={token} />
+
+      {/* Lối vào Tháp Không Lưu — đặt nổi bật để ai cũng thấy ngay khi vào sảnh. */}
+      <Link
+        to="/dau-truong/leo-thap"
+        className="group relative block overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-lg"
+      >
+        <Castle
+          aria-hidden
+          className="pointer-events-none absolute -right-6 -top-6 size-32 text-primary/10 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6"
+        />
+        <div className="relative flex flex-wrap items-center gap-2">
+          <Castle className="size-5 text-primary" />
+          <h3 className="text-base font-bold">Tháp Không Lưu (TWR ATC)</h3>
+          <DueBadge />
+        </div>
+        <p className="relative mt-1 max-w-xl text-sm text-muted-foreground">
+          Ôn nghiệp vụ điều hành bay theo lịch lặp lại ngắt quãng — 5 tầng từ sân đỗ lên đường dài,
+          mỗi ca trực khoảng 12–15 phút và không tính vào kết quả kỳ thi.
+        </p>
+        <span className="relative mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+          Vào ca trực
+          <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+        </span>
+      </Link>
 
       <PracticePanel
         token={token}

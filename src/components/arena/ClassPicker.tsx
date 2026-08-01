@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { ClassSprite } from "@/components/arena/ClassSprite";
 import { CLASSES, classById, DEFAULT_CLASS, type ClassId } from "@/lib/arena/classes";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "arena.class";
@@ -49,7 +50,7 @@ export function ClassPicker({
           Kiếm sĩ ▸ Pháp sư ▸ Vệ binh ▸ Kiếm sĩ (khắc chế vòng tròn)
         </p>
       </div>
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Lớp chiến binh">
         {CLASSES.map((c) => {
           const active = c.id === value;
           return (
@@ -58,7 +59,8 @@ export function ClassPicker({
               type="button"
               disabled={disabled}
               onClick={() => onChange(c.id)}
-              aria-pressed={active}
+              role="radio"
+              aria-checked={active}
               className={cn(
                 "group relative overflow-hidden rounded-xl border p-3 text-left transition",
                 "hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-60",
@@ -70,14 +72,11 @@ export function ClassPicker({
               <div className="flex items-center gap-1">
                 <ClassSprite
                   classId={c.id}
-                  action={active ? "attack" : "idle"}
+                  action="idle"
                   size={72}
                   className="-my-2 shrink-0"
                 />
                 <div className="min-w-0">
-                  <span className="text-xl" aria-hidden>
-                    {c.icon}
-                  </span>
                   <p className="text-sm font-bold">{c.name}</p>
                 </div>
               </div>
@@ -105,15 +104,23 @@ export function ClassPicker({
 export function ClassChip({ classId, className }: { classId?: string | null; className?: string }) {
   const c = classById(classId);
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground",
-        className,
-      )}
-      title={`${c.name} — ${c.tagline}`}
-    >
-      <span aria-hidden>{c.icon}</span>
-      {c.name}
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            "inline-flex cursor-help items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground",
+            className,
+          )}
+        >
+          <span aria-hidden>{c.icon}</span>
+          {c.name}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-56">
+        <p className="font-semibold">{c.name}</p>
+        <p>{c.tagline}</p>
+        <p className="text-[11px]">▲ {c.strength} · ▼ {c.weakness}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }

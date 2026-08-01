@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type { BankQuestion, QuestionBank } from "@/lib/tower/bank";
-import { QUESTIONS_PER_STAGE, START_HP } from "@/lib/tower/config";
-import { createRun, gradeStage, presentQuestion, pickRunQuestions } from "@/lib/tower/engine";
+import { BOONS, QUESTIONS_PER_STAGE, START_HP } from "@/lib/tower/config";
+import { createRun, gradeStage, presentQuestion, pickRunQuestions, stageSeconds, takeBoon, type TowerRun } from "@/lib/tower/engine";
 import { gradeLocal } from "@/lib/tower/grade.local";
 import { seededRandom } from "@/lib/tower/rng";
 import { applyResults, dueCardIds, emptyState, mergeStates, normalizeState, pruneState } from "@/lib/tower/state";
@@ -176,5 +176,44 @@ describe("vòng chơi tại máy người dùng", () => {
     const b = createRun(bank, emptyState(), "same");
     expect(a.questions.map((q) => q.id)).toEqual(b.questions.map((q) => q.id));
     expect(a.offered.map((o) => o.id)).toEqual(b.offered.map((o) => o.id));
+  });
+});
+
+const baseRun = (): TowerRun => ({
+  seed: "seed",
+  questions: [],
+  stage: 1,
+  hp: START_HP,
+  shield: 0,
+  combo: 0,
+  correct: 0,
+  answered: 0,
+  boons: [],
+  offered: [],
+  finished: false,
+});
+
+describe("trợ giúp (boon) có tác dụng thật", () => {
+  it("nhận trợ giúp hồi máu thì tăng máu ngay và không vượt trần", () => {
+    const heal = BOONS.find((b) => (b.effect.heal ?? 0) > 0);
+    if (!heal) return;
+    const run = { ...baseRun(), hp: 40, boons: [] as string[] };
+    const after = takeBoon(run, heal.id);
+    expect(after.hp).toBe(Math.min(START_HP, 40 + (heal.effect.heal ?? 0)));
+    expect(takeBoon({ ...run, hp: START_HP }, heal.id).hp).toBe(START_HP);
+  });
+
+  it("nhận trợ giúp khiên thì cộng khiên và giữ nguyên qua các tầng", () => {
+    const sh = BOONS.find((b) => (b.effect.shield ?? 0) > 0);
+    if (!sh) return;
+    const after = takeBoon({ ...baseRun(), shield: 5 }, sh.id);
+    expect(after.shield).toBe(5 + (sh.effect.shield ?? 0));
+  });
+
+  it("trợ giúp thêm giây làm tăng thời lượng của tầng", () => {
+    const t = BOONS.find((b) => (b.effect.timeBonus ?? 0) > 0);
+    const base = stageSeconds([]);
+    if (!t) return;
+    expect(stageSeconds([t.id])).toBeGreaterThan(base);
   });
 });

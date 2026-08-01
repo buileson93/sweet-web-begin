@@ -5,6 +5,8 @@ export const STAGES_PER_RUN = 5;
 export const QUESTIONS_PER_STAGE = 5;
 export const QUESTIONS_PER_RUN = STAGES_PER_RUN * QUESTIONS_PER_STAGE;
 export const START_HP = 100;
+/** Số giây cơ bản cho mỗi câu trong một tầng. */
+export const SECONDS_PER_QUESTION = 20;
 /** Sai quá tỉ lệ này trong một tầng → kết thúc nhẹ nhàng (không dùng ngôn từ thất bại). */
 export const STOP_WRONG_RATIO = 0.4;
 
