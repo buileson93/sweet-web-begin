@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, Plus, X } from "lucide-react";
 
 import { OptionImageButton } from "./OptionImageButton";
 
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 import { FieldMessage } from "./FieldMessage";
+import { useDragList } from "./useDragList";
 import type { EditorProps } from "./types";
 
 /**
@@ -27,17 +28,44 @@ export function OptionsEditor({ form, setForm, errors, warnings, quizId }: Edito
     setForm({ ...form, options: next, option_images: nextImg });
   }
 
+  /** Chuyển một mục tới vị trí mới (kéo-thả). */
+  function move(from: number, to: number) {
+    const next = [...form.options];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    const imgs = [...(form.option_images ?? [])];
+    const [img] = imgs.splice(from, 1);
+    imgs.splice(to, 0, img ?? "");
+    setForm({ ...form, options: next, option_images: imgs });
+  }
+  const drag = useDragList(move);
+
   return (
     <div className="space-y-2">
       <Label>{ordering ? "Các mục theo đúng thứ tự" : "Phương án trả lời"}</Label>
       {ordering ? (
         <p className="type-meta">
           Nhập các mục <strong>THEO ĐÚNG THỨ TỰ</strong> — hệ thống sẽ tự trộn khi thi. Dùng nút mũi
-          tên để sắp lại.
+          tên hoặc kéo biểu tượng ⠿ để sắp lại.
         </p>
       ) : null}
       {form.options.map((o, i) => (
-        <div key={i} className="flex items-center gap-2">
+        <div
+          key={i}
+          draggable={ordering}
+          onDragStart={() => ordering && drag.onDragStart(i)}
+          onDragOver={(e) => ordering && drag.onDragOver(e, i)}
+          onDrop={() => ordering && drag.onDrop(i)}
+          onDragEnd={drag.onDragEnd}
+          className={`flex items-center gap-2 rounded-xl transition-colors ${
+            ordering && drag.overIndex === i ? "bg-primary/10 ring-1 ring-primary/40" : ""
+          }`}
+        >
+          {ordering ? (
+            <span className="cursor-grab text-muted-foreground active:cursor-grabbing">
+              <GripVertical className="size-4" />
+            </span>
+          ) : null}
           {ordering ? (
             <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-secondary text-sm font-bold">
               {i + 1}
