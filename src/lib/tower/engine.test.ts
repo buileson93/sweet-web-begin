@@ -175,7 +175,7 @@ describe("vòng chơi tại máy người dùng", () => {
     expect(picked.map((q) => q.id)).toContain("q30");
   });
 
-  it("chấm phòng: đúng hết thì không mất máu và lên tầng", () => {
+  it("chấm phòng: đúng hết thì không mất an toàn và lên tầng", () => {
     const run = enterCombat("seed-1");
     const qs = roomQuestions(run);
     const answers = Object.fromEntries(qs.map((q, i) => [String(i), q.answerIndex]));
@@ -187,7 +187,7 @@ describe("vòng chơi tại máy người dùng", () => {
     expect(next.offered.length).toBeGreaterThan(0);
   });
 
-  it("bỏ trống hết thì mất máu, có thể kết thúc hành trình", () => {
+  it("bỏ trống hết thì mất an toàn, có thể kết thúc hành trình", () => {
     const run = enterCombat("seed-2");
     const { run: next, outcome } = gradeStage(run, {});
     expect(outcome.results.every((r) => !r.correct)).toBe(true);
@@ -208,14 +208,14 @@ describe("vòng chơi tại máy người dùng", () => {
 });
 
 describe("bản đồ phân nhánh 12 tầng", () => {
-  it("đủ 12 tầng, trùm đúng vị trí, tầng trước trùm luôn có lửa trại", () => {
+  it("đủ 12 tầng, sự cố lớn đúng vị trí, tầng trước sự cố lớn luôn có phòng nghỉ ca", () => {
     const map = buildMap("map-seed");
     expect(map).toHaveLength(FLOORS);
     for (const f of BOSS_FLOORS) {
       expect(map[f - 1]!.map((r) => r.kind)).toEqual(["boss"]);
       expect(map[f - 2]!.some((r) => r.kind === "campfire")).toBe(true);
     }
-    // Mọi phòng đều có trắc nghiệm: hoặc câu giao tranh, hoặc một câu thử thách.
+    // Mọi phòng đều có trắc nghiệm: hoặc câu xử lý tình huống, hoặc một câu thử thách.
     for (const floor of map)
       expect(floor.every((r) => r.questions + ROOM_RULES[r.kind].challenge > 0)).toBe(true);
   });
@@ -239,14 +239,14 @@ describe("bản đồ phân nhánh 12 tầng", () => {
 });
 
 
-describe("di vật, lời nguyền và điểm hành trình", () => {
+describe("trang bị, yếu tố bất lợi và điểm hành trình", () => {
   const bank: QuestionBank = {
     version: 1,
     builtAt: new Date().toISOString(),
     questions: Array.from({ length: 40 }, (_, i) => base({ id: `q${i}` })),
   };
 
-  it("nhận di vật thì cộng dồn hiệu ứng", () => {
+  it("nhận trang bị thì cộng dồn hiệu ứng", () => {
     let run = createRun(bank, emptyState(), "relic-seed");
     run = { ...run, offered: [...run.offered], hp: 40 };
     const floor = run.map[0]!;
@@ -258,7 +258,7 @@ describe("di vật, lời nguyền và điểm hành trình", () => {
     expect(relicTotals(after.relics).minRoll).toBeGreaterThanOrEqual(1);
   });
 
-  it("nhận lời nguyền thì được xu, từ chối thì không", () => {
+  it("nhận yếu tố bất lợi thì được tín chỉ, từ chối thì không", () => {
     const run = createRun(bank, emptyState(), "curse-seed");
     const withOffer = { ...run, curseOffer: { curseId: "mu-suong", coins: 80 } };
     expect(takeCurse(withOffer, true).curses).toContain("mu-suong");
@@ -271,7 +271,7 @@ describe("di vật, lời nguyền và điểm hành trình", () => {
     expect(runScore({ floorsCleared: 0, hp: 0, relics: [], curses: [], ascension: 2 })).toBe(0);
   });
 
-  it("máu khởi đầu mặc định bằng hằng số cấu hình", () => {
+  it("an toàn khởi đầu mặc định bằng hằng số cấu hình", () => {
     const run = createRun(bank, emptyState(), "hp-seed");
     expect(run.maxHp).toBe(START_HP);
   });

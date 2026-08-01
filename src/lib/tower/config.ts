@@ -34,14 +34,14 @@ export type Boon = {
 
 /** 8 trợ giúp kíp trực (5 Thường + 3 Hiếm). Thêm mới chỉ cần nối vào mảng này. */
 export const BOONS: Boon[] = [
-  { id: "so-tay", name: "Sổ nhật ký kíp trực", desc: "+8 máu ngay", rarity: "thuong", effect: { heal: 8 } },
+  { id: "so-tay", name: "Sổ nhật ký kíp trực", desc: "+8 an toàn ngay", rarity: "thuong", effect: { heal: 8 } },
   { id: "ca-phe", name: "Ly cà phê ca đêm", desc: "+3 giây mỗi câu", rarity: "thuong", effect: { timeBonus: 3 } },
-  { id: "but-do", name: "Strip bay đánh dấu", desc: "+2 sát thương mỗi câu đúng", rarity: "thuong", effect: { damageBonus: 2 } },
-  { id: "ao-phan-quang", name: "Áo phản quang sân đỗ", desc: "Khiên 10 máu", rarity: "thuong", effect: { shield: 10 } },
-  { id: "tai-nghe", name: "Tai nghe VHF chống ồn", desc: "+5 máu, +1 giây", rarity: "thuong", effect: { heal: 5, timeBonus: 1 } },
-  { id: "so-tay-vang", name: "Tài liệu Doc 4444", desc: "+20 máu", rarity: "hiem", effect: { heal: 20 } },
-  { id: "radar", name: "Màn hình radar giám sát", desc: "+5 sát thương mỗi câu đúng", rarity: "hiem", effect: { damageBonus: 5 } },
-  { id: "giay-phep", name: "Huấn lệnh ưu tiên", desc: "Khiên 25 máu", rarity: "hiem", effect: { shield: 25 } },
+  { id: "but-do", name: "Strip bay đánh dấu", desc: "+2 điểm xử lý mỗi câu đúng", rarity: "thuong", effect: { damageBonus: 2 } },
+  { id: "ao-phan-quang", name: "Áo phản quang sân đỗ", desc: "Lớp bảo vệ 10 an toàn", rarity: "thuong", effect: { shield: 10 } },
+  { id: "tai-nghe", name: "Tai nghe VHF chống ồn", desc: "+5 an toàn, +1 giây", rarity: "thuong", effect: { heal: 5, timeBonus: 1 } },
+  { id: "so-tay-vang", name: "Tài liệu Doc 4444", desc: "+20 an toàn", rarity: "hiem", effect: { heal: 20 } },
+  { id: "radar", name: "Màn hình radar giám sát", desc: "+5 điểm xử lý mỗi câu đúng", rarity: "hiem", effect: { damageBonus: 5 } },
+  { id: "giay-phep", name: "Huấn lệnh ưu tiên", desc: "Lớp bảo vệ 25 an toàn", rarity: "hiem", effect: { shield: 25 } },
 ];
 
 

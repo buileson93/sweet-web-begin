@@ -19,10 +19,10 @@ export const Route = createFileRoute("/dau-truong_/thong-ke-thap")({
       {
         name: "description",
         content:
-          "Xem nguồn gốc điểm theo từng lượt leo tháp, tần suất di vật và lời nguyền, và xem lại diễn biến theo hạt.",
+          "Xem nguồn gốc điểm theo từng lượt leo tháp, tần suất trang bị và yếu tố bất lợi, và xem lại diễn biến theo hạt.",
       },
       { property: "og:title", content: "Thống kê hành trình Leo Tháp" },
-      { property: "og:description", content: "Nguồn gốc điểm, tần suất di vật và màn xem lại từng hành trình." },
+      { property: "og:description", content: "Nguồn gốc điểm, tần suất trang bị và màn xem lại từng hành trình." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -61,7 +61,7 @@ function TowerStatsPage() {
             Chưa có hành trình nào được ghi lại. Hoàn thành một lượt leo tháp là dữ liệu sẽ hiện ở đây.
           </p>
           <Button asChild>
-            <Link to="/dau-truong/leo-thap">Vào tháp tu luyện</Link>
+            <Link to="/dau-truong/leo-thap">Vào tháp huấn luyện</Link>
           </Button>
         </section>
       ) : (
@@ -84,7 +84,7 @@ function TowerStatsPage() {
 
           <section className="grid gap-3 lg:grid-cols-2">
             <div className="rounded-2xl border bg-card/70 p-4">
-              <SectionHeading title="Di vật hay gặp" />
+              <SectionHeading title="Trang bị hay gặp" />
               <ul className="mt-2 space-y-1.5">
                 {relicFreq.map((f) => {
                   const relic = relicById(f.id);
@@ -104,12 +104,12 @@ function TowerStatsPage() {
                     </li>
                   );
                 })}
-                {!relicFreq.length && <li className="type-meta">Chưa nhặt được di vật nào.</li>}
+                {!relicFreq.length && <li className="type-meta">Chưa nhặt được trang bị nào.</li>}
               </ul>
             </div>
 
             <div className="rounded-2xl border bg-card/70 p-4">
-              <SectionHeading title="Lời nguyền đã gánh" />
+              <SectionHeading title="Yếu tố bất lợi đã gánh" />
               <ul className="mt-2 space-y-1.5">
                 {curseFreq.map((f) => {
                   const curse = curseById(f.id);
@@ -129,7 +129,7 @@ function TowerStatsPage() {
                     </li>
                   );
                 })}
-                {!curseFreq.length && <li className="type-meta">Bạn chưa nhận lời nguyền nào.</li>}
+                {!curseFreq.length && <li className="type-meta">Bạn chưa nhận yếu tố bất lợi nào.</li>}
               </ul>
             </div>
           </section>

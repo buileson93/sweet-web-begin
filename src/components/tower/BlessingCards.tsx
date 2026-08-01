@@ -16,10 +16,10 @@ const RARITY_TONE: Record<Relic["rarity"], string> = {
 function riskOf(relic: Relic): string | null {
   const e = relic.effect;
   if (e.revivePct) return "Chỉ cứu được một lần — thăng thiên cấp 10 vô hiệu hoá.";
-  if (e.lowHpRagePct) return "Chỉ phát huy khi máu dưới 30% — lối chơi mạo hiểm.";
-  if (e.reflectPct) return "Chỉ kích hoạt khi bạn trả lời sai, không giảm sát thương.";
-  if (e.heal) return "Hồi máu tức thời — vô dụng nếu đang mang lời nguyền Vết thương hở.";
-  if (e.coinPct) return "Không tăng sức mạnh chiến đấu, chỉ có lợi khi còn ghé cửa hàng.";
+  if (e.lowHpRagePct) return "Chỉ phát huy khi an toàn dưới 30% — lối chơi mạo hiểm.";
+  if (e.reflectPct) return "Chỉ kích hoạt khi bạn trả lời sai, không giảm điểm xử lý.";
+  if (e.heal) return "Hồi an toàn tức thời — vô dụng nếu đang mang yếu tố bất lợi Thiết bị trục trặc.";
+  if (e.coinPct) return "Không tăng sức mạnh chiến đấu, chỉ có lợi khi còn ghé kho khí tài.";
   return null;
 }
 
@@ -32,7 +32,7 @@ type Props = {
 };
 
 /**
- * Ban phước — ba lá bài úp, lật lần lượt rồi mới chọn.
+ * Hỗ trợ kíp trực — ba lá bài úp, lật lần lượt rồi mới chọn.
  * Mục tiêu: nhìn là hiểu món nào mạnh ở đâu và đánh đổi cái gì.
  */
 export function BlessingCards({ offered, picked, onPick, onConfirm, onSkip }: Props) {
@@ -49,10 +49,10 @@ export function BlessingCards({ offered, picked, onPick, onConfirm, onSkip }: Pr
   return (
     <div className="space-y-3">
       <p className="flex items-center gap-1.5 text-sm font-semibold">
-        <Sparkles className="size-4 animate-pulse text-amber-500" /> Ban phước — lật bài và chọn một di vật
+        <Sparkles className="size-4 animate-pulse text-amber-500" /> Hỗ trợ kíp trực — lật bài và chọn một trang bị
       </p>
 
-      <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Ban phước di vật">
+      <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Hỗ trợ kíp trực trang bị">
         {offered.map((relic, i) => {
           const open = revealed > i;
           const risk = riskOf(relic);
@@ -106,10 +106,10 @@ export function BlessingCards({ offered, picked, onPick, onConfirm, onSkip }: Pr
 
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" disabled={!picked} onClick={onConfirm}>
-          Nhận di vật đã chọn
+          Nhận trang bị đã chọn
         </Button>
         <Button size="sm" variant="outline" onClick={onSkip}>
-          <Coins className="mr-1.5 size-3.5" /> Bỏ qua, lấy 25 xu
+          <Coins className="mr-1.5 size-3.5" /> Bỏ qua, lấy 25 tín chỉ
         </Button>
       </div>
     </div>

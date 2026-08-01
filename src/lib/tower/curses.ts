@@ -1,6 +1,6 @@
 /**
- * Lời nguyền — trục "rủi ro đổi phần thưởng" của Tháp Không Lưu.
- * Người chơi tự nguyện nhận để đổi lấy di vật hiếm hơn hoặc xu.
+ * Yếu tố bất lợi — trục "rủi ro đổi phần thưởng" của Tháp Không Lưu.
+ * Người chơi tự nguyện nhận để đổi lấy trang bị hiếm hơn hoặc tín chỉ.
  */
 import type { RelicEffect } from "@/lib/tower/relics";
 
@@ -15,16 +15,16 @@ export type Curse = {
 };
 
 export const CURSES: Curse[] = [
-  { id: "mu-suong", icon: "🌫️", name: "Mù sương", desc: "Thời gian mỗi câu −25%", rank: 2, effect: { timePct: -0.25 } },
-  { id: "xieng-xich", icon: "⛓️", name: "Xiềng xích", desc: "Kỹ năng hồi chậm thêm 3 lượt", rank: 1, effect: { skillSlow: 3 } },
-  { id: "vet-thuong-ho", icon: "🩸", name: "Vết thương hở", desc: "Mọi nguồn hồi máu bị vô hiệu", rank: 3, effect: { noHeal: true } },
-  { id: "long-tham", icon: "🤑", name: "Lòng tham", desc: "Nhận sát thương +20%, xu +60%", rank: 2, effect: { damageReducePct: -0.2, coinPct: 0.6 } },
-  { id: "im-lang", icon: "🤫", name: "Im lặng", desc: "Mất một kỹ năng ngẫu nhiên", rank: 1, effect: { silence: true } },
+  { id: "mu-suong", icon: "🌫️", name: "Tầm nhìn hạn chế", desc: "Thời gian mỗi câu −25%", rank: 2, effect: { timePct: -0.25 } },
+  { id: "xieng-xich", icon: "⛓️", name: "Quá tải luồng bay", desc: "Kỹ năng hồi chậm thêm 3 lượt", rank: 1, effect: { skillSlow: 3 } },
+  { id: "vet-thuong-ho", icon: "🩸", name: "Thiết bị trục trặc", desc: "Mọi nguồn hồi an toàn bị vô hiệu", rank: 3, effect: { noHeal: true } },
+  { id: "long-tham", icon: "🤑", name: "Cao điểm dồn chuyến", desc: "Nhận điểm xử lý +20%, tín chỉ +60%", rank: 2, effect: { damageReducePct: -0.2, coinPct: 0.6 } },
+  { id: "im-lang", icon: "🤫", name: "Mất liên lạc vô tuyến", desc: "Mất một kỹ năng ngẫu nhiên", rank: 1, effect: { silence: true } },
 ];
 
 export const curseById = (id: string): Curse | undefined => CURSES.find((c) => c.id === id);
 
-/** Tổng bậc lời nguyền đang mang — dùng trong công thức điểm hành trình. */
+/** Tổng bậc yếu tố bất lợi đang mang — dùng trong công thức điểm hành trình. */
 export function curseRank(ids: string[]): number {
   return ids.reduce((s, id) => s + (curseById(id)?.rank ?? 0), 0);
 }
@@ -47,7 +47,7 @@ export function curseTotals(ids: string[]) {
   );
 }
 
-/** Rút một lời nguyền chưa mang, kèm mức thưởng xu tương ứng bậc. */
+/** Rút một yếu tố bất lợi chưa mang, kèm mức thưởng tín chỉ tương ứng bậc. */
 export function offerCurse(rand: () => number, taken: string[] = []): { curse: Curse; coins: number } | null {
   const pool = CURSES.filter((c) => !taken.includes(c.id));
   if (!pool.length) return null;

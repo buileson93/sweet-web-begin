@@ -14,9 +14,9 @@ const RANK_LABEL: Record<number, { text: string; tone: string }> = {
 /** Hậu quả nói thẳng, không vòng vo — người chơi phải thấy rõ cái giá. */
 const CONSEQUENCE: Record<string, string> = {
   "mu-suong": "Mỗi câu mất 1/4 thời gian: câu dài rất dễ hết giờ.",
-  "xieng-xich": "Kỹ năng hồi chậm 3 lượt: mất phao ở đúng tầng trùm.",
-  "vet-thuong-ho": "Lửa trại và di vật hồi máu thành vô nghĩa suốt hành trình.",
-  "long-tham": "Mỗi câu sai đau hơn 20%, nhưng xu nhặt được nhiều hơn 60%.",
+  "xieng-xich": "Kỹ năng hồi chậm 3 lượt: mất phao ở đúng tầng sự cố lớn.",
+  "vet-thuong-ho": "Phòng nghỉ ca và trang bị hồi an toàn thành vô nghĩa suốt hành trình.",
+  "long-tham": "Mỗi câu sai đau hơn 20%, nhưng tín chỉ nhặt được nhiều hơn 60%.",
   "im-lang": "Mất hẳn một kỹ năng ngẫu nhiên cho tới cuối hành trình.",
 };
 
@@ -27,7 +27,7 @@ type Props = {
   onDecline: () => void;
 };
 
-/** Lời nguyền — lá bài úp màu đỏ, lật ra là thấy ngay mức rủi ro và cái được. */
+/** Yếu tố bất lợi — lá bài úp màu đỏ, lật ra là thấy ngay mức rủi ro và cái được. */
 export function CurseOffer({ curseId, coins, onAccept, onDecline }: Props) {
   const curse = curseById(curseId);
   const [open, setOpen] = useState(false);
@@ -54,7 +54,7 @@ export function CurseOffer({ curseId, coins, onAccept, onDecline }: Props) {
         <span className="tower-card__inner">
           <span className="tower-card__face tower-card__back tower-card__back--curse">
             <span className="text-2xl">🃏</span>
-            <span className="type-meta mt-1">Đang lật lời nguyền…</span>
+            <span className="type-meta mt-1">Đang lật yếu tố bất lợi…</span>
           </span>
           <span className="tower-card__face tower-card__front border-destructive/50 bg-gradient-to-b from-destructive/25 to-destructive/5 p-3">
             <span className="text-2xl">{curse.icon}</span>
@@ -69,8 +69,8 @@ export function CurseOffer({ curseId, coins, onAccept, onDecline }: Props) {
       </div>
 
       <p className="type-meta mt-2">
-        Đổi lại: <strong className="text-amber-600">+{coins} xu</strong> và +{curse.rank * 30} điểm hành trình khi kết
-        thúc. Lời nguyền không thể tự gỡ, chỉ cửa hàng mới hoá giải được.
+        Đổi lại: <strong className="text-amber-600">+{coins} tín chỉ</strong> và +{curse.rank * 30} điểm hành trình khi kết
+        thúc. Yếu tố bất lợi không thể tự gỡ, chỉ kho khí tài mới hoá giải được.
       </p>
 
       <div className="mt-2 flex flex-wrap gap-2">

@@ -20,20 +20,20 @@ const STEPS: { title: string; body: string }[] = [
     body: "Bản đồ 12 tầng đi từ dưới lên. Mỗi tầng bạn chọn một phòng: chạm vào nút để xem mô tả, chạm lần nữa để vào. Nút mờ có dấu ✓ là chặng đã đi qua.",
   },
   {
-    title: "2. Trả lời để gây sát thương",
-    body: "Đúng thì đánh trúng phòng, sai thì bạn mất máu. Sai một câu không bị loại — chỉ khi thanh máu về 0 hành trình mới khép lại.",
+    title: "2. Trả lời để gây điểm xử lý",
+    body: "Đúng thì đánh trúng phòng, sai thì bạn mất an toàn. Sai một câu không bị loại — chỉ khi thanh an toàn về 0 hành trình mới khép lại.",
   },
   {
-    title: "3. Máu, khiên và hồi phục",
-    body: "Thanh máu ở đầu màn hình cho biết còn bao nhiêu; phần xanh dương là khiên chịu đòn thay bạn. Lửa trại, cửa hàng và một số di vật sẽ hồi máu.",
+    title: "3. An toàn, lớp bảo vệ và hồi phục",
+    body: "Thanh an toàn ở đầu màn hình cho biết còn bao nhiêu; phần xanh dương là lớp bảo vệ chịu đòn thay bạn. Phòng nghỉ ca, kho khí tài và một số trang bị sẽ hồi an toàn.",
   },
   {
-    title: "4. Di vật, ban phước và lời nguyền",
-    body: "Sau mỗi phòng bạn lật ba lá bài để chọn một di vật. Gom đủ 3 món cùng hệ được thưởng bộ. Lời nguyền là tự nguyện: chịu bất lợi để đổi lấy xu và điểm cao hơn.",
+    title: "4. Trang bị, hỗ trợ kíp trực và yếu tố bất lợi",
+    body: "Sau mỗi phòng bạn lật ba lá bài để chọn một trang bị. Gom đủ 3 món cùng hệ được thưởng bộ. Yếu tố bất lợi là tự nguyện: chịu bất lợi để đổi lấy tín chỉ và điểm cao hơn.",
   },
   {
     title: "5. Xem lại mọi thứ",
-    body: "Nút Hành trang liệt kê di vật, thưởng bộ và lời nguyền đang có. Kết thúc hành trình có bảng nguồn gốc điểm và dòng thời gian diễn biến theo hạt ngẫu nhiên.",
+    body: "Nút Hành trang liệt kê trang bị, thưởng bộ và yếu tố bất lợi đang có. Kết thúc hành trình có bảng nguồn gốc điểm và dòng thời gian diễn biến theo hạt ngẫu nhiên.",
   },
 ];
 

@@ -11,23 +11,23 @@ import type { TowerRun } from "@/lib/tower/engine";
 function totalsLines(run: TowerRun): string[] {
   const t = relicTotals(run.relics);
   const out: string[] = [];
-  if (t.damageBonus) out.push(`+${t.damageBonus} sát thương mỗi câu đúng`);
-  if (t.comboDamage) out.push(`+${t.comboDamage} sát thương mỗi bậc combo`);
-  if (t.hardBonus) out.push(`+${t.hardBonus} sát thương ở câu Khó`);
+  if (t.damageBonus) out.push(`+${t.damageBonus} điểm xử lý mỗi câu đúng`);
+  if (t.comboDamage) out.push(`+${t.comboDamage} điểm xử lý mỗi bậc combo`);
+  if (t.hardBonus) out.push(`+${t.hardBonus} điểm xử lý ở câu Khó`);
   if (t.timePct) out.push(`${t.timePct > 0 ? "+" : ""}${Math.round(t.timePct * 100)}% thời gian mỗi câu`);
-  if (t.damageReducePct) out.push(`−${Math.round(t.damageReducePct * 100)}% sát thương nhận`);
-  if (t.reflectPct) out.push(`Phản ${Math.round(t.reflectPct * 100)}% sát thương`);
+  if (t.damageReducePct) out.push(`−${Math.round(t.damageReducePct * 100)}% rủi ro phải nhận`);
+  if (t.reflectPct) out.push(`Phản ${Math.round(t.reflectPct * 100)}% điểm xử lý`);
   if (t.blockPerFloor) out.push(`Chặn ${t.blockPerFloor} đòn mỗi tầng`);
-  if (t.revivePct) out.push(`Hồi sinh ${Math.round(t.revivePct * 100)}% máu một lần`);
-  if (t.lowHpRagePct) out.push(`Dưới 30% máu: sát thương +${Math.round(t.lowHpRagePct * 100)}%`);
-  if (t.coinPct) out.push(`+${Math.round(t.coinPct * 100)}% xu nhặt được`);
+  if (t.revivePct) out.push(`Hồi sinh ${Math.round(t.revivePct * 100)}% an toàn một lần`);
+  if (t.lowHpRagePct) out.push(`Dưới 30% an toàn: điểm xử lý +${Math.round(t.lowHpRagePct * 100)}%`);
+  if (t.coinPct) out.push(`+${Math.round(t.coinPct * 100)}% tín chỉ nhặt được`);
   if (t.minRoll > 1) out.push(`Xúc xắc tính tối thiểu ${t.minRoll} mặt`);
   return out;
 }
 
 /**
- * Hành trang — bảng trạng thái hiện tại của hành trình: máu, khiên, xu,
- * danh sách di vật kèm mô tả đầy đủ, thưởng bộ đang kích hoạt và lời nguyền đang mang.
+ * Hành trang — bảng trạng thái hiện tại của hành trình: an toàn, lớp bảo vệ, tín chỉ,
+ * danh sách trang bị kèm mô tả đầy đủ, thưởng bộ đang kích hoạt và yếu tố bất lợi đang mang.
  * Dạng ngăn kéo để trên điện thoại chỉ tốn một nút bấm.
  */
 export function InventorySheet({ run }: { run: TowerRun }) {
@@ -48,20 +48,20 @@ export function InventorySheet({ run }: { run: TowerRun }) {
       <SheetContent side="bottom" className="max-h-[85svh] overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">
         <SheetHeader className="text-left">
           <SheetTitle>Hành trang hành trình</SheetTitle>
-          <SheetDescription>Toàn bộ di vật, thưởng bộ và lời nguyền đang có hiệu lực.</SheetDescription>
+          <SheetDescription>Toàn bộ trang bị, thưởng bộ và yếu tố bất lợi đang có hiệu lực.</SheetDescription>
         </SheetHeader>
 
         <div className="mt-3 space-y-4">
           <div className="rounded-xl border bg-background/60 p-3">
             <HpBar hp={run.hp} max={run.maxHp} shield={run.shield} />
             <p className="type-meta mt-2 inline-flex items-center gap-1">
-              <Coins className="size-3.5 text-amber-500" /> {run.coins} xu · Tầng {run.floor}
+              <Coins className="size-3.5 text-amber-500" /> {run.coins} tín chỉ · Tầng {run.floor}
             </p>
           </div>
 
           <section>
             <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-              <Sparkles className="size-4 text-amber-500" /> Di vật ({run.relics.length})
+              <Sparkles className="size-4 text-amber-500" /> Trang bị ({run.relics.length})
             </p>
             {run.relics.length ? (
               <ul className="grid gap-2 sm:grid-cols-2">
@@ -85,7 +85,7 @@ export function InventorySheet({ run }: { run: TowerRun }) {
                 })}
               </ul>
             ) : (
-              <p className="type-meta">Chưa có di vật nào — vượt phòng để nhận ban phước.</p>
+              <p className="type-meta">Chưa có trang bị nào — vượt phòng để nhận hỗ trợ kíp trực.</p>
             )}
           </section>
 
@@ -104,7 +104,7 @@ export function InventorySheet({ run }: { run: TowerRun }) {
 
           <section>
             <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-              <Skull className="size-4 text-destructive" /> Lời nguyền ({run.curses.length})
+              <Skull className="size-4 text-destructive" /> Yếu tố bất lợi ({run.curses.length})
             </p>
             {run.curses.length ? (
               <ul className="space-y-1">
@@ -122,7 +122,7 @@ export function InventorySheet({ run }: { run: TowerRun }) {
                 })}
               </ul>
             ) : (
-              <p className="type-meta">Chưa mang lời nguyền nào.</p>
+              <p className="type-meta">Chưa mang yếu tố bất lợi nào.</p>
             )}
           </section>
 

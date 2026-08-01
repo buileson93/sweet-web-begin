@@ -25,18 +25,18 @@ describe("seededRandom", () => {
 });
 
 describe("towerDamage — khoá cứng thứ tự", () => {
-  it("xúc xắc → combo → trợ học", () => {
+  it("lượt bốc thăm → combo → trợ học", () => {
     expect(towerDamage({ roll: 5, combo: 1, damageBonus: 0 })).toBe(5);
     expect(towerDamage({ roll: 5, combo: 3, damageBonus: 0 })).toBe(9);
     expect(towerDamage({ roll: 5, combo: 3, damageBonus: 2 })).toBe(11);
   });
 
-  it("combo có trần và sát thương có trần", () => {
+  it("combo có trần và điểm xử lý có trần", () => {
     expect(towerDamage({ roll: 5, combo: 20, damageBonus: 0 })).toBe(11);
     expect(towerDamage({ roll: 30, combo: 20, damageBonus: 20 })).toBe(40);
   });
 
-  it("tối thiểu 1 sát thương", () => {
+  it("tối thiểu 1 điểm xử lý", () => {
     expect(towerDamage({ roll: 0, combo: 1, damageBonus: 0 })).toBe(1);
   });
 });

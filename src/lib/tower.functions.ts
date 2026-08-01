@@ -156,7 +156,7 @@ export const getTowerBoardFn = createServerFn({ method: "POST" })
     return readTowerBoard(data.board);
   });
 
-/** Bảng xếp hạng chi tiết: theo ngày, lọc thăng thiên, kèm hạt và di vật. */
+/** Bảng xếp hạng chi tiết: theo ngày, lọc thăng thiên, kèm hạt và trang bị. */
 export const getTowerBoardDetailFn = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z

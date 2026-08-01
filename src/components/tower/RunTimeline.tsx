@@ -53,7 +53,7 @@ export function RunTimeline({ log, className }: { log: RunEvent[]; className?: s
               <span className="font-mono text-[11px] tabular-nums opacity-60">{mmss(ev.t)}</span>
               <span className="text-sm font-medium">{ev.label}</span>
               {typeof ev.hp === "number" && (
-                <span className="type-meta">· {ev.hp} máu</span>
+                <span className="type-meta">· {ev.hp} an toàn</span>
               )}
             </div>
             {ev.detail && <p className="type-meta">{ev.detail}</p>}
