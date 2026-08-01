@@ -176,6 +176,8 @@ export async function submitExamSession(input: {
   let bestStreak = 0;
   const review: ReviewItem[] = [];
   const storedAnswers: Record<string, AnswerValue> = {};
+  /** Dữ liệu tính độ khó thực tế của từng câu (chỉ ghi khi chấm lần đầu). */
+  const statItems: { id: string; fraction: number; answered: boolean }[] = [];
 
   session.question_ids.forEach((qid: string, idx: number) => {
     const row = byId.get(qid);
