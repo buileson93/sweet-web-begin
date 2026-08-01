@@ -162,6 +162,16 @@ export function QuestionList({
               <Button
                 size="icon"
                 variant="ghost"
+                aria-label="Phân tích & lịch sử"
+                title="Phân tích độ khó thực tế và lịch sử chỉnh sửa"
+                onClick={() => onInsights(q)}
+              >
+                <BarChart3 className="size-4" />
+              </Button>
+
+              <Button
+                size="icon"
+                variant="ghost"
                 aria-label="Tạo bản sao"
                 onClick={() => onDuplicate(q)}
               >
