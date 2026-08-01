@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Crown, Flame, HelpCircle, Skull, Store, Swords, type LucideIcon } from "lucide-react";
 
 import { bossAt } from "@/lib/tower/bosses";
@@ -22,12 +22,12 @@ const NODE_ICON: Record<RoomKind, LucideIcon> = {
 };
 
 const NODE_TONE: Record<RoomKind, { ring: string; glow: string; fill: string }> = {
-  combat: { ring: "border-sky-400/70", glow: "shadow-[0_0_18px_-4px_oklch(0.72_0.14_240)]", fill: "bg-sky-500/15" },
-  elite: { ring: "border-rose-400/70", glow: "shadow-[0_0_18px_-4px_oklch(0.66_0.18_20)]", fill: "bg-rose-500/15" },
-  event: { ring: "border-amber-400/70", glow: "shadow-[0_0_18px_-4px_oklch(0.78_0.15_80)]", fill: "bg-amber-500/15" },
-  shop: { ring: "border-emerald-400/70", glow: "shadow-[0_0_18px_-4px_oklch(0.72_0.14_160)]", fill: "bg-emerald-500/15" },
-  campfire: { ring: "border-orange-400/70", glow: "shadow-[0_0_18px_-4px_oklch(0.74_0.16_50)]", fill: "bg-orange-500/15" },
-  boss: { ring: "border-yellow-300/80", glow: "shadow-[0_0_26px_-4px_oklch(0.85_0.17_92)]", fill: "bg-yellow-400/20" },
+  combat: { ring: "border-sky-400/70", glow: "shadow-[0_0_22px_-3px_oklch(0.72_0.14_240)]", fill: "bg-sky-500/15" },
+  elite: { ring: "border-rose-400/70", glow: "shadow-[0_0_22px_-3px_oklch(0.66_0.18_20)]", fill: "bg-rose-500/15" },
+  event: { ring: "border-amber-400/70", glow: "shadow-[0_0_22px_-3px_oklch(0.78_0.15_80)]", fill: "bg-amber-500/15" },
+  shop: { ring: "border-emerald-400/70", glow: "shadow-[0_0_22px_-3px_oklch(0.72_0.14_160)]", fill: "bg-emerald-500/15" },
+  campfire: { ring: "border-orange-400/70", glow: "shadow-[0_0_22px_-3px_oklch(0.74_0.16_50)]", fill: "bg-orange-500/15" },
+  boss: { ring: "border-yellow-300/80", glow: "shadow-[0_0_30px_-3px_oklch(0.85_0.17_92)]", fill: "bg-yellow-400/20" },
 };
 
 type Props = {
@@ -38,17 +38,31 @@ type Props = {
   path: RoomKind[];
   /** Có đang cho chọn phòng ở tầng hiện tại hay không. */
   canPick: boolean;
-  onPick: (index: number) => void;
+  onPick?: (index: number) => void;
+  /** Chế độ xem trước trước khi vào tháp: không tô tầng hiện tại. */
+  preview?: boolean;
   className?: string;
 };
 
 /**
  * Bản đồ leo tháp kiểu roguelike: 12 tầng xếp từ dưới lên, mỗi tầng là các nút
- * phòng nối nhau bằng đường dẫn. Tầng đã qua mờ đi và ghim đường đã chọn,
- * tầng hiện tại phát sáng và bấm được, tầng phía trên hé lộ dần.
+ * phòng nối nhau bằng đường dẫn cong có hiệu ứng chạy. Tầng đã qua mờ đi và
+ * ghim đường đã chọn, tầng hiện tại phát sáng và bấm được, tầng phía trên hé lộ dần.
+ *
+ * Hiệu năng: dữ liệu tầng được ghi nhớ theo bản đồ, mỗi tầng bật `content-visibility`
+ * nên phần ngoài màn hình không tốn thời gian dựng hình khi đổi tầng.
  */
-export function TowerMap({ map, floor, path, canPick, onPick, className }: Props) {
-  const floors = useMemo(() => map.slice(0, FLOORS), [map]);
+function TowerMapBase({ map, floor, path, canPick, onPick, preview = false, className }: Props) {
+  const rows = useMemo(
+    () =>
+      map.slice(0, FLOORS).map((rooms, fi) => ({
+        f: fi + 1,
+        rooms,
+        cols: columnsFor(rooms.length),
+        upperCols: map[fi + 1] ? columnsFor(map[fi + 1]!.length) : [],
+      })),
+    [map],
+  );
 
   return (
     <div
@@ -61,42 +75,45 @@ export function TowerMap({ map, floor, path, canPick, onPick, className }: Props
       <div aria-hidden className="tower-map__stars pointer-events-none absolute inset-0" />
 
       <ol className="relative flex flex-col-reverse gap-0">
-        {floors.map((rooms, fi) => {
-          const f = fi + 1;
-          const state = f < floor ? "past" : f === floor ? "current" : "future";
-          const cols = columnsFor(rooms.length);
+        {rows.map(({ f, rooms, cols, upperCols }) => {
+          const state = preview ? "future" : f < floor ? "past" : f === floor ? "current" : "future";
           const takenKind = path[f - 1];
-          const upper = floors[fi + 1];
-          const upperCols = upper ? columnsFor(upper.length) : [];
 
           return (
-            <li key={f} className="relative">
-              {/* Đường nối lên tầng trên */}
-              {upper ? (
+            <li key={f} className="tower-map__floor relative">
+              {/* Đường nối lên tầng trên: đường cong, tầng đã đi thì đậm và nét chạy */}
+              {upperCols.length ? (
                 <svg
                   aria-hidden
                   viewBox="0 0 100 100"
                   preserveAspectRatio="none"
-                  className="pointer-events-none h-8 w-full sm:h-10"
+                  className="pointer-events-none h-9 w-full sm:h-11"
                 >
-                  {cols.map((x) =>
+                  {cols.map((x, ci) =>
                     upperCols
                       .filter((ux) => Math.abs(ux - x) <= 40)
-                      .map((ux) => (
-                      <line
-                        key={`${x}-${ux}`}
-                        x1={x}
-                        y1="100"
-                        x2={ux}
-                        y2="0"
-                        vectorEffect="non-scaling-stroke"
-                        strokeWidth={state === "past" ? 1 : 1.5}
-                        strokeDasharray="3 4"
-                        className={cn(
-                          state === "past" ? "stroke-primary/50" : state === "current" ? "stroke-primary/70" : "stroke-foreground/15",
-                        )}
-                      />
-                      )),
+                      .map((ux) => {
+                        const walked = state === "past" && takenKind === rooms[ci]?.kind;
+                        return (
+                          <path
+                            key={`${x}-${ux}`}
+                            d={`M ${x} 100 C ${x} 62, ${ux} 38, ${ux} 0`}
+                            fill="none"
+                            vectorEffect="non-scaling-stroke"
+                            strokeLinecap="round"
+                            strokeWidth={walked ? 2 : state === "current" ? 1.6 : 1.1}
+                            className={cn(
+                              walked
+                                ? "tower-link stroke-primary"
+                                : state === "current"
+                                  ? "tower-link stroke-primary/60"
+                                  : state === "past"
+                                    ? "stroke-primary/25 [stroke-dasharray:3_5]"
+                                    : "stroke-foreground/15 [stroke-dasharray:3_5]",
+                            )}
+                          />
+                        );
+                      }),
                   )}
                 </svg>
               ) : null}
@@ -125,19 +142,20 @@ export function TowerMap({ map, floor, path, canPick, onPick, className }: Props
                         key={`${room.kind}-${i}`}
                         type="button"
                         disabled={!active}
-                        onClick={() => onPick(i)}
+                        onClick={() => onPick?.(i)}
                         title={`Tầng ${f} · ${label} — ${boss ? boss.rule : meta.desc}`}
                         aria-label={`Tầng ${f}, ${label}`}
                         style={{ left: `${cols[i]}%` }}
                         className={cn(
                           "group absolute top-1/2 -translate-x-1/2 -translate-y-1/2",
-                          "grid size-10 place-items-center rounded-full border-2 text-base transition-all duration-300 sm:size-12 sm:text-lg",
+                          "grid size-10 place-items-center rounded-full border-2 backdrop-blur-[1px] transition-all duration-300 sm:size-12",
                           tone.ring,
                           tone.fill,
-                          state === "future" && "opacity-35 grayscale",
-                          state === "past" && (taken ? "opacity-95" : "opacity-25 grayscale"),
-                          taken && "ring-2 ring-primary/60",
-                          active && cn("cursor-pointer hover:scale-110", tone.glow),
+                          state === "future" && "opacity-45",
+                          state === "past" && (taken ? "opacity-100" : "opacity-25 grayscale"),
+                          taken && cn("ring-2 ring-primary/70", tone.glow),
+                          room.kind === "boss" && state !== "past" && cn(tone.glow, "tower-node__spark"),
+                          active && cn("cursor-pointer hover:scale-115 active:scale-95", tone.glow),
                           !active && "cursor-default",
                         )}
                       >
@@ -179,3 +197,5 @@ export function TowerMap({ map, floor, path, canPick, onPick, className }: Props
     </div>
   );
 }
+
+export const TowerMap = memo(TowerMapBase);
