@@ -60,8 +60,18 @@ export function AvatarPickerDialog({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Không lưu được nhân vật"),
   });
 
+  // Mở lại hộp thoại thì quay về đúng nhân vật đang dùng, không giữ lựa chọn dở dang.
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      setStyle(initial.style);
+      setSeed(initial.seed);
+      setBackground(initial.background);
+    }
+    setOpen(next);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button type="button" variant="outline" size="sm" className="rounded-full">
           <UserRoundCog className="size-4" />
@@ -139,7 +149,9 @@ export function AvatarPickerDialog({
                     background === bg ? "ring-primary" : "ring-border",
                   )}
                 >
-                  {background === bg ? <Check className="size-3.5 text-foreground" /> : null}
+                  {background === bg ? (
+                    <Check className="size-3.5 text-white [filter:drop-shadow(0_0_1px_rgba(0,0,0,0.9))]" />
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -147,6 +159,9 @@ export function AvatarPickerDialog({
         </div>
 
         <DialogFooter>
+          <Button type="button" variant="ghost" className="rounded-full" onClick={() => setOpen(false)}>
+            Huỷ
+          </Button>
           <Button
             type="button"
             className="rounded-full"
