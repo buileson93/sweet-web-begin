@@ -791,6 +791,7 @@ function TowerPage() {
             Vào tháp tu luyện
           </Button>
           <div className="mt-2 flex flex-wrap justify-center gap-2">
+            <TowerGuide />
             <Button asChild size="sm" variant="ghost">
               <Link to="/dau-truong/bang-thap">Bảng xếp hạng tháp</Link>
             </Button>
@@ -798,6 +799,7 @@ function TowerPage() {
               <Link to="/dau-truong/thong-ke-thap">Thống kê hành trình</Link>
             </Button>
           </div>
+
         </section>
       )}
 
