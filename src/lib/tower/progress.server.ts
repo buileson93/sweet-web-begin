@@ -46,7 +46,7 @@ export async function openTower(input: VerifyInput): Promise<TowerOpenResult> {
 }
 
 export type TowerSyncInput = VerifyInput & {
-  state: unknown;
+  state?: unknown;
   runs?: number;
   bestStage?: number;
   coins?: number;
