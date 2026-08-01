@@ -825,6 +825,68 @@ export type Database = {
           },
         ]
       }
+      question_stats: {
+        Row: {
+          attempts: number
+          blank: number
+          correct: number
+          partial: number
+          question_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          blank?: number
+          correct?: number
+          partial?: number
+          question_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          blank?: number
+          correct?: number
+          partial?: number
+          question_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_stats_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_versions: {
+        Row: {
+          created_at: string
+          id: string
+          question_id: string
+          quiz_id: string | null
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          question_id: string
+          quiz_id?: string | null
+          snapshot?: Json
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          question_id?: string
+          quiz_id?: string | null
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           accepted_answers: string[]
@@ -839,6 +901,7 @@ export type Database = {
           image_url: string | null
           is_archived: boolean
           kind: Database["public"]["Enums"]["question_kind"]
+          norm_key: string | null
           option_explanations: string[]
           option_images: string[]
           options: string[]
@@ -864,6 +927,7 @@ export type Database = {
           image_url?: string | null
           is_archived?: boolean
           kind?: Database["public"]["Enums"]["question_kind"]
+          norm_key?: string | null
           option_explanations?: string[]
           option_images?: string[]
           options: string[]
@@ -889,6 +953,7 @@ export type Database = {
           image_url?: string | null
           is_archived?: boolean
           kind?: Database["public"]["Enums"]["question_kind"]
+          norm_key?: string | null
           option_explanations?: string[]
           option_images?: string[]
           options?: string[]
@@ -1302,6 +1367,7 @@ export type Database = {
           xp: number
         }[]
       }
+      bump_question_stats: { Args: { p_items: Json }; Returns: undefined }
       claim_exam_device: {
         Args: {
           p_candidate_name: string
@@ -1322,6 +1388,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      question_norm_key: { Args: { p_text: string }; Returns: string }
       set_player_avatar: {
         Args: {
           p_avatar_image: string
