@@ -150,6 +150,7 @@ export async function startExamSession(input: {
       optionImages: permuteByOrder(displayImages, order, ""),
       matchLeft: q.kind === "matching" ? pairsOf(q).map((p) => p.left) : [],
       imageUrl: q.image_url ?? null,
+      imageAlt: (q as { image_alt?: string }).image_alt ?? "",
       points: q.points || 1,
       difficulty: q.difficulty,
       timeLimitSeconds: q.time_limit_seconds ?? null,
