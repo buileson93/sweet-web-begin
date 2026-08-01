@@ -10,6 +10,7 @@ CREATE TABLE public.user_roles (
 GRANT SELECT ON public.user_roles TO authenticated;
 GRANT ALL ON public.user_roles TO service_role;
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own roles readable" ON public.user_roles;
 CREATE POLICY "own roles readable" ON public.user_roles FOR SELECT TO authenticated USING (user_id = auth.uid());
 
 CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
@@ -45,7 +46,9 @@ GRANT SELECT ON public.units TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.units TO authenticated;
 GRANT ALL ON public.units TO service_role;
 ALTER TABLE public.units ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "units public read" ON public.units;
 CREATE POLICY "units public read" ON public.units FOR SELECT TO anon, authenticated USING (true);
+DROP POLICY IF EXISTS "units admin write" ON public.units;
 CREATE POLICY "units admin write" ON public.units FOR ALL TO authenticated
   USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
@@ -67,7 +70,9 @@ GRANT SELECT ON public.quizzes TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.quizzes TO authenticated;
 GRANT ALL ON public.quizzes TO service_role;
 ALTER TABLE public.quizzes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "quizzes public read" ON public.quizzes;
 CREATE POLICY "quizzes public read" ON public.quizzes FOR SELECT TO anon, authenticated USING (true);
+DROP POLICY IF EXISTS "quizzes admin write" ON public.quizzes;
 CREATE POLICY "quizzes admin write" ON public.quizzes FOR ALL TO authenticated
   USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE TRIGGER quizzes_touch BEFORE UPDATE ON public.quizzes FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
@@ -85,6 +90,7 @@ CREATE INDEX questions_quiz_idx ON public.questions(quiz_id);
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.questions TO authenticated;
 GRANT ALL ON public.questions TO service_role;
 ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "questions admin only" ON public.questions;
 CREATE POLICY "questions admin only" ON public.questions FOR ALL TO authenticated
   USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE TRIGGER questions_touch BEFORE UPDATE ON public.questions FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
@@ -127,7 +133,9 @@ GRANT SELECT ON public.results TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.results TO authenticated;
 GRANT ALL ON public.results TO service_role;
 ALTER TABLE public.results ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "results public read" ON public.results;
 CREATE POLICY "results public read" ON public.results FOR SELECT TO anon, authenticated USING (true);
+DROP POLICY IF EXISTS "results admin write" ON public.results;
 CREATE POLICY "results admin write" ON public.results FOR ALL TO authenticated
   USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 

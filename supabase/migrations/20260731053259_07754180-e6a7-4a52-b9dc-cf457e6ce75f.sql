@@ -14,9 +14,11 @@ CREATE INDEX IF NOT EXISTS audit_logs_user_idx ON public.audit_logs (user_id);
 GRANT SELECT, INSERT ON public.audit_logs TO authenticated;
 GRANT ALL ON public.audit_logs TO service_role;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admins and staff can read audit logs" ON public.audit_logs;
 CREATE POLICY "Admins and staff can read audit logs"
   ON public.audit_logs FOR SELECT TO authenticated
   USING (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'staff'));
+DROP POLICY IF EXISTS "Users insert their own audit logs" ON public.audit_logs;
 CREATE POLICY "Users insert their own audit logs"
   ON public.audit_logs FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = user_id);
@@ -50,16 +52,20 @@ CREATE INDEX employees_unit_idx ON public.employees (unit_name);
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.employees TO authenticated;
 GRANT ALL ON public.employees TO service_role;
 ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Staff and admins can view employees" ON public.employees;
 CREATE POLICY "Staff and admins can view employees"
   ON public.employees FOR SELECT TO authenticated
   USING (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'staff'));
+DROP POLICY IF EXISTS "Admins can insert employees" ON public.employees;
 CREATE POLICY "Admins can insert employees"
   ON public.employees FOR INSERT TO authenticated
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
+DROP POLICY IF EXISTS "Admins can update employees" ON public.employees;
 CREATE POLICY "Admins can update employees"
   ON public.employees FOR UPDATE TO authenticated
   USING (public.has_role(auth.uid(), 'admin'))
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
+DROP POLICY IF EXISTS "Admins can delete employees" ON public.employees;
 CREATE POLICY "Admins can delete employees"
   ON public.employees FOR DELETE TO authenticated
   USING (public.has_role(auth.uid(), 'admin'));
@@ -81,16 +87,20 @@ ALTER TABLE public.exam_sessions ADD COLUMN IF NOT EXISTS employee_id uuid REFER
 ALTER TABLE public.results ADD COLUMN IF NOT EXISTS employee_id uuid REFERENCES public.employees(id) ON DELETE SET NULL;
 ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS image_url text;
 
+DROP POLICY IF EXISTS "Admin staff can read question images" ON storage.objects;
 CREATE POLICY "Admin staff can read question images"
 ON storage.objects FOR SELECT TO authenticated
 USING (bucket_id = 'question-images' AND (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'staff')));
+DROP POLICY IF EXISTS "Admin staff can upload question images" ON storage.objects;
 CREATE POLICY "Admin staff can upload question images"
 ON storage.objects FOR INSERT TO authenticated
 WITH CHECK (bucket_id = 'question-images' AND (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'staff')));
+DROP POLICY IF EXISTS "Admin staff can update question images" ON storage.objects;
 CREATE POLICY "Admin staff can update question images"
 ON storage.objects FOR UPDATE TO authenticated
 USING (bucket_id = 'question-images' AND (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'staff')))
 WITH CHECK (bucket_id = 'question-images' AND (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'staff')));
+DROP POLICY IF EXISTS "Admin staff can delete question images" ON storage.objects;
 CREATE POLICY "Admin staff can delete question images"
 ON storage.objects FOR DELETE TO authenticated
 USING (bucket_id = 'question-images' AND (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'staff')));
