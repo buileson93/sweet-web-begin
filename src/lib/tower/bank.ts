@@ -8,6 +8,9 @@ import type { Difficulty, QuestionKind } from "@/lib/questionKinds";
 
 export type BankQuestion = {
   id: string;
+  /** Bộ đề chứa câu hỏi — cho phép chọn nhiều bộ đề khi vào ca trực. */
+  quizId: string;
+  quizTitle: string;
   kind: QuestionKind;
   question: string;
   options: string[];
@@ -25,15 +28,42 @@ export type BankQuestion = {
   correctOrder: number[];
 };
 
+export type BankQuizInfo = { id: string; title: string; count: number };
+
 export type QuestionBank = {
   version: number;
   builtAt: string;
   questions: BankQuestion[];
+  /** Danh mục bộ đề có trong gói (đã đếm sẵn số câu). */
+  quizzes?: BankQuizInfo[];
 };
+
+/** Gom danh mục bộ đề từ gói đã tải (dùng khi gói cũ chưa có sẵn danh mục). */
+export function bankQuizzes(bank: QuestionBank | null): BankQuizInfo[] {
+  if (!bank) return [];
+  if (bank.quizzes?.length) return bank.quizzes;
+  const map = new Map<string, BankQuizInfo>();
+  for (const q of bank.questions) {
+    if (!q.quizId) continue;
+    const cur = map.get(q.quizId);
+    if (cur) cur.count += 1;
+    else map.set(q.quizId, { id: q.quizId, title: q.quizTitle || "Bộ đề", count: 1 });
+  }
+  return [...map.values()].sort((a, b) => a.title.localeCompare(b.title, "vi"));
+}
+
+/** Lọc gói theo các bộ đề đã chọn; không chọn gì thì dùng cả gói. */
+export function filterBankByQuizzes(bank: QuestionBank, quizIds: string[]): QuestionBank {
+  if (!quizIds.length) return bank;
+  const set = new Set(quizIds);
+  return { ...bank, questions: bank.questions.filter((q) => set.has(q.quizId)) };
+}
 
 /** Gói đã cũ khi thiếu, rỗng, hoặc lệch phiên bản so với máy chủ. */
 export function bankIsStale(cached: QuestionBank | null, serverVersion: number): boolean {
   if (!cached || !cached.questions.length) return true;
+  // Gói cũ chưa gắn bộ đề thì phải tải lại để chọn được nhiều bộ đề.
+  if (!cached.questions[0]?.quizId) return true;
   return cached.version !== serverVersion;
 }
 

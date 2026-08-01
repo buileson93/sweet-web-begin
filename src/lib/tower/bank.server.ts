@@ -53,15 +53,20 @@ export async function buildQuestionBank(input: VerifyInput): Promise<QuestionBan
   const { data, error } = await supabaseAdmin
     .from("questions")
     .select(
-      "id, kind, question, options, option_images, image_url, image_alt, explanation, tags, difficulty, correct_index, correct_indices, accepted_answers, pairs, correct_order",
+      "id, quiz_id, kind, question, options, option_images, image_url, image_alt, explanation, tags, difficulty, correct_index, correct_indices, accepted_answers, pairs, correct_order",
     )
     .eq("is_archived", false)
     .order("id", { ascending: true })
     .limit(BANK_LIMIT);
   if (error) throw new Error("Không tải được ngân hàng câu hỏi ôn tập.");
 
+  const { data: quizRows } = await supabaseAdmin.from("quizzes").select("id, title");
+  const titleOf = new Map((quizRows ?? []).map((q) => [q.id, q.title as string]));
+
   const questions: BankQuestion[] = (data ?? []).map((row) => ({
     id: row.id,
+    quizId: row.quiz_id ?? "",
+    quizTitle: titleOf.get(row.quiz_id) ?? "Bộ đề khác",
     kind: row.kind,
     question: row.question,
     options: row.options ?? [],
@@ -83,5 +88,14 @@ export async function buildQuestionBank(input: VerifyInput): Promise<QuestionBan
     correctOrder: row.correct_order ?? [],
   }));
 
-  return { version: await getBankVersion(), builtAt: new Date().toISOString(), questions };
+  const counts = new Map<string, { id: string; title: string; count: number }>();
+  for (const q of questions) {
+    if (!q.quizId) continue;
+    const cur = counts.get(q.quizId);
+    if (cur) cur.count += 1;
+    else counts.set(q.quizId, { id: q.quizId, title: q.quizTitle, count: 1 });
+  }
+  const quizzes = [...counts.values()].sort((a, b) => a.title.localeCompare(b.title, "vi"));
+
+  return { version: await getBankVersion(), builtAt: new Date().toISOString(), questions, quizzes };
 }
