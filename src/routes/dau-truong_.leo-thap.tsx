@@ -444,8 +444,38 @@ function TowerPage() {
         correct: finished.correct,
         answered: finished.answered,
         win: finished.win,
+        hp: finished.hp,
+        relics: finished.relics,
+        curses: finished.curses,
+        ascension: finished.ascension,
+        seed: finished.seed,
+        log: finished.log,
       });
       void pushSync(stateRef.current, floors);
+
+      // Lưu lại ngay tại máy để xem lại và thống kê được cả khi mất mạng.
+      const startedMs = Date.parse(finished.startedAt);
+      saveRunRecord({
+        id: `${finished.seed}-${startedMs}`,
+        seed: finished.seed,
+        daily: finished.daily,
+        ascension: finished.ascension,
+        startedAt: finished.startedAt,
+        finishedAt: new Date().toISOString(),
+        seconds: Number.isFinite(startedMs) ? Math.max(0, Math.round((Date.now() - startedMs) / 1000)) : 0,
+        floors,
+        hp: finished.hp,
+        maxHp: finished.maxHp,
+        correct: finished.correct,
+        answered: finished.answered,
+        coins: finished.coins,
+        relics: finished.relics,
+        curses: finished.curses,
+        win: finished.win,
+        score: finished.score,
+        log: finished.log,
+      });
+
 
       const earned = runCoins(finished.score, 0);
       setMeta((m) => ({
