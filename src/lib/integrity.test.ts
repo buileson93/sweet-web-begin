@@ -15,7 +15,7 @@ import {
 describe("scoreEvent", () => {
   it("bỏ qua việc ẩn tab dưới 1,5 giây (thông báo, xoay màn hình)", () => {
     expect(scoreEvent("tab_hidden", { hiddenMs: 0 })).toBe(0);
-    expect(scoreEvent("tab_hidden", { hiddenMs: 1_000 })).toBe(0);
+    expect(scoreEvent("tab_hidden", { hiddenMs: 500 })).toBe(0);
     expect(scoreEvent("tab_hidden", { hiddenMs: 1_499 })).toBe(0);
     expect(scoreEvent("tab_hidden", {})).toBe(0);
   });
@@ -76,7 +76,7 @@ describe("shouldDisqualify", () => {
 
   it("một thông báo chớp nhoáng (1 giây) không đủ để bị huỷ bài", () => {
     const score =
-      scoreEvent("tab_hidden", { hiddenMs: 1_000 }) +
+      scoreEvent("tab_hidden", { hiddenMs: 500 }) +
       scoreEvent("window_blur", { documentVisible: true });
     expect(score).toBe(0);
     expect(shouldDisqualify(score, 6, true)).toBe(false);
