@@ -66,16 +66,16 @@ export const Route = createFileRoute("/dau-truong")({
   ),
   head: () => ({
     meta: [
-      { title: "Đấu trường 1vs1 — Hội thi trắc nghiệm VATM" },
+      { title: "Đấu trường — Hội thi trắc nghiệm VATM" },
       {
         name: "description",
         content:
           "Thách đấu đồng nghiệp theo thời gian thực: 10 câu tốc chiến, tính điểm Elo, huy hiệu và bảng xếp hạng đấu trường.",
       },
-      { property: "og:title", content: "Đấu trường 1vs1 — Hội thi trắc nghiệm VATM" },
+      { property: "og:title", content: "Đấu trường — Hội thi trắc nghiệm VATM" },
       {
         property: "og:description",
-        content: "Tốc chiến 1vs1, chấm điểm tức thì, xếp hạng Elo và huy hiệu cho nhân viên VATM.",
+        content: "Tốc chiến so tài, chấm điểm tức thì, xếp hạng Elo và huy hiệu cho nhân viên VATM.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
