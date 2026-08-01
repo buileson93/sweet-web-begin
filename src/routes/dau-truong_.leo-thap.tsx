@@ -49,7 +49,7 @@ import { bankIsStale, bankQuizzes, filterBankByQuizzes, type QuestionBank } from
 import { START_HP } from "@/lib/tower/config";
 import { bossAt } from "@/lib/tower/bosses";
 import { curseById } from "@/lib/tower/curses";
-import { FLOORS, ROOM_META } from "@/lib/tower/map";
+import { FLOORS, mapFor, ROOM_META } from "@/lib/tower/map";
 import { ASCENSION_RULES, canBuy, UNLOCKS } from "@/lib/tower/meta";
 import { dailySeed } from "@/lib/tower/rng";
 import { BOARD_LABEL, runCoins, type Board } from "@/lib/tower/score";
