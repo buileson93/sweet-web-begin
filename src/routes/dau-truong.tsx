@@ -127,16 +127,32 @@ function ArenaLobby() {
     };
   }, []);
 
+  const autoSignInRef = useRef(false);
   useEffect(() => {
     const saved = getArenaToken();
-    if (saved) setToken(saved);
-    // Ghi nhớ 3 giờ: khỏi gõ lại họ tên và 4 số cuối mỗi lần vào đấu trường.
-    const quick = readQuickLogin();
-    if (quick) {
-      setName((prev) => prev || quick.name);
-      setCredential((prev) => prev || quick.credential);
+    if (saved) {
+      setToken(saved);
+      return;
     }
-  }, []);
+    // Ghi nhớ 3 giờ: đã đăng nhập nhanh ở nơi khác thì vào thẳng đấu trường, khỏi nhập lại.
+    const quick = readQuickLogin();
+    if (!quick) return;
+    setName((prev) => prev || quick.name);
+    setCredential((prev) => prev || quick.credential);
+    if (autoSignInRef.current) return;
+    autoSignInRef.current = true;
+    setBusy(true);
+    signIn({ data: { name: quick.name, credential: quick.credential } })
+      .then((res) => {
+        saveArenaToken(res.token, res.profile.displayName);
+        setToken(res.token);
+      })
+      .catch(() => {
+        /* thông tin cũ không khớp — để người dùng nhập lại */
+      })
+      .finally(() => setBusy(false));
+  }, [signIn]);
+
 
 
   useEffect(() => {
