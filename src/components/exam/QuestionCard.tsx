@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, Frown, Send, ThumbsUp, Wand2, Zap } from "lucide-react";
 
 import { QuestionInput } from "@/components/exam/QuestionInput";
+import { RichText } from "@/components/RichText";
 import { Button } from "@/components/ui/button";
 import type { ExamQuestion, ExamSettings } from "@/lib/exam.server";
 import { KIND_LABEL, type AnswerValue } from "@/lib/questionKinds";
@@ -77,7 +78,9 @@ export function QuestionCard({
           {question.points} điểm
         </span>
       </div>
-      <h1 className="mt-2 text-lg font-bold leading-snug sm:text-xl">{question.question}</h1>
+      <h1 className="mt-2 text-lg font-bold leading-snug sm:text-xl">
+        <RichText>{question.question}</RichText>
+      </h1>
 
       {questionImageSrc(question.imageUrl) ? (
         <img
@@ -125,13 +128,13 @@ export function QuestionCard({
           {feedback === "wrong" && feedbackInfo?.correctText ? (
             <p className="rounded-lg bg-success/12 px-2.5 py-1.5 text-success">
               <span className="font-semibold">Đáp án đúng: </span>
-              {feedbackInfo.correctText}
+              <RichText inline>{feedbackInfo.correctText}</RichText>
             </p>
           ) : null}
           {feedbackInfo?.explanation ? (
             <p className="rounded-lg bg-secondary/70 px-2.5 py-1.5 text-muted-foreground">
               <span className="font-semibold text-foreground">Giải thích: </span>
-              {feedbackInfo.explanation}
+              <RichText inline>{feedbackInfo.explanation}</RichText>
             </p>
           ) : null}
         </div>
