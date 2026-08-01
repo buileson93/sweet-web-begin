@@ -235,6 +235,9 @@ function TowerPage() {
   const [challengeValue, setChallengeValue] = useState<AnswerValue | undefined>(undefined);
   const [confirmClose, setConfirmClose] = useState(false);
   const [lowTime, setLowTime] = useState(false);
+  /** Khi đang ở trong phòng, bản đồ được thu lại; người chơi mở xem khi cần. */
+  const [mapOpen, setMapOpen] = useState(false);
+
   const [meta, setMeta] = useState<Meta>(EMPTY_META);
   const [daily, setDaily] = useState(false);
   const [board, setBoard] = useState<Board>("tu-do");
