@@ -48,6 +48,7 @@ import { clearArenaToken, getArenaToken, saveArenaToken } from "@/lib/arena/clie
 import { parseBusyError, type BusyInfo } from "@/lib/arena/rooms";
 import type { ArenaProfile } from "@/lib/arena/types";
 import { getDeviceId } from "@/lib/deviceId";
+import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
 import { allSpriteUrls } from "@/lib/arena/sprites";
 
 import { cn } from "@/lib/utils";
@@ -124,6 +125,12 @@ function ArenaLobby() {
   useEffect(() => {
     const saved = getArenaToken();
     if (saved) setToken(saved);
+    // Ghi nhớ 3 giờ: khỏi gõ lại họ tên và 4 số cuối mỗi lần vào đấu trường.
+    const quick = readQuickLogin();
+    if (quick) {
+      setName((prev) => prev || quick.name);
+      setCredential((prev) => prev || quick.credential);
+    }
   }, []);
 
 
@@ -236,6 +243,7 @@ function ArenaLobby() {
     try {
       const res = await signIn({ data: { name: name.trim(), credential: credential.trim() } });
       saveArenaToken(res.token, res.profile.displayName);
+      saveQuickLogin({ name: name.trim(), credential: credential.trim() });
       setToken(res.token);
       toast.success(`Chào ${res.profile.displayName}, sẵn sàng chiến!`);
       const pendingDuel = window.sessionStorage.getItem("arena:pending-duel");

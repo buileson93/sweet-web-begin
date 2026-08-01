@@ -148,7 +148,8 @@ function CharacterPage() {
         <>
           <section className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
             <div className="card-elevated flex flex-col items-center gap-3 rounded-2xl p-5">
-              <div className="grid h-56 w-full place-items-center rounded-2xl bg-gradient-to-b from-secondary/70 to-background p-4">
+              {/* Khung nhân vật vừa mắt trên điện thoại, không chiếm hết màn hình */}
+              <div className="grid h-32 w-full place-items-center rounded-2xl bg-gradient-to-b from-secondary/70 to-background p-3 sm:h-40">
                 <Avatar2D
                   value={profile.avatarUrl}
                   name={profile.displayName}
@@ -160,7 +161,7 @@ function CharacterPage() {
                 name={profile.displayName}
                 avatarUrl={profile.avatarUrl}
                 avatarImage={profile.avatarImage}
-                size="xl"
+                size="md"
                 live
               />
               <div className="text-center">
