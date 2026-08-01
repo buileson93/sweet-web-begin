@@ -319,6 +319,15 @@ export async function submitExamSession(input: {
     if (insertError && !insertError.message.includes("duplicate"))
       throw new Error(insertError.message);
 
+    // Tích luỹ độ khó thực tế của từng câu hỏi (không chặn luồng trả kết quả).
+    if (!disqualified && statItems.length) {
+      await supabaseAdmin
+        .rpc("bump_question_stats" as never, { p_items: statItems } as never)
+        .then(() => undefined, () => undefined);
+    }
+
+
+
     // Cộng kinh nghiệm / lên cấp cho nhân viên (Habitica style).
     if (session.employee_id) {
       const gain = computeXpGain({
