@@ -263,7 +263,9 @@ function ArenaLobby() {
 
   if (!token)
     return (
-      <PageContainer className="py-8">
+      <AppShell>
+      <div className="mx-auto w-full min-w-0 max-w-6xl">
+
         <PageHero
           title={
             <span className="inline-flex flex-wrap items-center gap-2">
