@@ -29,7 +29,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
+import { SectionHeading } from "@/components/ui-kit";
+import { ArenaHero, ArenaPage } from "@/components/arena/ArenaPage";
 import { readExamEntry } from "@/lib/examSession";
 import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
 import { CredentialInput } from "@/components/CredentialInput";
@@ -447,14 +448,14 @@ function TowerPage() {
     : 0;
 
   return (
-    <PageContainer>
-      <PageHero
+    <ArenaPage>
+      <ArenaHero
         icon={Castle}
         title="Tháp Không Lưu (TWR ATC)"
         description="Ôn nghiệp vụ điều hành bay — mỗi buổi tu luyện 5 tầng, mỗi tầng 5 câu."
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button asChild variant="ghost" size="sm">
           <Link to="/dau-truong">
             <ArrowLeft className="mr-1.5 size-4" /> Về sảnh Đấu trường
@@ -751,6 +752,6 @@ function TowerPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </PageContainer>
+    </ArenaPage>
   );
 }

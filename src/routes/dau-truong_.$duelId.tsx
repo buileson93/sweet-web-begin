@@ -15,6 +15,7 @@ import { DiagnosticsDialog } from "@/components/arena/DiagnosticsDialog";
 import { SkillBar } from "@/components/arena/SkillBar";
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
+import { ArenaActionBar } from "@/components/arena/ArenaActionBar";
 import { PageContainer } from "@/components/ui-kit";
 import { useDuelChannel } from "@/hooks/useDuelChannel";
 import {
@@ -195,7 +196,7 @@ function DuelRoom() {
     );
 
   return (
-    <PageContainer className="space-y-4 py-4">
+    <PageContainer className="space-y-4 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
       <header
         className={cn(
           "flex items-center gap-3",
@@ -456,10 +457,12 @@ function WaitingPanel({
         />
       </div>
 
-      <Button onClick={onReady} disabled={me?.ready} size="lg">
-        {me?.ready ? <Check className="mr-2 size-4" /> : null}
-        {me?.ready ? "Đã sẵn sàng" : "Sẵn sàng"}
-      </Button>
+      <ArenaActionBar>
+        <Button onClick={onReady} disabled={me?.ready} className="h-12 w-full rounded-xl text-base">
+          {me?.ready ? <Check className="mr-2 size-4" /> : null}
+          {me?.ready ? "Đã sẵn sàng" : "Sẵn sàng"}
+        </Button>
+      </ArenaActionBar>
       {state.players.length < 2 ? (
         <Button
           variant="outline"
@@ -621,9 +624,15 @@ function RoundPanel({
         }}
       />
       {!single ? (
-        <Button className="w-full" disabled={frozen || value === undefined} onClick={() => onSubmit(value!)}>
-          Chốt đáp án
-        </Button>
+        <ArenaActionBar>
+          <Button
+            className="h-12 w-full rounded-xl text-base"
+            disabled={frozen || value === undefined}
+            onClick={() => onSubmit(value!)}
+          >
+            Chốt đáp án
+          </Button>
+        </ArenaActionBar>
       ) : null}
       {locked ? (
         <p className="text-center text-sm text-muted-foreground">Đã chốt đáp án duy nhất của lượt này</p>

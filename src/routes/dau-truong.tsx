@@ -36,8 +36,8 @@ import { usePlayerIdentity } from "@/hooks/usePlayerIdentity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AppShell } from "@/components/AppShell";
-import { PageHero, SectionHeading } from "@/components/ui-kit";
+import { ArenaHero, ArenaPage } from "@/components/arena/ArenaPage";
+import { SectionHeading } from "@/components/ui-kit";
 
 import {
   arenaEndActive,
@@ -265,10 +265,9 @@ function ArenaLobby() {
 
   if (!token)
     return (
-      <AppShell>
-      <div className="mx-auto w-full min-w-0 max-w-6xl">
-
-        <PageHero
+      <ArenaPage>
+        <ArenaHero
+          icon={Swords}
           title={
             <span className="inline-flex flex-wrap items-center gap-2">
               Đấu trường <BetaBadge />
@@ -276,7 +275,7 @@ function ArenaLobby() {
           }
           description="10 câu tốc chiến, ai nhanh và đúng hơn thì thắng."
         />
-        <div className="arena-panel arena-radar mx-auto mt-6 w-full max-w-md overflow-hidden p-0">
+        <div className="arena-panel arena-radar mx-auto w-full max-w-md overflow-hidden p-0">
           <div className="flex flex-col items-center gap-1 border-b border-border/60 bg-gradient-to-b from-primary/10 to-transparent px-6 py-6 text-center">
             <span className="grid size-12 place-items-center rounded-2xl bg-primary/15 text-primary shadow-[var(--shadow-ring)]">
               <Swords className="size-6" />
@@ -311,16 +310,14 @@ function ArenaLobby() {
             </Button>
           </div>
         </div>
-      </div>
-      </AppShell>
+      </ArenaPage>
     );
 
   const profile = home?.profile;
   return (
-    <AppShell>
-    <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6">
-      <PageHero
-
+    <ArenaPage>
+      <ArenaHero
+        icon={Swords}
         title={
           <span className="inline-flex flex-wrap items-center gap-2">
             Đấu trường <BetaBadge />
@@ -328,9 +325,9 @@ function ArenaLobby() {
         }
         description="So tài cùng đồng nghiệp, leo hạng Elo và sưu tầm huy hiệu."
         aside={
-          <Button asChild variant="outline" className="rounded-full">
+          <Button asChild variant="secondary" size="sm" className="rounded-full">
             <Link to="/dau-truong/thong-ke">
-              <BarChart3 className="mr-2 size-4" /> Thống kê của tôi
+              <BarChart3 className="mr-2 size-4" /> Thống kê
             </Link>
           </Button>
         }
@@ -594,9 +591,7 @@ function ArenaLobby() {
           </ul>
         </section>
       </div>
-    </div>
-    </AppShell>
-
+    </ArenaPage>
   );
 }
 

@@ -20,7 +20,8 @@ import {
 import { HpBar } from "@/components/arena/HpBar";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
 import { Button } from "@/components/ui/button";
-import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
+import { SectionHeading } from "@/components/ui-kit";
+import { ArenaHero, ArenaPage } from "@/components/arena/ArenaPage";
 import { arenaReplay } from "@/lib/arena.functions";
 import { getArenaToken } from "@/lib/arena/client";
 import { buildReplaySummary } from "@/lib/arena/replaySummary";
@@ -132,21 +133,21 @@ function DuelReplayPage() {
 
   if (error)
     return (
-      <PageContainer className="grid min-h-[50vh] place-items-center text-center">
+      <ArenaPage className="grid min-h-[50vh] place-items-center text-center">
         <div className="space-y-3">
           <p className="text-destructive">{error}</p>
           <Button variant="outline" onClick={() => void navigate({ to: "/dau-truong" })}>
             <ArrowLeft className="mr-2 size-4" /> Về đấu trường
           </Button>
         </div>
-      </PageContainer>
+      </ArenaPage>
     );
 
   if (!replay)
     return (
-      <PageContainer className="grid min-h-[50vh] place-items-center">
+      <ArenaPage className="grid min-h-[50vh] place-items-center">
         <Loader2 className="size-8 animate-spin text-primary" />
-      </PageContainer>
+      </ArenaPage>
     );
 
   const finishedText = replay.finishedAt
@@ -154,8 +155,10 @@ function DuelReplayPage() {
     : "—";
 
   return (
-    <PageContainer className="space-y-6 py-6">
-      <PageHero
+    <ArenaPage>
+      <ArenaHero
+        icon={Swords}
+        decoration={Trophy}
         title="Xem lại ván so tài"
         description={`${replay.quizTitle} · ${replay.roundCount} câu · ${replay.isRanked ? "Xếp hạng" : "Giao hữu"} · ${finishedText}`}
       />
@@ -343,6 +346,6 @@ function DuelReplayPage() {
           <BarChart3 className="mr-2 size-4" /> Thống kê của tôi
         </Button>
       </div>
-    </PageContainer>
+    </ArenaPage>
   );
 }
