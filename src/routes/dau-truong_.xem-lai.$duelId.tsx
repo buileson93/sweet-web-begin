@@ -157,7 +157,8 @@ function DuelReplayPage() {
   return (
     <ArenaPage>
       <ArenaHero
-        icon={History}
+        icon={Swords}
+        decoration={Trophy}
         title="Xem lại ván so tài"
         description={`${replay.quizTitle} · ${replay.roundCount} câu · ${replay.isRanked ? "Xếp hạng" : "Giao hữu"} · ${finishedText}`}
       />
