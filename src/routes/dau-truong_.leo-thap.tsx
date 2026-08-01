@@ -36,7 +36,7 @@ import { CredentialInput } from "@/components/CredentialInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { AnswerValue } from "@/lib/questionKinds";
-import { bankIsStale, type QuestionBank } from "@/lib/tower/bank";
+import { bankIsStale, bankQuizzes, filterBankByQuizzes, type QuestionBank } from "@/lib/tower/bank";
 import { QUESTIONS_PER_STAGE, START_HP, STAGES_PER_RUN, stageName } from "@/lib/tower/config";
 import {
   createRun,
@@ -87,6 +87,9 @@ export const Route = createFileRoute("/dau-truong_/leo-thap")({
 
 /** Khoá lưu ca trực đang dở để F5 hoặc khoá máy không mất bài. */
 const RESUME_KEY = "vatm:tower:resume";
+
+/** Ghi nhớ các bộ đề đã chọn cho ca trực sau. */
+const PACKS_KEY = "vatm:tower:packs";
 
 type Resume = {
   run: TowerRun;
@@ -149,6 +152,7 @@ function TowerPage() {
   const [offline, setOffline] = useState(false);
   const [pending, setPending] = useState(false);
   const [dueCount, setDueCount] = useState(0);
+  const [packs, setPacks] = useState<string[]>([]);
 
   const [run, setRun] = useState<TowerRun | null>(null);
   const [idx, setIdx] = useState(0);
@@ -179,6 +183,12 @@ function TowerPage() {
     if (ident) {
       setFormName(ident.name);
       setFormCredential(ident.credential);
+    }
+    try {
+      const raw = window.localStorage.getItem(PACKS_KEY);
+      if (raw) setPacks(JSON.parse(raw) as string[]);
+    } catch {
+      /* không đọc được thì mặc định dùng cả gói */
     }
     const resume = readResume();
     if (resume) {
@@ -370,7 +380,12 @@ function TowerPage() {
   function begin() {
     if (!bank) return;
     try {
-      const fresh = createRun(bank, state, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      const scoped = filterBankByQuizzes(bank, packs);
+      if (!scoped.questions.length) {
+        toast.error("Các bộ đề đang chọn chưa có câu hỏi — hãy chọn thêm bộ đề khác.");
+        return;
+      }
+      const fresh = createRun(scoped, state, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
       setRun(fresh);
       setIdx(0);
       setAnswers({});
