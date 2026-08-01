@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BellRing, ClipboardCopy, Download, FileSpreadsheet, MailPlus, PartyPopper } from "lucide-react";
+import { BellRing, ClipboardCopy, Download, MailPlus, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
