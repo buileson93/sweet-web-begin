@@ -120,46 +120,56 @@ function TowerMapBase({ map, floor, trail, canPick, onPick, preview = false, cla
           const state = preview ? "future" : f < floor ? "past" : f === floor ? "current" : "future";
           const takenIndex = trail[f - 1];
           const upper = map[f] ?? [];
+          // Chỉ vẽ đường nối quanh chặng đang đi: xa hơn thì ẩn hẳn cho gọn và nhẹ.
+          const near = preview || Math.abs(f - floor) <= 2;
+          const far = !preview && f > floor + 2;
 
           return (
-            <li key={f} className="tower-map__floor relative">
+            <li key={f} className={cn("tower-map__floor relative", far && "opacity-40")}>
               {/* Đường nối lên tầng trên — vẽ đúng theo cạnh của đồ thị, không thêm đường ảo. */}
               {upper.length ? (
-                <svg
-                  aria-hidden
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                  className="pointer-events-none h-9 w-full sm:h-11"
-                >
-                  {nodes.flatMap((node, ni) =>
-                    node.next.map((ui) => {
-                      const x = xOf(node.col);
-                      const ux = xOf(upper[ui]!.col);
-                      const walked = takenIndex === ni && trail[f] === ui;
-                      const onTrail = takenIndex === ni;
-                      return (
-                        <path
-                          key={`${ni}-${ui}`}
-                          d={`M ${x} 100 C ${x} 62, ${ux} 38, ${ux} 0`}
-                          fill="none"
-                          vectorEffect="non-scaling-stroke"
-                          strokeLinecap="round"
-                          strokeWidth={walked ? 2.2 : onTrail || state === "current" ? 1.6 : 1.1}
-                          className={cn(
-                            walked
-                              ? "tower-link stroke-primary"
-                              : state === "current" && onTrail
-                                ? "tower-link stroke-primary/70"
-                                : state === "past"
-                                  ? "stroke-primary/15 [stroke-dasharray:3_5]"
-                                  : "stroke-foreground/15 [stroke-dasharray:3_5]",
-                          )}
-                        />
-                      );
-                    }),
-                  )}
-                </svg>
+                near ? (
+                  <svg
+                    aria-hidden
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                    className="pointer-events-none h-9 w-full [content-visibility:auto] sm:h-11"
+                  >
+                    {nodes.flatMap((node, ni) =>
+                      node.next.map((ui) => {
+                        const x = xOf(node.col);
+                        const ux = xOf(upper[ui]!.col);
+                        const walked = takenIndex === ni && trail[f] === ui;
+                        const onTrail = takenIndex === ni;
+                        // Tầng đã qua chỉ giữ đúng lối đi thật; nhánh không chọn thì bỏ đi.
+                        if (state === "past" && !onTrail) return null;
+                        return (
+                          <path
+                            key={`${ni}-${ui}`}
+                            d={`M ${x} 100 C ${x} 62, ${ux} 38, ${ux} 0`}
+                            fill="none"
+                            vectorEffect="non-scaling-stroke"
+                            strokeLinecap="round"
+                            strokeWidth={walked ? 2.2 : onTrail || state === "current" ? 1.6 : 1.1}
+                            className={cn(
+                              walked
+                                ? "tower-link stroke-primary"
+                                : state === "current" && onTrail
+                                  ? "tower-link stroke-primary/70"
+                                  : state === "past"
+                                    ? "stroke-primary/25"
+                                    : "stroke-foreground/12 [stroke-dasharray:3_5]",
+                            )}
+                          />
+                        );
+                      }),
+                    )}
+                  </svg>
+                ) : (
+                  <div aria-hidden className="h-9 w-full sm:h-11" />
+                )
               ) : null}
+
 
               <div className="relative flex items-center gap-2 py-1">
                 <span
