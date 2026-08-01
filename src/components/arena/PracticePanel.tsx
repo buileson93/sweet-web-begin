@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Bot, BookOpen, Loader2, Sparkles } from "lucide-react";
+
+import { Bot, Castle, BookOpen, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
+import { DueBadge } from "@/components/arena/DueBadge";
 import { Button } from "@/components/ui/button";
+
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -73,11 +77,22 @@ export function PracticePanel({
 
   return (
     <section className="rounded-2xl border bg-card/70 p-4 shadow-sm">
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <Bot className="size-5 text-primary" />
         <h3 className="text-sm font-semibold">Luyện tập với trợ lý</h3>
+        <DueBadge />
         <span className="ml-auto text-xs text-muted-foreground">Không tính xếp hạng</span>
       </div>
+
+      <Link
+        to="/dau-truong/leo-thap"
+        className="mb-3 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm transition hover:border-primary hover:bg-primary/10"
+      >
+        <Castle className="size-4 text-primary" />
+        <span className="font-medium">Leo Tháp Tri Thức</span>
+        <span className="type-meta">Ôn đúng câu bạn sắp quên · 5 chặng</span>
+      </Link>
+
 
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
         <div className="min-w-0 space-y-1.5">

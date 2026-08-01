@@ -661,6 +661,51 @@ export type Database = {
           },
         ]
       }
+      learner_cards: {
+        Row: {
+          box: number
+          employee_id: string
+          lapses: number
+          last_reviewed_at: string
+          next_due_at: string
+          question_id: string
+          reps: number
+        }
+        Insert: {
+          box?: number
+          employee_id: string
+          lapses?: number
+          last_reviewed_at?: string
+          next_due_at?: string
+          question_id: string
+          reps?: number
+        }
+        Update: {
+          box?: number
+          employee_id?: string
+          lapses?: number
+          last_reviewed_at?: string
+          next_due_at?: string
+          question_id?: string
+          reps?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learner_cards_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learner_cards_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_badges: {
         Row: {
           badge_code: string
@@ -1262,6 +1307,50 @@ export type Database = {
           },
         ]
       }
+      review_log: {
+        Row: {
+          correct: boolean
+          created_at: string
+          employee_id: string | null
+          fraction: number
+          id: string
+          mode: string
+          ms_taken: number
+          question_id: string | null
+          tags: string[]
+        }
+        Insert: {
+          correct?: boolean
+          created_at?: string
+          employee_id?: string | null
+          fraction?: number
+          id?: string
+          mode?: string
+          ms_taken?: number
+          question_id?: string | null
+          tags?: string[]
+        }
+        Update: {
+          correct?: boolean
+          created_at?: string
+          employee_id?: string | null
+          fraction?: number
+          id?: string
+          mode?: string
+          ms_taken?: number
+          question_id?: string | null
+          tags?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_log_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seasons: {
         Row: {
           closed_at: string | null
@@ -1291,6 +1380,139 @@ export type Database = {
           started_at?: string
         }
         Relationships: []
+      }
+      topic_ratings: {
+        Row: {
+          correct: number
+          employee_id: string
+          games: number
+          rating: number
+          tag: string
+          updated_at: string
+        }
+        Insert: {
+          correct?: number
+          employee_id: string
+          games?: number
+          rating?: number
+          tag: string
+          updated_at?: string
+        }
+        Update: {
+          correct?: number
+          employee_id?: string
+          games?: number
+          rating?: number
+          tag?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_ratings_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tower_run_events: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          run_id: string
+          seq: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          run_id: string
+          seq?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          run_id?: string
+          seq?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tower_run_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "tower_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tower_runs: {
+        Row: {
+          answered: number
+          correct: number
+          employee_id: string
+          finished_at: string | null
+          hp: number
+          id: string
+          quiz_id: string | null
+          seed: string
+          stage_index: number
+          started_at: string
+          state: Json
+          status: string
+          version: number
+        }
+        Insert: {
+          answered?: number
+          correct?: number
+          employee_id: string
+          finished_at?: string | null
+          hp?: number
+          id?: string
+          quiz_id?: string | null
+          seed?: string
+          stage_index?: number
+          started_at?: string
+          state?: Json
+          status?: string
+          version?: number
+        }
+        Update: {
+          answered?: number
+          correct?: number
+          employee_id?: string
+          finished_at?: string | null
+          hp?: number
+          id?: string
+          quiz_id?: string | null
+          seed?: string
+          stage_index?: number
+          started_at?: string
+          state?: Json
+          status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tower_runs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tower_runs_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       units: {
         Row: {
@@ -1414,6 +1636,10 @@ export type Database = {
           session_id: string
           submit_token: string
         }[]
+      }
+      tower_apply_reviews: {
+        Args: { p_employee_id: string; p_items: Json }
+        Returns: undefined
       }
     }
     Enums: {
