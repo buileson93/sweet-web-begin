@@ -113,13 +113,8 @@ export function useExamAnswers(opts: {
           }
           return next;
         });
-        setTimeout(
-          () => {
-            setCurrent((c) => (c < session.questions.length - 1 ? c + 1 : c));
-          },
-          // Trả lời sai thì dừng lâu hơn để kịp đọc đáp án đúng.
-          isCorrect ? 1100 : 4600,
-        );
+        // KHÔNG tự chuyển câu: thí sinh tự bấm "Câu tiếp" sau khi đọc xong phản hồi.
+
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Không chấm được câu này.");
       }
