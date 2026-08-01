@@ -584,6 +584,7 @@ export function resolveEvent(run: TowerRun, choiceId: string): { run: TowerRun; 
     }
   }
   next = advanceNonCombat(next);
+  next.log = logged(run, { floor: run.floor, kind: "event", label: `Sự kiện: ${ev.title}`, detail: message, hp: next.hp });
   return { run: next, message };
 }
 
