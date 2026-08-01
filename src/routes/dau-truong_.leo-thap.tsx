@@ -484,13 +484,55 @@ function TowerPage() {
           <p className="type-meta mt-1">
             {loading
               ? "Đang chuẩn bị gói nghiệp vụ cho bạn…"
-              : `${dueCount} thẻ đang đến hạn ôn · ${bank?.questions.length ?? 0} câu trong gói`}
+              : `${dueCount} thẻ đang đến hạn ôn · ${scopedCount} câu sẽ dùng cho ca trực`}
           </p>
           {!loading && !bank?.questions.length && (
             <p className="type-meta mt-1 text-amber-600">
               Gói nghiệp vụ chưa có câu hỏi nào — hãy thử lại khi có mạng.
             </p>
           )}
+
+          {quizList.length > 1 && (
+            <div className="mt-5 rounded-xl border bg-background/60 p-4 text-left">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold">Chọn bộ đề cho ca trực (có thể chọn nhiều)</p>
+                <button
+                  type="button"
+                  onClick={() => savePacks([])}
+                  className="type-meta underline underline-offset-2 transition hover:text-primary"
+                >
+                  Chọn tất cả
+                </button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {quizList.map((q) => {
+                  const on = packs.length === 0 || packs.includes(q.id);
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => togglePack(q.id)}
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                        on
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-primary/50",
+                      )}
+                    >
+                      {q.title} <span className="tabular-nums opacity-70">· {q.count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="type-meta mt-2">
+                {packs.length === 0
+                  ? "Đang trộn câu hỏi của tất cả bộ đề."
+                  : `Đang trộn ${packs.length} bộ đề đã chọn.`}
+              </p>
+            </div>
+          )}
+
           <Button className="mt-4" disabled={loading || !bank?.questions.length} onClick={begin}>
             {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Castle className="mr-2 size-4" />}
             Vào ca trực
