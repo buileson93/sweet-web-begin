@@ -28,7 +28,7 @@ export type ExamEventDetail = {
 /** Ngưỡng huỷ bài mặc định khi cuộc thi bật chế độ nghiêm ngặt. */
 export const DISQUALIFY_THRESHOLD_DEFAULT = 6;
 /** Rời màn hình thi từ mốc này trở lên là bị ghi nhận. */
-export const TAB_HIDDEN_MIN_MS = 1_500;
+export const TAB_HIDDEN_MIN_MS = 800;
 /** Mất focus cửa sổ (mà trang vẫn hiển thị) kéo dài từ mốc này mới bị ghi nhận nhẹ. */
 export const WINDOW_BLUR_MIN_MS = 4_000;
 /** Số sự kiện tối đa ghi nhận cho một phiên thi (chống spam). */
