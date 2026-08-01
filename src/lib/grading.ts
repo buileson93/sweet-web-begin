@@ -150,9 +150,7 @@ export function gradeOne(
     }
     case "fill_blank": {
       if (typeof value !== "string") return false;
-      const answer = normalizeText(value);
-      if (!answer) return false;
-      return (row.accepted_answers ?? []).some((a) => normalizeText(a) === answer);
+      return fillBlankMatches(value, row.accepted_answers ?? []);
     }
     case "matching": {
       if (typeof value !== "object" || Array.isArray(value)) return false;
@@ -378,4 +376,79 @@ export function estimatePoints(score: number, bestStreak: number, rules = DEFAUL
 export function reorderByDisplay(list: string[] | null | undefined, order: number[]): string[] {
   const src = list ?? [];
   return order.map((i) => src[i] ?? "");
+}
+
+/* ------------------------------------------------------------------ *
+ * Giai đoạn 3: chấm điểm một phần (câu nhiều đáp án) và dung sai
+ * chính tả (câu điền khuyết). Toàn bộ là hàm THUẦN để test độc lập.
+ * ------------------------------------------------------------------ */
+
+/** Khoảng cách Levenshtein giữa hai chuỗi (số phép thêm/xoá/thay tối thiểu). */
+export function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(
+        prev[j] + 1,
+        cur[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+/**
+ * Số lỗi chính tả được bỏ qua theo độ dài đáp án chuẩn:
+ * dưới 5 ký tự phải gõ đúng tuyệt đối, 5–9 ký tự tha 1 lỗi, từ 10 ký tự tha 2 lỗi.
+ */
+export function typoAllowance(length: number): number {
+  if (length >= 10) return 2;
+  if (length >= 5) return 1;
+  return 0;
+}
+
+/** So khớp câu điền khuyết: bỏ dấu, bỏ hoa/thường (normalizeText) và tha lỗi gõ nhẹ. */
+export function fillBlankMatches(value: string, accepted: string[]): boolean {
+  const answer = normalizeText(value);
+  if (!answer) return false;
+  return (accepted ?? []).some((raw) => {
+    const target = normalizeText(raw);
+    if (!target) return false;
+    if (target === answer) return true;
+    return levenshtein(answer, target) <= typoAllowance(target.length);
+  });
+}
+
+/**
+ * Tỉ lệ đúng của một câu (0–1).
+ * - Câu nhiều đáp án: chấm một phần = (số chọn đúng − số chọn sai) / số đáp án đúng.
+ * - Các loại còn lại: 1 nếu đúng hoàn toàn, 0 nếu sai.
+ */
+export function gradeFraction(
+  row: QuestionRow,
+  order: number[],
+  value: AnswerValue | undefined,
+): number {
+  if (row.kind === "multi") {
+    if (!Array.isArray(value)) return 0;
+    const expected = new Set(row.correct_indices ?? []);
+    if (expected.size === 0) return 0;
+    const chosen = new Set(
+      (value as number[])
+        .filter((i) => Number.isInteger(i) && i >= 0 && i < order.length)
+        .map((i) => order[i]),
+    );
+    let hits = 0;
+    let misses = 0;
+    for (const i of chosen) (expected.has(i) ? hits++ : misses++);
+    const raw = (hits - misses) / expected.size;
+    return Math.max(0, Math.min(1, Number(raw.toFixed(4))));
+  }
+  return gradeOne(row, order, value) ? 1 : 0;
 }

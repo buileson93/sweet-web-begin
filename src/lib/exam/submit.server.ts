@@ -5,6 +5,7 @@ import {
   baseOptions,
   chosenTextOf,
   correctTextOf,
+  gradeFraction,
   gradeOne,
   pairsOf,
   percentOf,
@@ -185,7 +186,8 @@ export async function submitExamSession(input: {
     const answered = value !== undefined && value !== null && value !== "";
     if (answered) storedAnswers[String(idx)] = value;
 
-    const correct = gradeOne(row, order, value);
+    const fraction = gradeFraction(row, order, value);
+    const correct = fraction >= 1;
     if (correct) {
       score++;
       streak++;
@@ -193,9 +195,14 @@ export async function submitExamSession(input: {
     } else {
       streak = 0;
     }
-    points += scoreForAnswer(row.points || 1, correct, answered, streak, scoreRules, {
-      x2: x2Set.has(idx),
-    });
+    if (fraction > 0 && fraction < 1) {
+      // Chấm điểm một phần (câu nhiều đáp án): không cộng chuỗi, không bị trừ điểm.
+      points += Math.round((row.points || 1) * fraction * 100) / 100;
+    } else {
+      points += scoreForAnswer(row.points || 1, correct, answered, streak, scoreRules, {
+        x2: x2Set.has(idx),
+      });
+    }
 
     review.push({
       kind: row.kind,
@@ -205,6 +212,7 @@ export async function submitExamSession(input: {
       imageUrl: row.image_url ?? null,
       imageAlt: (row as { image_alt?: string }).image_alt ?? "",
       correct,
+      fraction,
       answered,
       chosenText: chosenTextOf(row, order, value),
       correctText: correctTextOf(row),
