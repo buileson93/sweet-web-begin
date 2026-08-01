@@ -42,6 +42,8 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
   /** Bản đáp án đã được máy chủ xác nhận (mốc để tính delta). */
   const ackedRef = useRef<Record<string, AnswerValue>>({});
   const seqRef = useRef<number>(initialSeq ?? 0);
+  /** Seq lớn nhất đã DÙNG để gửi (kể cả beacon chưa biết kết quả) — luôn tăng để không bị máy chủ bỏ qua. */
+  const usedSeqRef = useRef<number>(initialSeq ?? 0);
   const answersRef = useRef(answers);
   answersRef.current = answers;
   const inFlightRef = useRef(false);
@@ -50,7 +52,10 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (typeof initialSeq === "number") seqRef.current = initialSeq;
+    if (typeof initialSeq === "number") {
+      seqRef.current = initialSeq;
+      usedSeqRef.current = Math.max(usedSeqRef.current, initialSeq);
+    }
   }, [initialSeq]);
 
   /** Tính phần đáp án thay đổi so với bản máy chủ đã xác nhận. */
@@ -89,7 +94,8 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
     inFlightRef.current = true;
     lastSentAtRef.current = Date.now();
     setStatus("saving");
-    const nextSeq = seqRef.current + 1;
+    const nextSeq = Math.max(seqRef.current, usedSeqRef.current) + 1;
+    usedSeqRef.current = nextSeq;
     try {
       const res = await saveProgress({
         data: { sessionId, submitToken, answers: delta, clientSeq: nextSeq },
@@ -177,7 +183,7 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
         sessionId,
         submitToken,
         answers: delta,
-        clientSeq: seqRef.current + 1,
+        clientSeq: (usedSeqRef.current = Math.max(seqRef.current, usedSeqRef.current) + 1),
       });
       const sent =
         typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function"
@@ -210,6 +216,7 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
   const markAcked = useCallback((serverAnswers: Record<string, AnswerValue>, seq: number) => {
     ackedRef.current = { ...serverAnswers };
     seqRef.current = Math.max(seqRef.current, seq);
+    usedSeqRef.current = Math.max(usedSeqRef.current, seqRef.current);
   }, []);
 
   return { status, savedAt, flush, markAcked };
