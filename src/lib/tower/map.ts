@@ -43,12 +43,12 @@ const isBoss = (f: number) => (BOSS_FLOORS as readonly number[]).includes(f);
 const PRE_BOSS = BOSS_FLOORS.map((f) => f - 1);
 
 export const ROOM_META: Record<RoomKind, { icon: string; label: string; desc: string; tone: string }> = {
-  combat: { icon: "⚔️", label: "Xử lý tình huống", desc: "5 câu · sai −8 an toàn · đúng liên tiếp gây điểm xử lý tăng dần", tone: "text-primary" },
-  elite: { icon: "💀", label: "Tình huống phức tạp", desc: "7 câu khó hơn · sai −12 an toàn · thưởng trang bị hiếm", tone: "text-destructive" },
+  combat: { icon: "✈️", label: "Xử lý tình huống", desc: "5 câu · sai −8 an toàn · đúng liên tiếp gây điểm xử lý tăng dần", tone: "text-primary" },
+  elite: { icon: "🌩️", label: "Tình huống phức tạp", desc: "7 câu khó hơn · sai −12 an toàn · thưởng trang bị hiếm", tone: "text-destructive" },
   event: { icon: "❓", label: "Sự kiện", desc: "1 câu thử thách · đúng được thưởng · sai −5 an toàn", tone: "text-amber-500" },
-  shop: { icon: "🏪", label: "Kho khí tài", desc: "1 câu mặc cả · đúng được giảm 30% giá · không mất an toàn", tone: "text-emerald-500" },
-  campfire: { icon: "🔥", label: "Phòng nghỉ ca", desc: "1 câu ôn bài · đúng hồi thêm an toàn · không mất an toàn", tone: "text-orange-500" },
-  boss: { icon: "👑", label: "Sự cố lớn", desc: "7 câu · sai −15 an toàn · có luật riêng", tone: "text-yellow-500" },
+  shop: { icon: "🧰", label: "Kho khí tài", desc: "1 câu mặc cả · đúng được giảm 30% giá · không mất an toàn", tone: "text-emerald-500" },
+  campfire: { icon: "☕", label: "Phòng nghỉ ca", desc: "1 câu ôn bài · đúng hồi thêm an toàn · không mất an toàn", tone: "text-orange-500" },
+  boss: { icon: "🚨", label: "Sự cố lớn", desc: "7 câu · sai −15 an toàn · có luật riêng", tone: "text-yellow-500" },
 };
 
 const ROOM: Record<RoomKind, Room> = {
