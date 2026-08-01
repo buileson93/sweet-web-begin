@@ -140,6 +140,16 @@ export function QuestionCard({
         </div>
       ) : null}
 
+      {/* Câu nhiều đáp án/điền/nối/sắp xếp: chấm khi thí sinh tự chốt */}
+      {instant && !feedback && question.kind !== "single" && question.kind !== "true_false" ? (
+        <Button className="mt-4 rounded-full" disabled={value === undefined} onClick={onConfirm}>
+          <Send className="size-4" />
+          Chốt đáp án
+        </Button>
+      ) : null}
+
+
+
 
       {/* Vật phẩm trợ giúp */}
       <div className="mt-4 flex flex-wrap gap-2">
