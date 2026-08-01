@@ -237,6 +237,8 @@
   margin-inline: auto;
   width: 100%;
   max-width: 72rem;
+  /* Chừa chỗ cho nút điều hướng nổi để không che nội dung cuối trang */
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
   padding-inline: calc(1rem + env(safe-area-inset-left)) calc(1rem + env(safe-area-inset-right));
 }
 

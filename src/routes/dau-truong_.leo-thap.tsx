@@ -72,7 +72,7 @@ export const Route = createFileRoute("/dau-truong_/leo-thap")({
       {
         name: "description",
         content:
-          "Ôn nghiệp vụ điều hành bay theo lịch lặp lại ngắt quãng: mỗi ca trực 5 tầng, từ sân đỗ lên đường dài.",
+          "Ôn nghiệp vụ điều hành bay theo lịch lặp lại ngắt quãng: mỗi buổi tu luyện 5 tầng, từ sân đỗ lên đường dài.",
       },
       { property: "og:title", content: "Tháp Không Lưu (TWR ATC) — Hội thi trắc nghiệm VATM" },
       {
@@ -85,10 +85,10 @@ export const Route = createFileRoute("/dau-truong_/leo-thap")({
   }),
 });
 
-/** Khoá lưu ca trực đang dở để F5 hoặc khoá máy không mất bài. */
+/** Khoá lưu buổi tu luyện đang dở để F5 hoặc khoá máy không mất bài. */
 const RESUME_KEY = "vatm:tower:resume";
 
-/** Ghi nhớ các bộ đề đã chọn cho ca trực sau. */
+/** Ghi nhớ các bộ đề đã chọn cho buổi tu luyện sau. */
 const PACKS_KEY = "vatm:tower:packs";
 
 type Resume = {
@@ -196,7 +196,7 @@ function TowerPage() {
       setIdx(resume.idx);
       setAnswers(resume.answers);
       deadlineRef.current = resume.deadline;
-      toast.message("Đã khôi phục ca trực đang dở của bạn.");
+      toast.message("Đã khôi phục buổi tu luyện đang dở của bạn.");
     }
   }, []);
 
@@ -228,7 +228,7 @@ function TowerPage() {
     return () => cancelAnimationFrame(raf);
   }, [playing]);
 
-  // Lưu ca trực đang dở sau mỗi thay đổi để F5 không mất bài.
+  // Lưu buổi tu luyện đang dở sau mỗi thay đổi để F5 không mất bài.
   useEffect(() => {
     if (!run || summary || outcome) {
       window.sessionStorage.removeItem(RESUME_KEY);
@@ -392,7 +392,7 @@ function TowerPage() {
     const current = packs.length ? packs : quizList.map((q) => q.id);
     const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
     if (!next.length) {
-      toast.error("Giữ ít nhất một bộ đề để vào ca trực.");
+      toast.error("Giữ ít nhất một bộ đề để vào buổi tu luyện.");
       return;
     }
     savePacks(next);
@@ -451,7 +451,7 @@ function TowerPage() {
       <PageHero
         icon={Castle}
         title="Tháp Không Lưu (TWR ATC)"
-        description="Ôn nghiệp vụ điều hành bay — mỗi ca trực 5 tầng, mỗi tầng 5 câu."
+        description="Ôn nghiệp vụ điều hành bay — mỗi buổi tu luyện 5 tầng, mỗi tầng 5 câu."
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -479,7 +479,7 @@ function TowerPage() {
       {!entry && (
         <section className="mx-auto w-full max-w-md space-y-4 rounded-2xl border bg-card/70 p-6">
           <div className="text-center">
-            <p className="font-heading text-lg font-extrabold">Vào ca trực</p>
+            <p className="font-heading text-lg font-extrabold">Vào tháp tu luyện</p>
             <p className="type-meta mt-1">
               Nhập đúng thông tin đã đăng ký — không cần vào phòng thi trước.
             </p>
@@ -505,12 +505,12 @@ function TowerPage() {
       {entry && !run && (
         <section className="rounded-2xl border bg-card/70 p-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Xin chào <strong>{entry.name}</strong>. Mỗi ca trực khoảng 12–15 phút, không tính vào kết quả kỳ thi.
+            Xin chào <strong>{entry.name}</strong>. Mỗi buổi tu luyện khoảng 12–15 phút, không tính vào kết quả kỳ thi.
           </p>
           <p className="type-meta mt-1">
             {loading
               ? "Đang chuẩn bị gói nghiệp vụ cho bạn…"
-              : `${dueCount} thẻ đang đến hạn ôn · ${scopedCount} câu sẽ dùng cho ca trực`}
+              : `${dueCount} thẻ đang đến hạn ôn · ${scopedCount} câu sẽ dùng cho buổi tu luyện`}
           </p>
           {!loading && !bank?.questions.length && (
             <p className="type-meta mt-1 text-amber-600">
@@ -521,7 +521,7 @@ function TowerPage() {
           {quizList.length > 1 && (
             <div className="mt-5 rounded-xl border bg-background/60 p-4 text-left">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold">Chọn bộ đề cho ca trực (có thể chọn nhiều)</p>
+                <p className="text-sm font-semibold">Chọn bộ đề cho buổi tu luyện (có thể chọn nhiều)</p>
                 <button
                   type="button"
                   onClick={() => savePacks([])}
@@ -561,7 +561,7 @@ function TowerPage() {
 
           <Button className="mt-4" disabled={loading || !bank?.questions.length} onClick={begin}>
             {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Castle className="mr-2 size-4" />}
-            Vào ca trực
+            Vào tháp tu luyện
           </Button>
         </section>
       )}
@@ -584,7 +584,7 @@ function TowerPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={begin}>
-              <RefreshCw className="mr-2 size-4" /> Vào ca trực mới
+              <RefreshCw className="mr-2 size-4" /> Vào tháp tu luyện mới
             </Button>
             <Button asChild variant="outline">
               <Link to="/dau-truong">Nghỉ một chút</Link>
