@@ -135,3 +135,10 @@ export function suggestSeeds(base: string, count = 12) {
   return Array.from({ length: count }, (_, i) => (i === 0 ? clean : `${clean}-${i}`));
 }
 
+
+/** Nhãn hiển thị cho một biến thể (variant03 → "Kiểu 3", tên tiếng Anh → viết hoa đầu câu). */
+export function optionValueLabel(value: string) {
+  const m = /^variant(\d+)$/.exec(value);
+  if (m) return `Kiểu ${Number(m[1])}`;
+  return value.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+}
