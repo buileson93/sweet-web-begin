@@ -194,20 +194,51 @@ export function useDuelChannel({ duelId, token, enabled = true }: Options) {
     });
   }, []);
 
+  /**
+   * Áp thẳng ảnh chụp trạng thái đi kèm broadcast — KHÔNG tốn thêm vòng HTTP.
+   * Chỉ nhận khi phiên bản mới hơn; hụt phiên bản thì mới hỏi lại máy chủ.
+   */
+  const applySnapshot = useCallback(
+    (incoming: DuelState) => {
+      const verdict = classifyVersion(versionRef.current, incoming.version);
+      if (verdict !== "apply") return true;
+      versionRef.current = incoming.version;
+      predictedOn.current = null;
+      const at = eventAtRef.current;
+      eventAtRef.current = null;
+      setState((prev) => ({ ...incoming, you: prev?.you ?? incoming.you }));
+      setConnectionStatus(liveRef.current ? "live" : "retrying");
+      if (at !== null) setStats((s) => ({ ...s, eventLag: Date.now() - at }));
+      return true;
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!enabled) return;
     void refresh(true);
 
     let retryTimer = 0;
     const channel = supabase
-      .channel(`duel:${duelId}`, { config: { broadcast: { self: true } } })
-      .on("broadcast", { event: "*" }, () => scheduleRefresh(false, true))
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "duels", filter: `id=eq.${duelId}` },
-        () => scheduleRefresh(false, true),
-      )
+      // `self: false`: người gửi không tự kích hoạt thêm một lần đồng bộ nữa.
+      .channel(`duel:${duelId}`, { config: { broadcast: { self: false } } })
+      .on("broadcast", { event: "*" }, (msg) => {
+        if (eventAtRef.current === null) eventAtRef.current = Date.now();
+        const payload = (msg as { payload?: unknown }).payload;
+        // Máy chủ gửi kèm nguyên trạng thái -> vẽ ngay, khỏi gọi lại máy chủ.
+        if (
+          (msg as { event?: string }).event === "state.sync" &&
+          payload &&
+          typeof payload === "object" &&
+          typeof (payload as DuelState).version === "number"
+        ) {
+          applySnapshot(payload as DuelState);
+          return;
+        }
+        scheduleRefresh(false, true);
+      })
       .subscribe((status) => {
+
         const connected = status === "SUBSCRIBED";
         liveRef.current = connected;
         setLive(connected);
