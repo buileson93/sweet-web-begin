@@ -235,6 +235,10 @@ function ArenaStatsPage() {
         </ul>
       </section>
 
+      <SkillMapPanel />
+
+
+
       <div className="text-center">
         <Button variant="outline" onClick={() => void navigate({ to: "/dau-truong" })}>
           <Swords className="mr-2 size-4" /> Về đấu trường
