@@ -309,13 +309,16 @@ function ArenaLobby() {
             </Button>
           </div>
         </div>
-      </PageContainer>
+      </div>
+      </AppShell>
     );
 
   const profile = home?.profile;
   return (
-    <PageContainer className="space-y-6 py-6">
+    <AppShell>
+    <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6">
       <PageHero
+
         title={
           <span className="inline-flex flex-wrap items-center gap-2">
             Đấu trường <BetaBadge />
