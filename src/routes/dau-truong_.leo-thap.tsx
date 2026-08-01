@@ -172,6 +172,12 @@ function clearResume() {
 }
 
 
+/** Chuyển màn thì đưa người chơi lên đầu nội dung, không bắt cuộn tay. */
+function toTop() {
+  if (typeof window === "undefined") return;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 /** Thanh trạng thái hành trình: máu, xu, di vật, lời nguyền — dính đầu màn hình trên điện thoại. */
 function RunBar({ run }: { run: TowerRun }) {
   return (
