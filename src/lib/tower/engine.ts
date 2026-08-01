@@ -12,7 +12,7 @@ import { QUESTIONS_PER_RUN, SECONDS_PER_QUESTION, START_HP } from "@/lib/tower/c
 import { curseTotals, offerCurse } from "@/lib/tower/curses";
 import { gradeLocal } from "@/lib/tower/grade.local";
 import { FLOORS, isBossFloor, type MapNode, mapFor, reachableAt, type Room, type RoomKind } from "@/lib/tower/map";
-import { comboRewardAt, ROOM_RULES, wrongDamage, type ComboReward } from "@/lib/tower/rooms";
+import { comboRewardAt, ROOM_RULES, roomLossCap, wrongDamage, type ComboReward } from "@/lib/tower/rooms";
 import { ascensionMods, relicPoolIds } from "@/lib/tower/meta";
 import { offerRelics, RELICS, relicTotals, type Relic } from "@/lib/tower/relics";
 import { branch, seededRandom, towerDamage } from "@/lib/tower/rng";
@@ -474,7 +474,10 @@ export function gradeStage(
       if (blocks > 0) {
         blocks--; // Khiên băng chặn đứng một đòn mỗi tầng.
       } else {
-        const incoming = wrongDamage(kind, mods.damageTakenPct, mods.damageReducePct);
+        const raw = wrongDamage(kind, mods.damageTakenPct, mods.damageReducePct);
+        // Trần thiệt hại mỗi phòng: sai cả phòng vẫn còn cửa đi tiếp.
+        const room = roomLossCap(kind, run.maxHp);
+        const incoming = Math.max(0, Math.min(raw, room - hpLost));
         const absorbed = Math.min(shield, incoming);
         shield -= absorbed;
         hp -= incoming - absorbed;
@@ -482,6 +485,7 @@ export function gradeStage(
         if (mods.relics.reflectPct > 0) damage += Math.round(incoming * mods.relics.reflectPct);
       }
     }
+
     return {
       questionId: q.id,
       correct,

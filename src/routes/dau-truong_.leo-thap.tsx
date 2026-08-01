@@ -11,6 +11,7 @@ import {
   Flame,
   Heart,
   Loader2,
+  Map as MapIcon,
   RefreshCw,
   Shield,
   Sparkles,
@@ -141,20 +142,41 @@ type Resume = {
   idx: number;
   answers: Record<string, AnswerValue>;
   deadline: number;
+  savedAt?: number;
 };
+
+/** Tiến trình còn hiệu lực trong 24 giờ — đóng tab hay hết pin vẫn quay lại được. */
+const RESUME_TTL_MS = 24 * 60 * 60 * 1000;
 
 function readResume(): Resume | null {
   try {
-    const raw = window.sessionStorage.getItem(RESUME_KEY);
+    const raw = window.localStorage.getItem(RESUME_KEY) ?? window.sessionStorage.getItem(RESUME_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Resume;
     if (!parsed?.run?.questions?.length || parsed.run.finished) return null;
+    if (parsed.savedAt && Date.now() - parsed.savedAt > RESUME_TTL_MS) return null;
     // Hành trình lưu từ bản cũ (bản đồ chưa có đồ thị) thì bỏ, tránh lỗi khi đọc lối đi.
     if (!Array.isArray(parsed.run.trail) || !Array.isArray(parsed.run.map?.[0]?.[0]?.next)) return null;
     return parsed;
   } catch {
     return null;
   }
+}
+
+function clearResume() {
+  try {
+    window.localStorage.removeItem(RESUME_KEY);
+    window.sessionStorage.removeItem(RESUME_KEY);
+  } catch {
+    /* không xoá được thì lần sau đọc vẫn có TTL chặn */
+  }
+}
+
+
+/** Chuyển màn thì đưa người chơi lên đầu nội dung, không bắt cuộn tay. */
+function toTop() {
+  if (typeof window === "undefined") return;
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 /** Thanh trạng thái hành trình: máu, xu, di vật, lời nguyền — dính đầu màn hình trên điện thoại. */
@@ -220,6 +242,9 @@ function TowerPage() {
   const [challengeValue, setChallengeValue] = useState<AnswerValue | undefined>(undefined);
   const [confirmClose, setConfirmClose] = useState(false);
   const [lowTime, setLowTime] = useState(false);
+  /** Khi đang ở trong phòng, bản đồ được thu lại; người chơi mở xem khi cần. */
+  const [mapOpen, setMapOpen] = useState(false);
+
   const [meta, setMeta] = useState<Meta>(EMPTY_META);
   const [daily, setDaily] = useState(false);
   const [board, setBoard] = useState<Board>("tu-do");
@@ -258,12 +283,18 @@ function TowerPage() {
       setRun(resume.run);
       setIdx(resume.idx);
       setAnswers(resume.answers);
-      deadlineRef.current = resume.deadline;
-      toast.message("Đã khôi phục hành trình đang dở của bạn.");
+      // Đồng hồ cũ đã hết hạn thì cấp lại trọn thời gian phòng, tránh nộp ngay khi vừa mở lại.
+      const fresh = resume.run.room && resume.run.room.questions > 0;
+      deadlineRef.current =
+        resume.deadline > Date.now() ? resume.deadline : fresh ? Date.now() + roomSeconds(resume.run) * 1000 : 0;
+      toast.message(
+        `Đã khôi phục hành trình: tầng ${Math.min(resume.run.floor, FLOORS)}/${FLOORS} · ${resume.run.hp}/${resume.run.maxHp} máu · ${resume.run.relics.length} di vật.`,
+      );
     }
   }, []);
 
   const inCombat = Boolean(run && !summary && !outcome && run.room && run.room.questions > 0);
+
 
   // Đồng hồ: chỉ chạy vòng rAF khi thật sự đang làm bài, ghi thẳng vào DOM.
   useEffect(() => {
@@ -291,18 +322,20 @@ function TowerPage() {
     return () => cancelAnimationFrame(raf);
   }, [inCombat]);
 
+  // Lưu tiến trình (tầng, phòng đã qua, máu, di vật, chuỗi combo) để quay lại không mất trạng thái.
   useEffect(() => {
     if (!run || summary) {
-      window.sessionStorage.removeItem(RESUME_KEY);
+      clearResume();
       return;
     }
-    const payload: Resume = { run, idx, answers, deadline: deadlineRef.current };
+    const payload: Resume = { run, idx, answers, deadline: deadlineRef.current, savedAt: Date.now() };
     try {
-      window.sessionStorage.setItem(RESUME_KEY, JSON.stringify(payload));
+      window.localStorage.setItem(RESUME_KEY, JSON.stringify(payload));
     } catch {
       /* bộ nhớ đầy thì bỏ qua, không chặn người chơi */
     }
   }, [run, idx, answers, summary]);
+
 
   useEffect(() => {
     try {
@@ -575,7 +608,9 @@ function TowerPage() {
     setAnswers({});
     setNote("");
     setChallengeValue(undefined);
+    setMapOpen(false);
     deadlineRef.current = next.room && next.room.questions > 0 ? Date.now() + roomSeconds(next) * 1000 : 0;
+    toTop();
   }
 
   /** Rời màn rút kinh nghiệm: nhận di vật đã chọn rồi lên tầng tiếp theo. */
@@ -585,6 +620,7 @@ function TowerPage() {
     setRun(next);
     setOutcome(null);
     setPickedRelic(undefined);
+    toTop();
     if (next.finished) finishRun(next);
   }
 
@@ -606,6 +642,9 @@ function TowerPage() {
   // Phòng không giao tranh chỉ mở nội dung sau khi trả lời câu thử thách kiến thức.
   const challengeQ = run && run.room && run.challenge && !run.challenge.done ? challengeQuestion(run) : null;
   const nonCombat = run?.room && run.room.questions === 0 && run.challenge?.done ? run.room.kind : null;
+  /** Đang ở trong một phòng: che bản đồ để người chơi chỉ thấy nội dung cần xử lý. */
+  const inRoom = Boolean(run && !summary && !outcome && run.room);
+
 
   function submitChallenge() {
     if (!run) return;
@@ -884,9 +923,24 @@ function TowerPage() {
 
       {run && !summary && <RunBar run={run} />}
 
+      {/* Đang trong phòng: bản đồ thu lại thành một nút, tránh phải cuộn để chơi. */}
+      {run && !summary && inRoom && (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            aria-expanded={mapOpen}
+            aria-controls="tower-map-panel"
+            onClick={() => setMapOpen((v) => !v)}
+          >
+            <MapIcon className="mr-1.5 size-4" /> {mapOpen ? "Ẩn bản đồ" : "Xem bản đồ"}
+          </Button>
+        </div>
+      )}
+
       {/* Bản đồ phân nhánh: xem toàn cảnh 12 tầng và chọn phòng cho tầng hiện tại. */}
-      {run && !summary && (
-        <section className="space-y-3 rounded-2xl border bg-card/70 p-4 sm:p-5">
+      {run && !summary && (showPicker || mapOpen) && (
+        <section id="tower-map-panel" className="space-y-3 rounded-2xl border bg-card/70 p-4 sm:p-5">
           <SectionHeading
             title={showPicker ? `Tầng ${run.floor} — chọn đường đi` : `Bản đồ hành trình · tầng ${Math.min(run.floor, FLOORS)}/${FLOORS}`}
           />
@@ -912,14 +966,14 @@ function TowerPage() {
                       "group relative min-h-20 touch-manipulation overflow-hidden rounded-2xl border p-3 text-left",
                       "animate-fade-in bg-gradient-to-br from-primary/10 to-transparent",
                       "transition-transform duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-lg active:scale-[0.98]",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     )}
                   >
                     <span
                       aria-hidden
                       className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-primary/10 blur-xl transition-opacity duration-300 group-hover:opacity-100 sm:opacity-0"
                     />
-                    <div className="relative text-2xl transition-transform duration-200 group-hover:scale-110">
+                    <div aria-hidden className="relative text-2xl transition-transform duration-200 group-hover:scale-110">
                       {meta.icon}
                     </div>
                     <div className={cn("relative mt-1 text-sm font-semibold", meta.tone)}>
@@ -931,9 +985,9 @@ function TowerPage() {
               })}
             </div>
           ) : null}
-
         </section>
       )}
+
 
 
       {/* Câu thử thách kiến thức của phòng sự kiện / cửa hàng / lửa trại */}
@@ -999,7 +1053,7 @@ function TowerPage() {
                         toast.message(res.message);
                         if (res.run.finished) finishRun(res.run);
                       }}
-                      className="rounded-xl border p-3 text-left text-sm transition hover:border-primary"
+                      className="rounded-xl border p-3 text-left text-sm transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <div className="font-semibold">{c.label}</div>
                       <div className="type-meta">{c.hint}</div>
@@ -1027,7 +1081,7 @@ function TowerPage() {
                   setRun(res.run);
                   toast.message(res.message);
                 }}
-                className="rounded-xl border p-3 text-left text-sm transition hover:border-primary"
+                className="rounded-xl border p-3 text-left text-sm transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <div className="font-semibold">
                   {r.icon} {r.name}
@@ -1077,7 +1131,7 @@ function TowerPage() {
 
       {/* Rút kinh nghiệm + ban phước + lời nguyền */}
       {run && outcome && (
-        <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
+        <section className="space-y-4 rounded-2xl border bg-card/70 p-6" aria-live="polite" aria-label="Kết quả phòng vừa qua">
           <SectionHeading title="Góc rút kinh nghiệm" />
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive">
@@ -1155,27 +1209,37 @@ function TowerPage() {
 
       {/* Phòng giao tranh / tinh anh / trùm */}
       {run && !summary && !outcome && run.room && perRoom > 0 && question && (
-        <section className="space-y-4 rounded-2xl border bg-card/70 p-5">
+        <section
+          className="space-y-4 rounded-2xl border bg-card/70 p-5"
+          aria-label={`${boss ? boss.name : ROOM_META[run.room.kind].label} — câu ${idx + 1} trên ${perRoom}`}
+        >
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-              {ROOM_META[run.room.kind].icon} {boss ? boss.name : ROOM_META[run.room.kind].label} · câu {idx + 1}/{perRoom}
+              <span aria-hidden>{ROOM_META[run.room.kind].icon} </span>
+              {boss ? boss.name : ROOM_META[run.room.kind].label} · câu {idx + 1}/{perRoom}
             </span>
             {run.combo > 1 ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
-                <Flame className="size-3" /> Chuỗi {run.combo}
+              <span
+                aria-live="polite"
+                className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600"
+              >
+                <Flame className="size-3" aria-hidden /> Chuỗi {run.combo}
               </span>
             ) : null}
+            <span className="sr-only">Thời gian còn lại của phòng</span>
             <span
               ref={clockRef}
+              aria-live="off"
               className={cn("ml-auto font-mono text-sm tabular-nums", lowTime && "font-bold text-destructive")}
             />
           </div>
           {boss && <p className="type-meta text-destructive">{boss.rule}</p>}
           <p className="type-meta">{ROOM_RULES[run.room.kind].rule}</p>
-          <ul className="flex flex-wrap gap-1.5">
+          <ul className="flex flex-wrap gap-1.5" aria-label="Mốc thưởng khi trả lời đúng liên tiếp">
             {COMBO_REWARDS.map((c) => (
               <li
                 key={c.at}
+                aria-current={run.combo >= c.at ? "true" : undefined}
                 className={cn(
                   "rounded-full border px-2 py-0.5 text-[11px] font-medium transition",
                   run.combo >= c.at
@@ -1187,7 +1251,12 @@ function TowerPage() {
               </li>
             ))}
           </ul>
-          {note && <p className="type-meta">{note}</p>}
+          {note && (
+            <p className="type-meta" aria-live="polite">
+              {note}
+            </p>
+          )}
+
 
           <div className="flex flex-wrap gap-1.5">
             {roomQs.map((_, i) => {
@@ -1201,7 +1270,7 @@ function TowerPage() {
                   aria-label={`Câu ${i + 1}${done ? " — đã trả lời" : " — chưa trả lời"}`}
                   aria-current={i === idx}
                   className={cn(
-                    "size-8 rounded-lg border text-xs font-semibold transition",
+                    "size-8 rounded-lg border text-xs font-semibold transition","focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     i === idx && "ring-2 ring-primary",
                     done ? "border-primary/40 bg-primary/10 text-primary" : "bg-background text-muted-foreground",
                   )}
