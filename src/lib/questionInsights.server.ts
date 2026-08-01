@@ -1,5 +1,8 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { normalizeKey } from "@/lib/csv";
+import { realDifficultyOf, type RealDifficulty } from "@/lib/questionInsights";
+
+export { realDifficultyOf };
 
 export type DuplicateHit = {
   id: string;
@@ -17,7 +20,7 @@ export type QuestionStats = {
   /** Tỉ lệ đúng thực tế (0-100). */
   correctPercent: number;
   /** Độ khó suy ra từ dữ liệu thi thật. */
-  realDifficulty: "easy" | "medium" | "hard" | "unknown";
+  realDifficulty: RealDifficulty;
 };
 
 export type QuestionVersion = {
@@ -30,14 +33,6 @@ export type QuestionVersion = {
   difficulty: string;
   points: number;
 };
-
-/** Ngưỡng phân loại độ khó thực tế theo tỉ lệ trả lời đúng. */
-export function realDifficultyOf(attempts: number, correctPercent: number): QuestionStats["realDifficulty"] {
-  if (attempts < 5) return "unknown";
-  if (correctPercent >= 80) return "easy";
-  if (correctPercent >= 50) return "medium";
-  return "hard";
-}
 
 /** Tìm câu hỏi trùng nội dung trên TOÀN hệ thống (mọi cuộc thi), bỏ dấu và không phân biệt hoa thường. */
 export async function findGlobalDuplicates(input: {
