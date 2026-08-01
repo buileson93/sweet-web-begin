@@ -14,6 +14,7 @@ import {
   takeRelic,
 } from "@/lib/tower/engine";
 import { BOSS_FLOORS, buildMap, FLOORS } from "@/lib/tower/map";
+import { ROOM_RULES } from "@/lib/tower/rooms";
 import { relicTotals } from "@/lib/tower/relics";
 import { runScore } from "@/lib/tower/score";
 import { gradeLocal } from "@/lib/tower/grade.local";
@@ -214,7 +215,21 @@ describe("bản đồ phân nhánh 12 tầng", () => {
       expect(map[f - 1]!.map((r) => r.kind)).toEqual(["boss"]);
       expect(map[f - 2]!.some((r) => r.kind === "campfire")).toBe(true);
     }
-    for (const floor of map) expect(floor.some((r) => r.questions > 0)).toBe(true);
+    // Mọi phòng đều có trắc nghiệm: hoặc câu giao tranh, hoặc một câu thử thách.
+    for (const floor of map)
+      expect(floor.every((r) => r.questions + ROOM_RULES[r.kind].challenge > 0)).toBe(true);
+  });
+
+  it("mọi nút đều nối lên tầng trên và không có cạnh cắt nhau", () => {
+    const map = buildMap("graph-seed");
+    for (let f = 0; f < FLOORS - 1; f++) {
+      const row = map[f]!;
+      const upper = map[f + 1]!;
+      for (const node of row) expect(node.next.length).toBeGreaterThan(0);
+      const edges = row.flatMap((n) => n.next.map((i) => [n.col, upper[i]!.col] as const));
+      for (const [a, b] of edges)
+        for (const [c, d] of edges) expect((a < c && b > d) || (a > c && b < d)).toBe(false);
+    }
   });
 
   it("cùng hạt cho cùng bản đồ, khác hạt thì khác", () => {
@@ -222,6 +237,7 @@ describe("bản đồ phân nhánh 12 tầng", () => {
     expect(JSON.stringify(buildMap("a"))).not.toBe(JSON.stringify(buildMap("b")));
   });
 });
+
 
 describe("di vật, lời nguyền và điểm hành trình", () => {
   const bank: QuestionBank = {

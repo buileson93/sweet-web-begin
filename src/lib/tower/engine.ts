@@ -11,7 +11,8 @@ import { bossAt } from "@/lib/tower/bosses";
 import { QUESTIONS_PER_RUN, SECONDS_PER_QUESTION, START_HP } from "@/lib/tower/config";
 import { curseTotals, offerCurse } from "@/lib/tower/curses";
 import { gradeLocal } from "@/lib/tower/grade.local";
-import { buildMap, FLOORS, isBossFloor, mapFor, type Room, type RoomKind } from "@/lib/tower/map";
+import { FLOORS, isBossFloor, type MapNode, mapFor, reachableAt, type Room, type RoomKind } from "@/lib/tower/map";
+import { comboRewardAt, ROOM_RULES, wrongDamage, type ComboReward } from "@/lib/tower/rooms";
 import { ascensionMods, relicPoolIds } from "@/lib/tower/meta";
 import { offerRelics, RELICS, relicTotals, type Relic } from "@/lib/tower/relics";
 import { branch, seededRandom, towerDamage } from "@/lib/tower/rng";
@@ -30,9 +31,15 @@ export type TowerRun = {
   questions: BankQuestion[];
   cursor: number;
   floor: number;
-  map: Room[][];
+  map: MapNode[][];
   path: RoomKind[];
+  /** Chỉ số nút đã chọn ở từng tầng — dùng để giới hạn lối đi và tô đường đã qua. */
+  trail: number[];
+  /** Nút đang đứng ở tầng hiện tại (null khi chưa chọn). */
+  node: number | null;
   room: Room | null;
+  /** Câu thử thách của phòng không giao tranh: chỉ số câu + kết quả. */
+  challenge: { slot: number; done: boolean; correct: boolean } | null;
   /** Chỉ số câu hỏi của phòng đang chơi (trỏ vào `questions`). */
   slots: number[];
   hp: number;
@@ -90,6 +97,10 @@ export type StageOutcome = {
   }[];
   damage: number;
   softStop: boolean;
+  /** Máu đã mất trong phòng (sau mọi hệ số) — hiển thị cho người chơi thấy rõ. */
+  hpLost: number;
+  /** Các mốc chuỗi đúng đã đạt trong phòng. */
+  combos: ComboReward[];
 };
 
 const ROOM_LABEL: Record<RoomKind, string> = {
@@ -227,7 +238,10 @@ export function createRun(
     floor: 1,
     map: mapFor(seed),
     path: [],
+    trail: [],
+    node: null,
     room: null,
+    challenge: null,
     slots: [],
     hp: maxHp,
     maxHp,
@@ -259,38 +273,156 @@ export function createRun(
 
 /** Chọn phòng ở tầng hiện tại; phòng có câu hỏi thì phát đề luôn. */
 export function chooseRoom(run: TowerRun, index: number): TowerRun {
-  const options = run.map[run.floor - 1] ?? [];
-  const room = options[index] ?? options[0];
-  if (!room || run.finished) return run;
+  const choices = floorChoices(run);
+  const pick = choices[index] ?? choices[0];
+  if (!pick || run.finished) return run;
+  const room = pick.room;
 
   const mods = relicTotals(run.relics);
   const slots: number[] = [];
   let cursor = run.cursor;
-  for (let i = 0; i < room.questions; i++) {
+  const need = room.questions + ROOM_RULES[room.kind].challenge;
+  for (let i = 0; i < need; i++) {
     slots.push(cursor % run.questions.length);
     cursor++;
   }
+  const challenge =
+    ROOM_RULES[room.kind].challenge > 0 ? { slot: slots.length - 1, done: false, correct: false } : null;
+
   return {
     ...run,
     room,
     slots,
     cursor,
+    node: pick.index,
+    trail: [...(run.trail ?? []), pick.index],
     path: [...run.path, room.kind],
     blocksLeft: mods.blockPerFloor,
     offered: [],
     curseOffer: null,
+    challenge,
     log: logged(run, {
       floor: run.floor,
       kind: "room",
       label: `Tầng ${run.floor} — vào phòng ${ROOM_LABEL[room.kind]}`,
+      detail: ROOM_RULES[room.kind].rule,
       hp: run.hp,
     }),
   };
 }
 
+/** Câu thử thách kiến thức của phòng không giao tranh. */
+export function challengeQuestion(run: TowerRun): BankQuestion | null {
+  if (!run.challenge) return null;
+  const i = run.slots[run.challenge.slot];
+  return i === undefined ? null : (run.questions[i] ?? null);
+}
+
+/**
+ * Chấm câu thử thách của phòng sự kiện / cửa hàng / lửa trại.
+ * Sai ở phòng sự kiện mất máu theo LUẬT PHÒNG; hai phòng kia chỉ mất ưu đãi.
+ */
+export function resolveChallenge(
+  run: TowerRun,
+  value: AnswerValue,
+): { run: TowerRun; correct: boolean; message: string; result: StageOutcome["results"][number] | null } {
+  const q = challengeQuestion(run);
+  if (!run.room || !run.challenge || run.challenge.done || !q) {
+    return { run, correct: false, message: "", result: null };
+  }
+  const mods = runModifiers(run);
+  const fraction = gradeLocal(q, value);
+  const correct = fraction >= 1;
+  const kind = run.room.kind;
+
+  let hp = run.hp;
+  let shield = run.shield;
+  let coins = run.coins;
+  let combo = correct ? run.combo + 1 : 0;
+  let message = "";
+
+  if (correct) {
+    const reward = comboRewardAt(combo);
+    if (reward) {
+      hp = Math.min(run.maxHp, hp + (mods.noHeal ? 0 : (reward.hp ?? 0)));
+      shield += reward.shield ?? 0;
+      coins += reward.coins ?? 0;
+    }
+    if (kind === "event") {
+      coins += 40;
+      message = "Trả lời đúng — bạn nhận 40 xu và được chọn phương án tốt hơn.";
+    } else if (kind === "shop") {
+      message = "Mặc cả thành công — mọi món trong cửa hàng giảm 30%.";
+    } else {
+      message = "Ôn bài chuẩn — lửa trại hồi thêm 10% máu tối đa.";
+    }
+  } else {
+    const loss = wrongDamage(kind, mods.damageTakenPct, mods.damageReducePct);
+    if (loss > 0) {
+      const absorbed = Math.min(shield, loss);
+      shield -= absorbed;
+      hp = Math.max(0, hp - (loss - absorbed));
+    }
+    message =
+      kind === "event"
+        ? `Chưa đúng — bạn mất ${loss} máu và bỏ lỡ phần thưởng.`
+        : kind === "shop"
+          ? "Chưa đúng — cửa hàng giữ nguyên giá gốc."
+          : "Chưa đúng — lửa trại chỉ hồi mức cơ bản.";
+  }
+
+  const next: TowerRun = {
+    ...run,
+    hp,
+    shield,
+    coins,
+    combo,
+    answered: run.answered + 1,
+    correct: run.correct + (correct ? 1 : 0),
+    challenge: { ...run.challenge, done: true, correct },
+    log: logged(run, {
+      floor: run.floor,
+      kind: kind === "shop" ? "shop" : kind === "campfire" ? "campfire" : "event",
+      label: `Thử thách ${ROOM_LABEL[kind]} — ${correct ? "đúng" : "chưa đúng"}`,
+      detail: message,
+      hp,
+    }),
+  };
+
+  return {
+    run: hp <= 0 ? endRun(next) : next,
+    correct,
+    message,
+    result: {
+      questionId: q.id,
+      correct,
+      fraction,
+      answered: value !== undefined && value !== null && value !== "",
+      correctText: correctTextOfBank(q),
+      explanation: q.explanation,
+      tags: q.tags,
+    },
+  };
+}
+
+/** Khép lại hành trình khi gục ngã ngoài phòng giao tranh. */
+function endRun(run: TowerRun): TowerRun {
+  const next: TowerRun = { ...run, hp: 0, finished: true, win: false, room: null, slots: [], challenge: null };
+  next.log = logged(run, { floor: run.floor, kind: "end", label: "Hành trình khép lại", hp: 0 });
+  next.score = runScore({
+    floorsCleared: Math.max(0, next.floor - 1),
+    hp: 0,
+    relics: next.relics,
+    curses: next.curses,
+    ascension: next.ascension,
+  });
+  return next;
+}
+
 /** Câu hỏi của phòng đang chơi, theo đúng thứ tự phát đề. */
 export function roomQuestions(run: TowerRun): BankQuestion[] {
-  return run.slots.map((i) => run.questions[i]!).filter(Boolean);
+  const slots = run.challenge ? run.slots.slice(0, run.challenge.slot) : run.slots;
+  return slots.map((i) => run.questions[i]!).filter(Boolean);
 }
 
 /** Chấm phòng giao tranh / tinh anh / trùm ngay tại máy — 0 ms, không gọi máy chủ. */
@@ -309,6 +441,10 @@ export function gradeStage(
   let damage = 0;
   let correctCount = 0;
   let revived = run.revived;
+  let coins = 0;
+  let hpLost = 0;
+  const combos: ComboReward[] = [];
+  const kind = run.room?.kind ?? "combat";
 
   const results: StageOutcome["results"] = slice.map((q, i) => {
     const value = answers[String(i)];
@@ -323,17 +459,26 @@ export function gradeStage(
       hit += mods.relics.comboDamage * Math.max(0, combo - 1);
       if (q.difficulty === "hard") hit += mods.relics.hardBonus;
       if (mods.relics.lowHpRagePct > 0 && hp / run.maxHp < 0.3) hit = Math.round(hit * (1 + mods.relics.lowHpRagePct));
+      // Phần thưởng chuỗi đúng: mốc 3 · 5 · 7 · 10 (xem LUẬT PHÒNG trong rooms.ts).
+      const reward = comboRewardAt(combo);
+      if (reward) {
+        combos.push(reward);
+        if (reward.doubleDamage) hit *= 2;
+        if (reward.hp && !mods.noHeal) hp = Math.min(run.maxHp, hp + reward.hp);
+        if (reward.shield) shield += reward.shield;
+        if (reward.coins) coins += reward.coins;
+      }
       damage += hit;
     } else {
       combo = 0;
       if (blocks > 0) {
         blocks--; // Khiên băng chặn đứng một đòn mỗi tầng.
       } else {
-        const raw = 10 * (1 + mods.damageTakenPct) * Math.max(0.2, 1 - mods.damageReducePct);
-        const incoming = Math.max(1, Math.round(raw));
+        const incoming = wrongDamage(kind, mods.damageTakenPct, mods.damageReducePct);
         const absorbed = Math.min(shield, incoming);
         shield -= absorbed;
         hp -= incoming - absorbed;
+        hpLost += incoming - absorbed;
         if (mods.relics.reflectPct > 0) damage += Math.round(incoming * mods.relics.reflectPct);
       }
     }
@@ -373,10 +518,11 @@ export function gradeStage(
     revived,
     correct: run.correct + correctCount,
     answered: run.answered + results.filter((r) => r.answered).length,
-    coins: run.coins + coinGain,
+    coins: run.coins + coinGain + coins,
     floor: cleared ? nextFloor : run.floor,
     room: null,
     slots: [],
+    challenge: null,
     finished,
     win,
   };
@@ -406,7 +552,7 @@ export function gradeStage(
     ascension: next.ascension,
   });
 
-  return { run: next, outcome: { results, damage, softStop: !cleared } };
+  return { run: next, outcome: { results, damage, softStop: !cleared, hpLost, combos } };
 }
 
 /** Ban phước sau mỗi tầng thắng: rút 3 di vật theo trọng số hiếm, kèm cơ hội nhận lời nguyền. */
@@ -491,10 +637,11 @@ export function restAtCampfire(run: TowerRun, choice: "heal" | "upgrade"): Tower
   const mods = runModifiers(run);
   const asc = ascensionMods(run.ascension);
   let next = { ...run };
+  const bonusPct = run.challenge?.correct ? 0.1 : 0; // Trả lời đúng câu ôn bài thì hồi thêm 10% máu tối đa.
   if (choice === "heal" && !mods.noHeal) {
-    next.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * asc.campfireHealPct));
+    next.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * (asc.campfireHealPct + bonusPct)));
   } else {
-    next.shield = run.shield + 15;
+    next.shield = run.shield + 15 + (run.challenge?.correct ? 5 : 0);
   }
   next.log = logged(run, {
     floor: run.floor,
@@ -556,7 +703,8 @@ export function eventAt(run: TowerRun): TowerEvent {
 export function resolveEvent(run: TowerRun, choiceId: string): { run: TowerRun; message: string } {
   const ev = eventAt(run);
   const rand = branch(run.seed, `event-roll-${run.floor}`);
-  const lucky = rand() < 0.5;
+  // Trả lời đúng câu thử thách sự kiện thì mọi lựa chọn rủi ro đều thành công.
+  const lucky = run.challenge?.correct ? true : rand() < 0.5;
   let next = { ...run };
   let message = "Bạn đi tiếp, không có gì xảy ra.";
 
@@ -592,7 +740,8 @@ export function resolveEvent(run: TowerRun, choiceId: string): { run: TowerRun; 
 export function shopStock(run: TowerRun): { relics: Relic[]; healCost: number; cleanseCost: number } {
   const asc = ascensionMods(run.ascension);
   const rand = branch(run.seed, `shop-${run.floor}`);
-  const scale = 1 + asc.shopCostPct;
+  // Mặc cả thành công (đúng câu thử thách cửa hàng) thì giảm 30% mọi giá.
+  const scale = (1 + asc.shopCostPct) * (run.challenge?.correct ? 0.7 : 1);
   return {
     relics: offerRelics(rand, run.relics, "thuong", 2),
     healCost: Math.round(60 * scale),
@@ -606,7 +755,9 @@ export function buyAtShop(
 ): { run: TowerRun; message: string } {
   const stock = shopStock(run);
   const mods = runModifiers(run);
-  const price = (rarity: string) => (rarity === "huyenthoai" ? 400 : rarity === "suthi" ? 260 : rarity === "hiem" ? 170 : 100);
+  const discount = run.challenge?.correct ? 0.7 : 1;
+  const price = (rarity: string) =>
+    Math.round((rarity === "huyenthoai" ? 400 : rarity === "suthi" ? 260 : rarity === "hiem" ? 170 : 100) * discount);
 
   if (action.kind === "relic") {
     const relic = stock.relics.find((r) => r.id === action.relicId);
@@ -653,6 +804,7 @@ function advanceNonCombat(run: TowerRun): TowerRun {
     floor: nextFloor,
     room: null,
     slots: [],
+    challenge: null,
     finished,
     win: finished,
   };
@@ -666,9 +818,18 @@ function advanceNonCombat(run: TowerRun): TowerRun {
   return next;
 }
 
+/** Các nút có thể đi tới ở tầng hiện tại (đã lọc theo lối đi của bản đồ phân nhánh). */
+export function floorChoices(run: TowerRun): { index: number; room: MapNode }[] {
+  const row = run.map[run.floor - 1] ?? [];
+  const from = run.floor <= 1 ? null : ((run.trail ?? [])[run.floor - 2] ?? null);
+  return reachableAt(run.map, run.floor, from)
+    .map((index) => ({ index, room: row[index]! }))
+    .filter((x) => Boolean(x.room));
+}
+
 /** Danh sách phòng để chọn ở tầng hiện tại. */
 export function floorOptions(run: TowerRun): Room[] {
-  return run.map[run.floor - 1] ?? [];
+  return floorChoices(run).map((c) => c.room);
 }
 
 export const floorIsBoss = (run: TowerRun) => isBossFloor(run.floor);

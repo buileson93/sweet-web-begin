@@ -2,15 +2,12 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Crown, Flame, HelpCircle, Skull, Store, Swords, type LucideIcon } from "lucide-react";
 
 import { bossAt } from "@/lib/tower/bosses";
-import { FLOORS, ROOM_META, type Room, type RoomKind } from "@/lib/tower/map";
+import { COLS, FLOORS, type MapNode, reachableAt, ROOM_META, type RoomKind } from "@/lib/tower/map";
+import { ROOM_RULES } from "@/lib/tower/rooms";
 import { cn } from "@/lib/utils";
 
-/** Toạ độ ngang (%) của các nút theo số phòng của tầng. */
-function columnsFor(count: number): number[] {
-  if (count <= 1) return [50];
-  if (count === 2) return [26, 74];
-  return [16, 50, 84];
-}
+/** Toạ độ ngang (%) của một cột trên lưới. */
+const xOf = (col: number) => 10 + (col * 80) / (COLS - 1);
 
 const NODE_ICON: Record<RoomKind, LucideIcon> = {
   combat: Swords,
@@ -33,84 +30,71 @@ const NODE_TONE: Record<RoomKind, { ring: string; glow: string; fill: string }> 
 const LEGEND: RoomKind[] = ["combat", "elite", "event", "shop", "campfire", "boss"];
 
 type Props = {
-  map: Room[][];
+  map: MapNode[][];
   /** Tầng đang đứng, đánh số từ 1. */
   floor: number;
-  /** Loại phòng đã đi qua ở từng tầng trước đó. */
-  path: RoomKind[];
+  /** Chỉ số nút đã chọn ở từng tầng đã đi qua. */
+  trail: number[];
   /** Có đang cho chọn phòng ở tầng hiện tại hay không. */
   canPick: boolean;
-  onPick?: (index: number) => void;
+  /** Nhận chỉ số nút (theo mảng của tầng), không phải thứ tự trong danh sách chọn. */
+  onPick?: (nodeIndex: number) => void;
   /** Chế độ xem trước trước khi vào tháp: không tô tầng hiện tại. */
   preview?: boolean;
   className?: string;
 };
 
 /**
- * Bản đồ leo tháp kiểu roguelike: 12 tầng xếp từ dưới lên, mỗi tầng là các nút
- * phòng nối nhau bằng đường dẫn cong có hiệu ứng chạy. Tầng đã qua mờ đi và
- * ghim đường đã chọn, tầng hiện tại phát sáng và bấm được, tầng phía trên hé lộ dần.
+ * Bản đồ roguelike phân nhánh: 12 tầng xếp từ dưới lên trên một lưới cột cố định,
+ * các nút nối nhau bằng đường cong sinh từ chính đồ thị (không có đường "trang trí").
  *
- * Thao tác: chạm/di chuột vào nút để xem mô tả ở khung dưới bản đồ; bàn phím dùng
- * mũi tên Trái/Phải để đổi phòng, Enter hoặc Space để vào phòng.
+ * Chỉ những nút nối tới từ nút đang đứng mới bấm được — đúng luật lối đi của
+ * Slay the Spire. Nút đã đi qua sáng và có dấu ✓, nút bỏ lỡ mờ xám.
  *
- * Hiệu năng: dữ liệu tầng được ghi nhớ theo bản đồ, mỗi tầng bật `content-visibility`
- * nên phần ngoài màn hình không tốn thời gian dựng hình khi đổi tầng.
+ * Thao tác: chạm/di chuột để xem mô tả ở khung dưới; bàn phím ← → chọn, Enter để vào.
  */
-function TowerMapBase({ map, floor, path, canPick, onPick, preview = false, className }: Props) {
-  const rows = useMemo(
-    () =>
-      map.slice(0, FLOORS).map((rooms, fi) => ({
-        f: fi + 1,
-        rooms,
-        cols: columnsFor(rooms.length),
-        upperCols: map[fi + 1] ? columnsFor(map[fi + 1]!.length) : [],
-      })),
-    [map],
+function TowerMapBase({ map, floor, trail, canPick, onPick, preview = false, className }: Props) {
+  const rows = useMemo(() => map.slice(0, FLOORS).map((nodes, fi) => ({ f: fi + 1, nodes })), [map]);
+  const from = floor <= 1 ? null : (trail[floor - 2] ?? null);
+  const reachable = useMemo(
+    () => (canPick ? reachableAt(map, floor, from) : []),
+    [canPick, map, floor, from],
   );
 
-  const current = map[floor - 1] ?? [];
   const [cursor, setCursor] = useState(0);
   const [hint, setHint] = useState<{ floor: number; index: number } | null>(null);
-  const nodeRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const nodeRefs = useRef<Record<number, HTMLButtonElement | null>>({});
 
   useEffect(() => {
     setCursor(0);
     setHint(null);
   }, [floor, canPick]);
 
-  const focusNode = useCallback((i: number) => {
-    nodeRefs.current[i]?.focus();
+  const focusNode = useCallback((nodeIndex: number | undefined) => {
+    if (nodeIndex === undefined) return;
+    nodeRefs.current[nodeIndex]?.focus();
   }, []);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (!canPick || current.length < 1) return;
-      const last = current.length - 1;
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      if (!canPick || !reachable.length) return;
+      const last = reachable.length - 1;
+      const move = (to: number) => {
         e.preventDefault();
-        const next = Math.min(last, cursor + 1);
-        setCursor(next);
-        focusNode(next);
-      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        setCursor(to);
+        focusNode(reachable[to]);
+      };
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") move(Math.min(last, cursor + 1));
+      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") move(Math.max(0, cursor - 1));
+      else if (e.key === "Home") move(0);
+      else if (e.key === "End") move(last);
+      else if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        const next = Math.max(0, cursor - 1);
-        setCursor(next);
-        focusNode(next);
-      } else if (e.key === "Home") {
-        e.preventDefault();
-        setCursor(0);
-        focusNode(0);
-      } else if (e.key === "End") {
-        e.preventDefault();
-        setCursor(last);
-        focusNode(last);
-      } else if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        onPick?.(cursor);
+        const target = reachable[cursor];
+        if (target !== undefined) onPick?.(target);
       }
     },
-    [canPick, cursor, current.length, focusNode, onPick],
+    [canPick, cursor, focusNode, onPick, reachable],
   );
 
   const hinted = hint ? map[hint.floor - 1]?.[hint.index] : undefined;
@@ -132,45 +116,47 @@ function TowerMapBase({ map, floor, path, canPick, onPick, preview = false, clas
         aria-label={canPick ? `Chọn phòng cho tầng ${floor}` : "Bản đồ tháp"}
         onKeyDown={onKeyDown}
       >
-        {rows.map(({ f, rooms, cols, upperCols }) => {
+        {rows.map(({ f, nodes }) => {
           const state = preview ? "future" : f < floor ? "past" : f === floor ? "current" : "future";
-          const takenKind = path[f - 1];
+          const takenIndex = trail[f - 1];
+          const upper = map[f] ?? [];
 
           return (
             <li key={f} className="tower-map__floor relative">
-              {/* Đường nối lên tầng trên: đường cong, tầng đã đi thì đậm và nét chạy */}
-              {upperCols.length ? (
+              {/* Đường nối lên tầng trên — vẽ đúng theo cạnh của đồ thị, không thêm đường ảo. */}
+              {upper.length ? (
                 <svg
                   aria-hidden
                   viewBox="0 0 100 100"
                   preserveAspectRatio="none"
                   className="pointer-events-none h-9 w-full sm:h-11"
                 >
-                  {cols.map((x, ci) =>
-                    upperCols
-                      .filter((ux) => Math.abs(ux - x) <= 40)
-                      .map((ux) => {
-                        const walked = state === "past" && takenKind === rooms[ci]?.kind;
-                        return (
-                          <path
-                            key={`${x}-${ux}`}
-                            d={`M ${x} 100 C ${x} 62, ${ux} 38, ${ux} 0`}
-                            fill="none"
-                            vectorEffect="non-scaling-stroke"
-                            strokeLinecap="round"
-                            strokeWidth={walked ? 2 : state === "current" ? 1.6 : 1.1}
-                            className={cn(
-                              walked
-                                ? "tower-link stroke-primary"
-                                : state === "current"
-                                  ? "tower-link stroke-primary/60"
-                                  : state === "past"
-                                    ? "stroke-primary/20 [stroke-dasharray:3_5]"
-                                    : "stroke-foreground/15 [stroke-dasharray:3_5]",
-                            )}
-                          />
-                        );
-                      }),
+                  {nodes.flatMap((node, ni) =>
+                    node.next.map((ui) => {
+                      const x = xOf(node.col);
+                      const ux = xOf(upper[ui]!.col);
+                      const walked = takenIndex === ni && trail[f] === ui;
+                      const onTrail = takenIndex === ni;
+                      return (
+                        <path
+                          key={`${ni}-${ui}`}
+                          d={`M ${x} 100 C ${x} 62, ${ux} 38, ${ux} 0`}
+                          fill="none"
+                          vectorEffect="non-scaling-stroke"
+                          strokeLinecap="round"
+                          strokeWidth={walked ? 2.2 : onTrail || state === "current" ? 1.6 : 1.1}
+                          className={cn(
+                            walked
+                              ? "tower-link stroke-primary"
+                              : state === "current" && onTrail
+                                ? "tower-link stroke-primary/70"
+                                : state === "past"
+                                  ? "stroke-primary/15 [stroke-dasharray:3_5]"
+                                  : "stroke-foreground/15 [stroke-dasharray:3_5]",
+                          )}
+                        />
+                      );
+                    }),
                   )}
                 </svg>
               ) : null}
@@ -185,49 +171,52 @@ function TowerMapBase({ map, floor, path, canPick, onPick, preview = false, clas
                   T{f}
                 </span>
                 <div className="relative flex-1">
-                  {rooms.map((room, i) => {
-                    const meta = ROOM_META[room.kind];
-                    const tone = NODE_TONE[room.kind];
-                    const boss = room.kind === "boss" ? bossAt(f) : undefined;
-                    const taken = state === "past" && takenKind === room.kind;
+                  {nodes.map((node, i) => {
+                    const meta = ROOM_META[node.kind];
+                    const tone = NODE_TONE[node.kind];
+                    const boss = node.kind === "boss" ? bossAt(f) : undefined;
+                    const taken = state === "past" && takenIndex === i;
                     const skipped = state === "past" && !taken;
-                    const active = state === "current" && canPick;
+                    const active = state === "current" && canPick && reachable.includes(i);
+                    const blocked = state === "current" && canPick && !active;
                     const label = boss ? boss.name : meta.label;
-                    const Icon = NODE_ICON[room.kind];
+                    const Icon = NODE_ICON[node.kind];
+                    const order = reachable.indexOf(i);
 
                     return (
                       <button
-                        key={`${room.kind}-${i}`}
+                        key={`${node.kind}-${node.col}-${i}`}
                         ref={(el) => {
-                          if (active) nodeRefs.current[i] = el;
+                          nodeRefs.current[i] = el;
                         }}
                         type="button"
                         disabled={!active}
-                        tabIndex={active ? (cursor === i ? 0 : -1) : -1}
+                        tabIndex={active ? (order === cursor ? 0 : -1) : -1}
                         role={active ? "option" : undefined}
-                        aria-selected={active ? cursor === i : undefined}
+                        aria-selected={active ? order === cursor : undefined}
                         onClick={() => onPick?.(i)}
                         onFocus={() => {
-                          if (active) setCursor(i);
+                          if (active) setCursor(Math.max(0, order));
                           setHint({ floor: f, index: i });
                         }}
                         onPointerEnter={() => setHint({ floor: f, index: i })}
                         onPointerDown={() => setHint({ floor: f, index: i })}
-                        title={`Tầng ${f} · ${label} — ${boss ? boss.rule : meta.desc}`}
-                        aria-label={`Tầng ${f}, ${label}${taken ? ", đã hoàn thành" : ""}`}
-                        style={{ left: `${cols[i]}%` }}
+                        title={`Tầng ${f} · ${label} — ${boss ? boss.rule : ROOM_RULES[node.kind].rule}`}
+                        aria-label={`Tầng ${f}, ${label}${taken ? ", đã hoàn thành" : ""}${blocked ? ", không nối tới lối đi hiện tại" : ""}`}
+                        style={{ left: `${xOf(node.col)}%` }}
                         className={cn(
                           "group absolute top-1/2 -translate-x-1/2 -translate-y-1/2 touch-manipulation",
-                          "grid size-11 place-items-center rounded-full border-2 backdrop-blur-[1px] transition-all duration-300 sm:size-12",
+                          "grid size-10 place-items-center rounded-full border-2 backdrop-blur-[1px] transition-all duration-300 sm:size-12",
                           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                           tone.ring,
                           tone.fill,
                           state === "future" && "opacity-45",
+                          blocked && "opacity-25 grayscale",
                           taken && cn("opacity-100 ring-2 ring-primary/70", tone.glow),
                           skipped && "opacity-20 grayscale",
-                          room.kind === "boss" && state !== "past" && cn(tone.glow, "tower-node__spark"),
+                          node.kind === "boss" && state !== "past" && cn(tone.glow, "tower-node__spark"),
                           active && cn("cursor-pointer hover:scale-115 active:scale-95", tone.glow),
-                          active && cursor === i && "scale-110 ring-2 ring-primary",
+                          active && order === cursor && "scale-110 ring-2 ring-primary",
                           !active && "cursor-default",
                         )}
                       >
@@ -255,7 +244,7 @@ function TowerMapBase({ map, floor, path, canPick, onPick, preview = false, clas
                     );
                   })}
                   {/* Giữ chiều cao hàng */}
-                  <div className="h-12 sm:h-13" />
+                  <div className="h-11 sm:h-13" />
                 </div>
               </div>
             </li>
@@ -273,13 +262,13 @@ function TowerMapBase({ map, floor, path, canPick, onPick, preview = false, clas
             <p className="text-sm font-semibold">
               Tầng {hint.floor} · {hintBoss ? hintBoss.name : ROOM_META[hinted.kind].label}
             </p>
-            <p className="type-meta">{hintBoss ? hintBoss.rule : ROOM_META[hinted.kind].desc}</p>
+            <p className="type-meta">{hintBoss ? hintBoss.rule : ROOM_RULES[hinted.kind].rule}</p>
           </>
         ) : (
           <p className="type-meta">
             {canPick
-              ? "Chạm vào một nút để xem mô tả, chạm lần nữa để vào phòng. Bàn phím: ← → chọn, Enter để vào."
-              : "Chạm vào nút bất kỳ để xem phòng đó làm gì. Nút mờ có dấu ✓ là chặng đã hoàn thành."}
+              ? "Chỉ vào được phòng nối với nút bạn đang đứng. Chạm để xem luật phòng, chạm lần nữa để vào. Bàn phím: ← → chọn, Enter để vào."
+              : "Chạm vào nút bất kỳ để xem luật của phòng đó. Nút mờ có dấu ✓ là chặng đã hoàn thành."}
           </p>
         )}
       </div>
@@ -298,7 +287,7 @@ function TowerMapBase({ map, floor, path, canPick, onPick, preview = false, clas
       </ul>
 
       <p className="type-meta relative mt-2 text-center text-foreground/60">
-        Tầng 4 · 8 · 12 là trùm — tầng ngay trước đó luôn có lửa trại để chuẩn bị.
+        Tầng 4 · 8 · 12 là trùm, mọi lối đi đều hội tụ; tầng ngay trước đó luôn là lửa trại để chuẩn bị.
       </p>
     </div>
   );

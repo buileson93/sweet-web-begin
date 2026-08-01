@@ -53,6 +53,7 @@ import { START_HP } from "@/lib/tower/config";
 import { bossAt } from "@/lib/tower/bosses";
 import { curseById } from "@/lib/tower/curses";
 import { FLOORS, mapFor, ROOM_META } from "@/lib/tower/map";
+import { COMBO_REWARDS, ROOM_RULES } from "@/lib/tower/rooms";
 import { ASCENSION_RULES, canBuy, UNLOCKS } from "@/lib/tower/meta";
 import { dailySeed } from "@/lib/tower/rng";
 import { BOARD_LABEL, runCoins, type Board } from "@/lib/tower/score";
@@ -60,10 +61,12 @@ import { vnDayKey } from "@/lib/arena/rules";
 import { RARITY_LABEL, relicById } from "@/lib/tower/relics";
 import {
   buyAtShop,
+  challengeQuestion,
   chooseRoom,
+  floorChoices,
+  resolveChallenge,
   createRun,
   eventAt,
-  floorOptions,
   gradeStage,
   leaveRoom,
   resolveEvent,
@@ -146,6 +149,8 @@ function readResume(): Resume | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Resume;
     if (!parsed?.run?.questions?.length || parsed.run.finished) return null;
+    // Hành trình lưu từ bản cũ (bản đồ chưa có đồ thị) thì bỏ, tránh lỗi khi đọc lối đi.
+    if (!Array.isArray(parsed.run.trail) || !Array.isArray(parsed.run.map?.[0]?.[0]?.next)) return null;
     return parsed;
   } catch {
     return null;
@@ -212,6 +217,7 @@ function TowerPage() {
   } | null>(
     null,
   );
+  const [challengeValue, setChallengeValue] = useState<AnswerValue | undefined>(undefined);
   const [confirmClose, setConfirmClose] = useState(false);
   const [lowTime, setLowTime] = useState(false);
   const [meta, setMeta] = useState<Meta>(EMPTY_META);
@@ -558,14 +564,17 @@ function TowerPage() {
     }
   }
 
-  /** Bước vào phòng đã chọn ở tầng hiện tại. */
-  function enterRoom(i: number) {
+  /** Bước vào phòng đã chọn ở tầng hiện tại (nhận chỉ số nút trên bản đồ). */
+  function enterRoom(nodeIndex: number) {
     if (!run) return;
-    const next = chooseRoom(run, i);
+    const at = floorChoices(run).findIndex((c) => c.index === nodeIndex);
+    if (at < 0) return;
+    const next = chooseRoom(run, at);
     setRun(next);
     setIdx(0);
     setAnswers({});
     setNote("");
+    setChallengeValue(undefined);
     deadlineRef.current = next.room && next.room.questions > 0 ? Date.now() + roomSeconds(next) * 1000 : 0;
   }
 
@@ -594,7 +603,23 @@ function TowerPage() {
 
   const boss = run?.room?.kind === "boss" ? bossAt(run.floor) : undefined;
   const showPicker = Boolean(run && !summary && !outcome && !run.room);
-  const nonCombat = run?.room && run.room.questions === 0 ? run.room.kind : null;
+  // Phòng không giao tranh chỉ mở nội dung sau khi trả lời câu thử thách kiến thức.
+  const challengeQ = run && run.room && run.challenge && !run.challenge.done ? challengeQuestion(run) : null;
+  const nonCombat = run?.room && run.room.questions === 0 && run.challenge?.done ? run.room.kind : null;
+
+  function submitChallenge() {
+    if (!run) return;
+    const res = resolveChallenge(run, challengeValue as AnswerValue);
+    setRun(res.run);
+    setChallengeValue(undefined);
+    if (res.result) {
+      const nextState = applyResults(stateRef.current, [res.result]);
+      setState(nextState);
+      void writeCachedState(nextState);
+    }
+    if (res.message) (res.correct ? toast.success : toast.warning)(res.message);
+    if (res.run.finished) finishRun(res.run);
+  }
 
   return (
     <ArenaPage>
@@ -782,7 +807,7 @@ function TowerPage() {
           {daily && (
             <div className="mt-3 text-left">
               <p className="mb-2 text-sm font-semibold">Bản đồ hôm nay — xem trước 12 tầng</p>
-              <TowerMap map={previewMap} floor={1} path={[]} canPick={false} preview />
+              <TowerMap map={previewMap} floor={1} trail={[]} canPick={false} preview />
             </div>
           )}
 
@@ -868,20 +893,20 @@ function TowerPage() {
           <TowerMap
             map={run.map}
             floor={run.floor}
-            path={run.path}
+            trail={run.trail}
             canPick={Boolean(showPicker)}
             onPick={(i) => enterRoom(i)}
           />
           {showPicker ? (
             <div className="grid gap-2 sm:grid-cols-3">
-              {floorOptions(run).map((room, i) => {
+              {floorChoices(run).map(({ index, room }, i) => {
                 const meta = ROOM_META[room.kind];
                 const bossHere = room.kind === "boss" ? bossAt(run.floor) : undefined;
                 return (
                   <button
-                    key={`${room.kind}-${i}`}
+                    key={`${room.kind}-${index}`}
                     type="button"
-                    onClick={() => enterRoom(i)}
+                    onClick={() => enterRoom(index)}
                     style={{ animationDelay: `${i * 90}ms` }}
                     className={cn(
                       "group relative min-h-20 touch-manipulation overflow-hidden rounded-2xl border p-3 text-left",
@@ -900,7 +925,7 @@ function TowerPage() {
                     <div className={cn("relative mt-1 text-sm font-semibold", meta.tone)}>
                       {bossHere ? bossHere.name : meta.label}
                     </div>
-                    <div className="type-meta relative mt-0.5">{bossHere ? bossHere.rule : meta.desc}</div>
+                    <div className="type-meta relative mt-0.5">{bossHere ? bossHere.rule : ROOM_RULES[room.kind].rule}</div>
                   </button>
                 );
               })}
@@ -910,6 +935,32 @@ function TowerPage() {
         </section>
       )}
 
+
+      {/* Câu thử thách kiến thức của phòng sự kiện / cửa hàng / lửa trại */}
+      {run && run.room && challengeQ && !summary && (
+        <section className="space-y-4 rounded-2xl border bg-card/70 p-5">
+          <SectionHeading
+            title={`${ROOM_META[run.room.kind].icon} Thử thách ${ROOM_META[run.room.kind].label}`}
+          />
+          <p className="type-meta">{ROOM_RULES[run.room.kind].rule}</p>
+          <div className="text-base font-medium">
+            <RichText>{challengeQ.question}</RichText>
+          </div>
+          <QuestionInput
+            kind={challengeQ.kind}
+            options={challengeQ.options}
+            optionImages={challengeQ.optionImages}
+            matchLeft={challengeQ.pairs.map((pp) => pp.left)}
+            value={challengeValue}
+            onChange={setChallengeValue}
+          />
+          <div className="flex justify-end">
+            <Button onClick={submitChallenge}>
+              Trả lời <ArrowRight className="ml-2 size-4" />
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* Lửa trại */}
       {run && nonCombat === "campfire" && !summary && (
@@ -1028,6 +1079,22 @@ function TowerPage() {
       {run && outcome && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
           <SectionHeading title="Góc rút kinh nghiệm" />
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive">
+              Mất {outcome.hpLost} máu
+            </span>
+            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+              Gây {outcome.damage} sát thương
+            </span>
+            {outcome.combos.map((c) => (
+              <span
+                key={c.at}
+                className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600"
+              >
+                {c.label}
+              </span>
+            ))}
+          </div>
           <ul className="space-y-2">
             {outcome.results.map((r, i) => (
               <li
@@ -1104,6 +1171,22 @@ function TowerPage() {
             />
           </div>
           {boss && <p className="type-meta text-destructive">{boss.rule}</p>}
+          <p className="type-meta">{ROOM_RULES[run.room.kind].rule}</p>
+          <ul className="flex flex-wrap gap-1.5">
+            {COMBO_REWARDS.map((c) => (
+              <li
+                key={c.at}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[11px] font-medium transition",
+                  run.combo >= c.at
+                    ? "border-amber-500/60 bg-amber-500/10 text-amber-600"
+                    : "border-border text-muted-foreground",
+                )}
+              >
+                {c.label}
+              </li>
+            ))}
+          </ul>
           {note && <p className="type-meta">{note}</p>}
 
           <div className="flex flex-wrap gap-1.5">
