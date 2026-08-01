@@ -333,6 +333,10 @@ function ExamPage() {
             onX2={() => void requestX2()}
             onFifty={() => void requestFifty()}
             onAnswer={(value) => void handleAnswer(current, value)}
+            onConfirm={() => {
+              const value = answers[String(current)];
+              if (value !== undefined) void handleAnswer(current, value, { confirm: true });
+            }}
             onPrev={() => setCurrent((c) => c - 1)}
             onNext={() => setCurrent((c) => Math.min(total - 1, c + 1))}
             onSubmit={() => setConfirmOpen(true)}
