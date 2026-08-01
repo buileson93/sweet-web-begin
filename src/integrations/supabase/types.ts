@@ -1685,6 +1685,7 @@ export type Database = {
         Args: { p_employee_id: string; p_items: Json }
         Returns: undefined
       }
+      verify_cron_secret: { Args: { p_secret: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user" | "staff" | "editor"

@@ -169,6 +169,7 @@ GRANT ALL ON public.players, public.duels, public.duel_players, public.duel_answ
 -- Danh mục huy hiệu là dữ liệu tĩnh, cho phép đọc để hiển thị.
 GRANT SELECT ON public.badges TO anon, authenticated;
 DROP POLICY IF EXISTS "badges_read" ON public.badges;
+DROP POLICY IF EXISTS "badges_read" ON public.badges;
 CREATE POLICY "badges_read" ON public.badges FOR SELECT TO anon, authenticated USING (true);
 
 -- ---------- Bảng xếp hạng công khai (ẩn danh tính nhạy cảm) ----------

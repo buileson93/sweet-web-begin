@@ -35,6 +35,7 @@ GRANT ALL ON public.question_stats TO service_role;
 ALTER TABLE public.question_stats ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "question_stats_read_staff" ON public.question_stats;
+DROP POLICY IF EXISTS "question_stats_read_staff" ON public.question_stats;
 CREATE POLICY "question_stats_read_staff" ON public.question_stats
   FOR SELECT TO authenticated
   USING (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'editor'));
@@ -82,6 +83,7 @@ GRANT SELECT ON public.question_versions TO authenticated;
 GRANT ALL ON public.question_versions TO service_role;
 ALTER TABLE public.question_versions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "question_versions_read_staff" ON public.question_versions;
 DROP POLICY IF EXISTS "question_versions_read_staff" ON public.question_versions;
 CREATE POLICY "question_versions_read_staff" ON public.question_versions
   FOR SELECT TO authenticated

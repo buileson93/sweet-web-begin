@@ -17,5 +17,6 @@ REVOKE ALL ON public.arena_settings FROM anon, authenticated;
 GRANT ALL ON public.arena_settings TO service_role;
 GRANT SELECT ON public.arena_settings TO authenticated;
 DROP POLICY IF EXISTS "arena_settings_admin_read" ON public.arena_settings;
+DROP POLICY IF EXISTS "arena_settings_admin_read" ON public.arena_settings;
 CREATE POLICY "arena_settings_admin_read" ON public.arena_settings
   FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'));

@@ -19,11 +19,13 @@ GRANT ALL ON public.quiz_assets TO service_role;
 ALTER TABLE public.quiz_assets ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "quiz_assets admin manage" ON public.quiz_assets;
+DROP POLICY IF EXISTS "quiz_assets admin manage" ON public.quiz_assets;
 CREATE POLICY "quiz_assets admin manage" ON public.quiz_assets
   FOR ALL TO authenticated
   USING (public.has_role(auth.uid(), 'admin'))
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "quiz_assets editor manage" ON public.quiz_assets;
 DROP POLICY IF EXISTS "quiz_assets editor manage" ON public.quiz_assets;
 CREATE POLICY "quiz_assets editor manage" ON public.quiz_assets
   FOR ALL TO authenticated
@@ -59,6 +61,7 @@ GRANT ALL ON public.player_profiles TO service_role;
 
 ALTER TABLE public.player_profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "player_profiles public read" ON public.player_profiles;
 DROP POLICY IF EXISTS "player_profiles public read" ON public.player_profiles;
 CREATE POLICY "player_profiles public read" ON public.player_profiles
   FOR SELECT TO anon, authenticated USING (true);

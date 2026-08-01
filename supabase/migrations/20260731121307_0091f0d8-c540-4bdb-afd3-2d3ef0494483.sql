@@ -31,15 +31,18 @@ GRANT ALL ON public.quiz_audiences TO service_role;
 ALTER TABLE public.quiz_audiences ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "quiz_audiences public read" ON public.quiz_audiences;
+DROP POLICY IF EXISTS "quiz_audiences public read" ON public.quiz_audiences;
 CREATE POLICY "quiz_audiences public read" ON public.quiz_audiences
   FOR SELECT TO anon, authenticated USING (true);
 
+DROP POLICY IF EXISTS "quiz_audiences admin write" ON public.quiz_audiences;
 DROP POLICY IF EXISTS "quiz_audiences admin write" ON public.quiz_audiences;
 CREATE POLICY "quiz_audiences admin write" ON public.quiz_audiences
   FOR ALL TO authenticated
   USING (has_role(auth.uid(), 'admin'::app_role))
   WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
 
+DROP POLICY IF EXISTS "quiz_audiences editor manage" ON public.quiz_audiences;
 DROP POLICY IF EXISTS "quiz_audiences editor manage" ON public.quiz_audiences;
 CREATE POLICY "quiz_audiences editor manage" ON public.quiz_audiences
   FOR ALL TO authenticated

@@ -21,6 +21,7 @@ GRANT ALL ON public.device_locks TO service_role;
 ALTER TABLE public.device_locks ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "device_locks staff read" ON public.device_locks;
+DROP POLICY IF EXISTS "device_locks staff read" ON public.device_locks;
 CREATE POLICY "device_locks staff read" ON public.device_locks
   FOR SELECT TO authenticated
   USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'staff'::app_role));

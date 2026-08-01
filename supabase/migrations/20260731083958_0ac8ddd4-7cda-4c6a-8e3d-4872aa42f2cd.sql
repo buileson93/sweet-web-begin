@@ -26,9 +26,11 @@ GRANT ALL ON public.device_visits TO service_role;
 
 ALTER TABLE public.device_visits ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "anyone can log a visit" ON public.device_visits;
 CREATE POLICY "anyone can log a visit" ON public.device_visits
   FOR INSERT TO anon, authenticated WITH CHECK (true);
 
+DROP POLICY IF EXISTS "staff and admins read device visits" ON public.device_visits;
 CREATE POLICY "staff and admins read device visits" ON public.device_visits
   FOR SELECT TO authenticated
   USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'staff'::app_role) OR has_role(auth.uid(), 'editor'::app_role));

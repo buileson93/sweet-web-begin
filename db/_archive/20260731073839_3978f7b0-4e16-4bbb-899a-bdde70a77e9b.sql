@@ -4,6 +4,7 @@ GRANT SELECT (id, quiz_id, quiz_title, candidate_name, unit, score, total, time_
   ON public.results TO anon;
 
 -- Nhân sự quản trị vẫn đọc đầy đủ
+DROP POLICY IF EXISTS "results staff read" ON public.results;
 CREATE POLICY "results staff read" ON public.results
   FOR SELECT TO authenticated
   USING (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'staff') OR public.has_role(auth.uid(), 'editor'));
