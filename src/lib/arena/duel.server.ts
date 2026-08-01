@@ -598,7 +598,7 @@ export async function setReady(input: { employeeId: string; duelId: string }) {
       .eq("id", duel.id);
     if (!ranked.ranked && duel.is_ranked)
       await logArenaAudit("update", duel.id, "Trận chuyển sang đấu vui", { reason: ranked.reason });
-    await broadcastDuel(duel.id, "duel.countdown", { startAt, duelId: duel.id });
+    await broadcastWithState(duel.id, [{ event: "duel.countdown", payload: { startAt, duelId: duel.id } }]);
   } else {
     await bumpVersion(duel.id);
     await broadcastDuel(duel.id, "lobby.update", { duelId: duel.id });
@@ -666,12 +666,17 @@ async function serveRound(duel: DuelRow, roundIndex: number, delayMs = 0) {
   const row = await questionAt(duel, roundIndex);
   if (!row) return;
   const payload = buildRoundPayload(row.row, row.order, roundIndex);
-  await broadcastDuel(duel.id, "round.start", {
-    duelId: duel.id,
-    servedAt,
-    seconds: duel.seconds_per_round,
-    question: payload,
-  });
+  await broadcastWithState(duel.id, [
+    {
+      event: "round.start",
+      payload: {
+        duelId: duel.id,
+        servedAt,
+        seconds: duel.seconds_per_round,
+        question: payload,
+      },
+    },
+  ]);
 }
 
 async function questionAt(duel: DuelRow, index: number) {
@@ -753,10 +758,12 @@ export async function answerRound(input: {
       .eq("id", me.id);
   }
 
-  await broadcastDuel(duel.id, "round.opponent_answered", {
-    roundIndex: input.roundIndex,
-    employeeId: input.employeeId,
-  });
+  await broadcastWithState(duel.id, [
+    {
+      event: "round.opponent_answered",
+      payload: { roundIndex: input.roundIndex, employeeId: input.employeeId },
+    },
+  ]);
 
   // Ván luyện tập: trợ lý máy trả lời ngay sau người thật để chốt câu.
   if (duel.is_bot) await ensureBotAnswer(duel, input.roundIndex);
@@ -829,10 +836,9 @@ export async function ensureBotAnswer(duel: DuelRow, roundIndex: number) {
     })
     .eq("id", bot.id);
 
-  await broadcastDuel(duel.id, "round.opponent_answered", {
-    roundIndex,
-    employeeId: bot.employee_id,
-  });
+  await broadcastWithState(duel.id, [
+    { event: "round.opponent_answered", payload: { roundIndex, employeeId: bot.employee_id } },
+  ]);
 }
 
 /** Các lượt câu mà một đấu thủ đã kích hoạt kỹ năng trong ván. */
@@ -891,6 +897,9 @@ async function currentStreak(
 export async function closeRound(duelId: string, roundIndex: number) {
   const duel = await loadDuel(duelId);
   if (duel.status !== "playing" || duel.current_round !== roundIndex) return;
+  // Câu này đã công bố kết quả rồi (đang trong thời gian hiện đáp án) — không tính sát thương lần hai.
+  const already = (duel as unknown as { last_result: RoundResult | null }).last_result;
+  if (already && already.roundIndex === roundIndex && already.resolvedAt) return;
 
   // Chỉ một tiến trình được quyền chốt câu; tránh hai client hết giờ cùng lúc tính sát thương hai lần.
   const { data: claimed } = await supabaseAdmin
@@ -1046,7 +1055,7 @@ export async function advanceDuel(duelId: string): Promise<{ advanced: boolean }
 
   // Đang trong thời gian công bố kết quả của câu hiện tại.
   if (last && last.roundIndex === duel.current_round && last.resolvedAt) {
-    const revealEnd = Date.parse(last.resolvedAt) + (last.revealMs ?? DICE_MS);
+    const revealEnd = Date.parse(last.resolvedAt) + REVEAL_MS;
     if (now < revealEnd) return { advanced: false };
     if (last.finishAfter) {
       await finishDuel(duelId, last.noShowId ?? undefined);
@@ -1278,7 +1287,7 @@ export async function finishDuel(duelId: string, technicalLoserId?: string) {
     })
     .eq("id", duelId);
 
-  await broadcastDuel(duelId, "duel.finish", finish);
+  await broadcastWithState(duelId, [{ event: "duel.finish", payload: finish }]);
   await logArenaAudit(
     technicalLoserId ? "update" : "update",
     duelId,
