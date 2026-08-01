@@ -184,8 +184,9 @@ export function ReminderManager() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{e.full_name}</p>
                   <p className="type-meta truncate">
-                    {[e.position, e.unit_name].filter(Boolean).join(" · ") || "Chưa cập nhật đơn vị"}
+                    {[e.position, e.unit_name, e.phone].filter(Boolean).join(" · ") || "Chưa cập nhật đơn vị"}
                   </p>
+
                 </div>
                 <span className="status-pill bg-warning/15 text-warning-foreground">Chưa thi</span>
               </div>
