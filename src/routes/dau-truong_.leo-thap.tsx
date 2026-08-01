@@ -20,6 +20,11 @@ import { toast } from "sonner";
 
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { TowerMap } from "@/components/tower/TowerMap";
+import { BlessingCards } from "@/components/tower/BlessingCards";
+import { CurseOffer } from "@/components/tower/CurseOffer";
+import { ScoreSources } from "@/components/tower/ScoreSources";
+import { RunTimeline } from "@/components/tower/RunTimeline";
+import { saveRunRecord } from "@/lib/tower/history";
 import { RichText } from "@/components/RichText";
 import { Button } from "@/components/ui/button";
 import {
