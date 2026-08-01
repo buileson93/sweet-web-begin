@@ -1422,6 +1422,44 @@ export type Database = {
           },
         ]
       }
+      tower_progress: {
+        Row: {
+          best_stage: number
+          coins: number
+          created_at: string
+          employee_id: string
+          runs: number
+          state: Json
+          updated_at: string
+        }
+        Insert: {
+          best_stage?: number
+          coins?: number
+          created_at?: string
+          employee_id: string
+          runs?: number
+          state?: Json
+          updated_at?: string
+        }
+        Update: {
+          best_stage?: number
+          coins?: number
+          created_at?: string
+          employee_id?: string
+          runs?: number
+          state?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tower_progress_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tower_run_events: {
         Row: {
           created_at: string
