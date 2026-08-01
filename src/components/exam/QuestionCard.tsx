@@ -29,6 +29,7 @@ export function QuestionCard({
   onX2,
   onFifty,
   onAnswer,
+  onConfirm,
   onPrev,
   onNext,
   onSubmit,
