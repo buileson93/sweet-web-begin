@@ -87,6 +87,7 @@ export function useQuestionMutations({
           .filter(Boolean),
         explanation: form.explanation.trim(),
         image_url: form.image_url,
+        image_alt: form.image_url ? form.image_alt.trim() : "",
       };
       let questionId = editing?.id ?? "";
       if (editing) {
@@ -201,6 +202,7 @@ export function useQuestionMutations({
           explanation: row.explanation ?? "",
           is_archived: row.is_archived ?? false,
           image_url: null,
+          image_alt: row.image_alt ?? "",
           option_images: [],
         })
         .select("id")

@@ -25,10 +25,10 @@ import { QuestionImportDialog } from "@/components/admin/questions/QuestionImpor
 import { QuestionFilters } from "./questions/QuestionFilters";
 import { QuestionForm } from "./questions/QuestionForm";
 import { QuestionList } from "./questions/QuestionList";
-import { QuestionPreviewDialog } from "./questions/QuestionPreviewDialog";
 import { useQuestionMutations } from "./questions/useQuestionMutations";
 import {
   emptyForm,
+  withPairIds,
   type ArchiveFilter,
   type QuestionFormState,
   type QuestionRow,
@@ -50,10 +50,11 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<QuestionRow | null>(null);
-  const [preview, setPreview] = useState<QuestionRow | null>(null);
   const [form, setForm] = useState<QuestionFormState>({ ...emptyForm });
   const [draftAvailable, setDraftAvailable] = useState(false);
   const pendingDraft = useRef<QuestionFormState | null>(null);
+  // Đánh dấu lần lưu hiện tại là "Lưu & soạn câu kế".
+  const saveNextRef = useRef(false);
 
 
   const PAGE_SIZE = 20;
@@ -78,7 +79,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       const { data, error } = await supabase
         .from("questions")
         .select(
-          "id, quiz_id, question, options, option_images, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, order_index, time_limit_seconds, is_archived, tags, explanation, image_url",
+          "id, quiz_id, question, options, option_images, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, order_index, time_limit_seconds, is_archived, tags, explanation, image_url, image_alt",
         )
 
         .eq("quiz_id", quizId)
@@ -158,6 +159,22 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     editing,
     onSaved: () => {
       clearDraft(draftKey(quizId, editing?.id ?? null));
+      if (saveNextRef.current) {
+        // Lưu & soạn câu kế: giữ nguyên bảng soạn, chỉ dọn nội dung và tăng số thứ tự.
+        saveNextRef.current = false;
+        setEditing(null);
+        setForm((f) => ({
+          ...emptyForm,
+          kind: f.kind,
+          difficulty: f.difficulty,
+          points: f.points,
+          tags: f.tags,
+          order_index: (Number(f.order_index) || 0) + 1,
+          options: f.kind === "true_false" ? ["Đúng", "Sai"] : ["", "", "", ""],
+          option_images: ["", "", "", ""],
+        }));
+        return;
+      }
       setOpen(false);
     },
   });
@@ -366,7 +383,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       correct_index: q.correct_index,
       correct_indices: q.correct_indices ?? [],
       accepted_answers: (q.accepted_answers ?? []).join("\n"),
-      pairs: Array.isArray(q.pairs) ? q.pairs : [],
+      pairs: withPairIds(Array.isArray(q.pairs) ? q.pairs : []),
       kind: q.kind ?? "single",
       difficulty: q.difficulty ?? "medium",
       points: q.points ?? 1,
@@ -375,6 +392,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       tags: (q.tags ?? []).join(", "),
       explanation: q.explanation ?? "",
       image_url: q.image_url,
+      image_alt: q.image_alt ?? "",
     });
     offerDraft(q.id);
     setOpen(true);
@@ -501,7 +519,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
             bulkBusy={bulkBusy}
             onEdit={openEdit}
             onRemove={(q) => remove.mutate(q)}
-            onPreview={(q) => setPreview(q)}
+            onPreview={openEdit}
             onDuplicate={(q) => duplicate.mutate(q)}
             onArchive={(q, archived) => archive.mutate({ row: q, archived })}
             onMove={moveRow}
@@ -514,8 +532,6 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
           />
         </QueryState>
       </AdminSection>
-
-      <QuestionPreviewDialog question={preview} onClose={() => setPreview(null)} />
 
       <QuestionForm
         open={open}
@@ -531,6 +547,10 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
         onAttachImage={(file) => void attachImage(file)}
         onRemoveImage={dropPendingImage}
         onSave={() => save.mutate()}
+        onSaveNext={() => {
+          saveNextRef.current = true;
+          save.mutate();
+        }}
         saving={save.isPending}
         draftAvailable={draftAvailable}
         onRestoreDraft={() => {

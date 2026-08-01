@@ -82,7 +82,7 @@ export function QuestionCard({
       {questionImageSrc(question.imageUrl) ? (
         <img
           src={questionImageSrc(question.imageUrl)!}
-          alt={`Hình minh hoạ câu ${current + 1}`}
+          alt={question.imageAlt || `Hình minh hoạ câu ${current + 1}`}
           loading="lazy"
           className="mt-4 max-h-56 w-full rounded-xl border border-border object-contain sm:max-h-72"
         />

@@ -67,10 +67,24 @@ export type QuestionRow = {
   order_index: number;
 };
 
-export function shuffle<T>(input: T[]): T[] {
+/**
+ * Trộn mảng. Truyền `seed` để có kết quả lặp lại được (dùng cho ô xem trước:
+ * cùng một seed thì cùng một thứ tự, đổi seed mới trộn lại).
+ */
+export function shuffle<T>(input: T[], seed?: number): T[] {
   const arr = [...input];
+  // Bộ sinh số giả ngẫu nhiên mulberry32 — nhỏ gọn và ổn định theo seed.
+  let state = ((seed ?? 0) >>> 0) + 0x6d2b79f5;
+  const rand = () => {
+    if (seed === undefined) return Math.random();
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rand() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;

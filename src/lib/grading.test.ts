@@ -10,6 +10,7 @@ import {
   scoreForAnswer,
   estimatePoints,
   comboBonus,
+  shuffle,
 } from "@/lib/grading";
 import type { AnswerValue, Difficulty, QuestionKind } from "@/lib/questionKinds";
 
@@ -399,5 +400,23 @@ describe("estimatePoints", () => {
   it("comboBonus bắt đầu từ combo thứ 3", () => {
     expect(comboBonus(2, DEFAULT_SCORE_RULES)).toBe(0);
     expect(comboBonus(3, DEFAULT_SCORE_RULES)).toBe(1);
+  });
+});
+
+describe("shuffle – seed", () => {
+  const pool = Array.from({ length: 12 }, (_, i) => i);
+
+  it("cùng seed cho cùng kết quả", () => {
+    expect(shuffle(pool, 7)).toEqual(shuffle(pool, 7));
+  });
+
+  it("khác seed thì thứ tự khác nhau", () => {
+    expect(shuffle(pool, 1)).not.toEqual(shuffle(pool, 2));
+  });
+
+  it("giữ nguyên tập phần tử và không sửa mảng gốc", () => {
+    const out = shuffle(pool, 5);
+    expect([...out].sort((a, b) => a - b)).toEqual(pool);
+    expect(pool).toEqual(Array.from({ length: 12 }, (_, i) => i));
   });
 });

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ImagePlus, Loader2, RotateCcw, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,13 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { questionImageSrc } from "@/lib/questionImage";
 import {
   DIFFICULTIES,
@@ -34,6 +34,7 @@ import { FillBlankEditor } from "./FillBlankEditor";
 import { MatchingEditor } from "./MatchingEditor";
 import { MultiChoiceEditor } from "./MultiChoiceEditor";
 import { OrderingEditor } from "./OrderingEditor";
+import { QuestionLivePreview } from "./QuestionLivePreview";
 import { SingleChoiceEditor } from "./SingleChoiceEditor";
 import { TrueFalseEditor } from "./TrueFalseEditor";
 import type { EditorProps, QuestionFormState } from "./types";
@@ -71,6 +72,7 @@ export function QuestionForm({
   onAttachImage,
   onRemoveImage,
   onSave,
+  onSaveNext,
   saving,
   draftAvailable,
   onRestoreDraft,
@@ -89,6 +91,8 @@ export function QuestionForm({
   onAttachImage: (file: File) => void;
   onRemoveImage: () => void;
   onSave: () => void;
+  /** Lưu rồi mở luôn biểu mẫu trống để soạn câu kế (Ctrl/⌘ + Enter). */
+  onSaveNext?: () => void;
   saving: boolean;
   draftAvailable: boolean;
   onRestoreDraft: () => void;
@@ -105,13 +109,40 @@ export function QuestionForm({
   );
   const blocked = hasBlockingErrors(validation);
 
+  // Phím tắt: Ctrl/⌘ + S = lưu, Ctrl/⌘ + Enter = lưu và soạn câu kế.
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key !== "s" && key !== "enter") return;
+      e.preventDefault();
+      if (saving || blocked) return;
+      if (key === "enter" && onSaveNext) onSaveNext();
+      else onSave();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, saving, blocked, onSave, onSaveNext]);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{editing ? "Sửa câu hỏi" : "Thêm câu hỏi"}</DialogTitle>
-          <DialogDescription>Chọn phương án đúng bằng nút bên trái.</DialogDescription>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-[min(1100px,96vw)]"
+      >
+        <SheetHeader className="px-0">
+          <SheetTitle>{editing ? "Sửa câu hỏi" : "Thêm câu hỏi"}</SheetTitle>
+          <SheetDescription>
+            Chọn phương án đúng bằng nút bên trái. Phím tắt:{" "}
+            <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[10px]">Ctrl/⌘ + S</kbd>{" "}
+            lưu,{" "}
+            <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[10px]">
+              Ctrl/⌘ + Enter
+            </kbd>{" "}
+            lưu và soạn câu kế.
+          </SheetDescription>
+        </SheetHeader>
 
         {draftAvailable ? (
           <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm">
@@ -126,7 +157,8 @@ export function QuestionForm({
           </div>
         ) : null}
 
-        <div className="space-y-4">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+        <div className="min-w-0 space-y-4">
           <div className="space-y-2">
             <Label>Nội dung câu hỏi</Label>
             <Textarea
@@ -142,7 +174,7 @@ export function QuestionForm({
               <div className="relative w-fit">
                 <img
                   src={questionImageSrc(form.image_url)!}
-                  alt="Ảnh minh hoạ câu hỏi"
+                  alt={form.image_alt || "Ảnh minh hoạ câu hỏi"}
                   className="max-h-48 rounded-xl border border-border object-contain"
                 />
                 <Button
@@ -199,6 +231,20 @@ export function QuestionForm({
                 </p>
               </div>
             )}
+            {form.image_url ? (
+              <div className="space-y-1.5">
+                <Label>Mô tả ảnh (alt)</Label>
+                <Input
+                  value={form.image_alt}
+                  placeholder="Ví dụ: Sơ đồ đường lăn sân bay Đà Nẵng"
+                  onChange={(e) => setForm({ ...form, image_alt: e.target.value })}
+                />
+                <FieldMessage warning={validation.warnings.image_alt} />
+                <p className="type-meta">
+                  Giúp thí sinh dùng trình đọc màn hình hiểu được nội dung ảnh.
+                </p>
+              </div>
+            ) : null}
             {uploadInfo ? <p className="type-meta">Đã nén: {uploadInfo}</p> : null}
             <p className="type-meta">
               Ảnh được tự động nén về WebP (hoặc JPEG nếu trình duyệt không hỗ trợ), cạnh dài tối đa
@@ -339,15 +385,26 @@ export function QuestionForm({
             </div>
           </div>
         </div>
-        <DialogFooter>
+
+          {/* Cột xem trước trực tiếp */}
+          <aside className="min-w-0 lg:sticky lg:top-2 lg:self-start">
+            <QuestionLivePreview form={form} />
+          </aside>
+        </div>
+        <SheetFooter className="flex-row justify-end gap-2 px-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Huỷ
           </Button>
+          {onSaveNext ? (
+            <Button variant="secondary" onClick={onSaveNext} disabled={saving || blocked}>
+              Lưu &amp; soạn câu kế
+            </Button>
+          ) : null}
           <Button onClick={onSave} disabled={saving || blocked}>
             Lưu
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

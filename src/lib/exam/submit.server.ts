@@ -202,6 +202,7 @@ export async function submitExamSession(input: {
       options: order.map((i) => display[i]),
       matchLeft: row.kind === "matching" ? pairsOf(row).map((p) => p.left) : [],
       imageUrl: row.image_url ?? null,
+      imageAlt: (row as { image_alt?: string }).image_alt ?? "",
       correct,
       answered,
       chosenText: chosenTextOf(row, order, value),
