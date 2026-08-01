@@ -366,6 +366,37 @@ export function QuestionForm({
             quizId={quizId}
           />
 
+          {/* Giải thích riêng cho từng phương án */}
+          {form.kind !== "matching" && form.kind !== "fill_blank" ? (
+            <div className="space-y-2 rounded-2xl border border-border p-3">
+              <Label>Giải thích riêng cho từng phương án (không bắt buộc)</Label>
+              <p className="type-meta">
+                Thí sinh xem lại sẽ thấy vì sao mỗi phương án đúng hoặc sai.
+              </p>
+              <div className="space-y-2">
+                {form.options.map((opt, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="mt-2 grid size-6 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-extrabold">
+                      {String.fromCharCode(65 + i)}
+                    </span>
+                    <Input
+                      value={form.option_explanations[i] ?? ""}
+                      placeholder={opt.trim() ? `Vì sao “${opt.trim()}”...` : "Giải thích..."}
+                      onChange={(e) =>
+                        setForm((f) => {
+                          const next = f.options.map(
+                            (_, j) => (j === i ? e.target.value : (f.option_explanations[j] ?? "")),
+                          );
+                          return { ...f, option_explanations: next };
+                        })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Thẻ chủ đề (cách nhau bằng dấu phẩy)</Label>
@@ -382,8 +413,12 @@ export function QuestionForm({
                 value={form.explanation}
                 onChange={(e) => setForm({ ...form, explanation: e.target.value })}
               />
+              <p className="type-meta">
+                Hỗ trợ Markdown: **đậm**, *nghiêng*, danh sách, bảng và công thức $E=mc^2$.
+              </p>
             </div>
           </div>
+
         </div>
 
           {/* Cột xem trước trực tiếp */}
