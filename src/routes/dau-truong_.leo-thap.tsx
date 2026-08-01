@@ -1,19 +1,48 @@
 import { ErrorState } from "@/components/ui-kit";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Castle, CloudOff, Heart, Loader2, WifiOff } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Castle,
+  CloudOff,
+  Flame,
+  Heart,
+  Loader2,
+  RefreshCw,
+  Shield,
+  WifiOff,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { RichText } from "@/components/RichText";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
 import { readExamEntry, type ExamEntry } from "@/lib/examSession";
 import type { AnswerValue } from "@/lib/questionKinds";
 import { bankIsStale, type QuestionBank } from "@/lib/tower/bank";
 import { QUESTIONS_PER_STAGE, START_HP, STAGES_PER_RUN, stageName } from "@/lib/tower/config";
-import { createRun, gradeStage, takeBoon, type StageOutcome, type TowerRun } from "@/lib/tower/engine";
+import {
+  createRun,
+  gradeStage,
+  runBoonTotals,
+  stageSeconds,
+  takeBoon,
+  type StageOutcome,
+  type TowerRun,
+} from "@/lib/tower/engine";
 import {
   readCachedBank,
   readCachedState,
@@ -52,20 +81,45 @@ export const Route = createFileRoute("/dau-truong_/leo-thap")({
   }),
 });
 
-const STAGE_SECONDS = 20 * QUESTIONS_PER_STAGE;
+/** Khoá lưu ca trực đang dở để F5 hoặc khoá máy không mất bài. */
+const RESUME_KEY = "vatm:tower:resume";
 
-function HpBarLite({ hp }: { hp: number }) {
+type Resume = {
+  run: TowerRun;
+  idx: number;
+  answers: Record<string, AnswerValue>;
+  deadline: number;
+};
+
+function readResume(): Resume | null {
+  try {
+    const raw = window.sessionStorage.getItem(RESUME_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Resume;
+    if (!parsed?.run?.questions?.length || parsed.run.finished) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function HpBarLite({ hp, shield }: { hp: number; shield: number }) {
   const pct = Math.max(0, Math.min(100, (hp / START_HP) * 100));
   return (
     <div className="flex items-center gap-2">
       <Heart className="size-4 text-destructive" />
-      <div className="h-2.5 w-40 overflow-hidden rounded-full bg-muted">
+      <div className="h-2.5 w-32 overflow-hidden rounded-full bg-muted sm:w-40">
         <div
           className="h-full rounded-full bg-destructive transition-[width] duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
       <span className="type-meta tabular-nums">{hp}</span>
+      {shield > 0 ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold text-sky-600">
+          <Shield className="size-3" /> {shield}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -94,25 +148,46 @@ function TowerPage() {
   const [outcome, setOutcome] = useState<StageOutcome | null>(null);
   const [pickedBoon, setPickedBoon] = useState<string | undefined>(undefined);
   const [summary, setSummary] = useState<{ stagesCleared: number; correct: number; answered: number } | null>(null);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [lowTime, setLowTime] = useState(false);
 
   const clockRef = useRef<HTMLSpanElement | null>(null);
   const deadlineRef = useRef<number>(0);
   const onTimeUpRef = useRef<() => void>(() => undefined);
   const stateRef = useRef<TowerState>(state);
   stateRef.current = state;
+  const pendingRef = useRef(false);
+  pendingRef.current = pending;
 
   useEffect(() => {
     setEntry(readExamEntry(window.sessionStorage));
+    const saved = readResume();
+    if (saved) {
+      setRun(saved.run);
+      setIdx(saved.idx);
+      setAnswers(saved.answers);
+      deadlineRef.current = saved.deadline;
+      toast.message("Đã khôi phục ca trực đang dở của bạn.");
+    }
   }, []);
 
-  // Đồng hồ: một vòng rAF, ghi thẳng vào DOM (không setState mỗi khung hình).
+  const playing = Boolean(run && !summary && !outcome);
+
+  // Đồng hồ: chỉ chạy vòng rAF khi thật sự đang làm bài, ghi thẳng vào DOM.
   useEffect(() => {
+    if (!playing) return;
     let raf = 0;
+    let lastLow = false;
     const tick = () => {
       const left = Math.max(0, deadlineRef.current - Date.now());
       if (clockRef.current) {
         const s = Math.ceil(left / 1000);
         clockRef.current.textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+      }
+      const low = deadlineRef.current > 0 && left <= 30_000;
+      if (low !== lastLow) {
+        lastLow = low;
+        setLowTime(low);
       }
       if (deadlineRef.current && left <= 0) {
         deadlineRef.current = 0;
@@ -122,7 +197,21 @@ function TowerPage() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [playing]);
+
+  // Lưu ca trực đang dở sau mỗi thay đổi để F5 không mất bài.
+  useEffect(() => {
+    if (!run || summary || outcome) {
+      window.sessionStorage.removeItem(RESUME_KEY);
+      return;
+    }
+    const payload: Resume = { run, idx, answers, deadline: deadlineRef.current };
+    try {
+      window.sessionStorage.setItem(RESUME_KEY, JSON.stringify(payload));
+    } catch {
+      /* bộ nhớ đầy thì bỏ qua, không chặn người dùng làm bài */
+    }
+  }, [run, idx, answers, summary, outcome]);
 
   const credentials = useCallback(
     () =>
@@ -190,11 +279,11 @@ function TowerPage() {
 
   /** Gửi tiến trình lên máy chủ — gộp một lần, chỉ khi kết thúc phiên. */
   const pushSync = useCallback(
-    async (next: TowerState) => {
+    async (next: TowerState, bestStage: number) => {
       const creds = credentials();
       if (!creds) return;
       try {
-        await sync({ data: { ...creds, state: next, bestStage: run?.stage ?? 0, runs: 1 } });
+        await sync({ data: { ...creds, state: next, bestStage, runs: 1 } });
         setPending(false);
         void writePendingSync(false);
       } catch {
@@ -202,17 +291,26 @@ function TowerPage() {
         void writePendingSync(true);
       }
     },
-    [credentials, sync, run],
+    [credentials, sync],
   );
 
+  // Có mạng trở lại thì tự gửi lại tiến trình còn treo.
+  useEffect(() => {
+    const retry = () => {
+      if (!pendingRef.current) return;
+      void pushSync(stateRef.current, 0);
+    };
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, [pushSync]);
+
   const finishRun = useCallback(
-    (finished: TowerRun) => {
-      setSummary({
-        stagesCleared: Math.min(finished.stage, STAGES_PER_RUN),
-        correct: finished.correct,
-        answered: finished.answered,
-      });
-      void pushSync(stateRef.current);
+    (finished: TowerRun, done: StageOutcome) => {
+      // Tầng vừa chấm chỉ được tính là "đã qua" khi còn máu và không phải dừng sớm.
+      const reached = Math.min(finished.stage, STAGES_PER_RUN);
+      const cleared = done.softStop || finished.hp <= 0 ? Math.max(0, reached - 1) : reached;
+      setSummary({ stagesCleared: cleared, correct: finished.correct, answered: finished.answered });
+      void pushSync(stateRef.current, reached);
     },
     [pushSync],
   );
@@ -222,6 +320,7 @@ function TowerPage() {
     (current: Record<string, AnswerValue>) => {
       if (!run || outcome) return;
       deadlineRef.current = 0;
+      setConfirmClose(false);
       const graded = gradeStage(run, current);
       const nextState = applyResults(stateRef.current, graded.outcome.results);
       setState(nextState);
@@ -229,7 +328,7 @@ function TowerPage() {
       setOutcome(graded.outcome);
       setRun(graded.run);
       setPickedBoon(undefined);
-      if (graded.run.finished) finishRun(graded.run);
+      if (graded.run.finished) finishRun(graded.run, graded.outcome);
     },
     [run, outcome, finishRun],
   );
@@ -248,7 +347,7 @@ function TowerPage() {
       setOutcome(null);
       setSummary(null);
       setPickedBoon(undefined);
-      deadlineRef.current = Date.now() + STAGE_SECONDS * 1000;
+      deadlineRef.current = Date.now() + stageSeconds(fresh.boons) * 1000;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Chưa có câu hỏi nghiệp vụ để ôn tập.");
     }
@@ -256,16 +355,25 @@ function TowerPage() {
 
   function nextStage() {
     if (!run) return;
-    setRun(takeBoon(run, pickedBoon));
-    setIdx(run.stage * QUESTIONS_PER_STAGE);
+    const next = takeBoon(run, pickedBoon);
+    setRun(next);
+    setIdx(next.stage * QUESTIONS_PER_STAGE);
     setOutcome(null);
-    deadlineRef.current = Date.now() + STAGE_SECONDS * 1000;
+    deadlineRef.current = Date.now() + stageSeconds(next.boons) * 1000;
   }
 
   const stage = outcome ? Math.max(0, (run?.stage ?? 1) - 1) : (run?.stage ?? 0);
   const question = run?.questions[idx];
-  const inStagePos = idx - stage * QUESTIONS_PER_STAGE + 1;
+  const stageFrom = stage * QUESTIONS_PER_STAGE;
+  const inStagePos = idx - stageFrom + 1;
   const totalStages = run ? Math.ceil(run.questions.length / QUESTIONS_PER_STAGE) : STAGES_PER_RUN;
+  const totals = useMemo(() => runBoonTotals(run?.boons ?? []), [run?.boons]);
+  const blanks = run
+    ? run.questions.slice(stageFrom, stageFrom + QUESTIONS_PER_STAGE).filter((_, i) => {
+        const v = answers[String(stageFrom + i)];
+        return v === undefined || v === null || v === "";
+      }).length
+    : 0;
 
   return (
     <PageContainer>
@@ -287,9 +395,13 @@ function TowerPage() {
           </span>
         )}
         {pending && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-            <CloudOff className="size-3.5" /> Tiến trình sẽ gửi lại khi có mạng
-          </span>
+          <button
+            type="button"
+            onClick={() => void pushSync(stateRef.current, 0)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground transition hover:text-primary"
+          >
+            <CloudOff className="size-3.5" /> Tiến trình chưa gửi — bấm để thử lại
+          </button>
         )}
       </div>
 
@@ -314,7 +426,12 @@ function TowerPage() {
               ? "Đang chuẩn bị gói nghiệp vụ cho bạn…"
               : `${dueCount} thẻ đang đến hạn ôn · ${bank?.questions.length ?? 0} câu trong gói`}
           </p>
-          <Button className="mt-4" disabled={loading || !bank} onClick={begin}>
+          {!loading && !bank?.questions.length && (
+            <p className="type-meta mt-1 text-amber-600">
+              Gói nghiệp vụ chưa có câu hỏi nào — hãy thử lại khi có mạng.
+            </p>
+          )}
+          <Button className="mt-4" disabled={loading || !bank?.questions.length} onClick={begin}>
             {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Castle className="mr-2 size-4" />}
             Vào ca trực
           </Button>
@@ -338,7 +455,9 @@ function TowerPage() {
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={begin}>Vào ca trực mới</Button>
+            <Button onClick={begin}>
+              <RefreshCw className="mr-2 size-4" /> Vào ca trực mới
+            </Button>
             <Button asChild variant="outline">
               <Link to="/dau-truong">Nghỉ một chút</Link>
             </Button>
@@ -374,15 +493,17 @@ function TowerPage() {
           {!summary && run.offered.length > 0 && (
             <div>
               <p className="mb-2 text-sm font-semibold">Chọn một trợ giúp cho tầng sau</p>
-              <div className="grid gap-2 sm:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Trợ giúp cho tầng sau">
                 {run.offered.map((b) => (
                   <button
                     key={b.id}
                     type="button"
+                    role="radio"
+                    aria-checked={pickedBoon === b.id}
                     onClick={() => setPickedBoon(b.id)}
                     className={cn(
                       "rounded-xl border p-3 text-left text-sm transition hover:border-primary",
-                      pickedBoon === b.id && "border-primary bg-primary/5",
+                      pickedBoon === b.id && "border-primary bg-primary/5 ring-2 ring-primary/30",
                     )}
                   >
                     <div className="font-semibold">{b.name}</div>
@@ -390,10 +511,17 @@ function TowerPage() {
                   </button>
                 ))}
               </div>
+              {!pickedBoon && (
+                <p className="type-meta mt-2">Chưa chọn cũng được — bạn vẫn lên tầng bình thường.</p>
+              )}
             </div>
           )}
 
-          {!summary && <Button onClick={nextStage}>Lên {stageName(run.stage)}</Button>}
+          {!summary && (
+            <Button onClick={nextStage}>
+              Lên {stageName(run.stage)} <ArrowRight className="ml-2 size-4" />
+            </Button>
+          )}
           {summary && outcome.softStop && (
             <p className="type-meta">
               Ca trực khép lại sớm ở đây để bạn ôn kỹ phần còn vướng — không sao cả, lần sau nhẹ hơn.
@@ -404,12 +532,51 @@ function TowerPage() {
 
       {run && !summary && !outcome && question && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-5">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
               {stageName(stage)} ({stage + 1}/{totalStages}) · câu {inStagePos}/{QUESTIONS_PER_STAGE}
             </span>
-            <HpBarLite hp={run.hp} />
-            <span ref={clockRef} className="ml-auto font-mono text-sm tabular-nums" />
+            <HpBarLite hp={run.hp} shield={run.shield} />
+            {run.combo > 1 ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
+                <Flame className="size-3" /> Chuỗi {run.combo}
+              </span>
+            ) : null}
+            {totals.damageBonus > 0 ? (
+              <span className="type-meta">+{totals.damageBonus} sát thương</span>
+            ) : null}
+            <span
+              ref={clockRef}
+              className={cn(
+                "ml-auto font-mono text-sm tabular-nums",
+                lowTime && "font-bold text-destructive",
+              )}
+            />
+          </div>
+
+          {/* Bản đồ câu trong tầng: nhìn là biết còn câu nào bỏ trống. */}
+          <div className="flex flex-wrap gap-1.5">
+            {Array.from({ length: QUESTIONS_PER_STAGE }).map((_, i) => {
+              const at = stageFrom + i;
+              const v = answers[String(at)];
+              const done = v !== undefined && v !== null && v !== "";
+              return (
+                <button
+                  key={at}
+                  type="button"
+                  onClick={() => setIdx(at)}
+                  aria-label={`Câu ${i + 1}${done ? " — đã trả lời" : " — chưa trả lời"}`}
+                  aria-current={at === idx}
+                  className={cn(
+                    "size-8 rounded-lg border text-xs font-semibold transition",
+                    at === idx && "ring-2 ring-primary",
+                    done ? "border-primary/40 bg-primary/10 text-primary" : "bg-background text-muted-foreground",
+                  )}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
           </div>
 
           <div className="text-base font-medium">
@@ -425,15 +592,37 @@ function TowerPage() {
             onChange={(v) => setAnswers((prev) => ({ ...prev, [String(idx)]: v }))}
           />
 
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="outline" disabled={inStagePos <= 1} onClick={() => setIdx((i) => Math.max(stageFrom, i - 1))}>
+              <ArrowLeft className="mr-2 size-4" /> Câu trước
+            </Button>
             {inStagePos < QUESTIONS_PER_STAGE ? (
-              <Button onClick={() => setIdx((i) => i + 1)}>Câu tiếp theo</Button>
+              <Button onClick={() => setIdx((i) => i + 1)}>
+                Câu tiếp theo <ArrowRight className="ml-2 size-4" />
+              </Button>
             ) : (
-              <Button onClick={() => closeStage(answers)}>Chốt {stageName(stage)}</Button>
+              <Button onClick={() => (blanks > 0 ? setConfirmClose(true) : closeStage(answers))}>
+                Chốt {stageName(stage)}
+              </Button>
             )}
           </div>
         </section>
       )}
+
+      <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Còn {blanks} câu chưa trả lời</AlertDialogTitle>
+            <AlertDialogDescription>
+              Câu bỏ trống sẽ bị tính là sai và bạn mất máu. Bạn muốn quay lại làm nốt chứ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Quay lại làm tiếp</AlertDialogCancel>
+            <AlertDialogAction onClick={() => closeStage(answers)}>Vẫn chốt tầng</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 }
