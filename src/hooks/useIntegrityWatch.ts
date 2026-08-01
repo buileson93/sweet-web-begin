@@ -2,7 +2,12 @@ import { useEffect, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { reportEvent } from "@/lib/exam.functions";
-import { MAX_EXEMPT_EVENTS_PER_SESSION, isQuotaExempt } from "@/lib/integrity";
+import {
+  MAX_EXEMPT_EVENTS_PER_SESSION,
+  TAB_HIDDEN_MIN_MS,
+  WINDOW_BLUR_MIN_MS,
+  isQuotaExempt,
+} from "@/lib/integrity";
 
 /** Số sự kiện tối đa gửi lên máy chủ trong một phiên thi (không tính loại được miễn quota). */
 export const MAX_EVENTS = 20;
