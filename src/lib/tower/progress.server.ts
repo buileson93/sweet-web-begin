@@ -2,6 +2,7 @@
  * Tiến trình Leo Tháp — MỘT dòng cho mỗi nhân viên, không ghi nhật ký từng câu.
  * Dung lượng tăng theo số người chơi, không tăng theo số lần chơi.
  */
+import type { Json } from "@/integrations/supabase/types";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyEmployee } from "@/lib/employees.server";
 import { assertTowerOpen, getBankVersion } from "@/lib/tower/bank.server";
@@ -68,7 +69,7 @@ export async function syncTower(input: TowerSyncInput): Promise<{ state: TowerSt
 
   const payload = {
     employee_id: employee.id,
-    state: merged as unknown as Record<string, unknown>,
+    state: JSON.parse(JSON.stringify(merged)) as Json,
     runs: Math.max(row?.runs ?? 0, input.runs ?? 0),
     best_stage: Math.max(row?.best_stage ?? 0, input.bestStage ?? 0),
     coins: Math.max(row?.coins ?? 0, input.coins ?? 0),
