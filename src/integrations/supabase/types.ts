@@ -1558,6 +1558,68 @@ export type Database = {
           },
         ]
       }
+      tower_scores: {
+        Row: {
+          ascension: number
+          board: string
+          created_at: string
+          curses: string[]
+          day_key: string
+          display_name: string
+          employee_id: string
+          floors: number
+          hp: number
+          id: string
+          relics: string[]
+          score: number
+          seed: string
+          unit: string
+          win: boolean
+        }
+        Insert: {
+          ascension?: number
+          board?: string
+          created_at?: string
+          curses?: string[]
+          day_key?: string
+          display_name?: string
+          employee_id: string
+          floors?: number
+          hp?: number
+          id?: string
+          relics?: string[]
+          score?: number
+          seed?: string
+          unit?: string
+          win?: boolean
+        }
+        Update: {
+          ascension?: number
+          board?: string
+          created_at?: string
+          curses?: string[]
+          day_key?: string
+          display_name?: string
+          employee_id?: string
+          floors?: number
+          hp?: number
+          id?: string
+          relics?: string[]
+          score?: number
+          seed?: string
+          unit?: string
+          win?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tower_scores_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       units: {
         Row: {
           created_at: string

@@ -7,11 +7,13 @@ import {
   ArrowRight,
   Castle,
   CloudOff,
+  Coins,
   Flame,
   Heart,
   Loader2,
   RefreshCw,
   Shield,
+  Sparkles,
   WifiOff,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -38,13 +40,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { AnswerValue } from "@/lib/questionKinds";
 import { bankIsStale, bankQuizzes, filterBankByQuizzes, type QuestionBank } from "@/lib/tower/bank";
-import { QUESTIONS_PER_STAGE, START_HP, STAGES_PER_RUN, stageName } from "@/lib/tower/config";
+import { START_HP } from "@/lib/tower/config";
+import { bossAt } from "@/lib/tower/bosses";
+import { curseById } from "@/lib/tower/curses";
+import { FLOORS, ROOM_META } from "@/lib/tower/map";
+import { RARITY_LABEL, relicById } from "@/lib/tower/relics";
 import {
+  buyAtShop,
+  chooseRoom,
   createRun,
+  eventAt,
+  floorOptions,
   gradeStage,
-  runBoonTotals,
-  stageSeconds,
-  takeBoon,
+  leaveRoom,
+  resolveEvent,
+  restAtCampfire,
+  roomQuestions,
+  roomSeconds,
+  runModifiers,
+  shopStock,
+  skipBlessing,
+  takeCurse,
+  takeRelic,
   type StageOutcome,
   type TowerRun,
 } from "@/lib/tower/engine";
@@ -73,12 +90,12 @@ export const Route = createFileRoute("/dau-truong_/leo-thap")({
       {
         name: "description",
         content:
-          "Ôn nghiệp vụ điều hành bay theo lịch lặp lại ngắt quãng: mỗi buổi tu luyện 5 tầng, từ sân đỗ lên đường dài.",
+          "Leo tháp 12 tầng phân nhánh: chọn phòng, gom di vật, nhận lời nguyền và hạ ba con trùm có luật riêng.",
       },
       { property: "og:title", content: "Tháp Không Lưu (TWR ATC) — Hội thi trắc nghiệm VATM" },
       {
         property: "og:description",
-        content: "Ôn đúng câu nghiệp vụ bạn sắp quên, theo lịch lặp lại ngắt quãng của riêng bạn.",
+        content: "Mỗi hành trình sinh từ một hạt ngẫu nhiên: bản đồ, di vật và lời nguyền không lần nào giống nhau.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -86,10 +103,7 @@ export const Route = createFileRoute("/dau-truong_/leo-thap")({
   }),
 });
 
-/** Khoá lưu buổi tu luyện đang dở để F5 hoặc khoá máy không mất bài. */
 const RESUME_KEY = "vatm:tower:resume";
-
-/** Ghi nhớ các bộ đề đã chọn cho buổi tu luyện sau. */
 const PACKS_KEY = "vatm:tower:packs";
 
 type Resume = {
@@ -111,16 +125,13 @@ function readResume(): Resume | null {
   }
 }
 
-function HpBarLite({ hp, shield }: { hp: number; shield: number }) {
-  const pct = Math.max(0, Math.min(100, (hp / START_HP) * 100));
+function HpBarLite({ hp, max, shield }: { hp: number; max: number; shield: number }) {
+  const pct = Math.max(0, Math.min(100, (hp / (max || START_HP)) * 100));
   return (
     <div className="flex items-center gap-2">
       <Heart className="size-4 text-destructive" />
-      <div className="h-2.5 w-32 overflow-hidden rounded-full bg-muted sm:w-40">
-        <div
-          className="h-full rounded-full bg-destructive transition-[width] duration-500"
-          style={{ width: `${pct}%` }}
-        />
+      <div className="h-2.5 w-28 overflow-hidden rounded-full bg-muted sm:w-40">
+        <div className="h-full rounded-full bg-destructive transition-[width] duration-500" style={{ width: `${pct}%` }} />
       </div>
       <span className="type-meta tabular-nums">{hp}</span>
       {shield > 0 ? (
@@ -132,17 +143,42 @@ function HpBarLite({ hp, shield }: { hp: number; shield: number }) {
   );
 }
 
-/**
- * Kiến trúc nhẹ máy chủ: trang này tự chấm, tự lên lịch ôn trong trình duyệt.
- * Máy chủ chỉ tham gia 2 lần: mở phiên (tải gói đề + tiến trình) và đồng bộ khi kết thúc.
- * Kỳ thi chính thức và Đấu trường KHÔNG dùng luồng này — hai nơi đó vẫn chấm ở máy chủ.
- */
+/** Thanh trạng thái hành trình: máu, xu, di vật, lời nguyền. */
+function RunBar({ run }: { run: TowerRun }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+        Tầng {Math.min(run.floor, FLOORS)}/{FLOORS}
+      </span>
+      <HpBarLite hp={run.hp} max={run.maxHp} shield={run.shield} />
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
+        <Coins className="size-3" /> {run.coins}
+      </span>
+      {run.relics.map((id) => {
+        const r = relicById(id);
+        return r ? (
+          <span key={id} title={`${r.name} — ${r.desc}`} className="rounded-full bg-muted px-2 py-0.5 text-[11px]">
+            {r.icon} {r.name}
+          </span>
+        ) : null;
+      })}
+      {run.curses.map((id) => {
+        const c = curseById(id);
+        return c ? (
+          <span key={id} title={c.desc} className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">
+            {c.icon} {c.name}
+          </span>
+        ) : null;
+      })}
+    </div>
+  );
+}
+
 function TowerPage() {
   const openTower = useServerFn(openTowerFn);
   const fetchBank = useServerFn(getTowerBankFn);
   const sync = useServerFn(syncTowerFn);
 
-  /** Danh tính để mở gói ôn: chỉ cần họ tên + 4 số cuối SĐT (hoặc ngày sinh). */
   type Ident = { name: string; credential: string; extraCredential?: string };
   const [entry, setEntry] = useState<Ident | null>(null);
   const [formName, setFormName] = useState("");
@@ -159,8 +195,11 @@ function TowerPage() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [outcome, setOutcome] = useState<StageOutcome | null>(null);
-  const [pickedBoon, setPickedBoon] = useState<string | undefined>(undefined);
-  const [summary, setSummary] = useState<{ stagesCleared: number; correct: number; answered: number } | null>(null);
+  const [pickedRelic, setPickedRelic] = useState<string | undefined>(undefined);
+  const [note, setNote] = useState<string>("");
+  const [summary, setSummary] = useState<{ floors: number; score: number; correct: number; answered: number; win: boolean } | null>(
+    null,
+  );
   const [confirmClose, setConfirmClose] = useState(false);
   const [lowTime, setLowTime] = useState(false);
 
@@ -197,15 +236,15 @@ function TowerPage() {
       setIdx(resume.idx);
       setAnswers(resume.answers);
       deadlineRef.current = resume.deadline;
-      toast.message("Đã khôi phục buổi tu luyện đang dở của bạn.");
+      toast.message("Đã khôi phục hành trình đang dở của bạn.");
     }
   }, []);
 
-  const playing = Boolean(run && !summary && !outcome);
+  const inCombat = Boolean(run && !summary && !outcome && run.room && run.room.questions > 0);
 
   // Đồng hồ: chỉ chạy vòng rAF khi thật sự đang làm bài, ghi thẳng vào DOM.
   useEffect(() => {
-    if (!playing) return;
+    if (!inCombat) return;
     let raf = 0;
     let lastLow = false;
     const tick = () => {
@@ -227,11 +266,10 @@ function TowerPage() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [playing]);
+  }, [inCombat]);
 
-  // Lưu buổi tu luyện đang dở sau mỗi thay đổi để F5 không mất bài.
   useEffect(() => {
-    if (!run || summary || outcome) {
+    if (!run || summary) {
       window.sessionStorage.removeItem(RESUME_KEY);
       return;
     }
@@ -239,9 +277,9 @@ function TowerPage() {
     try {
       window.sessionStorage.setItem(RESUME_KEY, JSON.stringify(payload));
     } catch {
-      /* bộ nhớ đầy thì bỏ qua, không chặn người dùng làm bài */
+      /* bộ nhớ đầy thì bỏ qua, không chặn người chơi */
     }
-  }, [run, idx, answers, summary, outcome]);
+  }, [run, idx, answers, summary]);
 
   const credentials = useCallback(
     () =>
@@ -255,7 +293,6 @@ function TowerPage() {
     [entry],
   );
 
-  /** Một lượt đi về: tiến trình + phiên bản gói đề; chỉ tải gói khi đã cũ. */
   useEffect(() => {
     const creds = credentials();
     if (!creds) return;
@@ -289,7 +326,6 @@ function TowerPage() {
         }
         setOffline(false);
       } catch (e) {
-        // Mất mạng vẫn ôn được nếu đã có gói trong máy.
         if (!alive) return;
         setOffline(true);
         if (!cachedBank) toast.error(e instanceof Error ? e.message : "Không mở được Tháp Không Lưu.");
@@ -307,7 +343,6 @@ function TowerPage() {
     setDueCount(dueCardIds(state).length);
   }, [state]);
 
-  /** Gửi tiến trình lên máy chủ — gộp một lần, chỉ khi kết thúc phiên. */
   const pushSync = useCallback(
     async (next: TowerState, bestStage: number) => {
       const creds = credentials();
@@ -324,7 +359,6 @@ function TowerPage() {
     [credentials, sync],
   );
 
-  // Có mạng trở lại thì tự gửi lại tiến trình còn treo.
   useEffect(() => {
     const retry = () => {
       if (!pendingRef.current) return;
@@ -335,20 +369,24 @@ function TowerPage() {
   }, [pushSync]);
 
   const finishRun = useCallback(
-    (finished: TowerRun, done: StageOutcome) => {
-      // Tầng vừa chấm chỉ được tính là "đã qua" khi còn máu và không phải dừng sớm.
-      const reached = Math.min(finished.stage, STAGES_PER_RUN);
-      const cleared = done.softStop || finished.hp <= 0 ? Math.max(0, reached - 1) : reached;
-      setSummary({ stagesCleared: cleared, correct: finished.correct, answered: finished.answered });
-      void pushSync(stateRef.current, reached);
+    (finished: TowerRun) => {
+      const floors = Math.max(0, Math.min(FLOORS, finished.floor - 1));
+      setSummary({
+        floors,
+        score: finished.score,
+        correct: finished.correct,
+        answered: finished.answered,
+        win: finished.win,
+      });
+      void pushSync(stateRef.current, floors);
     },
     [pushSync],
   );
 
-  /** Chốt chặng: chấm ngay tại máy, 0 ms chờ mạng. */
-  const closeStage = useCallback(
+  /** Chốt phòng giao tranh: chấm ngay tại máy, 0 ms chờ mạng. */
+  const closeRoom = useCallback(
     (current: Record<string, AnswerValue>) => {
-      if (!run || outcome) return;
+      if (!run || outcome || !run.room) return;
       deadlineRef.current = 0;
       setConfirmClose(false);
       const graded = gradeStage(run, current);
@@ -357,15 +395,15 @@ function TowerPage() {
       void writeCachedState(nextState);
       setOutcome(graded.outcome);
       setRun(graded.run);
-      setPickedBoon(undefined);
-      if (graded.run.finished) finishRun(graded.run, graded.outcome);
+      setPickedRelic(undefined);
+      if (graded.run.finished) finishRun(graded.run);
     },
     [run, outcome, finishRun],
   );
 
   useEffect(() => {
-    onTimeUpRef.current = () => closeStage(answers);
-  }, [closeStage, answers]);
+    onTimeUpRef.current = () => closeRoom(answers);
+  }, [closeRoom, answers]);
 
   function confirmIdentity() {
     const name = formName.trim();
@@ -378,7 +416,6 @@ function TowerPage() {
     setEntry({ name, credential });
   }
 
-  /** Lưu lựa chọn bộ đề; mảng rỗng nghĩa là dùng tất cả. */
   function savePacks(next: string[]) {
     const all = next.length === quizList.length ? [] : next;
     setPacks(all);
@@ -393,7 +430,7 @@ function TowerPage() {
     const current = packs.length ? packs : quizList.map((q) => q.id);
     const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
     if (!next.length) {
-      toast.error("Giữ ít nhất một bộ đề để vào buổi tu luyện.");
+      toast.error("Giữ ít nhất một bộ đề để vào hành trình.");
       return;
     }
     savePacks(next);
@@ -413,46 +450,56 @@ function TowerPage() {
       setAnswers({});
       setOutcome(null);
       setSummary(null);
-      setPickedBoon(undefined);
-      deadlineRef.current = Date.now() + stageSeconds(fresh.boons) * 1000;
+      setNote("");
+      setPickedRelic(undefined);
+      deadlineRef.current = 0;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Chưa có câu hỏi nghiệp vụ để ôn tập.");
     }
   }
 
-  function nextStage() {
+  /** Bước vào phòng đã chọn ở tầng hiện tại. */
+  function enterRoom(i: number) {
     if (!run) return;
-    const next = takeBoon(run, pickedBoon);
+    const next = chooseRoom(run, i);
     setRun(next);
-    setIdx(next.stage * QUESTIONS_PER_STAGE);
-    setOutcome(null);
-    deadlineRef.current = Date.now() + stageSeconds(next.boons) * 1000;
+    setIdx(0);
+    setAnswers({});
+    setNote("");
+    deadlineRef.current = next.room && next.room.questions > 0 ? Date.now() + roomSeconds(next) * 1000 : 0;
   }
 
-  const stage = outcome ? Math.max(0, (run?.stage ?? 1) - 1) : (run?.stage ?? 0);
-  const question = run?.questions[idx];
-  const stageFrom = stage * QUESTIONS_PER_STAGE;
-  const inStagePos = idx - stageFrom + 1;
-  const totalStages = run ? Math.ceil(run.questions.length / QUESTIONS_PER_STAGE) : STAGES_PER_RUN;
-  const totals = useMemo(() => runBoonTotals(run?.boons ?? []), [run?.boons]);
+  /** Rời màn rút kinh nghiệm: nhận di vật đã chọn rồi lên tầng tiếp theo. */
+  function continueUp() {
+    if (!run) return;
+    const next = pickedRelic ? takeRelic(run, pickedRelic) : skipBlessing(run);
+    setRun(next);
+    setOutcome(null);
+    setPickedRelic(undefined);
+    if (next.finished) finishRun(next);
+  }
+
   const quizList = useMemo(() => bankQuizzes(bank), [bank]);
-  const scopedCount = useMemo(
-    () => (bank ? filterBankByQuizzes(bank, packs).questions.length : 0),
-    [bank, packs],
-  );
-  const blanks = run
-    ? run.questions.slice(stageFrom, stageFrom + QUESTIONS_PER_STAGE).filter((_, i) => {
-        const v = answers[String(stageFrom + i)];
-        return v === undefined || v === null || v === "";
-      }).length
-    : 0;
+  const scopedCount = useMemo(() => (bank ? filterBankByQuizzes(bank, packs).questions.length : 0), [bank, packs]);
+  const mods = useMemo(() => (run ? runModifiers(run) : null), [run]);
+  const roomQs = useMemo(() => (run && run.room ? roomQuestions(run) : []), [run]);
+  const question = roomQs[idx];
+  const perRoom = roomQs.length;
+  const blanks = roomQs.filter((_, i) => {
+    const v = answers[String(i)];
+    return v === undefined || v === null || v === "";
+  }).length;
+
+  const boss = run?.room?.kind === "boss" ? bossAt(run.floor) : undefined;
+  const showPicker = Boolean(run && !summary && !outcome && !run.room);
+  const nonCombat = run?.room && run.room.questions === 0 ? run.room.kind : null;
 
   return (
     <ArenaPage>
       <ArenaHero
         icon={Castle}
         title="Tháp Không Lưu (TWR ATC)"
-        description="Ôn nghiệp vụ điều hành bay — mỗi buổi tu luyện 5 tầng, mỗi tầng 5 câu."
+        description="12 tầng phân nhánh, 3 con trùm có luật riêng — gom di vật, cân nhắc lời nguyền."
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -481,9 +528,7 @@ function TowerPage() {
         <section className="mx-auto w-full max-w-md space-y-4 rounded-2xl border bg-card/70 p-6">
           <div className="text-center">
             <p className="font-heading text-lg font-extrabold">Vào tháp tu luyện</p>
-            <p className="type-meta mt-1">
-              Nhập đúng thông tin đã đăng ký — không cần vào phòng thi trước.
-            </p>
+            <p className="type-meta mt-1">Nhập đúng thông tin đã đăng ký — không cần vào phòng thi trước.</p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="tower-name">Họ và tên</Label>
@@ -506,23 +551,21 @@ function TowerPage() {
       {entry && !run && (
         <section className="rounded-2xl border bg-card/70 p-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Xin chào <strong>{entry.name}</strong>. Mỗi buổi tu luyện khoảng 12–15 phút, không tính vào kết quả kỳ thi.
+            Xin chào <strong>{entry.name}</strong>. Một hành trình 12 tầng khoảng 15–20 phút, không tính vào kết quả kỳ thi.
           </p>
           <p className="type-meta mt-1">
             {loading
               ? "Đang chuẩn bị gói nghiệp vụ cho bạn…"
-              : `${dueCount} thẻ đang đến hạn ôn · ${scopedCount} câu sẽ dùng cho buổi tu luyện`}
+              : `${dueCount} thẻ đang đến hạn ôn · ${scopedCount} câu sẽ dùng cho hành trình`}
           </p>
           {!loading && !bank?.questions.length && (
-            <p className="type-meta mt-1 text-amber-600">
-              Gói nghiệp vụ chưa có câu hỏi nào — hãy thử lại khi có mạng.
-            </p>
+            <p className="type-meta mt-1 text-amber-600">Gói nghiệp vụ chưa có câu hỏi nào — hãy thử lại khi có mạng.</p>
           )}
 
           {quizList.length > 1 && (
             <div className="mt-5 rounded-xl border bg-background/60 p-4 text-left">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold">Chọn bộ đề cho buổi tu luyện (có thể chọn nhiều)</p>
+                <p className="text-sm font-semibold">Chọn bộ đề cho hành trình (có thể chọn nhiều)</p>
                 <button
                   type="button"
                   onClick={() => savePacks([])}
@@ -542,9 +585,7 @@ function TowerPage() {
                       onClick={() => togglePack(q.id)}
                       className={cn(
                         "rounded-full border px-3 py-1.5 text-xs font-medium transition",
-                        on
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground hover:border-primary/50",
+                        on ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50",
                       )}
                     >
                       {q.title} <span className="tabular-nums opacity-70">· {q.count}</span>
@@ -553,9 +594,7 @@ function TowerPage() {
                 })}
               </div>
               <p className="type-meta mt-2">
-                {packs.length === 0
-                  ? "Đang trộn câu hỏi của tất cả bộ đề."
-                  : `Đang trộn ${packs.length} bộ đề đã chọn.`}
+                {packs.length === 0 ? "Đang trộn câu hỏi của tất cả bộ đề." : `Đang trộn ${packs.length} bộ đề đã chọn.`}
               </p>
             </div>
           )}
@@ -569,12 +608,12 @@ function TowerPage() {
 
       {run && summary && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
-          <SectionHeading title="Hôm nay bạn đã học được gì" />
+          <SectionHeading title={summary.win ? "Chinh phục đỉnh tháp!" : "Hành trình khép lại"} />
           <div className="grid gap-3 sm:grid-cols-4">
             {[
-              { label: "Tầng đã qua", value: summary.stagesCleared },
+              { label: "Tầng đã qua", value: summary.floors },
+              { label: "Điểm hành trình", value: summary.score },
               { label: "Câu đúng", value: summary.correct },
-              { label: "Câu đã làm", value: summary.answered },
               { label: "Thẻ còn đến hạn", value: dueCount },
             ].map((s) => (
               <div key={s.label} className="rounded-xl border bg-background/60 p-3 text-center">
@@ -585,7 +624,7 @@ function TowerPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={begin}>
-              <RefreshCw className="mr-2 size-4" /> Vào tháp tu luyện mới
+              <RefreshCw className="mr-2 size-4" /> Hành trình mới
             </Button>
             <Button asChild variant="outline">
               <Link to="/dau-truong">Nghỉ một chút</Link>
@@ -594,13 +633,155 @@ function TowerPage() {
         </section>
       )}
 
+      {run && !summary && <RunBar run={run} />}
+
+      {/* Bản đồ phân nhánh: chọn phòng cho tầng hiện tại. */}
+      {showPicker && run && (
+        <section className="space-y-3 rounded-2xl border bg-card/70 p-5">
+          <SectionHeading title={`Tầng ${run.floor} — chọn đường đi`} />
+          <div className="grid gap-3 sm:grid-cols-3">
+            {floorOptions(run).map((room, i) => {
+              const meta = ROOM_META[room.kind];
+              const bossHere = room.kind === "boss" ? bossAt(run.floor) : undefined;
+              return (
+                <button
+                  key={`${room.kind}-${i}`}
+                  type="button"
+                  onClick={() => enterRoom(i)}
+                  className="group rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-primary hover:shadow-lg"
+                >
+                  <div className="text-2xl transition group-hover:scale-110">{meta.icon}</div>
+                  <div className={cn("mt-1 font-semibold", meta.tone)}>{bossHere ? bossHere.name : meta.label}</div>
+                  <div className="type-meta mt-1">{bossHere ? bossHere.rule : meta.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+          <p className="type-meta">Tầng 4, 8 và 12 là trùm — tầng ngay trước đó luôn có lửa trại để bạn chuẩn bị.</p>
+        </section>
+      )}
+
+      {/* Lửa trại */}
+      {run && nonCombat === "campfire" && !summary && (
+        <section className="space-y-3 rounded-2xl border bg-card/70 p-5">
+          <SectionHeading title="🔥 Lửa trại" />
+          <p className="type-meta">Nghỉ chân trước khi đi tiếp. Chọn một việc duy nhất.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setRun(restAtCampfire(run, "heal"))} disabled={mods?.noHeal}>
+              Hồi máu
+            </Button>
+            <Button variant="outline" onClick={() => setRun(restAtCampfire(run, "upgrade"))}>
+              Rèn khiên (+15)
+            </Button>
+          </div>
+          {mods?.noHeal && <p className="type-meta text-destructive">Hồi máu đang bị vô hiệu — hãy rèn khiên.</p>}
+        </section>
+      )}
+
+      {/* Sự kiện */}
+      {run && nonCombat === "event" && !summary && (
+        <section className="space-y-3 rounded-2xl border bg-card/70 p-5">
+          {(() => {
+            const ev = eventAt(run);
+            return (
+              <>
+                <SectionHeading title={`${ev.icon} ${ev.title}`} />
+                <p className="text-sm text-muted-foreground">{ev.text}</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {ev.choices.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        const res = resolveEvent(run, c.id);
+                        setRun(res.run);
+                        toast.message(res.message);
+                        if (res.run.finished) finishRun(res.run);
+                      }}
+                      className="rounded-xl border p-3 text-left text-sm transition hover:border-primary"
+                    >
+                      <div className="font-semibold">{c.label}</div>
+                      <div className="type-meta">{c.hint}</div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
+        </section>
+      )}
+
+      {/* Cửa hàng */}
+      {run && nonCombat === "shop" && !summary && (
+        <section className="space-y-3 rounded-2xl border bg-card/70 p-5">
+          <SectionHeading title="🏪 Cửa hàng giữa tháp" />
+          <p className="type-meta">Bạn đang có {run.coins} xu.</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {shopStock(run).relics.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => {
+                  const res = buyAtShop(run, { kind: "relic", relicId: r.id });
+                  setRun(res.run);
+                  toast.message(res.message);
+                }}
+                className="rounded-xl border p-3 text-left text-sm transition hover:border-primary"
+              >
+                <div className="font-semibold">
+                  {r.icon} {r.name}
+                </div>
+                <div className="type-meta">
+                  {r.desc} · {RARITY_LABEL[r.rarity]}
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const res = buyAtShop(run, { kind: "heal" });
+                setRun(res.run);
+                toast.message(res.message);
+              }}
+            >
+              Hồi 30 máu · {shopStock(run).healCost} xu
+            </Button>
+            {run.curses.map((id) => (
+              <Button
+                key={id}
+                variant="outline"
+                onClick={() => {
+                  const res = buyAtShop(run, { kind: "cleanse", curseId: id });
+                  setRun(res.run);
+                  toast.message(res.message);
+                }}
+              >
+                Gỡ {curseById(id)?.name} · {shopStock(run).cleanseCost} xu
+              </Button>
+            ))}
+            <Button
+              onClick={() => {
+                const next = leaveRoom(run);
+                setRun(next);
+                if (next.finished) finishRun(next);
+              }}
+            >
+              Rời cửa hàng <ArrowRight className="ml-2 size-4" />
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* Rút kinh nghiệm + ban phước + lời nguyền */}
       {run && outcome && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
-          <SectionHeading title={`Góc rút kinh nghiệm — ${stageName(stage)}`} />
+          <SectionHeading title="Góc rút kinh nghiệm" />
           <ul className="space-y-2">
             {outcome.results.map((r, i) => (
               <li
-                key={r.questionId}
+                key={`${r.questionId}-${i}`}
                 className={cn(
                   "rounded-xl border p-3 text-sm",
                   r.correct ? "border-emerald-500/40 bg-emerald-500/5" : "border-destructive/40 bg-destructive/5",
@@ -621,84 +802,98 @@ function TowerPage() {
 
           {!summary && run.offered.length > 0 && (
             <div>
-              <p className="mb-2 text-sm font-semibold">Chọn một trợ giúp cho tầng sau</p>
-              <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Trợ giúp cho tầng sau">
+              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                <Sparkles className="size-4 text-amber-500" /> Ban phước — chọn một di vật
+              </p>
+              <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Ban phước di vật">
                 {run.offered.map((b) => (
                   <button
                     key={b.id}
                     type="button"
                     role="radio"
-                    aria-checked={pickedBoon === b.id}
-                    onClick={() => setPickedBoon(b.id)}
+                    aria-checked={pickedRelic === b.id}
+                    onClick={() => setPickedRelic(b.id)}
                     className={cn(
                       "rounded-xl border p-3 text-left text-sm transition hover:border-primary",
-                      pickedBoon === b.id && "border-primary bg-primary/5 ring-2 ring-primary/30",
+                      pickedRelic === b.id && "border-primary bg-primary/5 ring-2 ring-primary/30",
                     )}
                   >
-                    <div className="font-semibold">{b.name}</div>
+                    <div className="font-semibold">
+                      {b.icon} {b.name}
+                    </div>
                     <div className="type-meta">{b.desc}</div>
+                    <div className="type-meta opacity-70">{RARITY_LABEL[b.rarity]}</div>
                   </button>
                 ))}
               </div>
-              {!pickedBoon && (
-                <p className="type-meta mt-2">Chưa chọn cũng được — bạn vẫn lên tầng bình thường.</p>
-              )}
+              <p className="type-meta mt-2">Bỏ qua cũng được — đổi lại bạn nhận 25 xu.</p>
+            </div>
+          )}
+
+          {!summary && run.curseOffer && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3">
+              <p className="text-sm font-semibold">
+                {curseById(run.curseOffer.curseId)?.icon} Lời nguyền: {curseById(run.curseOffer.curseId)?.name}
+              </p>
+              <p className="type-meta">
+                {curseById(run.curseOffer.curseId)?.desc} — nhận để đổi lấy {run.curseOffer.coins} xu.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Button size="sm" variant="destructive" onClick={() => setRun(takeCurse(run, true))}>
+                  Nhận lời nguyền
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setRun(takeCurse(run, false))}>
+                  Từ chối
+                </Button>
+              </div>
             </div>
           )}
 
           {!summary && (
-            <Button onClick={nextStage}>
-              Lên {stageName(run.stage)} <ArrowRight className="ml-2 size-4" />
+            <Button onClick={continueUp}>
+              Lên tầng {Math.min(run.floor, FLOORS)} <ArrowRight className="ml-2 size-4" />
             </Button>
           )}
-          {summary && outcome.softStop && (
-            <p className="type-meta">
-              Ca trực khép lại sớm ở đây để bạn ôn kỹ phần còn vướng — không sao cả, lần sau nhẹ hơn.
-            </p>
+          {summary && !summary.win && (
+            <p className="type-meta">Hành trình dừng ở đây để bạn ôn kỹ phần còn vướng — lần sau nhẹ hơn.</p>
           )}
         </section>
       )}
 
-      {run && !summary && !outcome && question && (
+      {/* Phòng giao tranh / tinh anh / trùm */}
+      {run && !summary && !outcome && run.room && perRoom > 0 && question && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-5">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-              {stageName(stage)} ({stage + 1}/{totalStages}) · câu {inStagePos}/{QUESTIONS_PER_STAGE}
+              {ROOM_META[run.room.kind].icon} {boss ? boss.name : ROOM_META[run.room.kind].label} · câu {idx + 1}/{perRoom}
             </span>
-            <HpBarLite hp={run.hp} shield={run.shield} />
             {run.combo > 1 ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
                 <Flame className="size-3" /> Chuỗi {run.combo}
               </span>
             ) : null}
-            {totals.damageBonus > 0 ? (
-              <span className="type-meta">+{totals.damageBonus} sát thương</span>
-            ) : null}
             <span
               ref={clockRef}
-              className={cn(
-                "ml-auto font-mono text-sm tabular-nums",
-                lowTime && "font-bold text-destructive",
-              )}
+              className={cn("ml-auto font-mono text-sm tabular-nums", lowTime && "font-bold text-destructive")}
             />
           </div>
+          {boss && <p className="type-meta text-destructive">{boss.rule}</p>}
+          {note && <p className="type-meta">{note}</p>}
 
-          {/* Bản đồ câu trong tầng: nhìn là biết còn câu nào bỏ trống. */}
           <div className="flex flex-wrap gap-1.5">
-            {Array.from({ length: QUESTIONS_PER_STAGE }).map((_, i) => {
-              const at = stageFrom + i;
-              const v = answers[String(at)];
+            {roomQs.map((_, i) => {
+              const v = answers[String(i)];
               const done = v !== undefined && v !== null && v !== "";
               return (
                 <button
-                  key={at}
+                  key={i}
                   type="button"
-                  onClick={() => setIdx(at)}
+                  onClick={() => setIdx(i)}
                   aria-label={`Câu ${i + 1}${done ? " — đã trả lời" : " — chưa trả lời"}`}
-                  aria-current={at === idx}
+                  aria-current={i === idx}
                   className={cn(
                     "size-8 rounded-lg border text-xs font-semibold transition",
-                    at === idx && "ring-2 ring-primary",
+                    i === idx && "ring-2 ring-primary",
                     done ? "border-primary/40 bg-primary/10 text-primary" : "bg-background text-muted-foreground",
                   )}
                 >
@@ -722,17 +917,15 @@ function TowerPage() {
           />
 
           <div className="flex flex-wrap justify-end gap-2">
-            <Button variant="outline" disabled={inStagePos <= 1} onClick={() => setIdx((i) => Math.max(stageFrom, i - 1))}>
+            <Button variant="outline" disabled={idx <= 0} onClick={() => setIdx((i) => Math.max(0, i - 1))}>
               <ArrowLeft className="mr-2 size-4" /> Câu trước
             </Button>
-            {inStagePos < QUESTIONS_PER_STAGE ? (
+            {idx < perRoom - 1 ? (
               <Button onClick={() => setIdx((i) => i + 1)}>
                 Câu tiếp theo <ArrowRight className="ml-2 size-4" />
               </Button>
             ) : (
-              <Button onClick={() => (blanks > 0 ? setConfirmClose(true) : closeStage(answers))}>
-                Chốt {stageName(stage)}
-              </Button>
+              <Button onClick={() => (blanks > 0 ? setConfirmClose(true) : closeRoom(answers))}>Chốt phòng</Button>
             )}
           </div>
         </section>
@@ -748,7 +941,7 @@ function TowerPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Quay lại làm tiếp</AlertDialogCancel>
-            <AlertDialogAction onClick={() => closeStage(answers)}>Vẫn chốt tầng</AlertDialogAction>
+            <AlertDialogAction onClick={() => closeRoom(answers)}>Vẫn chốt phòng</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

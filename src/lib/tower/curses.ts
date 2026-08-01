@@ -1,0 +1,56 @@
+/**
+ * Lời nguyền — trục "rủi ro đổi phần thưởng" của Tháp Không Lưu.
+ * Người chơi tự nguyện nhận để đổi lấy di vật hiếm hơn hoặc xu.
+ */
+import type { RelicEffect } from "@/lib/tower/relics";
+
+export type Curse = {
+  id: string;
+  icon: string;
+  name: string;
+  desc: string;
+  /** Bậc nặng nhẹ, dùng để tính điểm hành trình và mức thưởng. */
+  rank: 1 | 2 | 3;
+  effect: RelicEffect & { skillSlow?: number; noHeal?: boolean; silence?: boolean };
+};
+
+export const CURSES: Curse[] = [
+  { id: "mu-suong", icon: "🌫️", name: "Mù sương", desc: "Thời gian mỗi câu −25%", rank: 2, effect: { timePct: -0.25 } },
+  { id: "xieng-xich", icon: "⛓️", name: "Xiềng xích", desc: "Kỹ năng hồi chậm thêm 3 lượt", rank: 1, effect: { skillSlow: 3 } },
+  { id: "vet-thuong-ho", icon: "🩸", name: "Vết thương hở", desc: "Mọi nguồn hồi máu bị vô hiệu", rank: 3, effect: { noHeal: true } },
+  { id: "long-tham", icon: "🤑", name: "Lòng tham", desc: "Nhận sát thương +20%, xu +60%", rank: 2, effect: { damageReducePct: -0.2, coinPct: 0.6 } },
+  { id: "im-lang", icon: "🤫", name: "Im lặng", desc: "Mất một kỹ năng ngẫu nhiên", rank: 1, effect: { silence: true } },
+];
+
+export const curseById = (id: string): Curse | undefined => CURSES.find((c) => c.id === id);
+
+/** Tổng bậc lời nguyền đang mang — dùng trong công thức điểm hành trình. */
+export function curseRank(ids: string[]): number {
+  return ids.reduce((s, id) => s + (curseById(id)?.rank ?? 0), 0);
+}
+
+export function curseTotals(ids: string[]) {
+  return ids.reduce(
+    (acc, id) => {
+      const c = curseById(id);
+      if (!c) return acc;
+      return {
+        timePct: acc.timePct + (c.effect.timePct ?? 0),
+        damageReducePct: acc.damageReducePct + (c.effect.damageReducePct ?? 0),
+        coinPct: acc.coinPct + (c.effect.coinPct ?? 0),
+        skillSlow: acc.skillSlow + (c.effect.skillSlow ?? 0),
+        noHeal: acc.noHeal || Boolean(c.effect.noHeal),
+        silence: acc.silence || Boolean(c.effect.silence),
+      };
+    },
+    { timePct: 0, damageReducePct: 0, coinPct: 0, skillSlow: 0, noHeal: false, silence: false },
+  );
+}
+
+/** Rút một lời nguyền chưa mang, kèm mức thưởng xu tương ứng bậc. */
+export function offerCurse(rand: () => number, taken: string[] = []): { curse: Curse; coins: number } | null {
+  const pool = CURSES.filter((c) => !taken.includes(c.id));
+  if (!pool.length) return null;
+  const curse = pool[Math.floor(rand() * pool.length) % pool.length]!;
+  return { curse, coins: curse.rank * 40 };
+}

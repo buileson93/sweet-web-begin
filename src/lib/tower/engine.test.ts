@@ -1,8 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import type { BankQuestion, QuestionBank } from "@/lib/tower/bank";
-import { BOONS, QUESTIONS_PER_STAGE, START_HP } from "@/lib/tower/config";
-import { createRun, gradeStage, presentQuestion, pickRunQuestions, stageSeconds, takeBoon, type TowerRun } from "@/lib/tower/engine";
+import { START_HP } from "@/lib/tower/config";
+import {
+  chooseRoom,
+  createRun,
+  gradeStage,
+  presentQuestion,
+  pickRunQuestions,
+  roomQuestions,
+  roomSeconds,
+  takeCurse,
+  takeRelic,
+} from "@/lib/tower/engine";
+import { BOSS_FLOORS, buildMap, FLOORS } from "@/lib/tower/map";
+import { relicTotals } from "@/lib/tower/relics";
+import { runScore } from "@/lib/tower/score";
 import { gradeLocal } from "@/lib/tower/grade.local";
 import { seededRandom } from "@/lib/tower/rng";
 import { applyResults, dueCardIds, emptyState, mergeStates, normalizeState, pruneState } from "@/lib/tower/state";
@@ -147,76 +160,103 @@ describe("vòng chơi tại máy người dùng", () => {
     questions: Array.from({ length: 40 }, (_, i) => base({ id: `q${i}` })),
   };
 
+  const enterCombat = (seed: string) => {
+    let run = createRun(bank, emptyState(), seed);
+    const floor = run.map[0]!;
+    const at = floor.findIndex((r) => r.questions > 0);
+    run = chooseRoom(run, at);
+    return run;
+  };
+
   it("ưu tiên thẻ đến hạn trước thẻ mới", () => {
     const state = normalizeState({ cards: { q30: [1, "2020-01-01"] } });
     const picked = pickRunQuestions(bank, state, seededRandom("x"), new Date("2026-01-01"), 5);
     expect(picked.map((q) => q.id)).toContain("q30");
   });
 
-  it("chấm chặng: đúng hết thì không mất máu", () => {
-    const run = createRun(bank, emptyState(), "seed-1");
-    const answers = Object.fromEntries(
-      run.questions.slice(0, QUESTIONS_PER_STAGE).map((q, i) => [String(i), q.answerIndex]),
-    );
+  it("chấm phòng: đúng hết thì không mất máu và lên tầng", () => {
+    const run = enterCombat("seed-1");
+    const qs = roomQuestions(run);
+    const answers = Object.fromEntries(qs.map((q, i) => [String(i), q.answerIndex]));
     const { run: next, outcome } = gradeStage(run, answers);
-    expect(next.hp).toBe(START_HP);
+    expect(next.hp).toBe(run.maxHp);
     expect(outcome.results.every((r) => r.correct)).toBe(true);
     expect(outcome.damage).toBeGreaterThan(0);
-    expect(next.combo).toBe(QUESTIONS_PER_STAGE);
+    expect(next.floor).toBe(2);
+    expect(next.offered.length).toBeGreaterThan(0);
   });
 
-  it("sai quá tỉ lệ cho phép thì dừng nhẹ nhàng", () => {
-    const run = createRun(bank, emptyState(), "seed-2");
+  it("bỏ trống hết thì mất máu, có thể kết thúc hành trình", () => {
+    const run = enterCombat("seed-2");
     const { run: next, outcome } = gradeStage(run, {});
-    expect(outcome.softStop).toBe(true);
-    expect(next.finished).toBe(true);
-    expect(next.hp).toBeLessThan(START_HP);
+    expect(outcome.results.every((r) => !r.correct)).toBe(true);
+    expect(next.hp).toBeLessThan(run.maxHp);
   });
 
-  it("cùng hạt ngẫu nhiên cho cùng một phiên", () => {
+  it("cùng hạt ngẫu nhiên cho cùng một hành trình", () => {
     const a = createRun(bank, emptyState(), "same");
     const b = createRun(bank, emptyState(), "same");
     expect(a.questions.map((q) => q.id)).toEqual(b.questions.map((q) => q.id));
-    expect(a.offered.map((o) => o.id)).toEqual(b.offered.map((o) => o.id));
+    expect(JSON.stringify(a.map)).toEqual(JSON.stringify(b.map));
+  });
+
+  it("thời lượng phòng tỉ lệ với số câu", () => {
+    const run = enterCombat("seed-3");
+    expect(roomSeconds(run)).toBeGreaterThan(0);
   });
 });
 
-const baseRun = (): TowerRun => ({
-  seed: "seed",
-  questions: [],
-  stage: 1,
-  hp: START_HP,
-  shield: 0,
-  combo: 0,
-  correct: 0,
-  answered: 0,
-  boons: [],
-  offered: [],
-  finished: false,
-  startedAt: new Date().toISOString(),
+describe("bản đồ phân nhánh 12 tầng", () => {
+  it("đủ 12 tầng, trùm đúng vị trí, tầng trước trùm luôn có lửa trại", () => {
+    const map = buildMap("map-seed");
+    expect(map).toHaveLength(FLOORS);
+    for (const f of BOSS_FLOORS) {
+      expect(map[f - 1]!.map((r) => r.kind)).toEqual(["boss"]);
+      expect(map[f - 2]!.some((r) => r.kind === "campfire")).toBe(true);
+    }
+    for (const floor of map) expect(floor.some((r) => r.questions > 0)).toBe(true);
+  });
+
+  it("cùng hạt cho cùng bản đồ, khác hạt thì khác", () => {
+    expect(JSON.stringify(buildMap("a"))).toBe(JSON.stringify(buildMap("a")));
+    expect(JSON.stringify(buildMap("a"))).not.toBe(JSON.stringify(buildMap("b")));
+  });
 });
 
-describe("trợ giúp (boon) có tác dụng thật", () => {
-  it("nhận trợ giúp hồi máu thì tăng máu ngay và không vượt trần", () => {
-    const heal = BOONS.find((b) => (b.effect.heal ?? 0) > 0);
-    if (!heal) return;
-    const run = { ...baseRun(), hp: 40, boons: [] as string[] };
-    const after = takeBoon(run, heal.id);
-    expect(after.hp).toBe(Math.min(START_HP, 40 + (heal.effect.heal ?? 0)));
-    expect(takeBoon({ ...run, hp: START_HP }, heal.id).hp).toBe(START_HP);
+describe("di vật, lời nguyền và điểm hành trình", () => {
+  const bank: QuestionBank = {
+    version: 1,
+    builtAt: new Date().toISOString(),
+    questions: Array.from({ length: 40 }, (_, i) => base({ id: `q${i}` })),
+  };
+
+  it("nhận di vật thì cộng dồn hiệu ứng", () => {
+    let run = createRun(bank, emptyState(), "relic-seed");
+    run = { ...run, offered: [...run.offered], hp: 40 };
+    const floor = run.map[0]!;
+    run = chooseRoom(run, floor.findIndex((r) => r.questions > 0));
+    const graded = gradeStage(run, Object.fromEntries(roomQuestions(run).map((q, i) => [String(i), q.answerIndex])));
+    const offer = graded.run.offered[0]!;
+    const after = takeRelic(graded.run, offer.id);
+    expect(after.relics).toContain(offer.id);
+    expect(relicTotals(after.relics).minRoll).toBeGreaterThanOrEqual(1);
   });
 
-  it("nhận trợ giúp khiên thì cộng khiên và giữ nguyên qua các tầng", () => {
-    const sh = BOONS.find((b) => (b.effect.shield ?? 0) > 0);
-    if (!sh) return;
-    const after = takeBoon({ ...baseRun(), shield: 5 }, sh.id);
-    expect(after.shield).toBe(5 + (sh.effect.shield ?? 0));
+  it("nhận lời nguyền thì được xu, từ chối thì không", () => {
+    const run = createRun(bank, emptyState(), "curse-seed");
+    const withOffer = { ...run, curseOffer: { curseId: "mu-suong", coins: 80 } };
+    expect(takeCurse(withOffer, true).curses).toContain("mu-suong");
+    expect(takeCurse(withOffer, true).coins).toBe(run.coins + 80);
+    expect(takeCurse(withOffer, false).curses).toHaveLength(run.curses.length);
   });
 
-  it("trợ giúp thêm giây làm tăng thời lượng của tầng", () => {
-    const t = BOONS.find((b) => (b.effect.timeBonus ?? 0) > 0);
-    const base = stageSeconds([]);
-    if (!t) return;
-    expect(stageSeconds([t.id])).toBeGreaterThan(base);
+  it("điểm hành trình theo đúng công thức khoá cứng", () => {
+    expect(runScore({ floorsCleared: 3, hp: 50, relics: ["a", "b"], curses: [] })).toBe(3 * 100 + 50 * 2 + 30);
+    expect(runScore({ floorsCleared: 0, hp: 0, relics: [], curses: [], ascension: 2 })).toBe(0);
+  });
+
+  it("máu khởi đầu mặc định bằng hằng số cấu hình", () => {
+    const run = createRun(bank, emptyState(), "hp-seed");
+    expect(run.maxHp).toBe(START_HP);
   });
 });
