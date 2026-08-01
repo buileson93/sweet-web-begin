@@ -93,15 +93,17 @@ export function AvatarPickerDialog({
           {currentUrl ? "Đổi nhân vật" : "Chọn nhân vật"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nhân vật của bạn</DialogTitle>
-          <DialogDescription>Chọn phong cách, gương mặt và màu nền — xem trước ngay bên trái.</DialogDescription>
+          <DialogDescription>
+            Chọn phong cách, gương mặt, màu nền và tuỳ chỉnh chi tiết (tóc, râu, kính…) — xem trước ngay bên trái.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 sm:grid-cols-[10rem_minmax(0,1fr)]">
           <div className="flex flex-col items-center gap-2">
-            <span className="size-32 overflow-hidden rounded-full ring-4 ring-primary/25">
+            <span className="sticky top-0 size-32 overflow-hidden rounded-full ring-4 ring-primary/25">
               <Avatar2D spec={spec} name={name} className="size-full" />
             </span>
             <Button
@@ -121,7 +123,7 @@ export function AvatarPickerDialog({
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => setStyle(s.id)}
+                  onClick={() => pickStyle(s.id)}
                   className={cn(
                     "rounded-full border px-3 py-1 text-xs font-semibold transition",
                     style === s.id
@@ -146,7 +148,7 @@ export function AvatarPickerDialog({
                     seed === s ? "ring-primary" : "ring-border",
                   )}
                 >
-                  <Avatar2D spec={{ style, seed: s, background }} name={name} className="size-full" />
+                  <Avatar2D spec={{ style, seed: s, background, options }} name={name} className="size-full" />
                 </button>
               ))}
             </div>
@@ -170,8 +172,50 @@ export function AvatarPickerDialog({
                 </button>
               ))}
             </div>
+
+            {groups.length > 0 ? (
+              <div className="space-y-2 rounded-2xl border border-border bg-secondary/30 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-bold uppercase tracking-tight text-muted-foreground">Tuỳ chỉnh chi tiết</p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 rounded-full text-xs"
+                    onClick={() => setOptions({})}
+                  >
+                    Đặt lại
+                  </Button>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {groups.map((g) => (
+                    <label key={g.key} className="space-y-1 text-xs font-semibold">
+                      <span className="text-muted-foreground">{g.label}</span>
+                      <Select
+                        value={options[g.key] ?? "auto"}
+                        onValueChange={(v) => setOptions((prev) => ({ ...prev, [g.key]: v }))}
+                      >
+                        <SelectTrigger className="h-9 rounded-xl" aria-label={g.label}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          <SelectItem value="auto">Tự động</SelectItem>
+                          {g.optional ? <SelectItem value="off">Không có</SelectItem> : null}
+                          {g.values.map((v) => (
+                            <SelectItem key={v} value={v}>
+                              {optionValueLabel(v)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
+
 
         <DialogFooter>
           <Button type="button" variant="ghost" className="rounded-full" onClick={() => setOpen(false)}>
