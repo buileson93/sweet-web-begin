@@ -522,6 +522,7 @@ export function gradeStage(
     floor: cleared ? nextFloor : run.floor,
     room: null,
     slots: [],
+    challenge: null,
     finished,
     win,
   };
@@ -636,10 +637,11 @@ export function restAtCampfire(run: TowerRun, choice: "heal" | "upgrade"): Tower
   const mods = runModifiers(run);
   const asc = ascensionMods(run.ascension);
   let next = { ...run };
+  const bonusPct = run.challenge?.correct ? 0.1 : 0; // Trả lời đúng câu ôn bài thì hồi thêm 10% máu tối đa.
   if (choice === "heal" && !mods.noHeal) {
-    next.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * asc.campfireHealPct));
+    next.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * (asc.campfireHealPct + bonusPct)));
   } else {
-    next.shield = run.shield + 15;
+    next.shield = run.shield + 15 + (run.challenge?.correct ? 5 : 0);
   }
   next.log = logged(run, {
     floor: run.floor,
@@ -701,7 +703,8 @@ export function eventAt(run: TowerRun): TowerEvent {
 export function resolveEvent(run: TowerRun, choiceId: string): { run: TowerRun; message: string } {
   const ev = eventAt(run);
   const rand = branch(run.seed, `event-roll-${run.floor}`);
-  const lucky = rand() < 0.5;
+  // Trả lời đúng câu thử thách sự kiện thì mọi lựa chọn rủi ro đều thành công.
+  const lucky = run.challenge?.correct ? true : rand() < 0.5;
   let next = { ...run };
   let message = "Bạn đi tiếp, không có gì xảy ra.";
 
@@ -737,7 +740,8 @@ export function resolveEvent(run: TowerRun, choiceId: string): { run: TowerRun; 
 export function shopStock(run: TowerRun): { relics: Relic[]; healCost: number; cleanseCost: number } {
   const asc = ascensionMods(run.ascension);
   const rand = branch(run.seed, `shop-${run.floor}`);
-  const scale = 1 + asc.shopCostPct;
+  // Mặc cả thành công (đúng câu thử thách cửa hàng) thì giảm 30% mọi giá.
+  const scale = (1 + asc.shopCostPct) * (run.challenge?.correct ? 0.7 : 1);
   return {
     relics: offerRelics(rand, run.relics, "thuong", 2),
     healCost: Math.round(60 * scale),
@@ -751,7 +755,9 @@ export function buyAtShop(
 ): { run: TowerRun; message: string } {
   const stock = shopStock(run);
   const mods = runModifiers(run);
-  const price = (rarity: string) => (rarity === "huyenthoai" ? 400 : rarity === "suthi" ? 260 : rarity === "hiem" ? 170 : 100);
+  const discount = run.challenge?.correct ? 0.7 : 1;
+  const price = (rarity: string) =>
+    Math.round((rarity === "huyenthoai" ? 400 : rarity === "suthi" ? 260 : rarity === "hiem" ? 170 : 100) * discount);
 
   if (action.kind === "relic") {
     const relic = stock.relics.find((r) => r.id === action.relicId);
@@ -798,6 +804,7 @@ function advanceNonCombat(run: TowerRun): TowerRun {
     floor: nextFloor,
     room: null,
     slots: [],
+    challenge: null,
     finished,
     win: finished,
   };
