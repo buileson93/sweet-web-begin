@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  fillBlankMatches,
+  gradeFraction,
   gradeOne,
+  levenshtein,
+  typoAllowance,
   optionImagesOf,
   permuteByOrder,
   reorderByDisplay,
@@ -458,7 +462,7 @@ describe("dung sai chính tả câu điền khuyết", () => {
 });
 
 describe("chấm điểm một phần câu nhiều đáp án", () => {
-  const multi = (over: Partial<GradingQuestionRow> = {}) =>
+  const multi = (over: Partial<QuestionRow> = {}) =>
     ({
       id: "m1",
       question: "Chọn các sân bay miền Trung",
@@ -478,7 +482,7 @@ describe("chấm điểm một phần câu nhiều đáp án", () => {
       time_limit_seconds: null,
       order_index: 0,
       ...over,
-    }) as GradingQuestionRow;
+    }) as QuestionRow;
   const order = [0, 1, 2, 3];
 
   it("chọn đủ và đúng được trọn điểm", () => {
