@@ -175,7 +175,12 @@ export function validateQuestionDraft(
     }
   }
 
+  // Ảnh minh hoạ nên có mô tả thay thế (cảnh báo mềm, không chặn lưu).
+  if (input.image_url && !(input.image_alt ?? "").trim())
+    warnings.image_alt = "Ảnh chưa có mô tả — thí sinh dùng trình đọc màn hình sẽ không hiểu ảnh.";
+
   return { errors, warnings };
+
 }
 
 /** Có lỗi chặn lưu hay không. */
