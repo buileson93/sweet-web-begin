@@ -474,7 +474,10 @@ export function gradeStage(
       if (blocks > 0) {
         blocks--; // Khiên băng chặn đứng một đòn mỗi tầng.
       } else {
-        const incoming = wrongDamage(kind, mods.damageTakenPct, mods.damageReducePct);
+        const raw = wrongDamage(kind, mods.damageTakenPct, mods.damageReducePct);
+        // Trần thiệt hại mỗi phòng: sai cả phòng vẫn còn cửa đi tiếp.
+        const room = roomLossCap(kind, run.maxHp);
+        const incoming = Math.max(0, Math.min(raw, room - hpLost));
         const absorbed = Math.min(shield, incoming);
         shield -= absorbed;
         hp -= incoming - absorbed;
@@ -482,6 +485,7 @@ export function gradeStage(
         if (mods.relics.reflectPct > 0) damage += Math.round(incoming * mods.relics.reflectPct);
       }
     }
+
     return {
       questionId: q.id,
       correct,
