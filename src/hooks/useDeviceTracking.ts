@@ -3,6 +3,7 @@ import { useRouterState } from "@tanstack/react-router";
 
 import { collectDeviceVisit } from "@/lib/deviceInfo";
 import { recordDeviceVisit } from "@/lib/visits.functions";
+import { drainVisits, enqueueVisit } from "@/lib/visits/queue";
 
 
 /**
@@ -30,13 +31,33 @@ export function useDeviceTracking() {
 
     // Hoãn lại để không tranh tài nguyên với lần render đầu tiên.
     const timer = window.setTimeout(() => {
-      const payload = collectDeviceVisit(pathname);
-      void recordDeviceVisit({ data: payload }).catch((err) => {
-        console.warn("Không ghi được thống kê thiết bị:", err);
-      });
+      enqueueVisit(collectDeviceVisit(pathname));
+      void flushVisits();
     }, 1200);
 
 
     return () => window.clearTimeout(timer);
   }, [pathname]);
+
+  // Có mạng trở lại thì đẩy nốt hàng đợi đã tích luỹ lúc ngoại tuyến.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onOnline = () => void flushVisits();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
+}
+
+/** Gửi lần lượt các bản ghi đang xếp hàng; thất bại thì trả lại hàng đợi. */
+async function flushVisits(): Promise<void> {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+  const items = drainVisits();
+  for (const payload of items) {
+    try {
+      await recordDeviceVisit({ data: payload as never });
+    } catch {
+      enqueueVisit(payload);
+      return;
+    }
+  }
 }

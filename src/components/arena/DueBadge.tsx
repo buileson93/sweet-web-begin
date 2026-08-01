@@ -5,6 +5,7 @@ import { CalendarClock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { readExamEntry } from "@/lib/examSession";
 import { getDueCount } from "@/lib/tower.functions";
+import { cachedFetch } from "@/lib/cache/ttlCache";
 
 /**
  * Huy hiệu "N thẻ cần ôn" — chỉ hiển thị khi máy đã có thông tin thí sinh.
@@ -18,13 +19,16 @@ export function DueBadge({ className }: { className?: string }) {
     const entry = typeof window === "undefined" ? null : readExamEntry(window.sessionStorage);
     if (!entry) return;
     let alive = true;
-    void fetchDue({
-      data: {
-        name: entry.name,
-        credential: entry.credential,
-        ...(entry.extraCredential ? { extraCredential: entry.extraCredential } : {}),
-      },
-    })
+    // Lịch ôn thay đổi chậm: dùng lại kết quả trong 10 phút, chỉ gọi khi cache cũ.
+    void cachedFetch(`vatm:due:${entry.credential}`, 10 * 60_000, () =>
+      fetchDue({
+        data: {
+          name: entry.name,
+          credential: entry.credential,
+          ...(entry.extraCredential ? { extraCredential: entry.extraCredential } : {}),
+        },
+      }),
+    )
       .then((res) => {
         if (alive) setDue(res.due);
       })

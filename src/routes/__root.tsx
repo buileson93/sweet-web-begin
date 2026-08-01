@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/palette";
 import { useDeviceTracking } from "@/hooks/useDeviceTracking";
+import { registerOfflineWorker } from "@/lib/pwa/register";
 
 
 function NotFoundComponent() {
@@ -137,6 +138,10 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useDeviceTracking();
+
+  useEffect(() => {
+    registerOfflineWorker();
+  }, []);
 
 
   useEffect(() => {
