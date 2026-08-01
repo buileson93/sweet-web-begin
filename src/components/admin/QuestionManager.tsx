@@ -53,6 +53,8 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const [form, setForm] = useState<QuestionFormState>({ ...emptyForm });
   const [draftAvailable, setDraftAvailable] = useState(false);
   const pendingDraft = useRef<QuestionFormState | null>(null);
+  // Đánh dấu lần lưu hiện tại là "Lưu & soạn câu kế".
+  const saveNextRef = useRef(false);
 
 
   const PAGE_SIZE = 20;
@@ -157,6 +159,22 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
     editing,
     onSaved: () => {
       clearDraft(draftKey(quizId, editing?.id ?? null));
+      if (saveNextRef.current) {
+        // Lưu & soạn câu kế: giữ nguyên bảng soạn, chỉ dọn nội dung và tăng số thứ tự.
+        saveNextRef.current = false;
+        setEditing(null);
+        setForm((f) => ({
+          ...emptyForm,
+          kind: f.kind,
+          difficulty: f.difficulty,
+          points: f.points,
+          tags: f.tags,
+          order_index: (Number(f.order_index) || 0) + 1,
+          options: f.kind === "true_false" ? ["Đúng", "Sai"] : ["", "", "", ""],
+          option_images: ["", "", "", ""],
+        }));
+        return;
+      }
       setOpen(false);
     },
   });
@@ -501,7 +519,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
             bulkBusy={bulkBusy}
             onEdit={openEdit}
             onRemove={(q) => remove.mutate(q)}
-            onPreview={(q) => setPreview(q)}
+            onPreview={openEdit}
             onDuplicate={(q) => duplicate.mutate(q)}
             onArchive={(q, archived) => archive.mutate({ row: q, archived })}
             onMove={moveRow}
