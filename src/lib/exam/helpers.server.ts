@@ -1,10 +1,14 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   MAX_EVENTS_PER_SESSION,
+  MAX_EXEMPT_EVENTS_PER_SESSION,
+  QUOTA_EXEMPT_KINDS,
   isExamEventKind,
+  isQuotaExempt,
   scoreEvent,
   type ExamEventDetail,
 } from "@/lib/integrity";
+
 import { lateness, shuffle, type QuestionRow } from "@/lib/grading";
 import { QUESTION_COLUMNS } from "@/lib/exam/types";
 
