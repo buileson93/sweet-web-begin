@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 import { ClassChip } from "@/components/arena/ClassPicker";
 import { ClassSprite } from "@/components/arena/ClassSprite";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 type Fx = { id: number; text: string; tone: "hit" | "heal" | "skill" };
 
 /** Khối thông tin một đấu thủ: avatar 2D, cấp bậc, máu, sát thương và hiệu ứng đánh nhau. */
-export function DuelFighter({
+export const DuelFighter = memo(function DuelFighter({
   player,
   hpStart,
   mine,
@@ -219,4 +219,4 @@ export function DuelFighter({
       </p>
     </div>
   );
-}
+})
