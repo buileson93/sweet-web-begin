@@ -922,9 +922,24 @@ function TowerPage() {
 
       {run && !summary && <RunBar run={run} />}
 
+      {/* Đang trong phòng: bản đồ thu lại thành một nút, tránh phải cuộn để chơi. */}
+      {run && !summary && inRoom && (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            aria-expanded={mapOpen}
+            aria-controls="tower-map-panel"
+            onClick={() => setMapOpen((v) => !v)}
+          >
+            <Map className="mr-1.5 size-4" /> {mapOpen ? "Ẩn bản đồ" : "Xem bản đồ"}
+          </Button>
+        </div>
+      )}
+
       {/* Bản đồ phân nhánh: xem toàn cảnh 12 tầng và chọn phòng cho tầng hiện tại. */}
-      {run && !summary && (
-        <section className="space-y-3 rounded-2xl border bg-card/70 p-4 sm:p-5">
+      {run && !summary && (showPicker || mapOpen) && (
+        <section id="tower-map-panel" className="space-y-3 rounded-2xl border bg-card/70 p-4 sm:p-5">
           <SectionHeading
             title={showPicker ? `Tầng ${run.floor} — chọn đường đi` : `Bản đồ hành trình · tầng ${Math.min(run.floor, FLOORS)}/${FLOORS}`}
           />
@@ -950,14 +965,14 @@ function TowerPage() {
                       "group relative min-h-20 touch-manipulation overflow-hidden rounded-2xl border p-3 text-left",
                       "animate-fade-in bg-gradient-to-br from-primary/10 to-transparent",
                       "transition-transform duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-lg active:scale-[0.98]",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     )}
                   >
                     <span
                       aria-hidden
                       className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-primary/10 blur-xl transition-opacity duration-300 group-hover:opacity-100 sm:opacity-0"
                     />
-                    <div className="relative text-2xl transition-transform duration-200 group-hover:scale-110">
+                    <div aria-hidden className="relative text-2xl transition-transform duration-200 group-hover:scale-110">
                       {meta.icon}
                     </div>
                     <div className={cn("relative mt-1 text-sm font-semibold", meta.tone)}>
@@ -969,9 +984,9 @@ function TowerPage() {
               })}
             </div>
           ) : null}
-
         </section>
       )}
+
 
 
       {/* Câu thử thách kiến thức của phòng sự kiện / cửa hàng / lửa trại */}
