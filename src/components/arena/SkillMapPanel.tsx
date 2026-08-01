@@ -58,7 +58,7 @@ export function SkillMapPanel() {
   if (state === "empty" || !data)
     return (
       <div className="rounded-2xl border bg-card/70 p-6 text-center text-sm text-muted-foreground">
-        Bản đồ năng lực sẽ hiện sau vài phiên Leo Tháp hoặc bài thi có gắn chủ đề.
+        Bản đồ năng lực sẽ hiện sau vài ca trực Tháp Không Lưu hoặc bài thi có gắn chủ đề.
       </div>
     );
 

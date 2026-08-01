@@ -11,7 +11,7 @@ import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
 import { readExamEntry, type ExamEntry } from "@/lib/examSession";
 import type { AnswerValue } from "@/lib/questionKinds";
 import { bankIsStale, type QuestionBank } from "@/lib/tower/bank";
-import { QUESTIONS_PER_STAGE, START_HP, STAGES_PER_RUN } from "@/lib/tower/config";
+import { QUESTIONS_PER_STAGE, START_HP, STAGES_PER_RUN, stageName } from "@/lib/tower/config";
 import { createRun, gradeStage, takeBoon, type StageOutcome, type TowerRun } from "@/lib/tower/engine";
 import {
   readCachedBank,
@@ -29,16 +29,16 @@ export const Route = createFileRoute("/dau-truong_/leo-thap")({
   component: TowerPage,
   head: () => ({
     meta: [
-      { title: "Leo Tháp Tri Thức — Hội thi trắc nghiệm VATM" },
+      { title: "Tháp Không Lưu (TWR ATC) — Hội thi trắc nghiệm VATM" },
       {
         name: "description",
         content:
-          "Chế độ ôn tập cá nhân theo lịch lặp lại ngắt quãng: mỗi phiên 5 chặng, ôn đúng câu bạn sắp quên.",
+          "Ôn nghiệp vụ điều hành bay theo lịch lặp lại ngắt quãng: mỗi ca trực 5 tầng, từ sân đỗ lên đường dài.",
       },
-      { property: "og:title", content: "Leo Tháp Tri Thức — Hội thi trắc nghiệm VATM" },
+      { property: "og:title", content: "Tháp Không Lưu (TWR ATC) — Hội thi trắc nghiệm VATM" },
       {
         property: "og:description",
-        content: "Ôn đúng câu bạn sắp quên, theo lịch lặp lại ngắt quãng của riêng bạn.",
+        content: "Ôn đúng câu nghiệp vụ bạn sắp quên, theo lịch lặp lại ngắt quãng của riêng bạn.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -167,7 +167,7 @@ function TowerPage() {
         // Mất mạng vẫn ôn được nếu đã có gói trong máy.
         if (!alive) return;
         setOffline(true);
-        if (!cachedBank) toast.error(e instanceof Error ? e.message : "Không mở được Leo Tháp.");
+        if (!cachedBank) toast.error(e instanceof Error ? e.message : "Không mở được Tháp Không Lưu.");
       } finally {
         if (alive) setLoading(false);
       }
@@ -244,7 +244,7 @@ function TowerPage() {
       setPickedBoon(undefined);
       deadlineRef.current = Date.now() + STAGE_SECONDS * 1000;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Chưa có câu hỏi để ôn tập.");
+      toast.error(e instanceof Error ? e.message : "Chưa có câu hỏi nghiệp vụ để ôn tập.");
     }
   }
 
@@ -265,8 +265,8 @@ function TowerPage() {
     <PageContainer>
       <PageHero
         icon={Castle}
-        title="Leo Tháp Tri Thức"
-        description="Ôn đúng câu bạn sắp quên — mỗi phiên 5 chặng, mỗi chặng 5 câu."
+        title="Tháp Không Lưu (TWR ATC)"
+        description="Ôn nghiệp vụ điều hành bay — mỗi ca trực 5 tầng, mỗi tầng 5 câu."
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -301,16 +301,16 @@ function TowerPage() {
       {entry && !run && (
         <section className="rounded-2xl border bg-card/70 p-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Xin chào <strong>{entry.name}</strong>. Mỗi phiên khoảng 12–15 phút, không tính vào kết quả kỳ thi.
+            Xin chào <strong>{entry.name}</strong>. Mỗi ca trực khoảng 12–15 phút, không tính vào kết quả kỳ thi.
           </p>
           <p className="type-meta mt-1">
             {loading
-              ? "Đang chuẩn bị gói ôn tập cho bạn…"
+              ? "Đang chuẩn bị gói nghiệp vụ cho bạn…"
               : `${dueCount} thẻ đang đến hạn ôn · ${bank?.questions.length ?? 0} câu trong gói`}
           </p>
           <Button className="mt-4" disabled={loading || !bank} onClick={begin}>
             {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Castle className="mr-2 size-4" />}
-            Bắt đầu leo tháp
+            Vào ca trực
           </Button>
         </section>
       )}
@@ -320,7 +320,7 @@ function TowerPage() {
           <SectionHeading title="Hôm nay bạn đã học được gì" />
           <div className="grid gap-3 sm:grid-cols-4">
             {[
-              { label: "Chặng đã qua", value: summary.stagesCleared },
+              { label: "Tầng đã qua", value: summary.stagesCleared },
               { label: "Câu đúng", value: summary.correct },
               { label: "Câu đã làm", value: summary.answered },
               { label: "Thẻ còn đến hạn", value: dueCount },
@@ -332,7 +332,7 @@ function TowerPage() {
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={begin}>Leo phiên mới</Button>
+            <Button onClick={begin}>Vào ca trực mới</Button>
             <Button asChild variant="outline">
               <Link to="/dau-truong">Nghỉ một chút</Link>
             </Button>
@@ -342,7 +342,7 @@ function TowerPage() {
 
       {run && outcome && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
-          <SectionHeading title={`Góc sửa lỗi — chặng ${stage + 1}`} />
+          <SectionHeading title={`Góc rút kinh nghiệm — ${stageName(stage)}`} />
           <ul className="space-y-2">
             {outcome.results.map((r, i) => (
               <li
@@ -367,7 +367,7 @@ function TowerPage() {
 
           {!summary && run.offered.length > 0 && (
             <div>
-              <p className="mb-2 text-sm font-semibold">Chọn một trợ học cho chặng sau</p>
+              <p className="mb-2 text-sm font-semibold">Chọn một trợ giúp cho tầng sau</p>
               <div className="grid gap-2 sm:grid-cols-3">
                 {run.offered.map((b) => (
                   <button
@@ -387,10 +387,10 @@ function TowerPage() {
             </div>
           )}
 
-          {!summary && <Button onClick={nextStage}>Lên chặng {run.stage + 1}</Button>}
+          {!summary && <Button onClick={nextStage}>Lên {stageName(run.stage)}</Button>}
           {summary && outcome.softStop && (
             <p className="type-meta">
-              Phiên khép lại sớm ở đây để bạn ôn kỹ phần còn vướng — không sao cả, lần sau nhẹ hơn.
+              Ca trực khép lại sớm ở đây để bạn ôn kỹ phần còn vướng — không sao cả, lần sau nhẹ hơn.
             </p>
           )}
         </section>
@@ -400,7 +400,7 @@ function TowerPage() {
         <section className="space-y-4 rounded-2xl border bg-card/70 p-5">
           <div className="flex flex-wrap items-center gap-3">
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-              Chặng {stage + 1}/{totalStages} · câu {inStagePos}/{QUESTIONS_PER_STAGE}
+              {stageName(stage)} ({stage + 1}/{totalStages}) · câu {inStagePos}/{QUESTIONS_PER_STAGE}
             </span>
             <HpBarLite hp={run.hp} />
             <span ref={clockRef} className="ml-auto font-mono text-sm tabular-nums" />
@@ -423,7 +423,7 @@ function TowerPage() {
             {inStagePos < QUESTIONS_PER_STAGE ? (
               <Button onClick={() => setIdx((i) => i + 1)}>Câu tiếp theo</Button>
             ) : (
-              <Button onClick={() => closeStage(answers)}>Chốt chặng {stage + 1}</Button>
+              <Button onClick={() => closeStage(answers)}>Chốt {stageName(stage)}</Button>
             )}
           </div>
         </section>
