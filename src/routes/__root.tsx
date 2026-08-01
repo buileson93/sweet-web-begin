@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
+import { BackNav } from "@/components/BackNav";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/palette";
 import { useDeviceTracking } from "@/hooks/useDeviceTracking";
@@ -160,6 +161,7 @@ function RootComponent() {
       <TooltipProvider delayDuration={150}>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
+        <BackNav />
       </TooltipProvider>
       <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
