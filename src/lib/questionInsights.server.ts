@@ -117,3 +117,48 @@ export async function questionInsights(questionId: string): Promise<{
     versions,
   };
 }
+
+/**
+ * Khôi phục câu hỏi về một phiên bản đã lưu trong question_versions.
+ * Trigger snapshot_question_version sẽ tự lưu lại bản hiện tại trước khi ghi đè,
+ * nên thao tác này luôn có đường lùi.
+ */
+export async function restoreQuestionVersion(input: {
+  questionId: string;
+  versionId: string;
+}): Promise<{ version: number }> {
+  const { data, error } = await supabaseAdmin
+    .from("question_versions" as never)
+    .select("version, snapshot, question_id")
+    .eq("id" as never, input.versionId as never)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  const row = data as unknown as { version?: number; snapshot?: Record<string, unknown>; question_id?: string } | null;
+  if (!row || row.question_id !== input.questionId) throw new Error("Không tìm thấy phiên bản cần khôi phục.");
+
+  const snap = row.snapshot ?? {};
+  const pick = <T,>(key: string, fallback: T): T => (snap[key] === undefined || snap[key] === null ? fallback : (snap[key] as T));
+
+  const patch = {
+    question: pick("question", ""),
+    options: pick<string[]>("options", []),
+    correct_index: pick("correct_index", 0),
+    correct_indices: pick<number[]>("correct_indices", []),
+    accepted_answers: pick<string[]>("accepted_answers", []),
+    pairs: pick("pairs", []),
+    correct_order: pick<number[]>("correct_order", []),
+    explanation: pick("explanation", ""),
+    option_explanations: pick<string[]>("option_explanations", []),
+    image_url: pick<string | null>("image_url", null),
+    difficulty: pick("difficulty", "medium"),
+    points: pick("points", 1),
+  };
+
+  const { error: upErr } = await supabaseAdmin
+    .from("questions")
+    .update(patch as never)
+    .eq("id", input.questionId);
+  if (upErr) throw new Error(upErr.message);
+
+  return { version: Number(row.version ?? 0) };
+}
