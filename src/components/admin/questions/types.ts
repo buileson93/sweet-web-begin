@@ -1,6 +1,19 @@
 import type { Difficulty, QuestionKind } from "@/lib/questionKinds";
 
-export type Pair = { left: string; right: string };
+/** `id` chỉ tồn tại phía trình soạn thảo (làm khoá React ổn định), không lưu xuống CSDL. */
+export type Pair = { left: string; right: string; id?: string };
+
+let pairSeq = 0;
+/** Sinh mã cặp ổn định cho một phiên soạn thảo. */
+export function newPairId(): string {
+  pairSeq += 1;
+  return `p${Date.now().toString(36)}-${pairSeq}`;
+}
+
+/** Gắn id cho các cặp đọc từ CSDL (chúng chỉ có left/right). */
+export function withPairIds(pairs: Pair[]): Pair[] {
+  return pairs.map((p) => ({ ...p, id: p.id ?? newPairId() }));
+}
 
 export type QuestionRow = {
   id: string;
@@ -43,6 +56,8 @@ export const emptyForm = {
   tags: "",
   explanation: "",
   image_url: null as string | null,
+  /** Mô tả ảnh cho trình đọc màn hình (bắt buộc khi có ảnh minh hoạ). */
+  image_alt: "",
 };
 
 export type QuestionFormState = typeof emptyForm;
