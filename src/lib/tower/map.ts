@@ -80,3 +80,22 @@ export function buildMap(seed: string): Room[][] {
 }
 
 export const isBossFloor = (floor: number) => (BOSS_FLOORS as readonly number[]).includes(floor);
+
+/**
+ * Bộ nhớ đệm bản đồ theo hạt — sinh bản đồ là việc thuần nhưng tốn vài nghìn phép,
+ * gọi lại mỗi lần đổi tầng sẽ gây giật. Giữ tối đa 8 hạt gần nhất là đủ.
+ */
+const MAP_CACHE = new Map<string, Room[][]>();
+const MAP_CACHE_MAX = 8;
+
+export function mapFor(seed: string): Room[][] {
+  const hit = MAP_CACHE.get(seed);
+  if (hit) return hit;
+  const built = buildMap(seed);
+  MAP_CACHE.set(seed, built);
+  if (MAP_CACHE.size > MAP_CACHE_MAX) {
+    const oldest = MAP_CACHE.keys().next().value;
+    if (oldest !== undefined) MAP_CACHE.delete(oldest);
+  }
+  return built;
+}
