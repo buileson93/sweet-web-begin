@@ -377,6 +377,27 @@ function TowerPage() {
     setEntry({ name, credential });
   }
 
+  /** Lưu lựa chọn bộ đề; mảng rỗng nghĩa là dùng tất cả. */
+  function savePacks(next: string[]) {
+    const all = next.length === quizList.length ? [] : next;
+    setPacks(all);
+    try {
+      window.localStorage.setItem(PACKS_KEY, JSON.stringify(all));
+    } catch {
+      /* không lưu được thì vẫn dùng cho phiên hiện tại */
+    }
+  }
+
+  function togglePack(id: string) {
+    const current = packs.length ? packs : quizList.map((q) => q.id);
+    const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
+    if (!next.length) {
+      toast.error("Giữ ít nhất một bộ đề để vào ca trực.");
+      return;
+    }
+    savePacks(next);
+  }
+
   function begin() {
     if (!bank) return;
     try {
@@ -413,6 +434,11 @@ function TowerPage() {
   const inStagePos = idx - stageFrom + 1;
   const totalStages = run ? Math.ceil(run.questions.length / QUESTIONS_PER_STAGE) : STAGES_PER_RUN;
   const totals = useMemo(() => runBoonTotals(run?.boons ?? []), [run?.boons]);
+  const quizList = useMemo(() => bankQuizzes(bank), [bank]);
+  const scopedCount = useMemo(
+    () => (bank ? filterBankByQuizzes(bank, packs).questions.length : 0),
+    [bank, packs],
+  );
   const blanks = run
     ? run.questions.slice(stageFrom, stageFrom + QUESTIONS_PER_STAGE).filter((_, i) => {
         const v = answers[String(stageFrom + i)];
