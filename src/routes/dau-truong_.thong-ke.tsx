@@ -22,7 +22,8 @@ import {
 } from "recharts";
 
 import { Button } from "@/components/ui/button";
-import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
+import { SectionHeading } from "@/components/ui-kit";
+import { ArenaHero, ArenaPage } from "@/components/arena/ArenaPage";
 import { SkillMapPanel } from "@/components/arena/SkillMapPanel";
 import { arenaMyStats } from "@/lib/arena.functions";
 import { getArenaToken } from "@/lib/arena/client";
@@ -79,21 +80,21 @@ function ArenaStatsPage() {
 
   if (error)
     return (
-      <PageContainer className="grid min-h-[50vh] place-items-center text-center">
+      <ArenaPage className="grid min-h-[50vh] place-items-center text-center">
         <div className="space-y-3">
           <p className="text-destructive">{error}</p>
           <Button variant="outline" onClick={() => void navigate({ to: "/dau-truong" })}>
             <ArrowLeft className="mr-2 size-4" /> Về đấu trường
           </Button>
         </div>
-      </PageContainer>
+      </ArenaPage>
     );
 
   if (!stats)
     return (
-      <PageContainer className="grid min-h-[50vh] place-items-center">
+      <ArenaPage className="grid min-h-[50vh] place-items-center">
         <Loader2 className="size-8 animate-spin text-primary" />
-      </PageContainer>
+      </ArenaPage>
     );
 
   const chartData = stats.timeline.map((p, i) => ({
@@ -111,8 +112,9 @@ function ArenaStatsPage() {
   ];
 
   return (
-    <PageContainer className="space-y-6 py-6">
-      <PageHero
+    <ArenaPage>
+      <ArenaHero
+        icon={TrendingUp}
         title="Thống kê so tài"
         description={`${stats.displayName} · ${stats.unit} · Hạng ${stats.tier.icon} ${stats.tier.label}`}
       />
@@ -250,6 +252,6 @@ function ArenaStatsPage() {
           <Swords className="mr-2 size-4" /> Về đấu trường
         </Button>
       </div>
-    </PageContainer>
+    </ArenaPage>
   );
 }
