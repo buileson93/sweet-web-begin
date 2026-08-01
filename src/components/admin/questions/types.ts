@@ -33,6 +33,8 @@ export type QuestionRow = {
   tags: string[] | null;
   explanation: string | null;
   image_url: string | null;
+  /** Mô tả ảnh (alt) cho trình đọc màn hình. */
+  image_alt: string | null;
   /** Giới hạn thời gian riêng cho câu này (giây); null = dùng giờ chung. */
   time_limit_seconds: number | null;
   /** Câu đã lưu trữ sẽ không được bốc vào đề thi. */
