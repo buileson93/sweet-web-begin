@@ -962,12 +962,27 @@ export async function closeRound(duelId: string, roundIndex: number) {
   result.revealMs = DICE_MS;
 
   const isLast = roundIndex + 1 >= duel.round_count || !!combat.knockedOutId || !!noShow;
+  result.finishAfter = isLast;
+  result.noShowId = noShow?.employee_id ?? null;
+
   await supabaseAdmin
     .from("duels")
     .update({ last_result: result as never, version: duel.version + 2 })
     .eq("id", duelId);
-  // Một lô duy nhất: kết quả câu + ảnh chụp máu, để client vẽ lại đúng một lần.
-  await broadcastDuelBatch(duelId, [
+
+  if (noShow)
+    await logArenaAudit(
+      "update",
+      duelId,
+      `${noShow.display_name} bỏ trống ${MAX_CONSECUTIVE_MISSES} câu liên tiếp — xử thua kỹ thuật`,
+      { roundIndex },
+    );
+
+  // Một lô duy nhất: kết quả câu + ảnh chụp trạng thái đầy đủ, client vẽ lại đúng một lần
+  // và KHÔNG cần gọi thêm HTTP. Máy chủ trả lời ngay, không "ngủ" chờ hoạt ảnh xúc xắc:
+  // client tự chạy hiệu ứng theo `resolvedAt` + `revealMs`, còn việc chuyển câu do
+  // `advanceDuel` (cron watchdog hoặc lời nhắc từ trình duyệt, luôn được máy chủ kiểm giờ).
+  await broadcastWithState(duelId, [
     { event: "round.result", payload: result },
     {
       event: "hp.sync",
@@ -978,30 +993,50 @@ export async function closeRound(duelId: string, roundIndex: number) {
       },
     },
   ]);
-
-
-  if (noShow) {
-    await logArenaAudit(
-      "update",
-      duelId,
-      `${noShow.display_name} bỏ trống ${MAX_CONSECUTIVE_MISSES} câu liên tiếp — xử thua kỹ thuật`,
-      { roundIndex },
-    );
-    await new Promise((r) => setTimeout(r, 1_200));
-    await finishDuel(duelId, noShow.employee_id);
-  } else if (isLast) {
-    // Chờ đúng thời gian hiện đáp án rồi chốt ván; nếu tiến trình bị cắt,
-    // watchdog (tickDuels) vẫn kết thúc ván này.
-    await new Promise((r) => setTimeout(r, REVEAL_MS));
-    await finishDuel(duelId);
-  } else {
-    // Giữ nguyên câu hiện tại trong thời gian công bố kết quả để cả hai máy
-    // nhìn thấy xúc xắc, sát thương và đáp án trước khi phát câu kế tiếp.
-    await new Promise((r) => setTimeout(r, REVEAL_MS));
-    const next = await loadDuel(duelId);
-    await serveRound(next, roundIndex + 1, 0);
-  }
 }
+
+/**
+ * Bước máy trạng thái của một ván — MÁY CHỦ là bên duy nhất quyết định thời điểm.
+ * Trình duyệt chỉ được phép "nhắc"; mọi mốc giờ đều kiểm lại tại đây.
+ */
+export async function advanceDuel(duelId: string): Promise<{ advanced: boolean }> {
+  const duel = await loadDuel(duelId);
+  const now = Date.now();
+
+  if (duel.status === "countdown") {
+    if (duel.started_at && Date.parse(duel.started_at) <= now) {
+      await serveRound(duel, 0, 0);
+      return { advanced: true };
+    }
+    return { advanced: false };
+  }
+  if (duel.status !== "playing") return { advanced: false };
+
+  const last = (duel as unknown as { last_result: RoundResult | null }).last_result;
+
+  // Đang trong thời gian công bố kết quả của câu hiện tại.
+  if (last && last.roundIndex === duel.current_round && last.resolvedAt) {
+    const revealEnd = Date.parse(last.resolvedAt) + (last.revealMs ?? DICE_MS);
+    if (now < revealEnd) return { advanced: false };
+    if (last.finishAfter) {
+      await finishDuel(duelId, last.noShowId ?? undefined);
+      return { advanced: true };
+    }
+    const next = await loadDuel(duelId);
+    if (next.status === "playing" && next.current_round === duel.current_round)
+      await serveRound(next, duel.current_round + 1, 0);
+    return { advanced: true };
+  }
+
+  // Câu đang chạy: hết giờ thì chốt.
+  if (!duel.round_served_at) return { advanced: false };
+  const deadline =
+    Date.parse(duel.round_served_at) + duel.seconds_per_round * 1000 + NETWORK_GRACE_MS;
+  if (now < deadline) return { advanced: false };
+  await closeRound(duelId, duel.current_round);
+  return { advanced: true };
+}
+
 
 
 
