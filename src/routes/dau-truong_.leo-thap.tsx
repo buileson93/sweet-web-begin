@@ -30,7 +30,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
-import { readExamEntry, type ExamEntry } from "@/lib/examSession";
+import { readExamEntry } from "@/lib/examSession";
+import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
+import { CredentialInput } from "@/components/CredentialInput";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { AnswerValue } from "@/lib/questionKinds";
 import { bankIsStale, type QuestionBank } from "@/lib/tower/bank";
 import { QUESTIONS_PER_STAGE, START_HP, STAGES_PER_RUN, stageName } from "@/lib/tower/config";
@@ -134,7 +138,11 @@ function TowerPage() {
   const fetchBank = useServerFn(getTowerBankFn);
   const sync = useServerFn(syncTowerFn);
 
-  const [entry, setEntry] = useState<ExamEntry | null>(null);
+  /** Danh tính để mở gói ôn: chỉ cần họ tên + 4 số cuối SĐT (hoặc ngày sinh). */
+  type Ident = { name: string; credential: string; extraCredential?: string };
+  const [entry, setEntry] = useState<Ident | null>(null);
+  const [formName, setFormName] = useState("");
+  const [formCredential, setFormCredential] = useState("");
   const [bank, setBank] = useState<QuestionBank | null>(null);
   const [state, setState] = useState<TowerState>(emptyState());
   const [loading, setLoading] = useState(true);
@@ -160,13 +168,24 @@ function TowerPage() {
   pendingRef.current = pending;
 
   useEffect(() => {
-    setEntry(readExamEntry(window.sessionStorage));
-    const saved = readResume();
-    if (saved) {
-      setRun(saved.run);
-      setIdx(saved.idx);
-      setAnswers(saved.answers);
-      deadlineRef.current = saved.deadline;
+    const saved = readExamEntry(window.sessionStorage);
+    const quick = readQuickLogin();
+    const ident: Ident | null = saved
+      ? { name: saved.name, credential: saved.credential, ...(saved.extraCredential ? { extraCredential: saved.extraCredential } : {}) }
+      : quick
+        ? { name: quick.name, credential: quick.credential }
+        : null;
+    setEntry(ident);
+    if (ident) {
+      setFormName(ident.name);
+      setFormCredential(ident.credential);
+    }
+    const resume = readResume();
+    if (resume) {
+      setRun(resume.run);
+      setIdx(resume.idx);
+      setAnswers(resume.answers);
+      deadlineRef.current = resume.deadline;
       toast.message("Đã khôi phục ca trực đang dở của bạn.");
     }
   }, []);
@@ -337,6 +356,17 @@ function TowerPage() {
     onTimeUpRef.current = () => closeStage(answers);
   }, [closeStage, answers]);
 
+  function confirmIdentity() {
+    const name = formName.trim();
+    const credential = formCredential.trim();
+    if (name.length < 2 || credential.length < 4) {
+      toast.error("Nhập họ tên và 4 số cuối điện thoại hoặc ngày sinh.");
+      return;
+    }
+    saveQuickLogin({ name, credential });
+    setEntry({ name, credential });
+  }
+
   function begin() {
     if (!bank) return;
     try {
@@ -406,12 +436,27 @@ function TowerPage() {
       </div>
 
       {!entry && (
-        <section className="rounded-2xl border bg-card/70 p-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            Hãy vào một phòng thi một lần để hệ thống nhận ra bạn, sau đó quay lại đây để ôn tập.
-          </p>
-          <Button asChild className="mt-4">
-            <Link to="/">Chọn cuộc thi</Link>
+        <section className="mx-auto w-full max-w-md space-y-4 rounded-2xl border bg-card/70 p-6">
+          <div className="text-center">
+            <p className="font-heading text-lg font-extrabold">Vào ca trực</p>
+            <p className="type-meta mt-1">
+              Nhập đúng thông tin đã đăng ký — không cần vào phòng thi trước.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="tower-name">Họ và tên</Label>
+            <Input
+              id="tower-name"
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              placeholder="Nguyễn Văn A"
+              autoComplete="name"
+              className="h-11 rounded-xl"
+            />
+          </div>
+          <CredentialInput value={formCredential} onChange={setFormCredential} onEnter={confirmIdentity} />
+          <Button className="h-11 w-full rounded-full" onClick={confirmIdentity}>
+            <Castle className="mr-2 size-4" /> Mở Tháp Không Lưu
           </Button>
         </section>
       )}
