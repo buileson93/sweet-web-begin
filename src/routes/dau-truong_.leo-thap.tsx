@@ -243,7 +243,7 @@ function TowerPage() {
         </section>
       )}
 
-      {run && !summary && stageResult && (
+      {run && stageResult && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
           <SectionHeading title={`Góc sửa lỗi — chặng ${stage + 1}`} />
           <ul className="space-y-2">
@@ -290,7 +290,12 @@ function TowerPage() {
             </div>
           )}
 
-          <Button onClick={nextStage}>Lên chặng {stageResult.nextStage + 1}</Button>
+          {!summary && <Button onClick={nextStage}>Lên chặng {stageResult.nextStage + 1}</Button>}
+          {summary && stageResult.softStop && (
+            <p className="type-meta">
+              Phiên khép lại sớm ở đây để bạn ôn kỹ phần còn vướng — không sao cả, lần sau nhẹ hơn.
+            </p>
+          )}
         </section>
       )}
 
