@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Castle, Heart, Loader2 } from "lucide-react";
+import { ArrowLeft, Castle, CloudOff, Heart, Loader2, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 
 import { QuestionInput } from "@/components/exam/QuestionInput";
@@ -10,8 +10,19 @@ import { Button } from "@/components/ui/button";
 import { PageContainer, PageHero, SectionHeading } from "@/components/ui-kit";
 import { readExamEntry, type ExamEntry } from "@/lib/examSession";
 import type { AnswerValue } from "@/lib/questionKinds";
-import { QUESTIONS_PER_STAGE, START_HP, type Boon } from "@/lib/tower/config";
-import { finishTower, startTower, submitTowerStageFn } from "@/lib/tower.functions";
+import { bankIsStale, type QuestionBank } from "@/lib/tower/bank";
+import { QUESTIONS_PER_STAGE, START_HP, STAGES_PER_RUN } from "@/lib/tower/config";
+import { createRun, gradeStage, takeBoon, type StageOutcome, type TowerRun } from "@/lib/tower/engine";
+import {
+  readCachedBank,
+  readCachedState,
+  readPendingSync,
+  writeCachedBank,
+  writeCachedState,
+  writePendingSync,
+} from "@/lib/tower/idb";
+import { applyResults, dueCardIds, emptyState, mergeStates, normalizeState, type TowerState } from "@/lib/tower/state";
+import { getTowerBankFn, openTowerFn, syncTowerFn } from "@/lib/tower.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dau-truong_/leo-thap")({
@@ -35,10 +46,6 @@ export const Route = createFileRoute("/dau-truong_/leo-thap")({
   }),
 });
 
-type Run = Awaited<ReturnType<typeof startTower>>;
-type StageResult = Awaited<ReturnType<typeof submitTowerStageFn>>;
-type Summary = Awaited<ReturnType<typeof finishTower>>;
-
 const STAGE_SECONDS = 20 * QUESTIONS_PER_STAGE;
 
 function HpBarLite({ hp }: { hp: number }) {
@@ -57,32 +64,42 @@ function HpBarLite({ hp }: { hp: number }) {
   );
 }
 
+/**
+ * Kiến trúc nhẹ máy chủ: trang này tự chấm, tự lên lịch ôn trong trình duyệt.
+ * Máy chủ chỉ tham gia 2 lần: mở phiên (tải gói đề + tiến trình) và đồng bộ khi kết thúc.
+ * Kỳ thi chính thức và Đấu trường KHÔNG dùng luồng này — hai nơi đó vẫn chấm ở máy chủ.
+ */
 function TowerPage() {
-  const start = useServerFn(startTower);
-  const submitStage = useServerFn(submitTowerStageFn);
-  const finish = useServerFn(finishTower);
+  const openTower = useServerFn(openTowerFn);
+  const fetchBank = useServerFn(getTowerBankFn);
+  const sync = useServerFn(syncTowerFn);
 
   const [entry, setEntry] = useState<ExamEntry | null>(null);
-  const [run, setRun] = useState<Run | null>(null);
-  const [stage, setStage] = useState(0);
+  const [bank, setBank] = useState<QuestionBank | null>(null);
+  const [state, setState] = useState<TowerState>(emptyState());
+  const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [dueCount, setDueCount] = useState(0);
+
+  const [run, setRun] = useState<TowerRun | null>(null);
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
-  const [hp, setHp] = useState(START_HP);
-  const [busy, setBusy] = useState(false);
-  const [stageResult, setStageResult] = useState<StageResult | null>(null);
-  const [boons, setBoons] = useState<Boon[]>([]);
+  const [outcome, setOutcome] = useState<StageOutcome | null>(null);
   const [pickedBoon, setPickedBoon] = useState<string | undefined>(undefined);
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [summary, setSummary] = useState<{ stagesCleared: number; correct: number; answered: number } | null>(null);
 
-  // Một vòng rAF duy nhất cho đồng hồ — ghi thẳng vào DOM, không setState mỗi khung.
   const clockRef = useRef<HTMLSpanElement | null>(null);
   const deadlineRef = useRef<number>(0);
   const onTimeUpRef = useRef<() => void>(() => undefined);
+  const stateRef = useRef<TowerState>(state);
+  stateRef.current = state;
 
   useEffect(() => {
     setEntry(readExamEntry(window.sessionStorage));
   }, []);
 
+  // Đồng hồ: một vòng rAF, ghi thẳng vào DOM (không setState mỗi khung hình).
   useEffect(() => {
     let raf = 0;
     const tick = () => {
@@ -101,80 +118,148 @@ function TowerPage() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const sendStage = useCallback(
-    async (currentStage: number, current: Record<string, AnswerValue>) => {
-      if (!run) return;
-      setBusy(true);
-      deadlineRef.current = 0;
+  const credentials = useCallback(
+    () =>
+      entry
+        ? {
+            name: entry.name,
+            credential: entry.credential,
+            ...(entry.extraCredential ? { extraCredential: entry.extraCredential } : {}),
+          }
+        : null,
+    [entry],
+  );
+
+  /** Một lượt đi về: tiến trình + phiên bản gói đề; chỉ tải gói khi đã cũ. */
+  useEffect(() => {
+    const creds = credentials();
+    if (!creds) return;
+    let alive = true;
+
+    void (async () => {
+      setLoading(true);
+      const [cachedBank, cachedState, wasPending] = await Promise.all([
+        readCachedBank(),
+        readCachedState(),
+        readPendingSync(),
+      ]);
+      if (!alive) return;
+      if (cachedState) setState(normalizeState(cachedState));
+      if (cachedBank) setBank(cachedBank);
+      setPending(Boolean(wasPending));
+
       try {
-        const res = await submitStage({
-          data: {
-            runId: run.runId,
-            token: run.token,
-            stageIndex: currentStage,
-            answers: current,
-            ...(pickedBoon ? { boonId: pickedBoon } : {}),
-          },
-        });
-        setStageResult(res);
-        setHp(res.hp);
-        setBoons(res.boons as Boon[]);
-        setPickedBoon(undefined);
-        if (res.finished) {
-          const sum = await finish({ data: { runId: run.runId, token: run.token } });
-          setSummary(sum);
+        const opened = await openTower({ data: creds });
+        if (!alive) return;
+        const server = normalizeState(opened.state);
+        const merged = cachedState ? mergeStates(server, normalizeState(cachedState)) : server;
+        setState(merged);
+        void writeCachedState(merged);
+
+        if (bankIsStale(cachedBank, opened.bankVersion)) {
+          const fresh = await fetchBank({ data: creds });
+          if (!alive) return;
+          setBank(fresh);
+          void writeCachedBank(fresh);
         }
+        setOffline(false);
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Không chấm được chặng này.");
+        // Mất mạng vẫn ôn được nếu đã có gói trong máy.
+        if (!alive) return;
+        setOffline(true);
+        if (!cachedBank) toast.error(e instanceof Error ? e.message : "Không mở được Leo Tháp.");
       } finally {
-        setBusy(false);
+        if (alive) setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [credentials, openTower, fetchBank]);
+
+  useEffect(() => {
+    setDueCount(dueCardIds(state).length);
+  }, [state]);
+
+  /** Gửi tiến trình lên máy chủ — gộp một lần, chỉ khi kết thúc phiên. */
+  const pushSync = useCallback(
+    async (next: TowerState) => {
+      const creds = credentials();
+      if (!creds) return;
+      try {
+        await sync({ data: { ...creds, state: next, bestStage: run?.stage ?? 0, runs: 1 } });
+        setPending(false);
+        void writePendingSync(false);
+      } catch {
+        setPending(true);
+        void writePendingSync(true);
       }
     },
-    [run, submitStage, finish, pickedBoon],
+    [credentials, sync, run],
+  );
+
+  const finishRun = useCallback(
+    (finished: TowerRun) => {
+      setSummary({
+        stagesCleared: Math.min(finished.stage, STAGES_PER_RUN),
+        correct: finished.correct,
+        answered: finished.answered,
+      });
+      void pushSync(stateRef.current);
+    },
+    [pushSync],
+  );
+
+  /** Chốt chặng: chấm ngay tại máy, 0 ms chờ mạng. */
+  const closeStage = useCallback(
+    (current: Record<string, AnswerValue>) => {
+      if (!run || outcome) return;
+      deadlineRef.current = 0;
+      const graded = gradeStage(run, current);
+      const nextState = applyResults(stateRef.current, graded.outcome.results);
+      setState(nextState);
+      void writeCachedState(nextState);
+      setOutcome(graded.outcome);
+      setRun(graded.run);
+      setPickedBoon(undefined);
+      if (graded.run.finished) finishRun(graded.run);
+    },
+    [run, outcome, finishRun],
   );
 
   useEffect(() => {
-    onTimeUpRef.current = () => void sendStage(stage, answers);
-  }, [sendStage, stage, answers]);
+    onTimeUpRef.current = () => closeStage(answers);
+  }, [closeStage, answers]);
 
-  async function begin() {
-    if (!entry) return;
-    setBusy(true);
+  function begin() {
+    if (!bank) return;
     try {
-      const res = await start({
-        data: {
-          name: entry.name,
-          credential: entry.credential,
-          ...(entry.extraCredential ? { extraCredential: entry.extraCredential } : {}),
-        },
-      });
-      setRun(res);
-      setBoons(res.boons as Boon[]);
-      setHp(res.hp);
-      setStage(0);
+      const fresh = createRun(bank, state, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      setRun(fresh);
       setIdx(0);
       setAnswers({});
+      setOutcome(null);
       setSummary(null);
-      setStageResult(null);
+      setPickedBoon(undefined);
       deadlineRef.current = Date.now() + STAGE_SECONDS * 1000;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Không mở được phiên leo tháp.");
-    } finally {
-      setBusy(false);
+      toast.error(e instanceof Error ? e.message : "Chưa có câu hỏi để ôn tập.");
     }
   }
 
   function nextStage() {
-    if (!stageResult) return;
-    setStage(stageResult.nextStage);
-    setIdx(stageResult.nextStage * QUESTIONS_PER_STAGE);
-    setStageResult(null);
+    if (!run) return;
+    setRun(takeBoon(run, pickedBoon));
+    setIdx(run.stage * QUESTIONS_PER_STAGE);
+    setOutcome(null);
     deadlineRef.current = Date.now() + STAGE_SECONDS * 1000;
   }
 
+  const stage = outcome ? Math.max(0, (run?.stage ?? 1) - 1) : (run?.stage ?? 0);
   const question = run?.questions[idx];
-  const stageStart = stage * QUESTIONS_PER_STAGE;
-  const inStagePos = idx - stageStart + 1;
+  const inStagePos = idx - stage * QUESTIONS_PER_STAGE + 1;
+  const totalStages = run ? Math.ceil(run.questions.length / QUESTIONS_PER_STAGE) : STAGES_PER_RUN;
 
   return (
     <PageContainer>
@@ -184,12 +269,22 @@ function TowerPage() {
         description="Ôn đúng câu bạn sắp quên — mỗi phiên 5 chặng, mỗi chặng 5 câu."
       />
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <Button asChild variant="ghost" size="sm">
           <Link to="/dau-truong">
             <ArrowLeft className="mr-1.5 size-4" /> Về sảnh Đấu trường
           </Link>
         </Button>
+        {offline && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
+            <WifiOff className="size-3.5" /> Đang ôn ngoại tuyến
+          </span>
+        )}
+        {pending && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+            <CloudOff className="size-3.5" /> Tiến trình sẽ gửi lại khi có mạng
+          </span>
+        )}
       </div>
 
       {!entry && (
@@ -206,11 +301,15 @@ function TowerPage() {
       {entry && !run && (
         <section className="rounded-2xl border bg-card/70 p-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Xin chào <strong>{entry.name}</strong>. Mỗi phiên khoảng 12–15 phút, không tính vào
-            kết quả kỳ thi.
+            Xin chào <strong>{entry.name}</strong>. Mỗi phiên khoảng 12–15 phút, không tính vào kết quả kỳ thi.
           </p>
-          <Button className="mt-4" disabled={busy} onClick={() => void begin()}>
-            {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Castle className="mr-2 size-4" />}
+          <p className="type-meta mt-1">
+            {loading
+              ? "Đang chuẩn bị gói ôn tập cho bạn…"
+              : `${dueCount} thẻ đang đến hạn ôn · ${bank?.questions.length ?? 0} câu trong gói`}
+          </p>
+          <Button className="mt-4" disabled={loading || !bank} onClick={begin}>
+            {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Castle className="mr-2 size-4" />}
             Bắt đầu leo tháp
           </Button>
         </section>
@@ -224,7 +323,7 @@ function TowerPage() {
               { label: "Chặng đã qua", value: summary.stagesCleared },
               { label: "Câu đúng", value: summary.correct },
               { label: "Câu đã làm", value: summary.answered },
-              { label: "Thẻ còn đến hạn", value: summary.remainingDue },
+              { label: "Thẻ còn đến hạn", value: dueCount },
             ].map((s) => (
               <div key={s.label} className="rounded-xl border bg-background/60 p-3 text-center">
                 <div className="text-2xl font-bold tabular-nums">{s.value}</div>
@@ -233,9 +332,7 @@ function TowerPage() {
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => void begin()} disabled={busy}>
-              Leo phiên mới
-            </Button>
+            <Button onClick={begin}>Leo phiên mới</Button>
             <Button asChild variant="outline">
               <Link to="/dau-truong">Nghỉ một chút</Link>
             </Button>
@@ -243,11 +340,11 @@ function TowerPage() {
         </section>
       )}
 
-      {run && stageResult && (
+      {run && outcome && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
           <SectionHeading title={`Góc sửa lỗi — chặng ${stage + 1}`} />
           <ul className="space-y-2">
-            {stageResult.results.map((r, i) => (
+            {outcome.results.map((r, i) => (
               <li
                 key={r.questionId}
                 className={cn(
@@ -268,11 +365,11 @@ function TowerPage() {
             ))}
           </ul>
 
-          {boons.length > 0 && (
+          {!summary && run.offered.length > 0 && (
             <div>
               <p className="mb-2 text-sm font-semibold">Chọn một trợ học cho chặng sau</p>
               <div className="grid gap-2 sm:grid-cols-3">
-                {boons.map((b) => (
+                {run.offered.map((b) => (
                   <button
                     key={b.id}
                     type="button"
@@ -290,8 +387,8 @@ function TowerPage() {
             </div>
           )}
 
-          {!summary && <Button onClick={nextStage}>Lên chặng {stageResult.nextStage + 1}</Button>}
-          {summary && stageResult.softStop && (
+          {!summary && <Button onClick={nextStage}>Lên chặng {run.stage + 1}</Button>}
+          {summary && outcome.softStop && (
             <p className="type-meta">
               Phiên khép lại sớm ở đây để bạn ôn kỹ phần còn vướng — không sao cả, lần sau nhẹ hơn.
             </p>
@@ -299,13 +396,13 @@ function TowerPage() {
         </section>
       )}
 
-      {run && !summary && !stageResult && question && (
+      {run && !summary && !outcome && question && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-5">
           <div className="flex flex-wrap items-center gap-3">
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-              Chặng {stage + 1}/{run.stages} · câu {inStagePos}/{run.perStage}
+              Chặng {stage + 1}/{totalStages} · câu {inStagePos}/{QUESTIONS_PER_STAGE}
             </span>
-            <HpBarLite hp={hp} />
+            <HpBarLite hp={run.hp} />
             <span ref={clockRef} className="ml-auto font-mono text-sm tabular-nums" />
           </div>
 
@@ -317,22 +414,16 @@ function TowerPage() {
             kind={question.kind}
             options={question.options}
             optionImages={question.optionImages}
-            matchLeft={question.matchLeft}
+            matchLeft={question.pairs.map((p) => p.left)}
             value={answers[String(idx)]}
             onChange={(v) => setAnswers((prev) => ({ ...prev, [String(idx)]: v }))}
-            disabled={busy}
           />
 
           <div className="flex justify-end gap-2">
-            {inStagePos < run.perStage ? (
-              <Button onClick={() => setIdx((i) => i + 1)} disabled={busy}>
-                Câu tiếp theo
-              </Button>
+            {inStagePos < QUESTIONS_PER_STAGE ? (
+              <Button onClick={() => setIdx((i) => i + 1)}>Câu tiếp theo</Button>
             ) : (
-              <Button onClick={() => void sendStage(stage, answers)} disabled={busy}>
-                {busy && <Loader2 className="mr-2 size-4 animate-spin" />}
-                Chốt chặng {stage + 1}
-              </Button>
+              <Button onClick={() => closeStage(answers)}>Chốt chặng {stage + 1}</Button>
             )}
           </div>
         </section>
