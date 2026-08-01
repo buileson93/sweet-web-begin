@@ -601,7 +601,7 @@ export async function setReady(input: { employeeId: string; duelId: string }) {
     await broadcastWithState(duel.id, [{ event: "duel.countdown", payload: { startAt, duelId: duel.id } }]);
   } else {
     await bumpVersion(duel.id);
-    await broadcastDuel(duel.id, "lobby.update", { duelId: duel.id });
+    await broadcastWithState(duel.id, [{ event: "lobby.update", payload: { duelId: duel.id } }]);
   }
   return { ok: true };
 }
@@ -1145,10 +1145,12 @@ export async function leaveDuel(input: { employeeId: string; duelId: string }) {
     .eq("employee_id", input.employeeId)
     .is("left_at", null);
   await bumpVersion(duel.id);
-  await broadcastDuel(duel.id, "player.left", {
+  await broadcastWithState(duel.id, [
+    { event: "player.left", payload: {
     employeeId: input.employeeId,
     graceMs: DISCONNECT_GRACE_MS,
-  });
+    } },
+  ]);
 
   if (duel.status === "waiting" || duel.status === "countdown") {
     const players = await loadPlayers(duel.id);
