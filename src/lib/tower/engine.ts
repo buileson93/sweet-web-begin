@@ -12,7 +12,7 @@ import { QUESTIONS_PER_RUN, SECONDS_PER_QUESTION, START_HP } from "@/lib/tower/c
 import { curseTotals, offerCurse } from "@/lib/tower/curses";
 import { gradeLocal } from "@/lib/tower/grade.local";
 import { FLOORS, isBossFloor, type MapNode, mapFor, reachableAt, type Room, type RoomKind } from "@/lib/tower/map";
-import { comboRewardAt, ROOM_RULES, wrongDamage, type ComboReward } from "@/lib/tower/rooms";
+import { comboRewardAt, ROOM_RULES, roomLossCap, wrongDamage, type ComboReward } from "@/lib/tower/rooms";
 import { ascensionMods, relicPoolIds } from "@/lib/tower/meta";
 import { offerRelics, RELICS, relicTotals, type Relic } from "@/lib/tower/relics";
 import { branch, seededRandom, towerDamage } from "@/lib/tower/rng";
