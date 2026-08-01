@@ -1,6 +1,8 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "katex/dist/katex.min.css";
+
 
 @custom-variant dark (&:is(.dark *));
 
@@ -1889,3 +1891,46 @@ body.fx-shaking {
 @utility pulse-ready {
   animation: arena-pulse 2.4s ease-out infinite;
 }
+
+/* --- Nội dung Markdown (đề bài, phương án, giải thích) --- */
+.rich-text > :first-child { margin-top: 0; }
+.rich-text > :last-child { margin-bottom: 0; }
+.rich-text p { margin: 0; }
+.rich-text strong { font-weight: 700; }
+.rich-text em { font-style: italic; }
+.rich-text code {
+  border-radius: 0.35rem;
+  background: var(--secondary);
+  padding: 0.1rem 0.3rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+.rich-text pre {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: var(--secondary);
+  padding: 0.75rem 0.9rem;
+}
+.rich-text pre code { background: transparent; padding: 0; }
+.rich-text ul { list-style: disc; padding-left: 1.25rem; }
+.rich-text ol { list-style: decimal; padding-left: 1.25rem; }
+.rich-text li { margin: 0.15rem 0; }
+.rich-text table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+.rich-text th,
+.rich-text td {
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+}
+.rich-text blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.75rem;
+  color: var(--muted-foreground);
+}
+.rich-text a { color: var(--accent); text-decoration: underline; }
+.rich-text--inline p { display: inline; }
+.rich-text .katex-display { margin: 0.4rem 0; overflow-x: auto; overflow-y: hidden; }

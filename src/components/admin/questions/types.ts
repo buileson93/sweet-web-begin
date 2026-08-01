@@ -32,6 +32,8 @@ export type QuestionRow = {
   order_index: number | null;
   tags: string[] | null;
   explanation: string | null;
+  /** Giải thích riêng cho từng phương án (song song với `options`). */
+  option_explanations: string[] | null;
   image_url: string | null;
   /** Mô tả ảnh (alt) cho trình đọc màn hình. */
   image_alt: string | null;
@@ -57,6 +59,8 @@ export const emptyForm = {
   time_limit_seconds: "" as string,
   tags: "",
   explanation: "",
+  /** Giải thích riêng cho từng phương án, cùng chỉ số với `options`. */
+  option_explanations: ["", "", "", ""] as string[],
   image_url: null as string | null,
   /** Mô tả ảnh cho trình đọc màn hình (bắt buộc khi có ảnh minh hoạ). */
   image_alt: "",

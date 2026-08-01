@@ -79,7 +79,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       const { data, error } = await supabase
         .from("questions")
         .select(
-          "id, quiz_id, question, options, option_images, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, order_index, time_limit_seconds, is_archived, tags, explanation, image_url, image_alt",
+          "id, quiz_id, question, options, option_images, correct_index, correct_indices, accepted_answers, pairs, kind, difficulty, points, order_index, time_limit_seconds, is_archived, tags, explanation, option_explanations, image_url, image_alt",
         )
 
         .eq("quiz_id", quizId)
@@ -391,6 +391,9 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
       time_limit_seconds: q.time_limit_seconds ? String(q.time_limit_seconds) : "",
       tags: (q.tags ?? []).join(", "),
       explanation: q.explanation ?? "",
+      option_explanations: (q.options.length ? q.options : ["", "", "", ""]).map(
+        (_, i) => (q.option_explanations ?? [])[i] ?? "",
+      ),
       image_url: q.image_url,
       image_alt: q.image_alt ?? "",
     });

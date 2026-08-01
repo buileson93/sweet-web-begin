@@ -6,6 +6,7 @@ import { questionImageSrc } from "@/lib/questionImage";
 import { Button } from "@/components/ui/button";
 import type { AnswerValue, QuestionKind } from "@/lib/questionKinds";
 import { cn } from "@/lib/utils";
+import { RichText } from "@/components/RichText";
 
 export type QuestionInputProps = {
   kind: QuestionKind;
@@ -109,7 +110,9 @@ export function QuestionInput({
             <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-extrabold">
               {pos + 1}
             </span>
-            <span className="min-w-0 flex-1 text-sm">{options[optIndex]}</span>
+            <span className="min-w-0 flex-1 text-sm">
+              <RichText inline>{options[optIndex]}</RichText>
+            </span>
             <Button
               variant="ghost"
               size="icon"
@@ -235,7 +238,7 @@ export function QuestionInput({
               </span>
             ) : null}
             <span className="relative z-10 min-w-0 flex-1 text-[0.95rem] font-medium leading-snug">
-              {opt}
+              <RichText inline>{opt}</RichText>
             </span>
             {active && !feedback ? (
               <>

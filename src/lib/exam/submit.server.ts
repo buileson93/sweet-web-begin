@@ -12,6 +12,7 @@ import {
   lateness,
   type QuestionRow,
   scoreForAnswer,
+  reorderByDisplay,
   type ScoreRules,
 } from "@/lib/grading";
 import { type AnswerValue } from "@/lib/questionKinds";
@@ -208,6 +209,10 @@ export async function submitExamSession(input: {
       chosenText: chosenTextOf(row, order, value),
       correctText: correctTextOf(row),
       explanation: row.explanation ?? "",
+      optionExplanations: reorderByDisplay(
+        (row as { option_explanations?: string[] }).option_explanations,
+        order,
+      ),
       points: row.points || 1,
     });
   });

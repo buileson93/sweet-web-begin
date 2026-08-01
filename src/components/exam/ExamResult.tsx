@@ -22,6 +22,7 @@ import { formatSeconds } from "@/lib/format";
 import { questionImageSrc } from "@/lib/questionImage";
 import { KIND_LABEL } from "@/lib/questionKinds";
 import { cn } from "@/lib/utils";
+import { RichText } from "@/components/RichText";
 
 /** Thứ hạng cập nhật trực tiếp khi có thí sinh khác nộp bài. */
 function LiveRank({ result }: { result: SubmitExamResult }) {
@@ -217,9 +218,10 @@ export function ExamResult({
                   ) : (
                     <XCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
                   )}
-                  <p className="min-w-0 text-sm font-semibold leading-relaxed">
-                    Câu {number}. {item.question}
-                  </p>
+                  <div className="min-w-0 text-sm font-semibold leading-relaxed">
+                    <span className="mr-1">Câu {number}.</span>
+                    <RichText inline>{item.question}</RichText>
+                  </div>
                   <span className="type-meta shrink-0 rounded-full bg-secondary px-2 py-0.5">
                     {KIND_LABEL[item.kind]}
                   </span>
@@ -242,19 +244,37 @@ export function ExamResult({
                     )}
                   >
                     <span className="font-semibold">Bạn trả lời: </span>
-                    {item.answered ? item.chosenText : "(chưa trả lời)"}
+                    {item.answered ? (
+                      <RichText inline>{item.chosenText}</RichText>
+                    ) : (
+                      "(chưa trả lời)"
+                    )}
                   </p>
                   {!item.correct ? (
                     <p className="rounded-lg border border-success/50 bg-success/10 px-3 py-1.5 text-success">
                       <span className="font-semibold">Đáp án đúng: </span>
-                      {item.correctText}
+                      <RichText inline>{item.correctText}</RichText>
                     </p>
                   ) : null}
                   {item.explanation ? (
-                    <p className="rounded-lg border border-border bg-secondary/60 px-3 py-1.5 text-muted-foreground">
+                    <div className="rounded-lg border border-border bg-secondary/60 px-3 py-1.5 text-muted-foreground">
                       <span className="font-semibold text-foreground">Giải thích: </span>
-                      {item.explanation}
-                    </p>
+                      <RichText inline>{item.explanation}</RichText>
+                    </div>
+                  ) : null}
+                  {(item.optionExplanations ?? []).some((t) => t.trim()) ? (
+                    <ul className="space-y-1 rounded-lg border border-border bg-card/60 px-3 py-2">
+                      {item.options.map((opt, oi) =>
+                        (item.optionExplanations?.[oi] ?? "").trim() ? (
+                          <li key={oi} className="text-xs text-muted-foreground">
+                            <span className="font-semibold text-foreground">
+                              {String.fromCharCode(65 + oi)}. {opt}:{" "}
+                            </span>
+                            <RichText inline>{item.optionExplanations[oi]}</RichText>
+                          </li>
+                        ) : null,
+                      )}
+                    </ul>
                   ) : null}
                 </div>
               </article>

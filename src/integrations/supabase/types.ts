@@ -839,6 +839,7 @@ export type Database = {
           image_url: string | null
           is_archived: boolean
           kind: Database["public"]["Enums"]["question_kind"]
+          option_explanations: string[]
           option_images: string[]
           options: string[]
           order_index: number
@@ -863,6 +864,7 @@ export type Database = {
           image_url?: string | null
           is_archived?: boolean
           kind?: Database["public"]["Enums"]["question_kind"]
+          option_explanations?: string[]
           option_images?: string[]
           options: string[]
           order_index?: number
@@ -887,6 +889,7 @@ export type Database = {
           image_url?: string | null
           is_archived?: boolean
           kind?: Database["public"]["Enums"]["question_kind"]
+          option_explanations?: string[]
           option_images?: string[]
           options?: string[]
           order_index?: number
