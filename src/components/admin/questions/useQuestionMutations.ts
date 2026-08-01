@@ -86,6 +86,10 @@ export function useQuestionMutations({
           .map((t) => t.trim())
           .filter(Boolean),
         explanation: form.explanation.trim(),
+        option_explanations:
+          form.kind === "matching" || form.kind === "fill_blank"
+            ? []
+            : options.map((_, i) => (form.option_explanations[i] ?? "").trim()),
         image_url: form.image_url,
         image_alt: form.image_url ? form.image_alt.trim() : "",
       };
@@ -200,6 +204,7 @@ export function useQuestionMutations({
           time_limit_seconds: row.time_limit_seconds,
           tags: row.tags ?? [],
           explanation: row.explanation ?? "",
+          option_explanations: row.option_explanations ?? [],
           is_archived: row.is_archived ?? false,
           image_url: null,
           image_alt: row.image_alt ?? "",

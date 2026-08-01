@@ -208,6 +208,9 @@ export async function submitExamSession(input: {
       chosenText: chosenTextOf(row, order, value),
       correctText: correctTextOf(row),
       explanation: row.explanation ?? "",
+      optionExplanations: order.map(
+        (i) => ((row as { option_explanations?: string[] }).option_explanations ?? [])[i] ?? "",
+      ),
       points: row.points || 1,
     });
   });
