@@ -24,6 +24,39 @@ export const getDueCount = createServerFn({ method: "POST" })
     return getDueSummary(data);
   });
 
+/** Kiến trúc nhẹ máy chủ: mở Leo Tháp — một lượt đi về cho cả phiên chơi. */
+export const openTowerFn = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => credentialSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { openTower } = await import("@/lib/tower/progress.server");
+    return openTower(data);
+  });
+
+/** Tải gói đề ôn tập (chỉ khi phiên bản trên máy đã cũ). */
+export const getTowerBankFn = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => credentialSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { buildQuestionBank } = await import("@/lib/tower/bank.server");
+    return buildQuestionBank(data);
+  });
+
+/** Đồng bộ tiến trình sau phiên chơi (gộp một lần ghi). */
+export const syncTowerFn = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    credentialSchema
+      .extend({
+        state: z.unknown(),
+        runs: z.number().int().min(0).max(100000).optional(),
+        bestStage: z.number().int().min(0).max(50).optional(),
+        coins: z.number().int().min(0).max(1000000).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { syncTower } = await import("@/lib/tower/progress.server");
+    return syncTower(data);
+  });
+
 /** Mở một phiên Leo Tháp (một lượt đi về cho cả phiên). */
 export const startTower = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
