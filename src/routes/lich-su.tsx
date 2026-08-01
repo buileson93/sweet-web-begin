@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CalendarClock, CheckCircle2, ChevronDown, History, Loader2, Search, Timer, TrendingUp, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +44,15 @@ function HistoryPage() {
   const runHistory = useServerFn(getExamHistory);
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
+
+  // Ghi nhớ đăng nhập nhanh trong 3 giờ.
+  useEffect(() => {
+    const quick = readQuickLogin();
+    if (!quick) return;
+    setName((prev) => prev || quick.name);
+    setCredential((prev) => prev || quick.credential);
+  }, []);
+
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ExamHistory | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);

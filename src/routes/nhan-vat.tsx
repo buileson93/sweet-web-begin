@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BadgeCheck,
   CalendarClock,
@@ -74,6 +74,15 @@ function CharacterPage() {
 
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
+
+  // Ghi nhớ đăng nhập nhanh trong 3 giờ.
+  useEffect(() => {
+    const quick = readQuickLogin();
+    if (!quick) return;
+    setName((prev) => prev || quick.name);
+    setCredential((prev) => prev || quick.credential);
+  }, []);
+
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [history, setHistory] = useState<ExamHistory | null>(null);
