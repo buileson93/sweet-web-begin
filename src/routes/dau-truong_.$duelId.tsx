@@ -220,6 +220,30 @@ function DuelRoom() {
 
       <BattleDice dice={dice} />
 
+      {battleLog.length > 0 ? (
+        <ul
+          className="space-y-1 rounded-xl border bg-card/70 p-2 text-xs"
+          aria-live="polite"
+          aria-label="Diễn biến trận đấu"
+        >
+          {battleLog.map((l) => (
+            <li
+              key={l.id}
+              className={cn(
+                "animate-fade-in",
+                l.tone === "good" && "text-primary",
+                l.tone === "bad" && "text-destructive",
+                l.tone === "warn" && "text-amber-500",
+                l.tone === "skill" && "text-muted-foreground",
+              )}
+            >
+              {l.text}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+
       {state.status === "waiting" || state.status === "countdown" ? (
         <WaitingPanel
           state={state}
