@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
 import { normalizeKey } from "@/lib/csv";
+import { buildContactList, buildReminderMessage, formatDeadline } from "@/lib/reminder";
 
 
 /** Danh sách nhân viên chưa tham gia một cuộc thi, dùng để nhắc nhở. */
