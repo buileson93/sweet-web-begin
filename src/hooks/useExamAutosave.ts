@@ -10,7 +10,7 @@ const DEBOUNCE_MS = 2_000;
 const MIN_INTERVAL_MS = 5_000;
 const BACKOFF_MS = [2_000, 5_000, 15_000];
 
-export type AutosaveStatus = "idle" | "saving" | "saved" | "offline";
+export type AutosaveStatus = "idle" | "saving" | "saved" | "offline" | "server-error";
 
 export const pendingKey = (sessionId: string) => "exam:pending:" + sessionId;
 export const seqKey = (sessionId: string) => "exam:seq:" + sessionId;
@@ -94,7 +94,16 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
       const res = await saveProgress({
         data: { sessionId, submitToken, answers: delta, clientSeq: nextSeq },
       });
-      seqRef.current = Math.max(nextSeq, res.seq ?? nextSeq);
+      const serverSeq = Number(res.seq ?? 0);
+      if (serverSeq < nextSeq) {
+        // Máy chủ bỏ qua gói tin (seq bị lùi): đồng bộ lại seq, GIỮ hàng đợi và thử lại.
+        seqRef.current = Math.max(seqRef.current, serverSeq);
+        setStatus("saving");
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => void flush(), DEBOUNCE_MS);
+        return;
+      }
+      seqRef.current = Math.max(nextSeq, serverSeq);
       ackedRef.current = { ...ackedRef.current, ...delta };
       attemptRef.current = 0;
       persistQueue({});
@@ -108,15 +117,16 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
     } catch (error) {
       // Phiên đã đóng (hết giờ / mở lượt mới nơi khác): ngừng thử lại, tránh vòng lặp lỗi.
       const message = error instanceof Error ? error.message : "";
+      const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
       if (/không hợp lệ|hết giờ/i.test(message)) {
         deadRef.current = true;
         if (timerRef.current) clearTimeout(timerRef.current);
-        setStatus("offline");
+        setStatus("server-error");
         return;
       }
       // Mất mạng hoặc máy chủ lỗi: giữ nguyên hàng đợi, thử lại theo backoff.
       attemptRef.current = Math.min(attemptRef.current + 1, BACKOFF_MS.length);
-      setStatus("offline");
+      setStatus(isOffline ? "offline" : "server-error");
       const wait = BACKOFF_MS[attemptRef.current - 1] ?? BACKOFF_MS[BACKOFF_MS.length - 1];
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => void flush(), wait);
@@ -176,16 +186,15 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
               new Blob([payload], { type: "application/json" }),
             )
           : false;
-      if (sent) {
-        seqRef.current += 1;
-        ackedRef.current = { ...ackedRef.current, ...delta };
-        persistQueue({});
-      } else {
-        void flush();
-      }
+      // sendBeacon chỉ báo "đã xếp hàng gửi", KHÔNG bảo đảm máy chủ nhận và chấp nhận.
+      // Vì vậy tuyệt đối không đánh dấu đã lưu (ackedRef) và không xoá hàng đợi ở đây;
+      // lần flush kế tiếp sẽ gửi lại cùng seq, cơ chế merge theo seq của máy chủ tự dọn phần thừa.
+      if (!sent) void flush();
     };
     const onVisibility = () => {
       if (document.visibilityState === "hidden") beacon();
+      // Quay lại tab: đối chiếu ngay để chốt phần beacon có thể đã bị máy chủ từ chối.
+      else void flush();
     };
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", beacon);
