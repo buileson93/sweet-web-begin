@@ -25,6 +25,7 @@ import { QuestionImportDialog } from "@/components/admin/questions/QuestionImpor
 import { QuestionFilters } from "./questions/QuestionFilters";
 import { QuestionForm } from "./questions/QuestionForm";
 import { QuestionList } from "./questions/QuestionList";
+import { QuestionInsightsDialog } from "./questions/QuestionInsightsDialog";
 import { useQuestionMutations } from "./questions/useQuestionMutations";
 import {
   emptyForm,
@@ -523,6 +524,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
             onEdit={openEdit}
             onRemove={(q) => remove.mutate(q)}
             onPreview={openEdit}
+            onInsights={(q) => setInsights({ id: q.id, question: q.question })}
             onDuplicate={(q) => duplicate.mutate(q)}
             onArchive={(q, archived) => archive.mutate({ row: q, archived })}
             onMove={moveRow}
@@ -535,6 +537,12 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
           />
         </QueryState>
       </AdminSection>
+
+      <QuestionInsightsDialog
+        questionId={insights?.id ?? null}
+        question={insights?.question ?? ""}
+        onOpenChange={(open) => { if (!open) setInsights(null); }}
+      />
 
       <QuestionForm
         open={open}
