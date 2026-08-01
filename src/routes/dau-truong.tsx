@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { BetaBadge } from "@/components/BetaBadge";
 import { CredentialInput } from "@/components/CredentialInput";
 import { InviteDialog } from "@/components/arena/InviteDialog";
 import { ShareChallenge } from "@/components/arena/ShareChallenge";
@@ -244,7 +245,11 @@ function ArenaLobby() {
     return (
       <PageContainer className="py-8">
         <PageHero
-          title="Đấu trường 1vs1"
+          title={
+            <span className="inline-flex flex-wrap items-center gap-2">
+              Đấu trường 1vs1 <BetaBadge />
+            </span>
+          }
           description="10 câu tốc chiến, ai nhanh và đúng hơn thì thắng."
         />
         <div className="arena-panel arena-radar mx-auto mt-6 w-full max-w-md p-5">
@@ -275,7 +280,11 @@ function ArenaLobby() {
   return (
     <PageContainer className="space-y-6 py-6">
       <PageHero
-        title="Đấu trường 1vs1"
+        title={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            Đấu trường 1vs1 <BetaBadge />
+          </span>
+        }
         description="So tài cùng đồng nghiệp, leo hạng Elo và sưu tầm huy hiệu."
         aside={
           <Button asChild variant="outline" className="rounded-full">
