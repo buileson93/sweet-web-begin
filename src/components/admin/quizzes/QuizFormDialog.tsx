@@ -251,7 +251,36 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
         entityLabel: payload.title,
         details: { ...payload, audiences: audience.length },
       });
+
+      // Thay đổi cấu hình ảnh hưởng trực tiếp tới kết quả thi (thời lượng, điểm đạt,
+      // số câu, thời gian mở/đóng, số lượt) được ghi riêng để truy vết khi có khiếu nại.
+      if (editing) {
+        const WATCHED: { key: string; label: string }[] = [
+          { key: "duration_minutes", label: "Thời lượng (phút)" },
+          { key: "pass_percent", label: "Ngưỡng đạt (%)" },
+          { key: "question_count", label: "Số câu" },
+          { key: "max_attempts", label: "Số lượt tối đa" },
+          { key: "start_time", label: "Thời gian mở" },
+          { key: "end_time", label: "Thời gian đóng" },
+        ];
+        const source = editing as unknown as Record<string, unknown>;
+        const next = payload as unknown as Record<string, unknown>;
+        const changes = WATCHED.filter(
+          (f) => f.key in next && String(source[f.key] ?? "") !== String(next[f.key] ?? ""),
+        ).map((f) => ({ truong: f.label, cu: source[f.key] ?? null, moi: next[f.key] ?? null }));
+
+        if (changes.length > 0) {
+          await logAudit({
+            action: "quiz_config",
+            entity: "quiz",
+            entityId: quizId,
+            entityLabel: payload.title,
+            details: { changes },
+          });
+        }
+      }
     },
+
     onSuccess: () => {
       toast.success(editing ? "Đã cập nhật cuộc thi." : "Đã tạo cuộc thi mới.");
       onOpenChange(false);
