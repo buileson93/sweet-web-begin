@@ -89,8 +89,8 @@ export function PracticePanel({
         className="mb-3 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm transition hover:border-primary hover:bg-primary/10"
       >
         <Castle className="size-4 text-primary" />
-        <span className="font-medium">Leo Tháp Tri Thức</span>
-        <span className="type-meta">Ôn đúng câu bạn sắp quên · 5 chặng</span>
+        <span className="font-medium">Tháp Không Lưu (TWR ATC)</span>
+        <span className="type-meta">Ôn nghiệp vụ điều hành bay · 5 tầng</span>
       </Link>
 
 
