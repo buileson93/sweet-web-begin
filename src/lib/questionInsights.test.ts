@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { realDifficultyOf } from "./questionInsights";
+import { questionQualityFlags, realDifficultyOf } from "./questionInsights";
 
 describe("realDifficultyOf", () => {
   it("chưa đủ dữ liệu khi dưới 5 lượt làm", () => {
