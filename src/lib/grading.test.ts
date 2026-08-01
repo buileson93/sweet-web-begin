@@ -10,6 +10,7 @@ import {
   scoreForAnswer,
   estimatePoints,
   comboBonus,
+  shuffle,
 } from "@/lib/grading";
 import type { AnswerValue, Difficulty, QuestionKind } from "@/lib/questionKinds";
 
