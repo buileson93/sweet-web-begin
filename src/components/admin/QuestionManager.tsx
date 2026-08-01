@@ -25,6 +25,7 @@ import { QuestionImportDialog } from "@/components/admin/questions/QuestionImpor
 import { QuestionFilters } from "./questions/QuestionFilters";
 import { QuestionForm } from "./questions/QuestionForm";
 import { QuestionList } from "./questions/QuestionList";
+import { QuestionInsightsDialog } from "./questions/QuestionInsightsDialog";
 import { useQuestionMutations } from "./questions/useQuestionMutations";
 import {
   emptyForm,
@@ -47,6 +48,8 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | Difficulty>("all");
   const [archiveFilter, setArchiveFilter] = useState<ArchiveFilter>("active");
   const [page, setPage] = useState(1);
+  /** Câu hỏi đang mở bảng phân tích độ khó / lịch sử phiên bản. */
+  const [insights, setInsights] = useState<{ id: string; question: string } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<QuestionRow | null>(null);
@@ -523,6 +526,7 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
             onEdit={openEdit}
             onRemove={(q) => remove.mutate(q)}
             onPreview={openEdit}
+            onInsights={(q) => setInsights({ id: q.id, question: q.question })}
             onDuplicate={(q) => duplicate.mutate(q)}
             onArchive={(q, archived) => archive.mutate({ row: q, archived })}
             onMove={moveRow}
@@ -535,6 +539,12 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
           />
         </QueryState>
       </AdminSection>
+
+      <QuestionInsightsDialog
+        questionId={insights?.id ?? null}
+        question={insights?.question ?? ""}
+        onOpenChange={(open) => { if (!open) setInsights(null); }}
+      />
 
       <QuestionForm
         open={open}

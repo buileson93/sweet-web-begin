@@ -176,6 +176,8 @@ export async function submitExamSession(input: {
   let bestStreak = 0;
   const review: ReviewItem[] = [];
   const storedAnswers: Record<string, AnswerValue> = {};
+  /** Dữ liệu tính độ khó thực tế của từng câu (chỉ ghi khi chấm lần đầu). */
+  const statItems: { id: string; fraction: number; answered: boolean }[] = [];
 
   session.question_ids.forEach((qid: string, idx: number) => {
     const row = byId.get(qid);
@@ -188,6 +190,8 @@ export async function submitExamSession(input: {
 
     const fraction = gradeFraction(row, order, value);
     const correct = fraction >= 1;
+    statItems.push({ id: row.id, fraction, answered });
+
     if (correct) {
       score++;
       streak++;
@@ -314,6 +318,15 @@ export async function submitExamSession(input: {
 
     if (insertError && !insertError.message.includes("duplicate"))
       throw new Error(insertError.message);
+
+    // Tích luỹ độ khó thực tế của từng câu hỏi (không chặn luồng trả kết quả).
+    if (!disqualified && statItems.length) {
+      await supabaseAdmin
+        .rpc("bump_question_stats" as never, { p_items: statItems } as never)
+        .then(() => undefined, () => undefined);
+    }
+
+
 
     // Cộng kinh nghiệm / lên cấp cho nhân viên (Habitica style).
     if (session.employee_id) {

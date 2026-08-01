@@ -1,5 +1,6 @@
 import {
   Archive,
+  BarChart3,
   ArchiveRestore,
   ArrowDown,
   ArrowUp,
@@ -37,6 +38,7 @@ export function QuestionList({
   onEdit,
   onRemove,
   onPreview,
+  onInsights,
   onDuplicate,
   onArchive,
   onMove,
@@ -62,6 +64,7 @@ export function QuestionList({
   onEdit: (row: QuestionRow) => void;
   onRemove: (row: QuestionRow) => void;
   onPreview: (row: QuestionRow) => void;
+  onInsights: (row: QuestionRow) => void;
   onDuplicate: (row: QuestionRow) => void;
   onArchive: (row: QuestionRow, archived: boolean) => void;
   onMove: (row: QuestionRow, delta: -1 | 1) => void;
@@ -159,6 +162,16 @@ export function QuestionList({
               <Button size="icon" variant="ghost" aria-label="Xem trước" onClick={() => onPreview(q)}>
                 <Eye className="size-4" />
               </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label="Phân tích & lịch sử"
+                title="Phân tích độ khó thực tế và lịch sử chỉnh sửa"
+                onClick={() => onInsights(q)}
+              >
+                <BarChart3 className="size-4" />
+              </Button>
+
               <Button
                 size="icon"
                 variant="ghost"

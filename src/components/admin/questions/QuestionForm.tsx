@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ImagePlus, Loader2, RotateCcw, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { CopyCheck, ImagePlus, Loader2, RotateCcw, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { questionImageSrc } from "@/lib/questionImage";
+import { checkDuplicateQuestion } from "@/lib/questionInsights.functions";
 import {
   DIFFICULTIES,
   QUESTION_KINDS,
@@ -109,6 +112,20 @@ export function QuestionForm({
   );
   const blocked = hasBlockingErrors(validation);
 
+  // Chống trùng TOÀN HỆ THỐNG: hỏi máy chủ sau khi ngừng gõ 600ms.
+  const [debouncedText, setDebouncedText] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedText(form.question.trim()), 600);
+    return () => clearTimeout(timer);
+  }, [form.question]);
+  const checkDuplicate = useServerFn(checkDuplicateQuestion);
+  const { data: duplicates = [] } = useQuery({
+    queryKey: ["question-duplicate", debouncedText, editingId ?? null],
+    enabled: open && debouncedText.length >= 8,
+    queryFn: () =>
+      checkDuplicate({ data: { question: debouncedText, excludeId: editingId ?? null } }),
+  });
+
   // Phím tắt: Ctrl/⌘ + S = lưu, Ctrl/⌘ + Enter = lưu và soạn câu kế.
   useEffect(() => {
     if (!open) return;
@@ -143,6 +160,23 @@ export function QuestionForm({
             lưu và soạn câu kế.
           </SheetDescription>
         </SheetHeader>
+
+        {duplicates.length > 0 ? (
+          <div className="rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
+            <p className="flex items-center gap-2 font-medium text-destructive">
+              <CopyCheck className="size-4" /> Câu hỏi này đã có trong hệ thống (
+              {duplicates.length} nơi)
+            </p>
+            <ul className="mt-1 list-disc pl-6 text-muted-foreground">
+              {duplicates.map((d) => (
+                <li key={d.id}>
+                  {d.quizTitle}
+                  {d.archived ? " (đã lưu trữ)" : ""}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         {draftAvailable ? (
           <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm">
