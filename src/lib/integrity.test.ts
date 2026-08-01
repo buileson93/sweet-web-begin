@@ -13,14 +13,14 @@ import {
 } from "./integrity";
 
 describe("scoreEvent", () => {
-  it("bỏ qua việc ẩn tab dưới 1,5 giây (thông báo, xoay màn hình)", () => {
+  it("bỏ qua việc ẩn tab dưới 0,8 giây (thông báo, xoay màn hình)", () => {
     expect(scoreEvent("tab_hidden", { hiddenMs: 0 })).toBe(0);
     expect(scoreEvent("tab_hidden", { hiddenMs: 500 })).toBe(0);
-    expect(scoreEvent("tab_hidden", { hiddenMs: 1_499 })).toBe(0);
+    expect(scoreEvent("tab_hidden", { hiddenMs: 799 })).toBe(0);
     expect(scoreEvent("tab_hidden", {})).toBe(0);
   });
 
-  it("phạt 2 điểm khi ẩn tab 1,5–15 giây", () => {
+  it("phạt 2 điểm khi ẩn tab 0,8–15 giây", () => {
     expect(scoreEvent("tab_hidden", { hiddenMs: 1_500 })).toBe(2);
     expect(scoreEvent("tab_hidden", { hiddenMs: 3_000 })).toBe(2);
     expect(scoreEvent("tab_hidden", { hiddenMs: 15_000 })).toBe(2);
