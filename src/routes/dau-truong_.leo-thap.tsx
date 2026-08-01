@@ -11,6 +11,7 @@ import {
   Flame,
   Heart,
   Loader2,
+  Map as MapIcon,
   RefreshCw,
   Shield,
   Sparkles,
@@ -932,7 +933,7 @@ function TowerPage() {
             aria-controls="tower-map-panel"
             onClick={() => setMapOpen((v) => !v)}
           >
-            <Map className="mr-1.5 size-4" /> {mapOpen ? "Ẩn bản đồ" : "Xem bản đồ"}
+            <MapIcon className="mr-1.5 size-4" /> {mapOpen ? "Ẩn bản đồ" : "Xem bản đồ"}
           </Button>
         </div>
       )}
