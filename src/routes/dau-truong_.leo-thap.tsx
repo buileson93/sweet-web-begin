@@ -215,6 +215,7 @@ function TowerPage() {
   } | null>(
     null,
   );
+  const [challengeValue, setChallengeValue] = useState<AnswerValue | undefined>(undefined);
   const [confirmClose, setConfirmClose] = useState(false);
   const [lowTime, setLowTime] = useState(false);
   const [meta, setMeta] = useState<Meta>(EMPTY_META);
@@ -571,6 +572,7 @@ function TowerPage() {
     setIdx(0);
     setAnswers({});
     setNote("");
+    setChallengeValue(undefined);
     deadlineRef.current = next.room && next.room.questions > 0 ? Date.now() + roomSeconds(next) * 1000 : 0;
   }
 
@@ -599,7 +601,23 @@ function TowerPage() {
 
   const boss = run?.room?.kind === "boss" ? bossAt(run.floor) : undefined;
   const showPicker = Boolean(run && !summary && !outcome && !run.room);
-  const nonCombat = run?.room && run.room.questions === 0 ? run.room.kind : null;
+  // Phòng không giao tranh chỉ mở nội dung sau khi trả lời câu thử thách kiến thức.
+  const challengeQ = run && run.room && run.challenge && !run.challenge.done ? challengeQuestion(run) : null;
+  const nonCombat = run?.room && run.room.questions === 0 && run.challenge?.done ? run.room.kind : null;
+
+  function submitChallenge() {
+    if (!run) return;
+    const res = resolveChallenge(run, challengeValue as AnswerValue);
+    setRun(res.run);
+    setChallengeValue(undefined);
+    if (res.result) {
+      const nextState = applyResults(stateRef.current, [res.result]);
+      setState(nextState);
+      void writeCachedState(nextState);
+    }
+    if (res.message) (res.correct ? toast.success : toast.warning)(res.message);
+    if (res.run.finished) finishRun(res.run);
+  }
 
   return (
     <ArenaPage>
@@ -916,6 +934,32 @@ function TowerPage() {
       )}
 
 
+      {/* Câu thử thách kiến thức của phòng sự kiện / cửa hàng / lửa trại */}
+      {run && run.room && challengeQ && !summary && (
+        <section className="space-y-4 rounded-2xl border bg-card/70 p-5">
+          <SectionHeading
+            title={`${ROOM_META[run.room.kind].icon} Thử thách ${ROOM_META[run.room.kind].label}`}
+          />
+          <p className="type-meta">{ROOM_RULES[run.room.kind].rule}</p>
+          <div className="text-base font-medium">
+            <RichText>{challengeQ.question}</RichText>
+          </div>
+          <QuestionInput
+            kind={challengeQ.kind}
+            options={challengeQ.options}
+            optionImages={challengeQ.optionImages}
+            matchLeft={challengeQ.pairs.map((pp) => pp.left)}
+            value={challengeValue}
+            onChange={setChallengeValue}
+          />
+          <div className="flex justify-end">
+            <Button onClick={submitChallenge}>
+              Trả lời <ArrowRight className="ml-2 size-4" />
+            </Button>
+          </div>
+        </section>
+      )}
+
       {/* Lửa trại */}
       {run && nonCombat === "campfire" && !summary && (
         <section className="space-y-3 rounded-2xl border bg-card/70 p-5">
@@ -1033,6 +1077,22 @@ function TowerPage() {
       {run && outcome && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
           <SectionHeading title="Góc rút kinh nghiệm" />
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive">
+              Mất {outcome.hpLost} máu
+            </span>
+            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+              Gây {outcome.damage} sát thương
+            </span>
+            {outcome.combos.map((c) => (
+              <span
+                key={c.at}
+                className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600"
+              >
+                {c.label}
+              </span>
+            ))}
+          </div>
           <ul className="space-y-2">
             {outcome.results.map((r, i) => (
               <li
@@ -1109,6 +1169,22 @@ function TowerPage() {
             />
           </div>
           {boss && <p className="type-meta text-destructive">{boss.rule}</p>}
+          <p className="type-meta">{ROOM_RULES[run.room.kind].rule}</p>
+          <ul className="flex flex-wrap gap-1.5">
+            {COMBO_REWARDS.map((c) => (
+              <li
+                key={c.at}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[11px] font-medium transition",
+                  run.combo >= c.at
+                    ? "border-amber-500/60 bg-amber-500/10 text-amber-600"
+                    : "border-border text-muted-foreground",
+                )}
+              >
+                {c.label}
+              </li>
+            ))}
+          </ul>
           {note && <p className="type-meta">{note}</p>}
 
           <div className="flex flex-wrap gap-1.5">
