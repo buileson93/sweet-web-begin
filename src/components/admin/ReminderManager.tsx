@@ -64,7 +64,9 @@ export function ReminderManager() {
     );
   }, [pending, keyword]);
 
-  const quizTitle = (quizzesQuery.data ?? []).find((q) => q.id === quizId)?.title ?? "";
+  const quiz = (quizzesQuery.data ?? []).find((q) => q.id === quizId);
+  const quizTitle = quiz?.title ?? "";
+  const deadline = formatDeadline(quiz?.end_time ?? null);
 
   function exportRows(): ExportRow[] {
     return rows.map((e, i) => ({
@@ -72,7 +74,10 @@ export function ReminderManager() {
       "Họ và tên": e.full_name,
       "Chức vụ": e.position ?? "",
       "Đơn vị": e.unit_name ?? "",
+      "Điện thoại": e.phone ?? "",
       "Cuộc thi": quizTitle,
+      "Hạn chót": deadline,
+      "Nội dung nhắc": buildReminderMessage(e, quizTitle, deadline),
       "Trạng thái": "Chưa tham gia",
     }));
   }
@@ -90,6 +95,19 @@ export function ReminderManager() {
     });
     toast.success(`Đã tải xuống danh sách ${rows.length} nhân viên.`);
   }
+
+  /** Sao chép danh sách liên hệ để dán thẳng vào Zalo nhóm hoặc Outlook. */
+  async function handleCopy() {
+    if (rows.length === 0) return toast.error("Không có dữ liệu để sao chép.");
+    const text = buildContactList(rows);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`Đã sao chép ${rows.length} liên hệ vào bộ nhớ tạm.`);
+    } catch {
+      toast.error("Trình duyệt chặn sao chép — hãy dùng nút tải CSV.");
+    }
+  }
+
 
   return (
     <AdminSection
