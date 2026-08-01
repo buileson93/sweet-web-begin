@@ -21,7 +21,10 @@ export function ReminderManager() {
   const quizzesQuery = useQuery({
     queryKey: ["admin-quiz-titles"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("quizzes").select("id, title").order("start_time");
+      const { data, error } = await supabase
+        .from("quizzes")
+        .select("id, title, end_time")
+        .order("start_time");
       if (error) throw error;
       return data;
     },
@@ -34,12 +37,13 @@ export function ReminderManager() {
       const [{ data: employees, error: empError }, { data: results, error: resError }] = await Promise.all([
         supabase
           .from("employees")
-          .select("id, full_name, position, unit_name")
+          .select("id, full_name, position, unit_name, phone")
           .eq("is_active", true)
           .order("full_name")
           .limit(2000),
         supabase.from("results").select("employee_id, score, total").eq("quiz_id", quizId).limit(5000),
       ]);
+
       if (empError) throw empError;
       if (resError) throw resError;
       const joined = new Set((results ?? []).map((r) => r.employee_id).filter(Boolean) as string[]);
