@@ -606,6 +606,8 @@ function TowerPage() {
   }
 
   const quizList = useMemo(() => bankQuizzes(bank), [bank]);
+  // Bản đồ hạt hằng ngày để xem trước — lấy từ bộ nhớ đệm theo hạt nên không tốn công dựng lại.
+  const previewMap = useMemo(() => mapFor(dailySeed(vnDayKey(Date.now()))), []);
   const scopedCount = useMemo(() => (bank ? filterBankByQuizzes(bank, packs).questions.length : 0), [bank, packs]);
   const mods = useMemo(() => (run ? runModifiers(run) : null), [run]);
   const roomQs = useMemo(() => (run && run.room ? roomQuestions(run) : []), [run]);
