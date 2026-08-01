@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { avatarDataUri, decodeAvatar, encodeAvatar, isAvatar2d, suggestSeeds } from "@/lib/avatar2d";
+import { avatarDataUri, decodeAvatar, encodeAvatar, isAvatar2d, optionGroups, optionValueLabel, suggestSeeds } from "@/lib/avatar2d";
 
 describe("avatar2d", () => {
   it("mã hoá rồi giải mã giữ nguyên mô tả", () => {
@@ -29,5 +29,39 @@ describe("avatar2d", () => {
     expect(seeds).toHaveLength(5);
     expect(seeds[0]).toBe("Lê C");
     expect(new Set(seeds).size).toBe(5);
+  });
+});
+
+describe("avatar2d tuỳ chỉnh", () => {
+  it("giữ nguyên tuỳ chỉnh khi mã hoá/giải mã", () => {
+    const spec = {
+      style: "notionists" as const,
+      seed: "Lê D",
+      background: "dbeafe",
+      options: { beard: "variant03", glasses: "off" },
+    };
+    expect(decodeAvatar(encodeAvatar(spec))).toEqual(spec);
+  });
+
+  it("bỏ qua tuỳ chọn tự động", () => {
+    expect(encodeAvatar({ style: "notionists", seed: "A", background: "dbeafe", options: { beard: "auto" } })).not.toContain("#");
+  });
+
+  it("liệt kê nhóm tuỳ chỉnh có râu và kính", () => {
+    const keys = optionGroups("notionists").map((g) => g.key);
+    expect(keys).toContain("beard");
+    expect(keys).toContain("glasses");
+    expect(optionGroups("notionists").find((g) => g.key === "beard")?.optional).toBe(true);
+  });
+
+  it("nhãn biến thể dễ đọc", () => {
+    expect(optionValueLabel("variant07")).toBe("Kiểu 7");
+    expect(optionValueLabel("beardMustache")).toBe("Beard Mustache");
+  });
+
+  it("tuỳ chỉnh khác nhau cho ảnh khác nhau", () => {
+    const a = avatarDataUri({ style: "notionists", seed: "A", background: "dbeafe", options: { beard: "variant01" } });
+    const b = avatarDataUri({ style: "notionists", seed: "A", background: "dbeafe", options: { beard: "off" } });
+    expect(a).not.toBe(b);
   });
 });
