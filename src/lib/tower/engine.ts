@@ -441,6 +441,10 @@ export function gradeStage(
   let damage = 0;
   let correctCount = 0;
   let revived = run.revived;
+  let coins = 0;
+  let hpLost = 0;
+  const combos: ComboReward[] = [];
+  const kind = run.room?.kind ?? "combat";
 
   const results: StageOutcome["results"] = slice.map((q, i) => {
     const value = answers[String(i)];
@@ -455,17 +459,26 @@ export function gradeStage(
       hit += mods.relics.comboDamage * Math.max(0, combo - 1);
       if (q.difficulty === "hard") hit += mods.relics.hardBonus;
       if (mods.relics.lowHpRagePct > 0 && hp / run.maxHp < 0.3) hit = Math.round(hit * (1 + mods.relics.lowHpRagePct));
+      // Phần thưởng chuỗi đúng: mốc 3 · 5 · 7 · 10 (xem LUẬT PHÒNG trong rooms.ts).
+      const reward = comboRewardAt(combo);
+      if (reward) {
+        combos.push(reward);
+        if (reward.doubleDamage) hit *= 2;
+        if (reward.hp && !mods.noHeal) hp = Math.min(run.maxHp, hp + reward.hp);
+        if (reward.shield) shield += reward.shield;
+        if (reward.coins) coins += reward.coins;
+      }
       damage += hit;
     } else {
       combo = 0;
       if (blocks > 0) {
         blocks--; // Khiên băng chặn đứng một đòn mỗi tầng.
       } else {
-        const raw = 10 * (1 + mods.damageTakenPct) * Math.max(0.2, 1 - mods.damageReducePct);
-        const incoming = Math.max(1, Math.round(raw));
+        const incoming = wrongDamage(kind, mods.damageTakenPct, mods.damageReducePct);
         const absorbed = Math.min(shield, incoming);
         shield -= absorbed;
         hp -= incoming - absorbed;
+        hpLost += incoming - absorbed;
         if (mods.relics.reflectPct > 0) damage += Math.round(incoming * mods.relics.reflectPct);
       }
     }
@@ -505,7 +518,7 @@ export function gradeStage(
     revived,
     correct: run.correct + correctCount,
     answered: run.answered + results.filter((r) => r.answered).length,
-    coins: run.coins + coinGain,
+    coins: run.coins + coinGain + coins,
     floor: cleared ? nextFloor : run.floor,
     room: null,
     slots: [],
@@ -538,7 +551,7 @@ export function gradeStage(
     ascension: next.ascension,
   });
 
-  return { run: next, outcome: { results, damage, softStop: !cleared } };
+  return { run: next, outcome: { results, damage, softStop: !cleared, hpLost, combos } };
 }
 
 /** Ban phước sau mỗi tầng thắng: rút 3 di vật theo trọng số hiếm, kèm cơ hội nhận lời nguyền. */
@@ -798,9 +811,18 @@ function advanceNonCombat(run: TowerRun): TowerRun {
   return next;
 }
 
+/** Các nút có thể đi tới ở tầng hiện tại (đã lọc theo lối đi của bản đồ phân nhánh). */
+export function floorChoices(run: TowerRun): { index: number; room: MapNode }[] {
+  const row = run.map[run.floor - 1] ?? [];
+  const from = run.floor <= 1 ? null : (run.trail[run.floor - 2] ?? null);
+  return reachableAt(run.map, run.floor, from)
+    .map((index) => ({ index, room: row[index]! }))
+    .filter((x) => Boolean(x.room));
+}
+
 /** Danh sách phòng để chọn ở tầng hiện tại. */
 export function floorOptions(run: TowerRun): Room[] {
-  return run.map[run.floor - 1] ?? [];
+  return floorChoices(run).map((c) => c.room);
 }
 
 export const floorIsBoss = (run: TowerRun) => isBossFloor(run.floor);
