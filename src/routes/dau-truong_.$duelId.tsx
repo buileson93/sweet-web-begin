@@ -1,3 +1,4 @@
+import { ErrorState } from "@/components/ErrorState";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -35,6 +36,11 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dau-truong_/$duelId")({
   component: DuelRoom,
+  errorComponent: ({ error }) => (
+    <div className="mx-auto max-w-2xl px-4 py-16">
+      <ErrorState error={error} />
+    </div>
+  ),
   head: () => ({
     meta: [
       { title: "Phòng so tài 1vs1 — Hội thi trắc nghiệm VATM" },

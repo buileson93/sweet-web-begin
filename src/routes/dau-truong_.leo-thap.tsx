@@ -1,3 +1,4 @@
+import { ErrorState } from "@/components/ErrorState";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -27,6 +28,11 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dau-truong_/leo-thap")({
   component: TowerPage,
+  errorComponent: ({ error }) => (
+    <div className="mx-auto max-w-2xl px-4 py-16">
+      <ErrorState error={error} />
+    </div>
+  ),
   head: () => ({
     meta: [
       { title: "Tháp Không Lưu (TWR ATC) — Hội thi trắc nghiệm VATM" },

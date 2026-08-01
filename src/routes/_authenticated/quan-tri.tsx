@@ -70,6 +70,11 @@ export const Route = createFileRoute("/_authenticated/quan-tri")({
     ],
   }),
   component: AdminPage,
+  errorComponent: ({ error }) => (
+    <div className="mx-auto max-w-2xl px-4 py-16">
+      <ErrorState error={error} />
+    </div>
+  ),
 });
 
 /** adminOnly: chỉ quản trị viên hệ thống mới thấy (biên soạn đề không được vào). */
