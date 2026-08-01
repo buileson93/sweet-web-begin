@@ -75,6 +75,10 @@ export function QuestionInsightsDialog({
 
   const stats = data?.stats;
   const versions = data?.versions ?? [];
+  const flags = stats
+    ? questionQualityFlags({ attempts: stats.attempts, correct: stats.correct, blank: stats.blank })
+    : [];
+
 
   return (
     <Dialog open={Boolean(questionId)} onOpenChange={onOpenChange}>
