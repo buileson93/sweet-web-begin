@@ -48,6 +48,8 @@ export function QuestionManager({ canEdit = true }: { canEdit?: boolean }) {
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | Difficulty>("all");
   const [archiveFilter, setArchiveFilter] = useState<ArchiveFilter>("active");
   const [page, setPage] = useState(1);
+  /** Câu hỏi đang mở bảng phân tích độ khó / lịch sử phiên bản. */
+  const [insights, setInsights] = useState<{ id: string; question: string } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<QuestionRow | null>(null);
