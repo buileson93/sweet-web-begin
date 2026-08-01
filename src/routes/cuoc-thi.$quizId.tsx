@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CountdownBadge } from "@/components/CountdownBadge";
 import { QuizParticipation } from "@/components/QuizParticipation";
+import { useMyRoles } from "@/hooks/useMyRoles";
 import { RegisterCard } from "@/components/RegisterCard";
 import { ErrorState, PageContainer, StatusPill } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,9 @@ const rules = [
 
 function QuizDetailPage() {
   const { quizId } = Route.useParams();
+  // Danh bạ dự thi là dữ liệu nội bộ: chỉ quản trị viên / cán bộ tổ chức thi mới thấy.
+  const { isAdmin, isStaff } = useMyRoles();
+  const canViewRoster = isAdmin || isStaff;
 
   const quizQuery = useQuery({
     queryKey: ["quiz", quizId],
@@ -160,13 +164,17 @@ function QuizDetailPage() {
                   </dl>
                 </section>
 
-                <section className="card-elevated p-6">
-                  <h2 className="type-h2">Tình hình dự thi</h2>
-                  <p className="type-meta mt-1">Danh sách nhân viên đã dự thi và những người cần nhắc nhở.</p>
-                  <div className="mt-4">
-                    <QuizParticipation quizId={quiz.id} />
-                  </div>
-                </section>
+                {canViewRoster && (
+                  <section className="card-elevated p-6">
+                    <h2 className="type-h2">Tình hình dự thi</h2>
+                    <p className="type-meta mt-1">
+                      Danh sách nhân viên đã dự thi và những người cần nhắc nhở (chỉ ban tổ chức xem được).
+                    </p>
+                    <div className="mt-4">
+                      <QuizParticipation quizId={quiz.id} />
+                    </div>
+                  </section>
+                )}
 
                 <section className="card-elevated p-6">
                   <h2 className="type-h2">Thể lệ dự thi</h2>
