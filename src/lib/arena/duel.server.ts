@@ -1103,18 +1103,19 @@ export async function startPlaying(duelId: string) {
   await serveRound(duel, 0, 0);
 }
 
-/** Client gọi đúng lúc đồng hồ về 0 để không phải chờ nhịp cron kế tiếp. */
+/**
+ * Trình duyệt "nhắc" máy chủ xem đã tới lúc chuyển bước chưa (hết giờ câu, hết thời gian
+ * công bố kết quả). Máy chủ vẫn tự kiểm giờ trong `advanceDuel`, nên hai máy lệch đồng hồ
+ * cũng không thể ép đóng câu sớm — không còn cảnh "bị xử thua oan" vì mạng chậm.
+ */
 export async function closeExpiredRound(input: { employeeId: string; duelId: string; roundIndex: number }) {
-  const duel = await loadDuel(input.duelId);
-  const players = await loadPlayers(duel.id);
-  if (!players.some((p) => p.employee_id === input.employeeId)) throw new Error("Bạn không thuộc ván so tài này.");
-  if (duel.status !== "playing" || duel.current_round !== input.roundIndex || !duel.round_served_at)
-    return { closed: false };
-  const deadline = Date.parse(duel.round_served_at) + duel.seconds_per_round * 1000 + NETWORK_GRACE_MS;
-  if (Date.now() < deadline) return { closed: false };
-  await closeRound(duel.id, input.roundIndex);
-  return { closed: true };
+  const players = await loadPlayers(input.duelId);
+  if (!players.some((p) => p.employee_id === input.employeeId))
+    throw new Error("Bạn không thuộc ván so tài này.");
+  const res = await advanceDuel(input.duelId);
+  return { closed: res.advanced };
 }
+
 
 /** Tạo phòng tái đấu và gửi lời mời trực tiếp cho đối thủ cũ. */
 export async function rematchDuel(input: { employeeId: string; duelId: string; quizId?: string | null; deviceHash?: string }) {
