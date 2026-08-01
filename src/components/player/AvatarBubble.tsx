@@ -79,7 +79,7 @@ export function AvatarBubble({
         )}
       </span>
       {typeof level === "number" ? (
-        <span className="absolute -bottom-1 -right-1 rounded-full bg-primary px-1.5 py-0.5 text-[0.625rem] font-extrabold leading-none text-primary-foreground shadow-[var(--shadow-lift)]">
+        <span className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 rounded-full bg-primary px-1.5 py-0.5 text-[0.625rem] font-extrabold leading-none text-primary-foreground ring-2 ring-background shadow-[var(--shadow-lift)]">
           {level}
         </span>
       ) : null}

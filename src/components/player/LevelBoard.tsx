@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Star, Trophy } from "lucide-react";
 
+import { AvatarBubble } from "@/components/player/AvatarBubble";
 import { getTopPlayers } from "@/lib/player.functions";
 import { cachedFetch } from "@/lib/cache/ttlCache";
 import { cn } from "@/lib/utils";
@@ -31,18 +32,12 @@ export function LevelBoard({ className }: { className?: string }) {
         {rows.map((p, i) => (
           <li key={p.employeeId} className="flex items-center gap-3">
             <span className="font-mono w-5 text-right text-xs text-muted-foreground">{i + 1}</span>
-            {p.avatarImage ? (
-              <img
-                src={p.avatarImage}
-                alt=""
-                loading="lazy"
-                className="size-9 shrink-0 rounded-full border border-border bg-secondary object-cover"
-              />
-            ) : (
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-xs font-bold">
-                {p.displayName.trim().slice(0, 1).toUpperCase() || "?"}
-              </span>
-            )}
+            <AvatarBubble
+              name={p.displayName}
+              avatarUrl={p.avatarUrl}
+              avatarImage={p.avatarImage}
+              size="sm"
+            />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-bold">{p.displayName}</span>
               <span className="type-meta block truncate">{p.unit || "Chưa rõ đơn vị"}</span>

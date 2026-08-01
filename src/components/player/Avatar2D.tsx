@@ -25,7 +25,7 @@ export function Avatar2D({
     <img
       src={uri}
       alt={alt ?? (name ? `Nhân vật của ${name}` : "Nhân vật")}
-      loading="lazy"
+      decoding="sync"
       draggable={false}
       className={cn("size-full object-contain", className)}
     />
