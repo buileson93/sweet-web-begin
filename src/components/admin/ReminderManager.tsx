@@ -142,9 +142,16 @@ export function ReminderManager() {
       }
       actions={
         <>
+          <Button className="rounded-full" disabled={rows.length === 0} onClick={() => void handleCopy()}>
+            <ClipboardCopy className="size-4" /> Sao chép liên hệ
+          </Button>
+          <Button variant="outline" className="rounded-full" disabled={rows.length === 0} onClick={() => void handleExport("xlsx")} title="Excel kèm sẵn nội dung nhắc để trộn thư">
+            <MailPlus className="size-4" /> Trộn thư
+          </Button>
           <Button variant="outline" className="rounded-full" disabled={rows.length === 0} onClick={() => void handleExport("csv")}>
             <Download className="size-4" /> CSV
           </Button>
+
           <Button variant="outline" className="rounded-full" disabled={rows.length === 0} onClick={() => void handleExport("xlsx")}>
             <FileSpreadsheet className="size-4" /> Excel
           </Button>
