@@ -1936,3 +1936,33 @@ body.fx-shaking {
 .rich-text a { color: var(--accent); text-decoration: underline; }
 .rich-text--inline p { display: inline; }
 .rich-text .katex-display { margin: 0.4rem 0; overflow-x: auto; overflow-y: hidden; }
+
+/* ===== Bản đồ leo tháp (roguelike) ===== */
+.tower-map__sky {
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in oklab, var(--primary) 22%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in oklab, var(--foreground) 8%, transparent), transparent 60%);
+}
+.tower-map__stars {
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, color-mix(in oklab, var(--foreground) 45%, transparent), transparent 100%),
+    radial-gradient(1.5px 1.5px at 78% 32%, color-mix(in oklab, var(--foreground) 35%, transparent), transparent 100%),
+    radial-gradient(1.5px 1.5px at 34% 62%, color-mix(in oklab, var(--foreground) 30%, transparent), transparent 100%),
+    radial-gradient(2px 2px at 62% 82%, color-mix(in oklab, var(--foreground) 25%, transparent), transparent 100%),
+    radial-gradient(1.5px 1.5px at 88% 70%, color-mix(in oklab, var(--foreground) 30%, transparent), transparent 100%);
+  animation: tower-twinkle 5.5s ease-in-out infinite;
+}
+@keyframes tower-twinkle {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+}
+.tower-node__pulse { animation: tower-pulse 2s ease-out infinite; }
+@keyframes tower-pulse {
+  0% { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tower-map__stars,
+  .tower-node--live,
+  .tower-node__pulse { animation: none; }
+}

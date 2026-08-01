@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 
 import { QuestionInput } from "@/components/exam/QuestionInput";
+import { TowerMap } from "@/components/tower/TowerMap";
 import { RichText } from "@/components/RichText";
 import { Button } from "@/components/ui/button";
 import {
@@ -790,31 +791,44 @@ function TowerPage() {
 
       {run && !summary && <RunBar run={run} />}
 
-      {/* Bản đồ phân nhánh: chọn phòng cho tầng hiện tại. */}
-      {showPicker && run && (
-        <section className="space-y-3 rounded-2xl border bg-card/70 p-5">
-          <SectionHeading title={`Tầng ${run.floor} — chọn đường đi`} />
-          <div className="grid gap-3 sm:grid-cols-3">
-            {floorOptions(run).map((room, i) => {
-              const meta = ROOM_META[room.kind];
-              const bossHere = room.kind === "boss" ? bossAt(run.floor) : undefined;
-              return (
-                <button
-                  key={`${room.kind}-${i}`}
-                  type="button"
-                  onClick={() => enterRoom(i)}
-                  className="group rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-primary hover:shadow-lg"
-                >
-                  <div className="text-2xl transition group-hover:scale-110">{meta.icon}</div>
-                  <div className={cn("mt-1 font-semibold", meta.tone)}>{bossHere ? bossHere.name : meta.label}</div>
-                  <div className="type-meta mt-1">{bossHere ? bossHere.rule : meta.desc}</div>
-                </button>
-              );
-            })}
-          </div>
-          <p className="type-meta">Tầng 4, 8 và 12 là trùm — tầng ngay trước đó luôn có lửa trại để bạn chuẩn bị.</p>
+      {/* Bản đồ phân nhánh: xem toàn cảnh 12 tầng và chọn phòng cho tầng hiện tại. */}
+      {run && !summary && (
+        <section className="space-y-3 rounded-2xl border bg-card/70 p-4 sm:p-5">
+          <SectionHeading
+            title={showPicker ? `Tầng ${run.floor} — chọn đường đi` : `Bản đồ hành trình · tầng ${Math.min(run.floor, FLOORS)}/${FLOORS}`}
+          />
+          <TowerMap
+            map={run.map}
+            floor={run.floor}
+            path={run.path}
+            canPick={Boolean(showPicker)}
+            onPick={(i) => enterRoom(i)}
+          />
+          {showPicker ? (
+            <div className="grid gap-2 sm:grid-cols-3">
+              {floorOptions(run).map((room, i) => {
+                const meta = ROOM_META[room.kind];
+                const bossHere = room.kind === "boss" ? bossAt(run.floor) : undefined;
+                return (
+                  <button
+                    key={`${room.kind}-${i}`}
+                    type="button"
+                    onClick={() => enterRoom(i)}
+                    className="group rounded-xl border p-3 text-left transition hover:-translate-y-0.5 hover:border-primary hover:shadow-lg"
+                  >
+                    <div className="text-xl transition group-hover:scale-110">{meta.icon}</div>
+                    <div className={cn("mt-1 text-sm font-semibold", meta.tone)}>
+                      {bossHere ? bossHere.name : meta.label}
+                    </div>
+                    <div className="type-meta mt-0.5">{bossHere ? bossHere.rule : meta.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
         </section>
       )}
+
 
       {/* Lửa trại */}
       {run && nonCombat === "campfire" && !summary && (
