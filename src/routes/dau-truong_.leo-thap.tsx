@@ -825,11 +825,38 @@ function TowerPage() {
               </div>
             ))}
           </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border bg-background/60 p-3">
+              <p className="mb-2 text-sm font-semibold">Điểm đến từ đâu</p>
+              <ScoreSources
+                input={{
+                  floorsCleared: summary.floors,
+                  hp: summary.hp,
+                  relics: summary.relics,
+                  curses: summary.curses,
+                  ascension: summary.ascension,
+                }}
+              />
+              <p className="type-meta mt-2">Hạt hành trình: <span className="font-mono">{summary.seed}</span></p>
+            </div>
+            <div className="rounded-xl border bg-background/60 p-3">
+              <p className="mb-2 text-sm font-semibold">Xem lại diễn biến</p>
+              <div className="max-h-72 overflow-y-auto pr-1">
+                <RunTimeline log={summary.log} />
+              </div>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={begin}>
               <RefreshCw className="mr-2 size-4" /> Hành trình mới
             </Button>
             <Button asChild variant="outline">
+              <Link to="/dau-truong/thong-ke-thap">Thống kê &amp; xem lại</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/dau-truong/bang-thap">Bảng xếp hạng tháp</Link>
+            </Button>
+            <Button asChild variant="ghost">
               <Link to="/dau-truong">Nghỉ một chút</Link>
             </Button>
           </div>
