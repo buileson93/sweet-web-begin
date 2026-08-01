@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/ui-kit";
+import { logAudit } from "@/lib/audit";
 import { grantRole, listAccounts, revokeRole } from "@/lib/roles.functions";
 
 const ROLE_LABEL: Record<string, string> = {
