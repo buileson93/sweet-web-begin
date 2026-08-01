@@ -17,7 +17,7 @@ export function useExamAnswers(opts: {
   setCurrent: (updater: (c: number) => number) => void;
   setAnswers: (updater: (a: Record<string, AnswerValue>) => Record<string, AnswerValue>) => void;
 }) {
-  const { session, current, setCurrent, setAnswers } = opts;
+  const { session, current, setAnswers } = opts;
   const runFifty = useServerFn(requestFiftyFifty);
   const runX2 = useServerFn(requestDoublePoints);
   const runCheck = useServerFn(checkAnswer);
