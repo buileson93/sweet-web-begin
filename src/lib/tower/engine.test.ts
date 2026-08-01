@@ -191,6 +191,7 @@ const baseRun = (): TowerRun => ({
   boons: [],
   offered: [],
   finished: false,
+  startedAt: Date.now(),
 });
 
 describe("trợ giúp (boon) có tác dụng thật", () => {
