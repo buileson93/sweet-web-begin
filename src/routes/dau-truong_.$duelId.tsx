@@ -92,6 +92,8 @@ function DuelRoom() {
   const [dice, setDice] = useState<number[]>([]);
   const [camShake, setCamShake] = useState(0);
   const expiringRef = useRef(false);
+  /** Dải diễn biến trong khung đấu — thay cho "bão" toast mỗi lượt. */
+  const [battleLog, setBattleLog] = useState<{ id: number; tone: string; text: string }[]>([]);
 
   // Mỗi câu mới thì xoá lựa chọn cũ.
   useEffect(() => {
@@ -108,7 +110,7 @@ function DuelRoom() {
   const me = state?.players.find((p) => p.employeeId === state?.you);
   const foe = state?.players.find((p) => p.employeeId !== me?.employeeId);
 
-  // Thông báo trực tiếp: trúng đòn, ăn combo, đối thủ sắp gục.
+  // Diễn biến trận: gộp mọi thông báo của một lượt vào MỘT dải log (không toast).
   useEffect(() => {
     const r = state?.lastResult;
     if (!state || !r || r.roundIndex === announced.current) return;
@@ -131,19 +133,45 @@ function DuelRoom() {
     }
     const mineLine = r.lines.find((l) => l.employeeId === state.you);
     const foeLine = r.lines.find((l) => l.employeeId !== state.you);
-    for (const n of r.skillNotes ?? []) toast.message(n.label);
-    if (r.timedOut) toast.warning("⏱️ Hết giờ — không ai gây sát thương.");
+    const entries: { tone: string; text: string }[] = [];
+    for (const n of r.skillNotes ?? []) entries.push({ tone: "skill", text: `✨ ${n.label}` });
+    if (r.timedOut) entries.push({ tone: "warn", text: "⏱️ Hết giờ — không ai gây sát thương." });
     else if ((mineLine?.damage ?? 0) > 0)
-      toast.success(`⚔️ Bạn gây ${mineLine!.damage} sát thương!`);
+      entries.push({ tone: "good", text: `⚔️ Bạn gây ${mineLine!.damage} sát thương!` });
     else if ((foeLine?.damage ?? 0) > 0)
-      toast.error(`💔 Bạn nhận ${foeLine!.damage} sát thương!`);
+      entries.push({ tone: "bad", text: `💔 Bạn nhận ${foeLine!.damage} sát thương!` });
     const foeHp = foeLine?.hp ?? state.hpStart;
     const myHp = mineLine?.hp ?? state.hpStart;
     if (foeHp > 0 && foeHp <= state.hpStart * 0.25)
-      toast.warning(`🔥 Đối thủ chỉ còn ${foeHp} máu — dứt điểm thôi!`);
+      entries.push({ tone: "warn", text: `🔥 Đối thủ chỉ còn ${foeHp} máu — dứt điểm thôi!` });
     if (myHp > 0 && myHp <= state.hpStart * 0.25)
-      toast.warning(`🩸 Bạn chỉ còn ${myHp} máu — cẩn thận!`);
-  }, [state]);
+      entries.push({ tone: "warn", text: `🩸 Bạn chỉ còn ${myHp} máu — cẩn thận!` });
+    if (entries.length) {
+      const base = Date.now();
+      setBattleLog((prev) =>
+        [...entries.map((e, i) => ({ ...e, id: base + i })), ...prev].slice(0, 4),
+      );
+    }
+  }, [state, clock]);
+
+  // Hết thời gian công bố kết quả: nhắc máy chủ sang câu tiếp ngay, không chờ nhịp watchdog.
+  // Máy chủ vẫn tự kiểm giờ nên lời nhắc này không thể làm sai luật.
+  useEffect(() => {
+    const r = state?.lastResult;
+    if (!state || !r?.resolvedAt || state.status !== "playing") return;
+    if (r.roundIndex !== state.currentRound) return;
+    const end = clock.toClientTime(r.resolvedAt) + 3_000;
+    const id = window.setTimeout(
+      () => {
+        void closeExpired({ data: { token, duelId, roundIndex: state.currentRound } }).catch(
+          () => undefined,
+        );
+      },
+      Math.max(150, end - Date.now() + 150),
+    );
+    return () => window.clearTimeout(id);
+  }, [state, clock, closeExpired, token, duelId]);
+
 
   if (!token || !state)
     return (
