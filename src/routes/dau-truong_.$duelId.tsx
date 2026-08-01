@@ -427,44 +427,27 @@ function RoundPanel({
 }) {
   const q = state.question!;
   const total = state.secondsPerRound * 1000;
-  const [remain, setRemain] = useState(total);
-  const expiredRound = useRef(-1);
-  useEffect(() => {
-    if (!state.roundServedAt) return;
-    const end = toClientTime(state.roundServedAt) + total;
-    const update = () => {
-      const next = Math.max(0, end - Date.now());
-      setRemain(next);
-      if (next <= 0 && expiredRound.current !== state.currentRound) {
-        expiredRound.current = state.currentRound;
-        // Hết giờ: khoá giao diện ngay tại máy, chỉ chờ máy chủ chốt lượt (không chờ mới phản hồi).
-        window.setTimeout(onExpire, 400);
-      }
-    };
-    update();
-    const id = window.setInterval(update, 100);
-    return () => window.clearInterval(id);
-  }, [state.currentRound, state.roundServedAt, toClientTime, total, onExpire]);
+  // Đồng hồ chạy bằng requestAnimationFrame, ghi thẳng vào DOM (không setState 10 lần/giây).
+  // React chỉ vẽ lại đúng MỘT lần cho mỗi câu: lúc hết giờ.
+  const [timeUp, setTimeUp] = useState(false);
+  const endAt = state.roundServedAt ? toClientTime(state.roundServedAt) + total : 0;
+  useEffect(() => setTimeUp(false), [state.currentRound]);
 
-  const pct = useMemo(() => Math.round((remain / total) * 100), [remain, total]);
   const single = q.kind === "single" || q.kind === "true_false";
-  // Dự đoán phía client: hết giờ là khoá liền, không đợi máy chủ trả lời.
-  const timeUp = remain <= 0;
   const frozen = locked || timeUp;
 
   return (
     <div className="space-y-3 rounded-2xl border bg-card p-4">
-      <div className="space-y-1">
-        <Progress value={pct} className={cn(pct < 30 && "[&>div]:bg-destructive")} />
-        <p
-          className={cn(
-            "text-right font-mono text-xs",
-            timeUp ? "font-bold text-destructive" : "text-muted-foreground",
-          )}
-        >
-          {timeUp ? "⏱️ Hết giờ — đang chốt lượt…" : `${(remain / 1000).toFixed(1)}s`}
-        </p>
-      </div>
+      <RoundClock
+        endAt={endAt}
+        total={total}
+        round={state.currentRound}
+        onExpire={() => {
+          setTimeUp(true);
+          onExpire();
+        }}
+      />
+
       <div className="space-y-1">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Kỹ năng — nạp trước khi chốt đáp án
