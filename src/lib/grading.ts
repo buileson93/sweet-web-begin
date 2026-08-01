@@ -370,3 +370,12 @@ export function estimatePoints(score: number, bestStreak: number, rules = DEFAUL
   for (let s = COMBO_START; s <= streak; s++) total += comboBonus(s, rules);
   return total;
 }
+
+/**
+ * Hoán vị một mảng phụ (ảnh, giải thích...) theo đúng thứ tự phương án đã trộn.
+ * `order[i]` là chỉ số gốc của phương án đang đứng ở vị trí i.
+ */
+export function reorderByDisplay(list: string[] | null | undefined, order: number[]): string[] {
+  const src = list ?? [];
+  return order.map((i) => src[i] ?? "");
+}

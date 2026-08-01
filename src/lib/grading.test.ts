@@ -420,3 +420,16 @@ describe("shuffle – seed", () => {
     expect(pool).toEqual(Array.from({ length: 12 }, (_, i) => i));
   });
 });
+
+describe("reorderByDisplay", () => {
+  it("hoán vị theo thứ tự hiển thị", () => {
+    expect(reorderByDisplay(["a", "b", "c"], [2, 0, 1])).toEqual(["c", "a", "b"]);
+  });
+  it("thiếu phần tử thì trả về chuỗi rỗng", () => {
+    expect(reorderByDisplay(["a"], [0, 1])).toEqual(["a", ""]);
+  });
+  it("danh sách rỗng hoặc null vẫn an toàn", () => {
+    expect(reorderByDisplay(null, [0, 1])).toEqual(["", ""]);
+    expect(reorderByDisplay(undefined, [])).toEqual([]);
+  });
+});
