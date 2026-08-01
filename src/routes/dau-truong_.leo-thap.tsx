@@ -44,6 +44,10 @@ import { START_HP } from "@/lib/tower/config";
 import { bossAt } from "@/lib/tower/bosses";
 import { curseById } from "@/lib/tower/curses";
 import { FLOORS, ROOM_META } from "@/lib/tower/map";
+import { ASCENSION_RULES, canBuy, UNLOCKS } from "@/lib/tower/meta";
+import { dailySeed } from "@/lib/tower/rng";
+import { BOARD_LABEL, runCoins, type Board } from "@/lib/tower/score";
+import { vnDayKey } from "@/lib/arena/rules";
 import { RARITY_LABEL, relicById } from "@/lib/tower/relics";
 import {
   buyAtShop,
@@ -74,7 +78,7 @@ import {
   writePendingSync,
 } from "@/lib/tower/idb";
 import { applyResults, dueCardIds, emptyState, mergeStates, normalizeState, type TowerState } from "@/lib/tower/state";
-import { getTowerBankFn, openTowerFn, syncTowerFn } from "@/lib/tower.functions";
+import { getTowerBankFn, getTowerBoardFn, openTowerFn, submitTowerRunScoreFn, syncTowerFn } from "@/lib/tower.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dau-truong_/leo-thap")({
@@ -105,6 +109,20 @@ export const Route = createFileRoute("/dau-truong_/leo-thap")({
 
 const RESUME_KEY = "vatm:tower:resume";
 const PACKS_KEY = "vatm:tower:packs";
+/** Tiến trình meta giữa các hành trình: xu tích luỹ, mở khoá, độ thăng thiên. */
+const META_KEY = "vatm:tower:meta";
+
+type Meta = { coins: number; unlocked: string[]; ascension: number; wins: number };
+const EMPTY_META: Meta = { coins: 0, unlocked: [], ascension: 0, wins: 0 };
+
+function readMeta(): Meta {
+  try {
+    const raw = window.localStorage.getItem(META_KEY);
+    return raw ? { ...EMPTY_META, ...(JSON.parse(raw) as Partial<Meta>) } : EMPTY_META;
+  } catch {
+    return EMPTY_META;
+  }
+}
 
 type Resume = {
   run: TowerRun;
@@ -178,6 +196,8 @@ function TowerPage() {
   const openTower = useServerFn(openTowerFn);
   const fetchBank = useServerFn(getTowerBankFn);
   const sync = useServerFn(syncTowerFn);
+  const submitScore = useServerFn(submitTowerRunScoreFn);
+  const fetchBoard = useServerFn(getTowerBoardFn);
 
   type Ident = { name: string; credential: string; extraCredential?: string };
   const [entry, setEntry] = useState<Ident | null>(null);
@@ -202,6 +222,10 @@ function TowerPage() {
   );
   const [confirmClose, setConfirmClose] = useState(false);
   const [lowTime, setLowTime] = useState(false);
+  const [meta, setMeta] = useState<Meta>(EMPTY_META);
+  const [daily, setDaily] = useState(false);
+  const [board, setBoard] = useState<Board>("tu-do");
+  const [boardRows, setBoardRows] = useState<{ rank: number; name: string; unit: string; score: number; floors: number; win: boolean }[]>([]);
 
   const clockRef = useRef<HTMLSpanElement | null>(null);
   const deadlineRef = useRef<number>(0);
@@ -230,6 +254,7 @@ function TowerPage() {
     } catch {
       /* không đọc được thì mặc định dùng cả gói */
     }
+    setMeta(readMeta());
     const resume = readResume();
     if (resume) {
       setRun(resume.run);
@@ -280,6 +305,30 @@ function TowerPage() {
       /* bộ nhớ đầy thì bỏ qua, không chặn người chơi */
     }
   }, [run, idx, answers, summary]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(META_KEY, JSON.stringify(meta));
+    } catch {
+      /* không lưu được thì chỉ mất tiến trình meta của phiên này */
+    }
+  }, [meta]);
+
+  // Bảng xếp hạng hành trình — tải lại khi đổi bảng hoặc khi vừa kết thúc.
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const rows = await fetchBoard({ data: { board } });
+        if (alive) setBoardRows(rows);
+      } catch {
+        if (alive) setBoardRows([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [board, fetchBoard, summary]);
 
   const credentials = useCallback(
     () =>
@@ -379,8 +428,32 @@ function TowerPage() {
         win: finished.win,
       });
       void pushSync(stateRef.current, floors);
+
+      const earned = runCoins(finished.score, 0);
+      setMeta((m) => ({
+        ...m,
+        coins: m.coins + earned + finished.coins,
+        wins: m.wins + (finished.win ? 1 : 0),
+      }));
+
+      const creds = credentials();
+      if (creds) {
+        void submitScore({
+          data: {
+            ...creds,
+            seed: finished.seed,
+            daily: finished.daily,
+            floors,
+            hp: finished.hp,
+            relics: finished.relics,
+            curses: finished.curses,
+            ascension: finished.ascension,
+            win: finished.win,
+          },
+        }).catch(() => undefined);
+      }
     },
-    [pushSync],
+    [pushSync, credentials, submitScore],
   );
 
   /** Chốt phòng giao tranh: chấm ngay tại máy, 0 ms chờ mạng. */
@@ -444,7 +517,12 @@ function TowerPage() {
         toast.error("Các bộ đề đang chọn chưa có câu hỏi — hãy chọn thêm bộ đề khác.");
         return;
       }
-      const fresh = createRun(scoped, state, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      const seed = daily ? dailySeed(vnDayKey(Date.now())) : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const fresh = createRun(scoped, state, seed, new Date(), {
+        daily,
+        ascension: meta.ascension,
+        unlocked: meta.unlocked,
+      });
       setRun(fresh);
       setIdx(0);
       setAnswers({});
