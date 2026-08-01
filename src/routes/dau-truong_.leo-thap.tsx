@@ -149,6 +149,8 @@ function readResume(): Resume | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Resume;
     if (!parsed?.run?.questions?.length || parsed.run.finished) return null;
+    // Hành trình lưu từ bản cũ (bản đồ chưa có đồ thị) thì bỏ, tránh lỗi khi đọc lối đi.
+    if (!Array.isArray(parsed.run.trail) || !Array.isArray(parsed.run.map?.[0]?.[0]?.next)) return null;
     return parsed;
   } catch {
     return null;

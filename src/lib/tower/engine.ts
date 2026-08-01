@@ -295,7 +295,7 @@ export function chooseRoom(run: TowerRun, index: number): TowerRun {
     slots,
     cursor,
     node: pick.index,
-    trail: [...run.trail, pick.index],
+    trail: [...(run.trail ?? []), pick.index],
     path: [...run.path, room.kind],
     blocksLeft: mods.blockPerFloor,
     offered: [],
@@ -821,7 +821,7 @@ function advanceNonCombat(run: TowerRun): TowerRun {
 /** Các nút có thể đi tới ở tầng hiện tại (đã lọc theo lối đi của bản đồ phân nhánh). */
 export function floorChoices(run: TowerRun): { index: number; room: MapNode }[] {
   const row = run.map[run.floor - 1] ?? [];
-  const from = run.floor <= 1 ? null : (run.trail[run.floor - 2] ?? null);
+  const from = run.floor <= 1 ? null : ((run.trail ?? [])[run.floor - 2] ?? null);
   return reachableAt(run.map, run.floor, from)
     .map((index) => ({ index, room: row[index]! }))
     .filter((x) => Boolean(x.room));
