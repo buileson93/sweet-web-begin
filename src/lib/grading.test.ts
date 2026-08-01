@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  estimatePoints,
+  fairPoints,
+  maxPointsFor,
+  minBestStreak,
   fillBlankMatches,
   gradeFraction,
   gradeOne,
