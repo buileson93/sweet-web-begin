@@ -225,6 +225,11 @@ export function ExamResult({
                   <span className="type-meta shrink-0 rounded-full bg-secondary px-2 py-0.5">
                     {KIND_LABEL[item.kind]}
                   </span>
+                  {!item.correct && (item.fraction ?? 0) > 0 ? (
+                    <span className="type-meta shrink-0 rounded-full bg-warning/15 px-2 py-0.5 text-warning">
+                      Đúng một phần {Math.round((item.fraction ?? 0) * 100)}%
+                    </span>
+                  ) : null}
                 </div>
                 {questionImageSrc(item.imageUrl) ? (
                   <img

@@ -434,3 +434,65 @@ describe("reorderByDisplay", () => {
     expect(reorderByDisplay(undefined, [])).toEqual([]);
   });
 });
+
+describe("dung sai chính tả câu điền khuyết", () => {
+  it("tha lỗi gõ nhẹ với đáp án đủ dài", () => {
+    expect(fillBlankMatches("Đà Nẵmg", ["Đà Nẵng"])).toBe(true);
+    expect(fillBlankMatches("kiem soat khong lu", ["kiểm soát không lưu"])).toBe(true);
+  });
+  it("không tha lỗi với đáp án quá ngắn", () => {
+    expect(fillBlankMatches("ILS", ["IFR"])).toBe(false);
+    expect(typoAllowance(3)).toBe(0);
+    expect(typoAllowance(6)).toBe(1);
+    expect(typoAllowance(12)).toBe(2);
+  });
+  it("từ chối đáp án rỗng hoặc khác hẳn", () => {
+    expect(fillBlankMatches("   ", ["Đà Nẵng"])).toBe(false);
+    expect(fillBlankMatches("Hà Nội", ["Đà Nẵng"])).toBe(false);
+  });
+  it("khoảng cách Levenshtein cơ bản", () => {
+    expect(levenshtein("abc", "abc")).toBe(0);
+    expect(levenshtein("", "abc")).toBe(3);
+    expect(levenshtein("kitten", "sitting")).toBe(3);
+  });
+});
+
+describe("chấm điểm một phần câu nhiều đáp án", () => {
+  const multi = (over: Partial<GradingQuestionRow> = {}) =>
+    ({
+      id: "m1",
+      question: "Chọn các sân bay miền Trung",
+      options: ["Đà Nẵng", "Phú Bài", "Nội Bài", "Tân Sơn Nhất"],
+      correct_index: 0,
+      image_url: null,
+      option_images: null,
+      kind: "multi",
+      correct_indices: [0, 1],
+      accepted_answers: [],
+      pairs: null,
+      correct_order: [],
+      difficulty: "medium",
+      tags: [],
+      points: 1,
+      explanation: "",
+      time_limit_seconds: null,
+      order_index: 0,
+      ...over,
+    }) as GradingQuestionRow;
+  const order = [0, 1, 2, 3];
+
+  it("chọn đủ và đúng được trọn điểm", () => {
+    expect(gradeFraction(multi(), order, [0, 1])).toBe(1);
+  });
+  it("chọn đúng một nửa được 0.5", () => {
+    expect(gradeFraction(multi(), order, [0])).toBe(0.5);
+  });
+  it("chọn thêm đáp án sai bị trừ", () => {
+    expect(gradeFraction(multi(), order, [0, 1, 2])).toBe(0.5);
+    expect(gradeFraction(multi(), order, [2, 3])).toBe(0);
+  });
+  it("không âm và không vượt quá 1", () => {
+    expect(gradeFraction(multi(), order, [2])).toBe(0);
+    expect(gradeFraction(multi(), order, [])).toBe(0);
+  });
+});
