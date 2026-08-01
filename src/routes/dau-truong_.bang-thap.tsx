@@ -4,7 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { Crown, Loader2, Trophy } from "lucide-react";
 
 import { ArenaHero, ArenaPage } from "@/components/arena/ArenaPage";
-import { SectionHeading } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { getTowerBoardDetailFn } from "@/lib/tower.functions";
 import { BOARD_LABEL, type Board } from "@/lib/tower/score";
