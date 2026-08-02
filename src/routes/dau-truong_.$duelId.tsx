@@ -191,6 +191,8 @@ function DuelRoom() {
     if (deadline === null) return;
 
     const round = state.currentRound;
+    // Pha "GO" nhắc dày hơn để vào câu đầu tiên gần như tức thì.
+    const interval = state.status === "countdown" ? COUNTDOWN_NUDGE_MS : NUDGE_INTERVAL_MS;
     let stopped = false;
     let timer = 0;
     const pump = () => {
@@ -202,11 +204,12 @@ function DuelRoom() {
         })
         .catch(() => undefined);
 
-      timer = window.setTimeout(pump, NUDGE_INTERVAL_MS);
+      timer = window.setTimeout(pump, interval);
     };
     const wait = Math.max(0, deadline - Date.now());
-    const gap = Math.max(0, NUDGE_INTERVAL_MS - (Date.now() - lastPumpRef.current));
+    const gap = Math.max(0, interval - (Date.now() - lastPumpRef.current));
     timer = window.setTimeout(pump, Math.max(wait, gap));
+
     return () => {
       stopped = true;
       window.clearTimeout(timer);
