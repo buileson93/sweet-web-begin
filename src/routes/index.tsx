@@ -160,11 +160,12 @@ function HomePage() {
           </div>
         </div>
 
-        <div data-tour="leaderboard" className="flex min-w-0 flex-col gap-4 lg:col-span-5">
+        <div data-tour="leaderboard" className="flex min-w-0 flex-col gap-3 sm:gap-4 lg:col-span-5">
           <div
-            className="panel-pastel animate-pop relative overflow-hidden rounded-[2rem] p-6"
+            className="panel-pastel animate-pop relative overflow-hidden rounded-[1.5rem] p-4 sm:rounded-[2rem] sm:p-6"
             style={{ animationDelay: "0.16s" }}
           >
+
             <div className="relative flex items-end justify-between gap-3">
               <h2 className="font-heading text-lg font-extrabold uppercase tracking-tight">Bảng xếp hạng</h2>
               <span className="type-meta inline-flex items-center gap-1.5 font-bold text-primary">
