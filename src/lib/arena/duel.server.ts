@@ -1077,7 +1077,9 @@ export async function advanceDuel(duelId: string): Promise<{ advanced: boolean }
 
   // Đang trong thời gian công bố kết quả của câu hiện tại.
   if (last && last.roundIndex === duel.current_round && last.resolvedAt) {
-    const revealEnd = Date.parse(last.resolvedAt) + REVEAL_MS;
+    // Câu bỏ trống thì không có hoạt ảnh xúc xắc — chốt và sang câu mới ngay.
+    const revealEnd = Date.parse(last.resolvedAt) + (last.timedOut ? TIMEOUT_REVEAL_MS : REVEAL_MS);
+
     if (now < revealEnd) return { advanced: false };
     if (last.finishAfter) {
       await finishDuel(duelId, last.noShowId ?? undefined);
