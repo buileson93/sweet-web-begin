@@ -1726,12 +1726,12 @@ body.fx-shaking {
 
 /* ===== Tiêu đề hero: điểm nhấn gradient + hiệu ứng khi rê chuột ===== */
 .hero-title .hero-line {
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), letter-spacing 0.4s ease;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.45s ease;
 }
 
 .hero-title:hover .hero-line {
-  transform: translate3d(2px, -1px, 0);
-  letter-spacing: 0.01em;
+  transform: translate3d(0, -2px, 0);
+  filter: brightness(1.12);
 }
 
 .hero-title .hero-line-accent {
