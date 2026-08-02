@@ -31,17 +31,17 @@ export function ArenaHero({
 }) {
   const Deco = Decoration ?? Icon;
   return (
-    <div className="surface-hero animate-pop relative overflow-hidden rounded-2xl px-5 py-5 sm:px-7">
-      <Deco aria-hidden className="animate-float absolute -right-4 -top-4 size-28 text-primary-foreground/10" />
-      <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="surface-gold grid size-11 shrink-0 place-items-center rounded-xl shadow-[var(--shadow-gold)]">
-            <Icon className="size-5" />
+    <div className="surface-hero animate-pop relative overflow-hidden rounded-2xl px-4 py-3.5 sm:px-7 sm:py-5">
+      <Deco aria-hidden className="animate-float absolute -right-4 -top-4 size-20 text-primary-foreground/10 sm:size-28" />
+      <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between sm:gap-4">
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+          <span className="surface-gold grid size-9 shrink-0 place-items-center rounded-xl shadow-[var(--shadow-gold)] sm:size-11">
+            <Icon className="size-4.5 sm:size-5" />
           </span>
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">{title}</h1>
             {description ? (
-              <p className="type-meta text-primary-foreground/75">{description}</p>
+              <p className="type-meta line-clamp-1 text-primary-foreground/75">{description}</p>
             ) : null}
           </div>
         </div>
