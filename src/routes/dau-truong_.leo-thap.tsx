@@ -713,6 +713,23 @@ function TowerPage() {
   /** Đang ở trong một phòng: che bản đồ để người chơi chỉ thấy nội dung cần xử lý. */
   const inRoom = Boolean(run && !summary && !outcome && run.room);
 
+  // Phím tắt 1–4: chọn nhanh đáp án câu một lựa chọn khi đang trong phòng xử lý tình huống.
+  useEffect(() => {
+    if (!inRoom || !question || question.kind !== "single") return;
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const pos = Number(e.key) - 1;
+      if (!Number.isInteger(pos) || pos < 0 || pos >= question.options.length) return;
+      e.preventDefault();
+      setAnswers((prev) => ({ ...prev, [String(idx)]: pos }));
+      reactToAnswer(idx, question, pos);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [inRoom, question, idx, reactToAnswer]);
+
   // Đóng tab / tải lại lúc đang dở phòng: nhắc lại một lần để khỏi mất trạng thái.
   useEffect(() => {
     if (!inRoom) return;
