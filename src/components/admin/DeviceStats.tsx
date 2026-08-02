@@ -103,7 +103,7 @@ export function DeviceStats() {
       let q = supabase
         .from("device_visits")
         .select(
-          "browser, browser_version, os, os_version, device_type, screen_w, screen_h, viewport_w, language, timezone, is_pwa, is_touch, referrer_host, visitor_key, path, ip, created_at",
+          "browser, browser_version, os, os_version, device_type, device_model, platform_version, architecture, cpu_cores, memory_gb, network_type, downlink, save_data, screen_w, screen_h, viewport_w, language, timezone, is_pwa, is_touch, referrer_host, visitor_key, path, ip, user_agent, created_at",
         )
         .order("created_at", { ascending: false })
         .limit(10000);
@@ -122,10 +122,12 @@ export function DeviceStats() {
   const byBrowser = useMemo(() => tally(rows, (r) => r.browser), [rows]);
   const byOs = useMemo(() => tally(rows, (r) => (r.os_version ? `${r.os} ${r.os_version}` : r.os)), [rows]);
   const byDevice = useMemo(() => tally(rows, (r) => DEVICE_LABEL[r.device_type] ?? r.device_type), [rows]);
-  const byScreen = useMemo(() => tally(rows, (r) => screenBucket(r.screen_w, r.screen_h)).slice(0, 10), [rows]);
-  const byPath = useMemo(() => tally(rows, (r) => r.path || "/").slice(0, 10), [rows]);
-  const byIp = useMemo(() => tally(rows, (r) => r.ip || "Không rõ").slice(0, 20), [rows]);
-  const recent = useMemo(() => rows.slice(0, 50), [rows]);
+  const byModel = useMemo(() => tally(rows, (r) => r.device_model || "Không rõ"), [rows]);
+  const byScreen = useMemo(() => tally(rows, (r) => screenBucket(r.screen_w, r.screen_h)), [rows]);
+  const byPath = useMemo(() => tally(rows, (r) => r.path || "/"), [rows]);
+  const byIp = useMemo(() => tally(rows, (r) => r.ip || "Không rõ"), [rows]);
+  const byNetwork = useMemo(() => tally(rows, (r) => r.network_type || "Không rõ"), [rows]);
+  const recent = useMemo(() => rows.slice(0, 500), [rows]);
 
   const trend = useMemo(() => {
     const map = new Map<string, { views: number; visitors: Set<string> }>();
