@@ -706,11 +706,19 @@ function TowerPage() {
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/dau-truong">
+        {inRoom ? (
+          <Button variant="ghost" size="sm" onClick={() => setConfirmLeave(true)}>
             <ArrowLeft className="mr-1.5 size-4" /> Về sảnh Đấu trường
-          </Link>
-        </Button>
+          </Button>
+        ) : (
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/dau-truong">
+              <ArrowLeft className="mr-1.5 size-4" /> Về sảnh Đấu trường
+            </Link>
+          </Button>
+        )}
+        <ComfortToggle />
+
         {offline && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
             <WifiOff className="size-3.5" /> Đang ôn ngoại tuyến
