@@ -8,6 +8,8 @@ import { AppShell } from "@/components/AppShell";
 import { AwardsBoard } from "@/components/AwardsBoard";
 import { ChampionBoard } from "@/components/ChampionBoard";
 import { LevelBoard } from "@/components/player/LevelBoard";
+import { MobileFold } from "@/components/MobileFold";
+
 
 import { EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 
@@ -155,48 +157,73 @@ function LeaderboardPage() {
 
   return (
     <AppShell>
-      <div className="surface-hero animate-pop relative overflow-hidden rounded-2xl px-5 py-5 sm:px-7">
-        <Trophy aria-hidden className="animate-float absolute -right-4 -top-4 size-28 text-primary-foreground/10" />
+      <div className="surface-hero animate-pop relative overflow-hidden rounded-2xl px-4 py-4 sm:px-7 sm:py-5">
+        <Trophy aria-hidden className="animate-float absolute -right-4 -top-4 size-20 text-primary-foreground/10 sm:size-28" />
         <div className="flex items-center gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl surface-gold shadow-[var(--shadow-gold)]">
-            <Trophy className="size-5" />
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl surface-gold shadow-[var(--shadow-gold)] sm:size-11">
+            <Trophy className="size-4.5 sm:size-5" />
           </span>
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
-            <p className="type-meta text-primary-foreground/75">
+            <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none">
               Chỉ xếp hạng bài đạt từ 50% trở lên. Xếp theo tỉ lệ câu đúng, sau đó tới điểm thưởng và thời gian làm bài.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="mt-5">
-        <h2 className="font-heading text-sm font-extrabold uppercase tracking-widest text-muted-foreground">
-          Vinh danh các hạng mục
-        </h2>
+      <MobileFold
+        className="mt-4 sm:mt-5"
+        title="Vinh danh các hạng mục"
+        hint="Chạm để xem giải thưởng, quán quân và cấp bậc"
+      >
         <AwardsBoard className="mt-3" rows={awardRows} />
         <ChampionBoard className="mt-3" rows={all} />
         <LevelBoard className="mt-3" />
-      </div>
+      </MobileFold>
 
-
-      <div className="mt-5">
+      <div className="mt-4 sm:mt-5">
           <div className="flex flex-col gap-2.5 sm:flex-row">
+            <div className="flex gap-2">
+              <Select value={quizId} onValueChange={setQuizId}>
+                <SelectTrigger className="min-w-0 flex-1 rounded-xl sm:max-w-[16rem]">
+                  <SelectValue placeholder="Tất cả cuộc thi" />
+                </SelectTrigger>
+                <SelectContent className="max-w-[calc(100vw-1.5rem)]">
+                  <SelectItem value="all">Tất cả cuộc thi</SelectItem>
+                  {(quizzesQuery.data ?? []).map((q) => (
+                    <SelectItem key={q.id} value={q.id}>
+                      {q.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <Select value={quizId} onValueChange={setQuizId}>
-              <SelectTrigger className="rounded-xl sm:max-w-[16rem]">
-                <SelectValue placeholder="Tất cả cuộc thi" />
-              </SelectTrigger>
-              <SelectContent className="max-w-[calc(100vw-1.5rem)]">
+              {/* Trên điện thoại hai nút tải xuống thu về dạng biểu tượng để không chiếm cả một hàng */}
+              <div className="flex shrink-0 gap-2 sm:hidden">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full"
+                  aria-label="Tải xuống CSV"
+                  disabled={rows.length === 0}
+                  onClick={() => void handleExport("csv")}
+                >
+                  <Download className="size-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full"
+                  aria-label="Tải xuống Excel"
+                  disabled={rows.length === 0}
+                  onClick={() => void handleExport("xlsx")}
+                >
+                  <FileSpreadsheet className="size-4" />
+                </Button>
+              </div>
+            </div>
 
-                <SelectItem value="all">Tất cả cuộc thi</SelectItem>
-                {(quizzesQuery.data ?? []).map((q) => (
-                  <SelectItem key={q.id} value={q.id}>
-                    {q.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -206,10 +233,10 @@ function LeaderboardPage() {
                 className="rounded-full pl-10"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="hidden gap-2 sm:flex">
               <Button
                 variant="outline"
-                className="flex-1 rounded-full sm:flex-none"
+                className="rounded-full"
                 disabled={rows.length === 0}
                 onClick={() => void handleExport("csv")}
               >
@@ -218,7 +245,7 @@ function LeaderboardPage() {
               </Button>
               <Button
                 variant="outline"
-                className="flex-1 rounded-full sm:flex-none"
+                className="rounded-full"
                 disabled={rows.length === 0}
                 onClick={() => void handleExport("xlsx")}
               >
@@ -227,6 +254,7 @@ function LeaderboardPage() {
               </Button>
             </div>
           </div>
+
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
             {!resultsQuery.isLoading && !resultsQuery.isError && rows.length > 0 ? (

@@ -77,16 +77,18 @@ function HistoryPage() {
 
   return (
     <AppShell>
-      <header className="surface-hero relative overflow-hidden rounded-2xl px-5 py-6 sm:px-7">
-        <History aria-hidden className="pointer-events-none absolute -right-4 -top-4 size-32 text-primary-foreground/10" />
+      <header className="surface-hero relative overflow-hidden rounded-2xl px-4 py-4 sm:px-7 sm:py-6">
+        <History aria-hidden className="pointer-events-none absolute -right-4 -top-4 size-24 text-primary-foreground/10 sm:size-32" />
         <h1 className="type-h2 text-primary-foreground">Lịch sử làm bài</h1>
-        <p className="type-muted mt-1 max-w-xl text-primary-foreground/80">
+        <p className="type-muted mt-1 line-clamp-2 max-w-xl text-primary-foreground/80 sm:line-clamp-none">
           Xem lại từng phiên thi của bạn và những câu đã trả lời sai để ôn tập tốt hơn.
         </p>
       </header>
 
-      <section className="card-elevated mt-5 rounded-2xl p-5">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_auto] sm:items-end">
+
+      <section className="card-elevated mt-4 rounded-2xl p-4 sm:mt-5 sm:p-5">
+        <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_auto] sm:items-end sm:gap-3">
+
           <div className="space-y-1.5">
             <Label htmlFor="h-name">Họ và tên</Label>
             <Input

@@ -115,8 +115,9 @@ function HomePage() {
       <ProductTour steps={TOUR_STEPS} />
 
       {/* Bố cục chia đôi: trái = vào phòng thi, phải = bảng xếp hạng trực tiếp */}
-      <section className="grid gap-6 lg:grid-cols-12 lg:items-start">
-        <div className="flex min-w-0 flex-col gap-5 lg:col-span-7">
+      <section className="grid gap-5 lg:grid-cols-12 lg:items-start lg:gap-6">
+        <div className="flex min-w-0 flex-col gap-4 sm:gap-5 lg:col-span-7">
+
           <div className="animate-pop relative min-w-0">
             {/* Máy bay bay vòng quanh cuốn sách tri thức — hiện trên mọi kích thước màn hình */}
             <div
@@ -160,11 +161,12 @@ function HomePage() {
           </div>
         </div>
 
-        <div data-tour="leaderboard" className="flex min-w-0 flex-col gap-4 lg:col-span-5">
+        <div data-tour="leaderboard" className="flex min-w-0 flex-col gap-3 sm:gap-4 lg:col-span-5">
           <div
-            className="panel-pastel animate-pop relative overflow-hidden rounded-[2rem] p-6"
+            className="panel-pastel animate-pop relative overflow-hidden rounded-[1.5rem] p-4 sm:rounded-[2rem] sm:p-6"
             style={{ animationDelay: "0.16s" }}
           >
+
             <div className="relative flex items-end justify-between gap-3">
               <h2 className="font-heading text-lg font-extrabold uppercase tracking-tight">Bảng xếp hạng</h2>
               <span className="type-meta inline-flex items-center gap-1.5 font-bold text-primary">
@@ -207,7 +209,9 @@ function HomePage() {
               <Podium className="relative" rows={topQuery.data ?? []} />
             )}
 
-            <div className="relative mt-6 space-y-2">
+            {/* Trên điện thoại bục vinh danh đã đủ thông tin — danh sách chi tiết chỉ hiện từ sm trở lên */}
+            <div className="relative mt-6 hidden space-y-2 sm:block">
+
               {(topQuery.data ?? []).slice(0, 3).map((r, i) => (
                 <div
                   key={r.id}
@@ -246,13 +250,13 @@ function HomePage() {
 
             <Link
               to="/bang-xep-hang"
-              className="relative mt-5 flex items-center justify-center gap-2 rounded-2xl bg-secondary py-3 text-xs font-bold uppercase tracking-widest text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              className="relative mt-4 flex items-center justify-center gap-2 rounded-2xl bg-secondary py-2.5 text-xs font-bold uppercase tracking-widest text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground sm:mt-5 sm:py-3"
             >
               Xem toàn bộ xếp hạng <ArrowRight className="size-4" />
             </Link>
           </div>
 
-          <div className="stagger grid grid-cols-2 gap-4">
+          <div className="stagger grid grid-cols-2 gap-3 sm:gap-4">
             <StatTile label="Lượt thi" value={countQuery.isLoading ? "…" : String(countQuery.data ?? 0)} />
             <StatTile
               label="Đang mở"
@@ -262,10 +266,11 @@ function HomePage() {
             />
           </div>
         </div>
+
       </section>
 
       {/* Danh sách cuộc thi */}
-      <section data-tour="quizzes" className="mt-10">
+      <section data-tour="quizzes" className="mt-7 sm:mt-10">
         <SectionHeading
           title="Danh sách cuộc thi"
           action={
@@ -385,18 +390,19 @@ function StatTile({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="card-elevated p-4">
+    <div className="card-elevated p-3 sm:p-4">
       <span className="type-eyebrow flex items-center gap-1.5 text-muted-foreground">
         {icon} {label}
       </span>
       <span
         className={cn(
-          "font-heading mt-1 block text-2xl font-extrabold tabular-nums",
+          "font-heading mt-0.5 block text-xl font-extrabold tabular-nums sm:mt-1 sm:text-2xl",
           tone === "accent" ? "text-primary" : "text-foreground",
         )}
       >
         {value}
       </span>
     </div>
+
   );
 }
