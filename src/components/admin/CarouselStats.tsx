@@ -51,10 +51,24 @@ export function CarouselStats() {
 
   return (
     <AdminSection title="Hành vi vuốt dải thẻ" description="Người dùng đi qua bao nhiêu thẻ, dừng bao lâu và bấm vào thẻ nào.">
-      <QueryState query={query} loading={<ListSkeleton rows={4} />}>
-        {total === 0 ? (
-          <EmptyState icon={LayoutGrid} title="Chưa có dữ liệu" description="Số liệu sẽ xuất hiện khi người dùng vuốt dải thẻ ở trang chủ." />
-        ) : (
+      <QueryState
+        isLoading={query.isLoading}
+        isError={query.isError}
+        error={query.error}
+        isFetching={query.isFetching}
+        onRetry={() => void query.refetch()}
+        isEmpty={total === 0}
+        skeleton={<ListSkeleton rows={4} />}
+        empty={
+          <EmptyState
+            icon={LayoutGrid}
+            title="Chưa có dữ liệu"
+            description="Số liệu sẽ xuất hiện khi người dùng vuốt dải thẻ ở trang chủ."
+          />
+        }
+      >
+        {(
+
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
               <StatTile icon={LayoutGrid} label="Số thẻ xem trung bình" value={`${avgViewed.toFixed(1)} / ${maxCards}`} />
