@@ -6,7 +6,7 @@
  * - Ở mỗi câu, ai trả lời ĐÚNG TRƯỚC sẽ gây sát thương cho đối phương.
  * - Sát thương gốc do TUNG HAI XÚC XẮC 6 MẶT (2–12), cộng thêm theo chuỗi
  *   đúng liên tiếp (combo) và theo tốc độ trả lời.
- * - Cả hai cùng sai (hoặc cùng bỏ trống) thì hoà câu đó, không ai mất máu.
+ * - Cả hai cùng sai thì hoà câu đó; nhưng cả hai cùng BỎ TRỐNG thì mỗi người mất 10 máu.
  * - Ai hết máu trước thì thua (hạ gục). Hết câu mà cả hai còn máu thì so máu còn lại.
  */
 
