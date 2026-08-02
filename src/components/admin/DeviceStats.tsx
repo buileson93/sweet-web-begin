@@ -73,6 +73,8 @@ type Visit = {
   ip: string;
   user_agent: string;
   created_at: string;
+  employee_name: string | null;
+  employee_unit: string | null;
 };
 
 function tally(rows: Visit[], pick: (r: Visit) => string) {
@@ -104,7 +106,7 @@ export function DeviceStats() {
       let q = supabase
         .from("device_visits")
         .select(
-          "browser, browser_version, os, os_version, device_type, device_model, platform_version, architecture, cpu_cores, memory_gb, network_type, downlink, save_data, screen_w, screen_h, viewport_w, language, timezone, is_pwa, is_touch, referrer_host, visitor_key, path, ip, user_agent, created_at",
+          "browser, browser_version, os, os_version, device_type, device_model, platform_version, architecture, cpu_cores, memory_gb, network_type, downlink, save_data, screen_w, screen_h, viewport_w, language, timezone, is_pwa, is_touch, referrer_host, visitor_key, path, ip, user_agent, created_at, employee_name, employee_unit",
         )
         .order("created_at", { ascending: false })
         .limit(10000);
@@ -413,6 +415,19 @@ export function DeviceStats() {
                     {new Date(r.created_at).toLocaleString("vi-VN")}
                   </span>
                 ),
+              },
+              {
+                key: "employee",
+                header: "Người dùng",
+                value: (r) => r.employee_name || "Khách chưa đăng nhập",
+                filter: "select",
+                className: "font-medium",
+              },
+              {
+                key: "employee_unit",
+                header: "Đơn vị",
+                value: (r) => r.employee_unit || "—",
+                filter: "select",
               },
               { key: "device_model", header: "Kiểu máy", value: (r) => r.device_model || "Không rõ", filter: "select" },
               {
