@@ -7,8 +7,9 @@ import type { ReactNode } from "react";
  */
 export function ArenaActionBar({ children }: { children: ReactNode }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-[calc(0.75rem+env(safe-area-inset-left))] pb-[calc(0.625rem+env(safe-area-inset-bottom))] pr-[calc(0.75rem+env(safe-area-inset-right))] pt-2.5 backdrop-blur">
+    <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 border-t border-border bg-card/95 px-[calc(0.75rem+env(safe-area-inset-left))] pb-2.5 pr-[calc(0.75rem+env(safe-area-inset-right))] pt-2.5 backdrop-blur lg:bottom-0 lg:pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
       <div className="mx-auto flex w-full max-w-3xl items-center gap-2">{children}</div>
     </div>
   );
 }
+
