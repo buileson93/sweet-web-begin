@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowRight, BookOpen, CalendarPlus, Plane, Timer, Trophy } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarPlus, ChevronUp, Plane, Timer, Trophy } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { CountdownBadge } from "@/components/CountdownBadge";
@@ -11,6 +11,7 @@ import { RegisterCard } from "@/components/RegisterCard";
 import { EmptyState, ListSkeleton, QueryState, SectionHeading, StatusPill } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, quizStatus } from "@/lib/format";
@@ -60,6 +61,9 @@ const TOUR_STEPS: TourStep[] = [
 function HomePage() {
   const navigate = useNavigate();
   const [quizId, setQuizId] = useState("");
+  const [heroOpen, setHeroOpen] = useState(false);
+  // Danh sách cuộc thi tải dần để trang chủ không phải cuộn quá dài
+  const [visibleQuizzes, setVisibleQuizzes] = useState(4);
 
   const quizzesQuery = useQuery({
     queryKey: ["quizzes", "public"],
