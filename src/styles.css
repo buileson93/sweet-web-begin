@@ -1726,17 +1726,18 @@ body.fx-shaking {
 
 /* ===== Tiêu đề hero: điểm nhấn gradient + hiệu ứng khi rê chuột ===== */
 .hero-title .hero-line {
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), letter-spacing 0.4s ease;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.45s ease;
 }
 
 .hero-title:hover .hero-line {
-  transform: translate3d(2px, -1px, 0);
-  letter-spacing: 0.01em;
+  transform: translate3d(0, -2px, 0);
+  filter: brightness(1.12);
 }
 
 .hero-title .hero-line-accent {
   position: relative;
   display: inline-block;
+  white-space: nowrap;
   background-image: linear-gradient(
     100deg,
     var(--primary) 0%,
@@ -1748,11 +1749,12 @@ body.fx-shaking {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  transition: background-position 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease;
+  transition: background-position 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero-title:hover .hero-line-accent {
   background-position: 100% 50%;
+  transform: translate3d(0, -2px, 0) scale(1.04);
   filter: drop-shadow(0 6px 18px color-mix(in oklab, var(--primary) 32%, transparent));
 }
 
