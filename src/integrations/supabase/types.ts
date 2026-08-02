@@ -111,6 +111,8 @@ export type Database = {
           created_at: string
           description: string
           device: Json
+          employee_id: string | null
+          employee_unit: string
           id: string
           ip: string
           ip_source: string
@@ -129,6 +131,8 @@ export type Database = {
           created_at?: string
           description?: string
           device?: Json
+          employee_id?: string | null
+          employee_unit?: string
           id?: string
           ip?: string
           ip_source?: string
@@ -147,6 +151,8 @@ export type Database = {
           created_at?: string
           description?: string
           device?: Json
+          employee_id?: string | null
+          employee_unit?: string
           id?: string
           ip?: string
           ip_source?: string
@@ -159,7 +165,15 @@ export type Database = {
           title?: string
           user_agent?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bug_reports_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       carousel_events: {
         Row: {
@@ -170,6 +184,9 @@ export type Database = {
           created_at: string
           device_type: string
           dwell_ms: number
+          employee_id: string | null
+          employee_name: string
+          employee_unit: string
           id: string
           label: string
           max_index: number
@@ -187,6 +204,9 @@ export type Database = {
           created_at?: string
           device_type?: string
           dwell_ms?: number
+          employee_id?: string | null
+          employee_name?: string
+          employee_unit?: string
           id?: string
           label?: string
           max_index?: number
@@ -204,6 +224,9 @@ export type Database = {
           created_at?: string
           device_type?: string
           dwell_ms?: number
+          employee_id?: string | null
+          employee_name?: string
+          employee_unit?: string
           id?: string
           label?: string
           max_index?: number
@@ -213,7 +236,15 @@ export type Database = {
           viewed_cards?: number
           visitor_key?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "carousel_events_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       device_locks: {
         Row: {
@@ -252,6 +283,9 @@ export type Database = {
           device_model: string
           device_type: string
           downlink: number
+          employee_id: string | null
+          employee_name: string
+          employee_unit: string
           id: string
           ip: string
           ip_source: string
@@ -284,6 +318,9 @@ export type Database = {
           device_model?: string
           device_type?: string
           downlink?: number
+          employee_id?: string | null
+          employee_name?: string
+          employee_unit?: string
           id?: string
           ip?: string
           ip_source?: string
@@ -316,6 +353,9 @@ export type Database = {
           device_model?: string
           device_type?: string
           downlink?: number
+          employee_id?: string | null
+          employee_name?: string
+          employee_unit?: string
           id?: string
           ip?: string
           ip_source?: string
@@ -339,7 +379,15 @@ export type Database = {
           viewport_w?: number
           visitor_key?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "device_visits_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       duel_answers: {
         Row: {
