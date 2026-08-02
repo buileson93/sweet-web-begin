@@ -63,6 +63,8 @@ export function useRealtimeResults({
       }, wait);
     };
 
+    // Nghe bảng tín hiệu "result_events" (chỉ có quiz_id + thời điểm)
+    // thay vì "results" để không phát tán dữ liệu nhạy cảm qua Realtime.
     const channel = supabase
       .channel(`results-live${quizId ? `-${quizId}` : ""}`)
       .on(
@@ -70,7 +72,7 @@ export function useRealtimeResults({
         {
           event: "INSERT",
           schema: "public",
-          table: "results",
+          table: "result_events",
           ...(quizId ? { filter: `quiz_id=eq.${quizId}` } : {}),
         },
         schedule,
