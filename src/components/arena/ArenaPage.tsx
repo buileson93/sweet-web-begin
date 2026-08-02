@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 export function ArenaPage({ className, children }: { className?: string; children: ReactNode }) {
   return (
     <AppShell>
-      <div className={cn("mx-auto w-full min-w-0 max-w-6xl space-y-5", className)}>{children}</div>
+      <div className={cn("mx-auto w-full min-w-0 max-w-6xl space-y-3.5 sm:space-y-5", className)}>{children}</div>
     </AppShell>
   );
 }
