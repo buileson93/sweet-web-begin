@@ -64,6 +64,9 @@ const REVEAL_MS = 2_000;
 const NUDGE_GRACE_MS = 700;
 /** Nhịp nhắc lại khi máy chủ chưa kịp chuyển bước. */
 const NUDGE_INTERVAL_MS = 600;
+/** Nhịp nhắc riêng cho pha đếm ngược 3-2-1 GO (vào trận nhanh hơn). */
+const COUNTDOWN_NUDGE_MS = 250;
+
 
 
 function DuelRoom() {
