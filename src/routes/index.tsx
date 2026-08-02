@@ -115,8 +115,9 @@ function HomePage() {
       <ProductTour steps={TOUR_STEPS} />
 
       {/* Bố cục chia đôi: trái = vào phòng thi, phải = bảng xếp hạng trực tiếp */}
-      <section className="grid gap-6 lg:grid-cols-12 lg:items-start">
-        <div className="flex min-w-0 flex-col gap-5 lg:col-span-7">
+      <section className="grid gap-5 lg:grid-cols-12 lg:items-start lg:gap-6">
+        <div className="flex min-w-0 flex-col gap-4 sm:gap-5 lg:col-span-7">
+
           <div className="animate-pop relative min-w-0">
             {/* Máy bay bay vòng quanh cuốn sách tri thức — hiện trên mọi kích thước màn hình */}
             <div
@@ -269,7 +270,7 @@ function HomePage() {
       </section>
 
       {/* Danh sách cuộc thi */}
-      <section data-tour="quizzes" className="mt-10">
+      <section data-tour="quizzes" className="mt-7 sm:mt-10">
         <SectionHeading
           title="Danh sách cuộc thi"
           action={
