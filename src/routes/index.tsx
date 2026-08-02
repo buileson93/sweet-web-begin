@@ -366,14 +366,15 @@ function HomePage() {
                         {q.duration_minutes}′
                       </span>
                     </span>
-                    <h3 className="type-h3 relative mt-3 line-clamp-2 break-words text-pretty pr-1 transition-colors group-hover:text-primary md:min-h-[2.8em]">
+                    <h3 className="type-h3 relative mt-3 line-clamp-2 break-words text-pretty pr-1 transition-colors group-hover:text-primary md:line-clamp-none md:min-h-[2.8em]">
                       {q.title}
                     </h3>
-                    <span className="relative mt-4 flex items-center justify-between border-t border-border pt-3 md:mt-auto md:pt-4">
+                    <span className="relative mt-4 flex items-center justify-between gap-3 border-t border-border pt-3 md:mt-auto md:pt-4">
                       <span className="min-w-0">
-                        <span className="type-meta block truncate">
+                        <span className="type-meta block truncate md:whitespace-normal md:break-words md:[overflow:visible] md:[text-overflow:clip]">
                           {q.question_count} câu • {formatDateTime(q.start_time)}
                         </span>
+
                         {st === "upcoming" && <CountdownBadge target={q.start_time} className="mt-1.5" />}
                       </span>
                       <span className="grid size-9 place-items-center rounded-xl bg-secondary text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground">
