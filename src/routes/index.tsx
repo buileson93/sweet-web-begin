@@ -364,7 +364,7 @@ function HomePage() {
                     <span
                       aria-hidden
                       className={cn(
-                        "pointer-events-none absolute -right-16 -top-16 size-32 rounded-full transition-transform duration-500 group-hover:scale-125",
+                        "quiz-card-glow pointer-events-none absolute -right-16 -top-16 size-32 rounded-full transition-transform duration-500 group-hover:scale-125",
                         st === "open"
                           ? "bg-success/10"
                           : st === "upcoming"
