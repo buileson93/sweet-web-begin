@@ -147,19 +147,31 @@ export function QuestionImportDialog({ quizId, existingKeys, disabled, onImporte
           }),
         );
 
-        const payload = batch.map((item, i) => ({
-          quiz_id: quizId,
-          question: item.draft.question.trim(),
-          options: item.draft.options,
-          option_images: uploads[i].optionPaths,
-          correct_index: Math.max(0, item.draft.correct_index),
-          kind: item.draft.kind,
-          difficulty: item.draft.difficulty,
-          points: item.draft.points,
-          explanation: item.draft.explanation,
-          tags: item.draft.tags,
-          image_url: uploads[i].cover,
-        }));
+        const payload = batch.map((item, i) => {
+          const d = item.draft;
+          return {
+            quiz_id: quizId,
+            question: d.question.trim(),
+            options: d.options,
+            option_images: uploads[i].optionPaths,
+            option_explanations: d.option_explanations ?? [],
+            correct_index: Math.max(0, d.correct_index),
+            correct_indices: d.kind === "multi" ? (d.correct_indices ?? []) : [],
+            accepted_answers: d.kind === "fill_blank" ? (d.accepted_answers ?? []) : [],
+            pairs: d.kind === "matching" ? (d.pairs ?? []) : [],
+            correct_order: d.kind === "ordering" ? (d.correct_order ?? []) : [],
+            kind: d.kind,
+            difficulty: d.difficulty,
+            points: d.points,
+            explanation: d.explanation,
+            tags: d.tags,
+            image_url: uploads[i].cover,
+            image_alt: d.image_alt ?? "",
+            time_limit_seconds: d.time_limit_seconds ?? null,
+            ...(d.order_index ? { order_index: d.order_index } : {}),
+          };
+        });
+
 
         const { data, error } = await supabase.from("questions").insert(payload).select("id");
         if (error) throw error;
