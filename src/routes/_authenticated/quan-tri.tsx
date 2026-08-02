@@ -15,7 +15,10 @@ import {
   LogOut,
   MonitorSmartphone,
   MousePointerClick,
+  PanelLeftClose,
+  PanelLeftOpen,
   PieChart,
+
   RadioTower,
   ScrollText,
   ShieldAlert,
@@ -138,10 +141,22 @@ function AdminPage() {
   const search = Route.useSearch();
   const [email, setEmail] = useState<string>("");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Thu gọn danh mục để có thêm không gian làm việc; ghi nhớ lựa chọn của người dùng.
+  const [railCollapsed, setRailCollapsed] = useState(false);
+
+  useEffect(() => {
+    setRailCollapsed(localStorage.getItem("admin-rail-collapsed") === "1");
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("admin-rail-collapsed", railCollapsed ? "1" : "0");
+  }, [railCollapsed]);
 
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
   }, []);
+
+
 
   // Ctrl/Cmd + K: mở bảng tìm kiếm nhanh các mục quản trị.
   useEffect(() => {
@@ -201,45 +216,55 @@ function AdminPage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
+      {/* Thanh tiêu đề gọn: nhường tối đa diện tích cho vùng làm việc */}
       <div className="surface-hero">
-        <PageContainer className="flex flex-wrap items-end justify-between gap-6 py-10">
+        <PageContainer className="!max-w-[110rem] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 !pb-3 pt-4 sm:flex sm:flex-wrap sm:justify-between">
           <div className="min-w-0">
-            <h1 className="type-h1">Bảng điều khiển</h1>
-            <p className="type-muted mt-1 truncate text-primary-foreground/75">{email}</p>
-            <p className="type-meta mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/12 px-3 py-1 text-primary-foreground/85">
-              <ShieldCheck className="size-3.5" /> {roleLabel}
+            <h1 className="truncate text-lg font-bold sm:text-xl">Bảng điều khiển</h1>
+            <p className="type-meta mt-0.5 flex min-w-0 items-center gap-1.5 text-primary-foreground/75">
+              <ShieldCheck className="size-3.5 shrink-0" />
+              <span className="truncate">
+                {roleLabel} · {email}
+              </span>
             </p>
           </div>
-          <div className="flex flex-wrap items-end gap-6">
-            {[
-              { label: "Cuộc thi", value: statsQuery.data?.quizzes, icon: ListChecks },
-              { label: "Câu hỏi", value: statsQuery.data?.questions, icon: FileQuestion },
-              { label: "Lượt thi", value: statsQuery.data?.results, icon: BarChart3 },
-            ].map((s) => (
-              <div key={s.label} className="text-right">
-                <s.icon className="ml-auto size-4 text-accent" />
-                <p className="mt-1 font-mono text-2xl font-bold">
-                  {statsQuery.isLoading ? "…" : (s.value ?? "—")}
-                </p>
-                <p className="type-eyebrow text-primary-foreground/70">{s.label}</p>
-              </div>
-            ))}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            <div className="hidden items-center gap-4 sm:flex">
+              {[
+                { label: "Cuộc thi", value: statsQuery.data?.quizzes, icon: ListChecks },
+                { label: "Câu hỏi", value: statsQuery.data?.questions, icon: FileQuestion },
+                { label: "Lượt thi", value: statsQuery.data?.results, icon: BarChart3 },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center gap-2">
+                  <s.icon className="size-4 shrink-0 text-accent" />
+                  <span className="font-mono text-base font-bold">
+                    {statsQuery.isLoading ? "…" : (s.value ?? "—")}
+                  </span>
+                  <span className="type-eyebrow text-primary-foreground/70">{s.label}</span>
+                </div>
+              ))}
+            </div>
             {canManageSystem ? (
-              <Button variant="secondary" className="rounded-full" onClick={() => navigate({ to: "/nhap-du-lieu" })}>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="rounded-full"
+                onClick={() => navigate({ to: "/nhap-du-lieu" })}
+              >
                 <Database className="size-4" />
-                Nhập dữ liệu
+                <span className="hidden sm:inline">Nhập dữ liệu</span>
               </Button>
             ) : null}
-            <Button variant="secondary" className="rounded-full" onClick={signOut}>
+            <Button size="sm" variant="secondary" className="rounded-full" onClick={signOut}>
               <LogOut className="size-4" />
-              Đăng xuất
+              <span className="hidden sm:inline">Đăng xuất</span>
             </Button>
           </div>
         </PageContainer>
       </div>
 
       <main>
-        <PageContainer className="py-8">
+        <PageContainer className="!max-w-[110rem] py-5">
           {roleQuery.isLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-12 w-full max-w-xl rounded-2xl" />
@@ -259,47 +284,87 @@ function AdminPage() {
               description={`Vui lòng liên hệ quản trị viên hệ thống để được cấp quyền cho tài khoản ${email}.`}
             />
           ) : (
-            <div className="grid gap-6 lg:grid-cols-[248px_minmax(0,1fr)] lg:items-start">
-              {/* Điều hướng: cột dọc trên máy tính, thanh cuộn ngang trên điện thoại */}
+            <div
+              className={cn(
+                "grid gap-5 lg:items-start",
+                railCollapsed
+                  ? "lg:grid-cols-[64px_minmax(0,1fr)]"
+                  : "lg:grid-cols-[232px_minmax(0,1fr)]",
+              )}
+            >
+              {/* Điều hướng: cột dọc thu gọn được trên máy tính, thanh cuộn ngang trên điện thoại */}
               <nav aria-label="Mục quản trị" className="lg:sticky lg:top-4">
-                <Button
-                  variant="outline"
-                  className="mb-3 hidden w-full justify-between rounded-2xl lg:flex"
-                  onClick={() => setPaletteOpen(true)}
-                >
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <CommandIcon className="size-4" /> Tìm nhanh…
-                  </span>
-                  <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                    Ctrl K
-                  </kbd>
-                </Button>
+                <div className="mb-3 hidden gap-1 lg:flex">
+                  <Button
+                    variant="outline"
+                    className={cn("min-w-0 flex-1 justify-between rounded-2xl", railCollapsed && "px-0 justify-center")}
+                    onClick={() => setPaletteOpen(true)}
+                    title="Tìm nhanh (Ctrl K)"
+                  >
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      <CommandIcon className="size-4" />
+                      {railCollapsed ? null : "Tìm nhanh…"}
+                    </span>
+                    {railCollapsed ? null : (
+                      <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                        Ctrl K
+                      </kbd>
+                    )}
+                  </Button>
+                  {railCollapsed ? null : (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-2xl"
+                      aria-label="Thu gọn danh mục"
+                      onClick={() => setRailCollapsed(true)}
+                    >
+                      <PanelLeftClose className="size-4" />
+                    </Button>
+                  )}
+                </div>
+                {railCollapsed ? (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="mb-3 hidden rounded-2xl lg:flex"
+                    aria-label="Mở rộng danh mục"
+                    onClick={() => setRailCollapsed(false)}
+                  >
+                    <PanelLeftOpen className="size-4" />
+                  </Button>
+                ) : null}
 
-                <div className="snap-row snap-row-soft -mx-1 flex gap-1 px-1 pb-2 lg:mx-0 lg:block lg:space-y-4 lg:overflow-visible lg:px-0 lg:pb-0">
+                <div className="snap-row snap-row-soft -mx-1 flex gap-1 px-1 pb-2 lg:mx-0 lg:block lg:space-y-3 lg:overflow-visible lg:px-0 lg:pb-0">
                   {visibleGroups.map((g) => (
                     <div key={g.group} className="flex shrink-0 gap-1 lg:block lg:space-y-1">
-                      <p className="type-eyebrow hidden px-3 text-muted-foreground lg:block">{g.group}</p>
+                      {railCollapsed ? null : (
+                        <p className="type-eyebrow hidden px-3 text-muted-foreground lg:block">{g.group}</p>
+                      )}
                       {g.items.map((item) => (
                         <button
                           key={item.value}
                           type="button"
                           onClick={() => goTo(item.value)}
                           aria-current={current === item.value ? "page" : undefined}
+                          title={`${item.label} — ${item.hint}`}
                           className={cn(
                             "flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition-colors lg:w-full",
+                            railCollapsed && "lg:justify-center lg:px-0",
                             current === item.value
                               ? "bg-primary text-primary-foreground"
                               : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                           )}
                         >
                           <item.icon className="size-4 shrink-0" />
-                          {item.label}
+                          <span className={cn(railCollapsed && "lg:hidden")}>{item.label}</span>
                         </button>
                       ))}
                     </div>
                   ))}
                 </div>
               </nav>
+
 
               <div className="min-w-0">
                 <p className="type-meta mb-3 text-muted-foreground">

@@ -7,6 +7,8 @@ import type { ParsedQuestion } from "@/lib/docxParse";
 import { normalizeText, type Difficulty, type QuestionKind } from "@/lib/questionKinds";
 import { validateQuestionDraft } from "@/lib/questionValidation";
 
+export type ImportPair = { left: string; right: string };
+
 export type ImportDraft = {
   /** Dòng/thứ tự trong tệp nguồn, dùng để báo lỗi. */
   line: number;
@@ -18,10 +20,27 @@ export type ImportDraft = {
   points: number;
   explanation: string;
   tags: string[];
+  /** Câu nhiều đáp án: danh sách chỉ số đúng. */
+  correct_indices?: number[];
+  /** Câu điền đáp án: các đáp án được chấp nhận. */
+  accepted_answers?: string[];
+  /** Câu nối cặp. */
+  pairs?: ImportPair[];
+  /** Câu sắp xếp: thứ tự đúng theo chỉ số phương án. */
+  correct_order?: number[];
+  /** Giải thích riêng cho từng phương án (song song với `options`). */
+  option_explanations?: string[];
+  /** Mô tả ảnh minh hoạ cho trình đọc màn hình. */
+  image_alt?: string;
+  /** Giới hạn thời gian riêng của câu (giây); null = dùng giờ chung. */
+  time_limit_seconds?: number | null;
+  /** Thứ tự hiển thị khi cuộc thi tắt xáo trộn câu hỏi. */
+  order_index?: number;
   /** Chỉ số ảnh trong tệp .docx (lớp UI sẽ đổi thành tệp thật). */
   imageRef?: number | null;
   optionImageRefs?: (number | null)[];
 };
+
 
 export type ImportStatus = "ok" | "warn" | "error";
 
@@ -52,6 +71,8 @@ const KIND_MAP: Record<string, QuestionKind> = {
   single: "single",
   "đúng/sai": "true_false",
   "dung/sai": "true_false",
+  "đúng sai": "true_false",
+  "dung sai": "true_false",
   true_false: "true_false",
   "nhiều đáp án": "multi",
   "nhieu dap an": "multi",
@@ -59,6 +80,12 @@ const KIND_MAP: Record<string, QuestionKind> = {
   "điền đáp án": "fill_blank",
   "dien dap an": "fill_blank",
   fill_blank: "fill_blank",
+  "nối cặp": "matching",
+  "noi cap": "matching",
+  matching: "matching",
+  "sắp xếp": "ordering",
+  "sap xep": "ordering",
+  ordering: "ordering",
 };
 
 export function parseDifficulty(raw: string | undefined): Difficulty {
@@ -80,6 +107,35 @@ export function answerToIndex(raw: string | undefined): number {
   return code >= 0 && code < 26 ? code : -1;
 }
 
+/** Nhiều đáp án hoặc thứ tự đúng: "A;B;D" / "1,3" → danh sách chỉ số. */
+export function answerToIndices(raw: string | undefined): number[] {
+  return (raw ?? "")
+    .split(/[;,|/]/)
+    .map((part) => answerToIndex(part))
+    .filter((i) => i >= 0);
+}
+
+/** Ô "cap_ghep": "Vế trái = Vế phải" mỗi cặp một dòng hoặc cách nhau bởi dấu ;. */
+export function parsePairsCell(raw: string | undefined): ImportPair[] {
+  return (raw ?? "")
+    .split(/[\n;]/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [left, ...rest] = line.split(/=|->|→|\|/);
+      return { left: (left ?? "").trim(), right: rest.join("=").trim() };
+    })
+    .filter((p) => p.left || p.right);
+}
+
+/** Tách danh sách ngăn cách bởi xuống dòng, dấu ; hoặc |. */
+export function splitList(raw: string | undefined): string[] {
+  return (raw ?? "")
+    .split(/[\n;|]/)
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
 /** Một dòng bảng tính (CSV hoặc XLSX) thành bản nháp câu hỏi. */
 export function rowToDraft(row: CsvRow, line: number): ImportDraft {
   const get = (...keys: string[]) => {
@@ -89,16 +145,26 @@ export function rowToDraft(row: CsvRow, line: number): ImportDraft {
     }
     return "";
   };
-  const options = ["a", "b", "c", "d", "e", "f"]
+  const letters = ["a", "b", "c", "d", "e", "f"];
+  const options = letters
     .map((k) => get(`phuong_an_${k}`, `option_${k}`, k))
     .filter((v, i) => v !== "" || i < 2);
 
-  return {
+  const kind = parseKind(get("loai_cau", "kind"));
+  const answerCell = get("dap_an", "answer", "dap_an_dung");
+  const indices = answerToIndices(answerCell);
+  const optionExplanations = letters
+    .slice(0, options.length)
+    .map((k) => get(`giai_thich_${k}`, `explanation_${k}`));
+  const time = Number(get("thoi_gian", "time_limit_seconds"));
+  const order = Number(get("thu_tu", "order_index"));
+
+  const draft: ImportDraft = {
     line,
     question: get("cau_hoi", "question", "noi_dung"),
     options,
-    correct_index: answerToIndex(get("dap_an", "answer", "dap_an_dung")),
-    kind: parseKind(get("loai_cau", "kind")),
+    correct_index: kind === "ordering" ? 0 : answerToIndex(answerCell),
+    kind,
     difficulty: parseDifficulty(get("do_kho", "difficulty")),
     points: Math.max(1, Math.round(Number(get("diem", "points") || 1)) || 1),
     explanation: get("giai_thich", "explanation"),
@@ -106,8 +172,18 @@ export function rowToDraft(row: CsvRow, line: number): ImportDraft {
       .split(/[,;]/)
       .map((t) => t.trim())
       .filter(Boolean),
+    correct_indices: indices,
+    accepted_answers: splitList(get("dap_an_dien", "accepted_answers")),
+    pairs: parsePairsCell(get("cap_ghep", "pairs")),
+    correct_order: kind === "ordering" ? indices : [],
+    option_explanations: optionExplanations,
+    image_alt: get("mo_ta_anh", "image_alt"),
+    time_limit_seconds: Number.isFinite(time) && time > 0 ? Math.round(time) : null,
   };
+  if (Number.isFinite(order) && order > 0) draft.order_index = Math.round(order);
+  return draft;
 }
+
 
 /** Kết quả phân tích .docx thành bản nháp câu hỏi. */
 export function parsedToDraft(q: ParsedQuestion, line: number): ImportDraft {
@@ -143,14 +219,18 @@ export function buildImportPreview(
         question: draft.question,
         options: draft.options,
         correct_index: draft.correct_index,
-        correct_indices: [],
-        accepted_answers: "",
-        pairs: [],
+        correct_indices: draft.correct_indices ?? [],
+        accepted_answers: (draft.accepted_answers ?? []).join("\n"),
+        pairs: draft.pairs ?? [],
         points: draft.points,
-        time_limit_seconds: null,
+        time_limit_seconds: draft.time_limit_seconds ?? null,
       },
       [],
     );
+    // Câu sắp xếp phải khai đủ thứ tự đúng cho mọi mục.
+    if (draft.kind === "ordering" && (draft.correct_order ?? []).length !== draft.options.length)
+      messages.push("Cột dap_an phải liệt kê đủ thứ tự đúng của tất cả các mục (ví dụ B;A;C;D).");
+
     Object.values(result.errors).forEach((m) => messages.push(String(m)));
     const warnCount = messages.length;
     Object.values(result.warnings).forEach((m) => messages.push(String(m)));
