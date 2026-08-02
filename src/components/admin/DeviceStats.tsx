@@ -446,7 +446,7 @@ export function DeviceStats() {
           />
         </div>
 
-        </div>
+
 
         {/* Tóm tắt nhanh theo loại thiết bị */}
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
