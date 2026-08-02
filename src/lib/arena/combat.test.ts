@@ -8,6 +8,7 @@ import {
   decideWinnerByHp,
   resolveRoundCombat,
   rollDice,
+  TIMEOUT_HP_LOSS,
   winReasonLabel,
 } from "./combat";
 
