@@ -258,7 +258,21 @@ function DuelRoom() {
             </Button>
           </div>
         ) : (
-          <Loader2 className="size-8 animate-spin text-primary" />
+          <div className="flex flex-col items-center gap-2 text-center">
+            <Loader2 className="size-8 animate-spin text-primary" />
+            <p className="text-sm font-semibold">
+              {!token
+                ? "Đang xác thực thông tin dự thi…"
+                : !joined
+                  ? "Đang kết nối phòng so tài…"
+                  : "Đang đồng bộ trạng thái trận đấu…"}
+            </p>
+            <p className="type-meta text-muted-foreground">
+              {connectionStatus === "retrying"
+                ? "Mạng chập chờn — đang thử kết nối lại."
+                : "Giữ màn hình, hệ thống sẽ đưa bạn vào trận ngay khi ghép xong."}
+            </p>
+          </div>
         )}
       </PageContainer>
     );
@@ -503,9 +517,19 @@ function WaitingPanel({
     if (state.status !== "countdown" || !state.startedAt) return;
     const target = toClientTime(state.startedAt);
     // Đặt ngay số giây đầu tiên (trước đây khởi tạo 0 nên nháy "GO!" rồi mới đếm 3-2-1).
-    const tick = () => setLeft(Math.max(0, Math.ceil((target - Date.now()) / 1000)));
+    let last = -1;
+    const tick = () => {
+      const n = Math.max(0, Math.ceil((target - Date.now()) / 1000));
+      setLeft(n);
+      // Âm thanh khớp đúng nhịp đếm: 3-2-1 rồi "GO!".
+      if (n !== last) {
+        if (n > 0) sfxCountdownTick(n);
+        else sfxGo();
+        last = n;
+      }
+    };
     tick();
-    const id = window.setInterval(tick, 100);
+    const id = window.setInterval(tick, 80);
     return () => window.clearInterval(id);
 
   }, [state.status, state.startedAt, toClientTime]);
