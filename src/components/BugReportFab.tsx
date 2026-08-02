@@ -197,7 +197,7 @@ function BugReportDialog({
           </div>
 
           <Button className="w-full rounded-xl font-bold" onClick={() => void send()} disabled={busy}>
-            {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} Gửi cho đội kỹ thuật
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} Gửi góp ý
           </Button>
         </div>
       </DialogContent>
