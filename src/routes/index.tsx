@@ -310,7 +310,7 @@ function HomePage() {
             }
           >
             <div className="stagger grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-              {quizzes.map((q) => {
+              {quizzes.slice(0, visibleQuizzes).map((q) => {
                 const st = quizStatus(q);
                 return (
                   <button
@@ -378,9 +378,44 @@ function HomePage() {
                 );
               })}
             </div>
+            {quizzes.length > visibleQuizzes && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  className="rounded-full font-semibold"
+                  onClick={() => setVisibleQuizzes((n) => n + 4)}
+                >
+                  Xem thêm cuộc thi ({quizzes.length - visibleQuizzes})
+                </Button>
+              </div>
+            )}
           </QueryState>
         </div>
       </section>
+
+      {/* Giới thiệu đầy đủ nằm trong bảng trượt để không chiếm chiều cao trang chủ */}
+      <Sheet open={heroOpen} onOpenChange={setHeroOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl">
+          <SheetHeader className="text-left">
+            <SheetTitle>Đấu trường tri thức VATM</SheetTitle>
+            <SheetDescription>
+              Sân chơi kiến thức nội bộ của Công ty Quản lý bay miền Trung: thi thử không giới hạn, chấm điểm tức thì,
+              tích luỹ điểm kinh nghiệm và leo bảng xếp hạng cùng đồng nghiệp.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 flex flex-wrap gap-2 pb-2">
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/huong-dan">Luật chơi</Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/dau-truong">Đấu trường</Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/bang-xep-hang">Bảng xếp hạng</Link>
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </AppShell>
   );
 }
