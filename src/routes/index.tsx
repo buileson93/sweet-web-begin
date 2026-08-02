@@ -119,37 +119,43 @@ function HomePage() {
         <div className="flex min-w-0 flex-col gap-4 sm:gap-5 lg:col-span-7">
 
           <div className="animate-pop relative min-w-0">
-            {/* Máy bay bay vòng quanh cuốn sách tri thức — hiện trên mọi kích thước màn hình */}
+            {/* Máy bay bay vòng quanh cuốn sách tri thức — thu nhỏ dần trên màn hình thấp */}
             <div
-              className="pointer-events-none absolute -top-1 right-0 grid size-20 place-items-center sm:size-28 lg:right-6"
+              className="pointer-events-none absolute -top-1 right-0 grid size-14 place-items-center sm:size-24 lg:right-6"
               aria-hidden
             >
               <span className="plane-orbit">
                 <span className="plane-orbit-ring">
                   <span className="plane-orbit-craft">
-                    <Plane className="size-4 text-accent drop-shadow-sm sm:size-5" strokeWidth={2.2} />
+                    <Plane className="size-3.5 text-accent drop-shadow-sm sm:size-5" strokeWidth={2.2} />
                   </span>
                 </span>
               </span>
-              <BookOpen className="animate-book-flip relative size-7 text-primary/70 drop-shadow-sm sm:size-9" />
+              <BookOpen className="animate-book-flip relative size-6 text-primary/70 drop-shadow-sm sm:size-9" />
             </div>
 
-            <span className="type-eyebrow inline-flex max-w-[calc(100%-5.5rem)] items-center gap-2 rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
+            {/* Một hàng gọn: nhãn + tiêu đề rút gọn, bấm để mở bảng giới thiệu đầy đủ */}
+            <button
+              type="button"
+              onClick={() => setHeroOpen(true)}
+              className="type-eyebrow inline-flex max-w-[calc(100%-4.5rem)] items-center gap-2 rounded-full bg-secondary px-3 py-1 text-left text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+            >
               <span className="relative flex size-2 shrink-0">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-75" />
                 <span className="relative inline-flex size-2 rounded-full bg-primary" />
               </span>
-              Đấu trường tri thức VATM
-            </span>
-            <h1 className="hero-title type-h1 group mt-3 max-w-[24ch] cursor-default text-pretty uppercase [hyphens:none] sm:pr-28">
+              <span className="truncate">Đấu trường tri thức VATM</span>
+              <ChevronUp className="size-3.5 shrink-0" />
+            </button>
+            <h1 className="hero-title type-h1 group mt-2 max-w-[24ch] cursor-default text-pretty uppercase [hyphens:none] sm:pr-24">
               <span className="hero-line inline">Chinh phục bầu trời </span>
               <span className="hero-line hero-line-accent inline">
                 kiến thức
                 <span className="hero-underline" aria-hidden />
               </span>
             </h1>
-
           </div>
+
 
           <PlayerHeroCard className="animate-pop" />
 
