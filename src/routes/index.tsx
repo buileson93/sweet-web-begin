@@ -315,7 +315,11 @@ function HomePage() {
               />
             }
           >
-            <SnapCarousel className="stagger" label="Danh sách cuộc thi">
+            <SnapCarousel
+              className="stagger"
+              label="Danh sách cuộc thi"
+              gridClassName="md:grid-cols-2 xl:grid-cols-3 md:auto-rows-[17.5rem] lg:auto-rows-[18.5rem]"
+            >
               {quizzes.slice(0, visibleQuizzes).map((q) => {
                 const st = quizStatus(q);
                 return (
