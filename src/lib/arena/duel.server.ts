@@ -177,15 +177,19 @@ async function pickDuelQuestions(quizId: string | null, count: number) {
   if (quizId) query = query.eq("quiz_id", quizId);
   const { data } = await query;
   const pool = (data ?? []) as unknown as QuestionRow[];
-  if (pool.length < count)
-    throw new Error(`Ngân hàng câu hỏi chỉ có ${pool.length} câu, cần tối thiểu ${count} câu.`);
-  const picked = pickByBlueprint(pool, count, {} as Blueprint, true);
+  if (pool.length < MIN_QUESTION_POOL)
+    throw new Error(
+      `Ngân hàng câu hỏi chỉ có ${pool.length} câu, cần tối thiểu ${MIN_QUESTION_POOL} câu.`,
+    );
+  // Đánh tới khi một bên hết máu: lấy nhiều câu nhất có thể, thiếu thì vòng lại từ đầu.
+  const picked = pickByBlueprint(pool, Math.min(count, pool.length), {} as Blueprint, true);
   const orders = picked.map((q) => {
     const n = Math.max(1, (q.options ?? []).length);
     return shuffle(Array.from({ length: n }, (_, i) => i));
   });
   return { ids: picked.map((q) => q.id), orders };
 }
+
 
 /** Chỗ ngồi còn mở của một người, kèm số người trong phòng. */
 async function activeSeat(employeeId: string): Promise<ActiveSeat> {
