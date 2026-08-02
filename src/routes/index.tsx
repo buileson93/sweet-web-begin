@@ -355,7 +355,7 @@ function HomePage() {
                       data-ready="0"
                       onLoad={(e) => e.currentTarget.setAttribute("data-ready", "1")}
                       className={cn(
-                        "quiz-card-art pointer-events-none absolute inset-y-0 right-0 h-full w-[62%] max-w-none select-none bg-secondary/30 object-right sm:w-[68%] md:w-[34%]",
+                        "quiz-card-art pointer-events-none absolute inset-y-0 right-0 h-full w-[62%] max-w-none select-none bg-secondary/30 object-right sm:w-[68%] md:w-[40%]",
                         q.cover_fit === "cover" ? "object-cover" : "object-contain",
                       )}
                     />
