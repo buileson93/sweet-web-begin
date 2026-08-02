@@ -278,7 +278,7 @@ function DuelRoom() {
     );
 
   return (
-    <PageContainer className="space-y-4 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
+    <PageContainer className="space-y-4 py-4 pb-[calc(11rem+env(safe-area-inset-bottom))] lg:pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <header
         className={cn(
           "flex items-center gap-3",

@@ -6,7 +6,7 @@
  * - Ở mỗi câu, ai trả lời ĐÚNG TRƯỚC sẽ gây sát thương cho đối phương.
  * - Sát thương gốc do TUNG HAI XÚC XẮC 6 MẶT (2–12), cộng thêm theo chuỗi
  *   đúng liên tiếp (combo) và theo tốc độ trả lời.
- * - Cả hai cùng sai (hoặc cùng bỏ trống) thì hoà câu đó, không ai mất máu.
+ * - Cả hai cùng sai thì hoà câu đó; nhưng cả hai cùng BỎ TRỐNG thì mỗi người mất 10 máu.
  * - Ai hết máu trước thì thua (hạ gục). Hết câu mà cả hai còn máu thì so máu còn lại.
  */
 
@@ -24,6 +24,9 @@ export const COMBO_STEP = 3;
 export const COMBO_MAX_STEPS = 5;
 /** Sát thương cộng thêm tối đa nhờ trả lời nhanh. */
 export const MAX_SPEED_DAMAGE = 5;
+/** Máu bị trừ cho MỖI người khi cả hai cùng bỏ trống câu hỏi (không ai chịu trả lời). */
+export const TIMEOUT_HP_LOSS = 10;
+
 
 /** Nguồn ngẫu nhiên (tách ra để kiểm thử được). */
 export type Rng = () => number;
@@ -151,9 +154,13 @@ export function resolveRoundCombat(
 
   const finalDamage = cls.damage;
 
+  // Cả hai cùng bỏ trống (hết giờ không ai trả lời) -> mỗi người tự mất máu phạt.
+  const timedOut = inputs.length > 0 && inputs.every((i) => !i.answered);
+  const idlePenalty = timedOut ? TIMEOUT_HP_LOSS : 0;
+
   const lines: CombatLine[] = inputs.map((i) => {
     const isStriker = !!striker && striker.employeeId === i.employeeId;
-    const taken = striker && !isStriker ? finalDamage : 0;
+    const taken = (striker && !isStriker ? finalDamage : 0) + idlePenalty;
     return {
       employeeId: i.employeeId,
       damageDealt: isStriker ? finalDamage : 0,
@@ -166,8 +173,9 @@ export function resolveRoundCombat(
   const ko = lines.find((l) => l.hpAfter <= 0) ?? null;
   return {
     lines,
-    neutral: !striker || finalDamage <= 0,
-    timedOut: inputs.length > 0 && inputs.every((i) => !i.answered),
+    neutral: (!striker || finalDamage <= 0) && idlePenalty <= 0,
+    timedOut,
+
     knockedOutId: ko ? ko.employeeId : null,
     dice: roll.dice,
     baseDamage,

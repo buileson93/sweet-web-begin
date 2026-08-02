@@ -53,17 +53,25 @@ const COUNTDOWN_MS = 2_600;
 const COUNTDOWN_EARLY_MS = 650;
 /** Thời gian hiển thị đáp án giữa hai câu (ms) — client tự chạy, máy chủ không chờ. */
 const REVEAL_MS = 2_000;
+/** Câu cả hai cùng bỏ trống: chỉ nhá kết quả rất ngắn rồi sang câu mới. */
+const TIMEOUT_REVEAL_MS = 900;
+
 
 /** Thời lượng hiệu ứng xúc xắc — do máy chủ quy định để hai bên khớp nhau. */
 const DICE_MS = 1_600;
 /** Độ trễ mạng được tha thứ khi gửi đáp án (ms) — giữ nhỏ để hết giờ là chốt lượt ngay. */
-const NETWORK_GRACE_MS = 700;
+const NETWORK_GRACE_MS = 250;
 /** Thời gian chờ đối thủ mất kết nối trước khi xử thua kỹ thuật (ms). */
 export const DISCONNECT_GRACE_MS = 20_000;
 /** Trần thời gian mỗi câu trong ván so tài (giây) — tốc chiến, không để ai câu giờ. */
 export const MAX_ROUND_SECONDS = 15;
 /** Bỏ trống liên tiếp bấy nhiêu câu thì bị xử thua kỹ thuật. */
 export const MAX_CONSECUTIVE_MISSES = 3;
+/** Số câu tối thiểu ngân hàng phải có để mở trận. */
+const MIN_QUESTION_POOL = 3;
+/** Trần cứng số câu một ván (chống trận kéo dài vô tận khi cả hai cùng sai). */
+export const HARD_ROUND_CAP = 40;
+
 
 /**
  * Gửi kèm ảnh chụp trạng thái đầy đủ trong CÙNG một lô broadcast.
@@ -177,15 +185,19 @@ async function pickDuelQuestions(quizId: string | null, count: number) {
   if (quizId) query = query.eq("quiz_id", quizId);
   const { data } = await query;
   const pool = (data ?? []) as unknown as QuestionRow[];
-  if (pool.length < count)
-    throw new Error(`Ngân hàng câu hỏi chỉ có ${pool.length} câu, cần tối thiểu ${count} câu.`);
-  const picked = pickByBlueprint(pool, count, {} as Blueprint, true);
+  if (pool.length < MIN_QUESTION_POOL)
+    throw new Error(
+      `Ngân hàng câu hỏi chỉ có ${pool.length} câu, cần tối thiểu ${MIN_QUESTION_POOL} câu.`,
+    );
+  // Đánh tới khi một bên hết máu: lấy nhiều câu nhất có thể, thiếu thì vòng lại từ đầu.
+  const picked = pickByBlueprint(pool, Math.min(count, pool.length), {} as Blueprint, true);
   const orders = picked.map((q) => {
     const n = Math.max(1, (q.options ?? []).length);
     return shuffle(Array.from({ length: n }, (_, i) => i));
   });
   return { ids: picked.map((q) => q.id), orders };
 }
+
 
 /** Chỗ ngồi còn mở của một người, kèm số người trong phòng. */
 async function activeSeat(employeeId: string): Promise<ActiveSeat> {
@@ -226,7 +238,9 @@ export async function createDuel(input: {
   if (player.blocked) throw new Error("Tài khoản của bạn đang bị tạm khoá thi đấu.");
   await assertFree(input.employeeId);
 
-  const roundCount = Math.min(20, Math.max(3, input.roundCount ?? settings.default_rounds));
+  // Đấu tới khi một bên hết máu: mở trần số câu, trận chỉ dừng khi hạ gục / xử thua / chạm trần cứng.
+  const roundCount = HARD_ROUND_CAP;
+
   const seconds = Math.min(
     MAX_ROUND_SECONDS,
     Math.max(5, input.secondsPerRound ?? settings.default_seconds),
@@ -682,8 +696,13 @@ async function serveRound(duel: DuelRow, roundIndex: number, delayMs = 0) {
 }
 
 async function questionAt(duel: DuelRow, index: number) {
-  const qid = duel.question_ids?.[index];
+  const ids = duel.question_ids ?? [];
+  if (ids.length === 0) return null;
+  // Vòng lại từ đầu khi ngân hàng ít câu hơn số hiệp thực đánh.
+  const slot = ((index % ids.length) + ids.length) % ids.length;
+  const qid = ids[slot];
   if (!qid) return null;
+
   const { data } = await supabaseAdmin
     .from("questions")
     .select(QUESTION_COLUMNS)
@@ -691,7 +710,8 @@ async function questionAt(duel: DuelRow, index: number) {
     .maybeSingle();
   if (!data) return null;
   const orders = (duel.option_orders as number[][]) ?? [];
-  return { row: data as unknown as QuestionRow, order: orders[index] ?? [] };
+  return { row: data as unknown as QuestionRow, order: orders[slot] ?? [] };
+
 }
 
 const lastAnswerAt = new Map<string, number>();
@@ -1002,7 +1022,10 @@ export async function closeRound(duelId: string, roundIndex: number) {
   result.resolvedAt = nowIso();
   result.revealMs = DICE_MS;
 
-  const isLast = roundIndex + 1 >= duel.round_count || !!combat.knockedOutId || !!noShow;
+  // Trận chỉ dừng khi có người hết máu, bị xử thua kỹ thuật, hoặc chạm trần cứng số câu.
+  const isLast =
+    !!combat.knockedOutId || !!noShow || roundIndex + 1 >= Math.max(duel.round_count, HARD_ROUND_CAP);
+
   result.finishAfter = isLast;
   result.noShowId = noShow?.employee_id ?? null;
 
@@ -1057,7 +1080,9 @@ export async function advanceDuel(duelId: string): Promise<{ advanced: boolean }
 
   // Đang trong thời gian công bố kết quả của câu hiện tại.
   if (last && last.roundIndex === duel.current_round && last.resolvedAt) {
-    const revealEnd = Date.parse(last.resolvedAt) + REVEAL_MS;
+    // Câu bỏ trống thì không có hoạt ảnh xúc xắc — chốt và sang câu mới ngay.
+    const revealEnd = Date.parse(last.resolvedAt) + (last.timedOut ? TIMEOUT_REVEAL_MS : REVEAL_MS);
+
     if (now < revealEnd) return { advanced: false };
     if (last.finishAfter) {
       await finishDuel(duelId, last.noShowId ?? undefined);

@@ -8,6 +8,7 @@ import {
   decideWinnerByHp,
   resolveRoundCombat,
   rollDice,
+  TIMEOUT_HP_LOSS,
   winReasonLabel,
 } from "./combat";
 
@@ -197,5 +198,44 @@ describe("decideWinnerByHp", () => {
   it("có nhãn tiếng Việt cho mọi tiêu chí", () => {
     expect(winReasonLabel("ko")).toBe("Hạ gục");
     expect(winReasonLabel("draw")).toBe("Hoà");
+  });
+});
+
+describe("bỏ trống hết giờ", () => {
+  it("cả hai cùng không trả lời thì mỗi người mất 10 máu", () => {
+    const out = resolveRoundCombat(
+      [
+        { employeeId: "a", answered: false, isCorrect: false, msTaken: 15_000, streak: 0, hpBefore: 100 },
+        { employeeId: "b", answered: false, isCorrect: false, msTaken: 15_000, streak: 0, hpBefore: 25 },
+      ],
+      15_000,
+    );
+    expect(out.timedOut).toBe(true);
+    expect(out.neutral).toBe(false);
+    expect(out.lines.map((l) => l.damageTaken)).toEqual([TIMEOUT_HP_LOSS, TIMEOUT_HP_LOSS]);
+    expect(out.lines.map((l) => l.hpAfter)).toEqual([90, 15]);
+  });
+
+  it("bỏ trống làm máu về 0 thì tính hạ gục", () => {
+    const out = resolveRoundCombat(
+      [
+        { employeeId: "a", answered: false, isCorrect: false, msTaken: 15_000, streak: 0, hpBefore: 8 },
+        { employeeId: "b", answered: false, isCorrect: false, msTaken: 15_000, streak: 0, hpBefore: 60 },
+      ],
+      15_000,
+    );
+    expect(out.knockedOutId).toBe("a");
+  });
+
+  it("một người có trả lời thì không ai bị phạt bỏ trống", () => {
+    const out = resolveRoundCombat(
+      [
+        { employeeId: "a", answered: true, isCorrect: false, msTaken: 5_000, streak: 0, hpBefore: 100 },
+        { employeeId: "b", answered: false, isCorrect: false, msTaken: 15_000, streak: 0, hpBefore: 100 },
+      ],
+      15_000,
+    );
+    expect(out.timedOut).toBe(false);
+    expect(out.lines.every((l) => l.damageTaken === 0)).toBe(true);
   });
 });
