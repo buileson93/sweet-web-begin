@@ -670,6 +670,18 @@ function TowerPage() {
   /** Đang ở trong một phòng: che bản đồ để người chơi chỉ thấy nội dung cần xử lý. */
   const inRoom = Boolean(run && !summary && !outcome && run.room);
 
+  // Đóng tab / tải lại lúc đang dở phòng: nhắc lại một lần để khỏi mất trạng thái.
+  useEffect(() => {
+    if (!inRoom) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [inRoom]);
+
+
 
   function submitChallenge() {
     if (!run) return;
