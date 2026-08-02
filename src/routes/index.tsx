@@ -270,7 +270,7 @@ function HomePage() {
       </section>
 
       {/* Danh sách cuộc thi */}
-      <section data-tour="quizzes" className="mt-7 sm:mt-10">
+      <section id="cuoc-thi" data-tour="quizzes" className="mt-7 scroll-mt-24 sm:mt-10">
         <SectionHeading
           title="Danh sách cuộc thi"
           action={
