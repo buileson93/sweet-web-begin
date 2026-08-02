@@ -30,6 +30,8 @@ import {
 } from "@/lib/arena.functions";
 import { getArenaToken } from "@/lib/arena/client";
 import { getDeviceId } from "@/lib/deviceId";
+import { useFxQuality } from "@/lib/arena/fxQuality";
+import { primeAudio, sfxCombo, sfxCountdownTick, sfxGo } from "@/lib/arena/sfx";
 import { DEFAULT_CLASS, type ClassId } from "@/lib/arena/classes";
 import { skillById, type SkillId } from "@/lib/arena/skills";
 import type { DuelPlayerView, DuelState } from "@/lib/arena/types";
@@ -65,7 +67,9 @@ const NUDGE_GRACE_MS = 700;
 /** Nhịp nhắc lại khi máy chủ chưa kịp chuyển bước. */
 const NUDGE_INTERVAL_MS = 600;
 /** Nhịp nhắc riêng cho pha đếm ngược 3-2-1 GO (vào trận nhanh hơn). */
-const COUNTDOWN_NUDGE_MS = 250;
+const COUNTDOWN_NUDGE_MS = 200;
+/** Nhắc sớm trước mốc vào trận (khớp COUNTDOWN_EARLY_MS máy chủ). */
+const COUNTDOWN_EARLY_MS = 600;
 
 
 
@@ -94,6 +98,13 @@ function DuelRoom() {
   const { state, error, refresh, latency, connectionStatus, predict, stats, diag, clock } =
     useDuelChannel({ duelId, token, enabled: !!token && joined });
   const [diagOpen, setDiagOpen] = useState(false);
+  const fxQuality = useFxQuality();
+  // Mở khoá WebAudio ngay sau cú chạm đầu tiên trong phòng.
+  useEffect(() => {
+    const on = () => primeAudio();
+    window.addEventListener("pointerdown", on, { once: true });
+    return () => window.removeEventListener("pointerdown", on);
+  }, []);
 
   const setClass = useServerFn(arenaChooseClass);
   const sendReady = useServerFn(arenaReady);
@@ -108,6 +119,11 @@ function DuelRoom() {
   const roundRef = useRef(-1);
   const announced = useRef(-1);
   const [dice, setDice] = useState<number[]>([]);
+  /** Hạt giống do máy chủ cấp: hai bên lăn xúc xắc cùng nhịp, cùng kết quả. */
+  const [diceSeed, setDiceSeed] = useState("");
+  const [diceBudget, setDiceBudget] = useState(1_600);
+  /** Chuỗi thắng liên tiếp — dùng cho âm thanh combo tăng dần. */
+  const comboRef = useRef(0);
   const [camShake, setCamShake] = useState(0);
   const expiringRef = useRef(false);
   /** Lần nhắc máy chủ gần nhất — chặn nhắc dồn dập khi trạng thái đổi liên tục. */
@@ -142,6 +158,8 @@ function DuelRoom() {
       const startedAt = clock.toClientTime(r.resolvedAt, Date.now());
       const remain = startedAt + total - Date.now();
       if (remain > 250) {
+        setDiceSeed(`${state.duelId}:${r.roundIndex}:${r.resolvedAt ?? ""}`);
+        setDiceBudget(total);
         setDice(r.dice);
         window.setTimeout(() => setDice([]), remain);
       }
@@ -157,10 +175,17 @@ function DuelRoom() {
     const entries: { tone: string; text: string }[] = [];
     for (const n of r.skillNotes ?? []) entries.push({ tone: "skill", text: `✨ ${n.label}` });
     if (r.timedOut) entries.push({ tone: "warn", text: "⏱️ Hết giờ — không ai gây sát thương." });
-    else if ((mineLine?.damage ?? 0) > 0)
+    else if ((mineLine?.damage ?? 0) > 0) {
+      comboRef.current += 1;
+      sfxCombo(comboRef.current);
+      if (comboRef.current >= 2)
+        entries.push({ tone: "good", text: `🔥 Chuỗi ${comboRef.current} đòn liên tiếp!` });
       entries.push({ tone: "good", text: `⚔️ Bạn gây ${mineLine!.damage} sát thương!` });
-    else if ((foeLine?.damage ?? 0) > 0)
+    }
+    else if ((foeLine?.damage ?? 0) > 0) {
+      comboRef.current = 0;
       entries.push({ tone: "bad", text: `💔 Bạn nhận ${foeLine!.damage} sát thương!` });
+    }
     const foeHp = foeLine?.hp ?? state.hpStart;
     const myHp = mineLine?.hp ?? state.hpStart;
     if (foeHp > 0 && foeHp <= state.hpStart * 0.25)
@@ -186,7 +211,7 @@ function DuelRoom() {
     let deadline: number | null = null;
     if (state.status === "countdown") {
       // Nhắc sớm 350ms: máy chủ cho phép vào trận sớm nên câu đầu hiện ngay khi đếm về 0.
-      deadline = state.startedAt ? clock.toClientTime(state.startedAt) - 350 : null;
+      deadline = state.startedAt ? clock.toClientTime(state.startedAt) - COUNTDOWN_EARLY_MS : null;
     } else if (r?.resolvedAt && r.roundIndex === state.currentRound) {
       deadline = clock.toClientTime(r.resolvedAt) + REVEAL_MS + 150;
     } else if (state.roundServedAt) {
@@ -233,7 +258,21 @@ function DuelRoom() {
             </Button>
           </div>
         ) : (
-          <Loader2 className="size-8 animate-spin text-primary" />
+          <div className="flex flex-col items-center gap-2 text-center">
+            <Loader2 className="size-8 animate-spin text-primary" />
+            <p className="text-sm font-semibold">
+              {!token
+                ? "Đang xác thực thông tin dự thi…"
+                : !joined
+                  ? "Đang kết nối phòng so tài…"
+                  : "Đang đồng bộ trạng thái trận đấu…"}
+            </p>
+            <p className="type-meta text-muted-foreground">
+              {connectionStatus === "retrying"
+                ? "Mạng chập chờn — đang thử kết nối lại."
+                : "Giữ màn hình, hệ thống sẽ đưa bạn vào trận ngay khi ghép xong."}
+            </p>
+          </div>
         )}
       </PageContainer>
     );
@@ -252,6 +291,7 @@ function DuelRoom() {
           mine
           roundKey={state.lastResult?.roundIndex ?? state.currentRound}
           skill={state.lastResult?.lines.find((l) => l.employeeId === me?.employeeId)?.skill}
+          foeClassId={foe?.classId}
         />
         <div className="flex w-16 shrink-0 flex-col items-center gap-1 text-center text-xs text-muted-foreground sm:w-auto">
           <Swords className="size-5 text-primary" />
@@ -269,6 +309,7 @@ function DuelRoom() {
           hpStart={state.hpStart}
           roundKey={state.lastResult?.roundIndex ?? state.currentRound}
           skill={state.lastResult?.lines.find((l) => l.employeeId === foe?.employeeId)?.skill}
+          foeClassId={me?.classId}
         />
       </header>
 
@@ -278,7 +319,7 @@ function DuelRoom() {
         <NetStatsWidget stats={stats} onOpenLog={() => setDiagOpen(true)} />
       </div>
 
-      <BattleDice dice={dice} />
+      <BattleDice dice={dice} seed={diceSeed} budgetMs={diceBudget} quality={fxQuality} />
 
       <WaitStatus
         state={state}
@@ -476,9 +517,19 @@ function WaitingPanel({
     if (state.status !== "countdown" || !state.startedAt) return;
     const target = toClientTime(state.startedAt);
     // Đặt ngay số giây đầu tiên (trước đây khởi tạo 0 nên nháy "GO!" rồi mới đếm 3-2-1).
-    const tick = () => setLeft(Math.max(0, Math.ceil((target - Date.now()) / 1000)));
+    let last = -1;
+    const tick = () => {
+      const n = Math.max(0, Math.ceil((target - Date.now()) / 1000));
+      setLeft(n);
+      // Âm thanh khớp đúng nhịp đếm: 3-2-1 rồi "GO!".
+      if (n !== last) {
+        if (n > 0) sfxCountdownTick(n);
+        else sfxGo();
+        last = n;
+      }
+    };
     tick();
-    const id = window.setInterval(tick, 100);
+    const id = window.setInterval(tick, 80);
     return () => window.clearInterval(id);
 
   }, [state.status, state.startedAt, toClientTime]);

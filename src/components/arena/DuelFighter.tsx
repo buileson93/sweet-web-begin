@@ -6,6 +6,8 @@ import { ClassSprite } from "@/components/arena/ClassSprite";
 import { HpBar } from "@/components/arena/HpBar";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
 import type { DuelPlayerView } from "@/lib/arena/types";
+import { attackInfo } from "@/lib/arena/attacks";
+import { sfxHit, sfxKo, sfxLowHp, sfxWounded } from "@/lib/arena/sfx";
 import { skillById } from "@/lib/arena/skills";
 import { levelTitle } from "@/lib/xp";
 import { cn } from "@/lib/utils";
@@ -19,6 +21,7 @@ export const DuelFighter = memo(function DuelFighter({
   mine,
   skill,
   roundKey,
+  foeClassId,
 }: {
   player?: DuelPlayerView;
   hpStart: number;
@@ -27,7 +30,10 @@ export const DuelFighter = memo(function DuelFighter({
   skill?: string | null;
   /** Số hiệu lượt đấu — đổi lượt mới cho phép hiện lại hiệu ứng kỹ năng. */
   roundKey?: number;
+  /** Lớp của đối thủ — để con số sát thương hiện đúng biểu tượng loại đòn. */
+  foeClassId?: string | null;
 }) {
+
   const hp = player?.hp ?? hpStart;
   const [fx, setFx] = useState<Fx[]>([]);
   const [shake, setShake] = useState(0);
@@ -68,13 +74,17 @@ export const DuelFighter = memo(function DuelFighter({
     prevHp.current = hp;
     if (diff <= 0) return;
     seq.current += 1;
-    const item: Fx = { id: seq.current, text: `-${diff}`, tone: "hit" };
+    // Con số sát thương kèm biểu tượng đúng loại đòn của đối thủ (chém/đâm/cầu lửa/…).
+    const blow = attackInfo(foeClassId, roundKey ?? 0);
+    const item: Fx = { id: seq.current, text: `${blow.icon} -${diff}`, tone: "hit" };
     setFx((f) => [...f, item]);
     setShake(diff);
     setPose("hurt");
+    sfxHit(diff, !!mine);
     later(() => setFx((f) => f.filter((x) => x.id !== item.id)), 1100);
     later(() => setShake(0), 600);
     later(() => setPose((p) => (p === "hurt" ? "idle" : p)), 800);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hp]);
 
   const def = skillById(skill);
@@ -95,9 +105,20 @@ export const DuelFighter = memo(function DuelFighter({
   const stanceClass =
     stance === "ko" ? "stance-ko" : stance === "critical" ? "stance-critical" : stance === "wounded" ? "stance-wounded" : "";
 
+  // Âm thanh báo thể trạng — chỉ phát ĐÚNG lúc vừa vượt ngưỡng.
+  const prevStance = useRef(stance);
+  useEffect(() => {
+    if (prevStance.current === stance) return;
+    prevStance.current = stance;
+    if (stance === "ko") sfxKo();
+    else if (stance === "critical") sfxLowHp(!!mine);
+    else if (stance === "wounded") sfxWounded(!!mine);
+  }, [stance, mine]);
+
   // Cường độ rung tăng dần theo mức sát thương phải nhận.
   const shakeClass =
     shake >= 16 ? "animate-hit-hard" : shake >= 8 ? "animate-hit-mid" : shake > 0 ? "animate-hit-soft" : "";
+
 
   return (
     <div
@@ -105,6 +126,9 @@ export const DuelFighter = memo(function DuelFighter({
         "relative flex min-w-0 flex-1 flex-col gap-2 overflow-visible rounded-xl border bg-card p-3 transition",
         mine ? "border-primary/50" : "border-border",
         player?.left && "opacity-50",
+        // Sắc màu cảnh báo thể trạng: hổ phách khi bị thương, đỏ nhấp nháy khi sắp gục.
+        stance === "wounded" && "border-amber-400/60 bg-amber-500/5",
+        stance === "critical" && "border-rose-500/70 bg-rose-500/10 animate-critical-pulse",
         shakeClass,
       )}
     >
@@ -114,6 +138,15 @@ export const DuelFighter = memo(function DuelFighter({
           <span className={cn("pointer-events-none absolute inset-y-4 z-20 w-20 animate-slash-hit", mine ? "-right-3" : "-left-3")} />
         </>
       ) : null}
+      {stance === "critical" ? (
+        <span
+          className="pointer-events-none absolute -top-2.5 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white shadow-lg animate-critical-badge"
+          role="status"
+        >
+          ⚠️ {mine ? "Bạn sắp gục!" : "Đối thủ sắp gục!"}
+        </span>
+      ) : null}
+
       <div className="pointer-events-none absolute inset-x-0 -top-2 z-10 flex flex-col items-center">
         {fx.map((f) => (
           <span

@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { seededRollDurations } from "@/lib/arena/seed";
+import { sfxDiceRoll, sfxDiceSettle } from "@/lib/arena/sfx";
+
+
 /** Vị trí chấm của từng mặt xúc xắc (lưới 3x3). */
 const PIPS: Record<number, number[]> = {
   1: [4],
@@ -65,26 +69,49 @@ function Cube({ value, rollMs }: { value: number; rollMs: number }) {
 
 /**
  * Màn tung xúc xắc: KHÔNG làm mờ màn hình để vẫn nhìn rõ animation chiến đấu.
- * Thời gian lăn của mỗi viên được random nhẹ để tạo cảm giác hồi hộp.
+ *
+ * Nhịp lăn được sinh từ `seed` do máy chủ cấp (mã phòng + lượt + mốc chốt lượt)
+ * nên HAI NGƯỜI CHƠI thấy xúc xắc lăn cùng nhịp, dừng cùng lúc, cùng giá trị.
  */
-export function BattleDice({ dice }: { dice: number[] }) {
-  // Random một lần cho mỗi lượt tung (đổi khi bộ số đổi).
+export function BattleDice({
+  dice,
+  seed = "",
+  /** Tổng thời gian công bố của máy chủ (ms) — xúc xắc phải dừng trước mốc này. */
+  budgetMs = 1_600,
+  /** Máy yếu / giảm chuyển động thì lăn ngắn lại. */
+  quality = "high",
+}: {
+  dice: number[];
+  seed?: string;
+  budgetMs?: number;
+  quality?: "high" | "low" | "min";
+}) {
   const rolls = useMemo(
-    () => dice.map((_, i) => 650 + Math.round(Math.random() * 500) + i * 260),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dice.join("-")],
+    () =>
+      seededRollDurations(
+        `${seed}:${dice.join("-")}`,
+        dice.length,
+        quality === "min" ? 500 : quality === "low" ? 1_000 : budgetMs,
+      ),
+    [seed, dice, budgetMs, quality],
   );
   const settleAt = rolls.length ? Math.max(...rolls) : 0;
   const [showTotal, setShowTotal] = useState(false);
   useEffect(() => {
     if (dice.length !== 2) return;
     setShowTotal(false);
+    rolls.forEach((ms, i) => sfxDiceRoll(i, ms));
+    const settle = window.setTimeout(() => sfxDiceSettle(dice[0]! + dice[1]!), settleAt);
     const id = window.setTimeout(() => setShowTotal(true), settleAt + 120);
-    return () => window.clearTimeout(id);
-  }, [dice, settleAt]);
+    return () => {
+      window.clearTimeout(id);
+      window.clearTimeout(settle);
+    };
+  }, [dice, settleAt, rolls]);
 
   if (dice.length !== 2) return null;
-  const total = dice[0] + dice[1];
+  const total = dice[0]! + dice[1]!;
+
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-[calc(4rem+env(safe-area-inset-top))] z-40 grid place-items-center">
@@ -94,8 +121,9 @@ export function BattleDice({ dice }: { dice: number[] }) {
         aria-live="assertive"
       >
         {dice.map((value, index) => (
-          <Cube key={index} value={value} rollMs={rolls[index]} />
+          <Cube key={index} value={value} rollMs={rolls[index]!} />
         ))}
+
         <p
           className={
             "font-mono text-base font-black transition-all duration-300 " +

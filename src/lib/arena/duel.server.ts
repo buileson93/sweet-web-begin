@@ -47,10 +47,10 @@ import {
 } from "@/lib/grading";
 import type { Blueprint } from "@/lib/questionKinds";
 
-/** Thời gian đếm ngược trước khi vào câu đầu tiên (ms). */
-const COUNTDOWN_MS = 3_000;
-/** Cho phép vào trận sớm tối đa 400ms khi đếm ngược vừa chạm 0 (khỏi trễ pha "GO"). */
-const COUNTDOWN_EARLY_MS = 400;
+/** Thời gian đếm ngược trước khi vào câu đầu tiên (ms) — vừa đủ nhịp 3-2-1. */
+const COUNTDOWN_MS = 2_600;
+/** Cho phép vào trận sớm khi đếm ngược vừa chạm 0 (khỏi trễ pha "GO"). */
+const COUNTDOWN_EARLY_MS = 650;
 /** Thời gian hiển thị đáp án giữa hai câu (ms) — client tự chạy, máy chủ không chờ. */
 const REVEAL_MS = 2_000;
 
