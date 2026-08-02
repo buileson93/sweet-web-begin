@@ -362,14 +362,17 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                 <SelectTrigger
                   id="quiz"
                   key={quizPulse}
-                  className={cn("relative overflow-hidden rounded-xl", quizPulse > 0 && "animate-tap-shake")}
+                  className={cn(
+                    "relative h-auto min-h-11 items-start overflow-hidden whitespace-normal rounded-xl py-2 text-left [&>span]:whitespace-normal [&>span]:overflow-visible",
+                    quizPulse > 0 && "animate-tap-shake",
+                  )}
                 >
                   <SelectValue placeholder="Chọn cuộc thi" />
                   {quizPulse > 0 ? <span className="tap-flash rounded-xl" aria-hidden /> : null}
                 </SelectTrigger>
                 <SelectContent
                   className="max-w-[calc(100vw-1.5rem)]"
-                  style={{ width: "var(--radix-select-trigger-width)" }}
+                  style={{ minWidth: "var(--radix-select-trigger-width)" }}
                 >
                   {quizzes.map((q) => {
                     const st = quizStatus(q);
@@ -390,8 +393,8 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                             <theme.Icon className="size-4" strokeWidth={2.6} />
                           </span>
                           <span className="min-w-0">
-                            <span className="block truncate font-bold leading-tight">{q.title}</span>
-                            <span className={cn("type-meta block truncate font-semibold", theme.text)}>
+                            <span className="block font-bold leading-tight break-words">{q.title}</span>
+                            <span className={cn("type-meta block font-semibold break-words", theme.text)}>
                               {q.question_count} câu • {q.duration_minutes} phút
                             </span>
                           </span>
