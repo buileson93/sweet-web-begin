@@ -128,14 +128,14 @@ export function SnapCarousel({
         aria-label={label}
         className={cn(
           "snap-row -mx-4 flex gap-3 px-4 pb-1",
-          "md:mx-0 md:grid md:gap-4 md:overflow-visible md:px-0 md:[scroll-snap-type:none]",
+          "md:mx-0 md:grid md:auto-rows-fr md:items-stretch md:gap-4 md:overflow-visible md:px-0 md:[scroll-snap-type:none]",
           gridClassName,
         )}
       >
         {items.map((child, i) => (
           <div
             key={i}
-            className={cn("snap-card min-w-0 shrink-0", itemWidth, "md:w-auto md:shrink")}
+            className={cn("snap-card flex min-w-0 shrink-0", itemWidth, "md:h-full md:w-auto md:shrink")}
             onClickCapture={() => {
               stats.current.clicked = true;
               stats.current.clickedIndex = i;
