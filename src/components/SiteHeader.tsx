@@ -28,9 +28,18 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "onDark"
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
-        <Link to="/" aria-label="Trang chủ" className="flex min-w-0 items-center gap-3">
+        <Link to="/" aria-label="Trang chủ" className="flex min-w-0 items-center gap-2.5">
           <BrandLogo />
+          <span
+            className={cn(
+              "min-w-0 truncate text-[0.7rem] font-extrabold uppercase tracking-tight sm:text-xs",
+              onDark ? "text-primary-foreground/90" : "text-muted-foreground",
+            )}
+          >
+            Đấu trường tri thức VATM
+          </span>
         </Link>
+
 
         <nav className="hidden items-center gap-1 text-sm font-medium md:flex">
           {links.map((l) => (
