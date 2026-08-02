@@ -194,6 +194,7 @@ function ExamPage() {
     answerFx,
     combo,
     comboEvent,
+    comboFx,
     instant,
     locked,
     handleAnswer,
@@ -321,7 +322,7 @@ function ExamPage() {
         answeredCount={answeredCount}
         total={total}
         combo={combo}
-        showCombo={instant && combo >= 2}
+        showCombo={instant && comboFx && combo >= 2}
         clock={clock}
         progress={progress}
         saveStatus={saveStatus}

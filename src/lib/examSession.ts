@@ -10,6 +10,7 @@ export const DEFAULT_EXAM_SETTINGS: ExamSettings = {
   allowFiftyFifty: false,
   allowSkip: false,
   streakBonus: false,
+  comboFx: true,
   showQuestionMap: true,
   passPercent: 50,
 };

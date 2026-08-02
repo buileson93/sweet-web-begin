@@ -1,0 +1,2 @@
+ALTER TABLE public.quizzes ADD COLUMN IF NOT EXISTS combo_fx boolean NOT NULL DEFAULT true;
+COMMENT ON COLUMN public.quizzes.combo_fx IS 'Hiển thị hiệu ứng combo (x2, x3...) dù có cộng điểm thưởng chuỗi hay không';

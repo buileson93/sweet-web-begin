@@ -17,6 +17,7 @@ export type QuizRow = {
   allow_fifty_fifty: boolean;
   allow_skip: boolean;
   streak_bonus: boolean;
+  combo_fx: boolean;
   instant_feedback: boolean;
   streak_step: number;
   streak_max_bonus: number;

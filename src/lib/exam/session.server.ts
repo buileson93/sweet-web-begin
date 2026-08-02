@@ -196,6 +196,7 @@ export async function startExamSession(input: {
       allowFiftyFifty: quiz.allow_fifty_fifty,
       allowSkip: quiz.allow_skip,
       streakBonus: quiz.streak_bonus,
+      comboFx: quiz.combo_fx ?? true,
       showQuestionMap: quiz.show_question_map,
       passPercent: quiz.pass_percent || PASS_PERCENT_DEFAULT,
     },
