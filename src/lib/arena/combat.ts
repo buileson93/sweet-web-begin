@@ -24,6 +24,9 @@ export const COMBO_STEP = 3;
 export const COMBO_MAX_STEPS = 5;
 /** Sát thương cộng thêm tối đa nhờ trả lời nhanh. */
 export const MAX_SPEED_DAMAGE = 5;
+/** Máu bị trừ cho MỖI người khi cả hai cùng bỏ trống câu hỏi (không ai chịu trả lời). */
+export const TIMEOUT_HP_LOSS = 10;
+
 
 /** Nguồn ngẫu nhiên (tách ra để kiểm thử được). */
 export type Rng = () => number;
