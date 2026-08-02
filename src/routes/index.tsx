@@ -280,7 +280,7 @@ function HomePage() {
             </Link>
           </div>
 
-          <div className="stagger grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="stagger grid grid-cols-2 gap-3 sm:gap-4 lg:hidden">
             <StatTile label="Lượt thi" value={countQuery.isLoading ? "…" : String(countQuery.data ?? 0)} />
             <StatTile
               label="Đang mở"
