@@ -842,30 +842,31 @@ function ProfileStrip({ profile }: { profile: ArenaProfile }) {
     { icon: Coins, label: "Xu", value: profile.coins },
   ];
   return (
-    <div className="arena-panel arena-radar p-4">
-      <div className="relative flex flex-wrap items-center gap-3">
+    <div className="arena-panel arena-radar p-3 sm:p-4">
+      {/* Một hàng duy nhất trên điện thoại: tên + 4 chỉ số, không đẩy nội dung xuống dưới. */}
+      <div className="relative grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2.5 sm:flex sm:flex-wrap sm:gap-3">
         <ArenaSelfAvatar profile={profile} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-semibold">{profile.displayName}</p>
+        <div className="min-w-0 sm:flex-1">
+          <p className="truncate text-sm font-semibold sm:text-base">{profile.displayName}</p>
           <p className="truncate text-xs text-muted-foreground">{profile.unit}</p>
         </div>
-        <div className="grid w-full grid-cols-4 gap-2 sm:w-auto">
+        <div className="col-span-2 grid w-full grid-cols-4 gap-1.5 sm:col-auto sm:w-auto sm:gap-2">
           {items.map((it) => (
-            <div key={it.label} className="stat-chip">
-              <it.icon className="size-4 text-primary" />
+            <div key={it.label} className="stat-chip px-1.5 py-1">
+              <it.icon className="size-3.5 text-primary" />
               <p className="text-sm font-bold tabular-nums">{it.value}</p>
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{it.label}</p>
+              <p className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">{it.label}</p>
             </div>
           ))}
         </div>
       </div>
       {profile.badges.length ? (
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="scrollbar-none -mx-1 mt-2 flex gap-1.5 overflow-x-auto px-1 pb-0.5 sm:flex-wrap sm:overflow-visible">
           {profile.badges.map((b) => (
             <span
               key={b.code}
               title={b.name}
-              className="rounded-full border bg-background px-2 py-0.5 text-xs"
+              className="shrink-0 rounded-full border bg-background px-2 py-0.5 text-xs"
             >
               {b.icon} {b.name}
             </span>
@@ -874,4 +875,5 @@ function ProfileStrip({ profile }: { profile: ArenaProfile }) {
       ) : null}
     </div>
   );
+
 }
