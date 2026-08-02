@@ -324,7 +324,7 @@ function HomePage() {
                     type="button"
                     onClick={() => navigate({ to: "/cuoc-thi/$quizId", params: { quizId: q.id } })}
                     className={cn(
-                      "game-card quiz-card group relative min-w-0 overflow-hidden p-4 text-left sm:p-5 md:w-auto w-full",
+                      "game-card quiz-card group relative flex min-w-0 flex-col overflow-hidden p-4 text-left sm:p-5 md:h-full md:w-auto w-full",
                       st === "closed" && "opacity-70",
                     )}
                   >
@@ -366,10 +366,10 @@ function HomePage() {
                         {q.duration_minutes}′
                       </span>
                     </span>
-                    <h3 className="type-h3 relative mt-3 line-clamp-2 break-words text-pretty pr-1 transition-colors group-hover:text-primary">
+                    <h3 className="type-h3 relative mt-3 line-clamp-2 break-words text-pretty pr-1 transition-colors group-hover:text-primary md:min-h-[2.8em]">
                       {q.title}
                     </h3>
-                    <span className="relative mt-4 flex items-center justify-between border-t border-border pt-3">
+                    <span className="relative mt-4 flex items-center justify-between border-t border-border pt-3 md:mt-auto md:pt-4">
                       <span className="min-w-0">
                         <span className="type-meta block truncate">
                           {q.question_count} câu • {formatDateTime(q.start_time)}
