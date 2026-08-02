@@ -84,7 +84,7 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
           <div className="lg:hidden">
             <SiteHeader />
           </div>
-          <main className="min-w-0 flex-1 overflow-x-clip px-[calc(1rem+env(safe-area-inset-left))] pb-[calc(5.25rem+env(safe-area-inset-bottom))] pt-5 sm:px-[calc(1.5rem+env(safe-area-inset-left))] lg:px-10 lg:py-10 lg:pb-10">
+          <main className="min-w-0 flex-1 overflow-x-clip px-[calc(1rem+env(safe-area-inset-left))] pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 sm:px-[calc(1.5rem+env(safe-area-inset-left))] lg:px-10 lg:py-10 lg:pb-10">
             {children}
           </main>
           <div className="hidden lg:block">
@@ -103,16 +103,15 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
               <li key={item.to}>
                 <Link
                   to={item.to}
-                  
                   aria-label={item.label}
-                  className="flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors active:scale-95"
+                  className="group flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] font-medium text-muted-foreground transition-colors active:scale-95"
                   activeProps={{ className: "text-primary" }}
                   activeOptions={{ exact: item.to === "/" }}
                 >
-                  <span className="relative">
+                  <span className="relative grid h-8 w-14 place-items-center rounded-full transition-colors group-data-[status=active]:bg-primary/12">
                     <item.icon className="size-5" strokeWidth={2} absoluteStrokeWidth />
                     {"beta" in item && item.beta ? (
-                      <BetaBadge compact className="absolute -right-4 -top-2" />
+                      <BetaBadge compact className="absolute -right-1 -top-1" />
                     ) : null}
                   </span>
                   <span className="truncate">{item.label}</span>
@@ -120,6 +119,7 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
               </li>
             ))}
           </ul>
+
         </nav>
 
         {/* Panel phụ */}
