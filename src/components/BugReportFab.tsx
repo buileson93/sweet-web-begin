@@ -157,7 +157,7 @@ function BugReportDialog({
           />
           <Textarea
             className="min-h-28 rounded-xl"
-            placeholder="Bạn đang làm gì thì gặp lỗi? Màn hình hiển thị ra sao?"
+            placeholder="Bạn đang thao tác gì, màn hình hiển thị ra sao? Càng rõ ràng, chúng tôi càng khắc phục nhanh được."
             value={description}
             maxLength={4000}
             onChange={(e) => setDescription(e.target.value)}
