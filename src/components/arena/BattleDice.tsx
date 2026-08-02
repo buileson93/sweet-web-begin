@@ -121,8 +121,9 @@ export function BattleDice({
         aria-live="assertive"
       >
         {dice.map((value, index) => (
-          <Cube key={index} value={value} rollMs={rolls[index]} />
+          <Cube key={index} value={value} rollMs={rolls[index]!} />
         ))}
+
         <p
           className={
             "font-mono text-base font-black transition-all duration-300 " +
