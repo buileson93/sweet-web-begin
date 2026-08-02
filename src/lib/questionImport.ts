@@ -7,6 +7,8 @@ import type { ParsedQuestion } from "@/lib/docxParse";
 import { normalizeText, type Difficulty, type QuestionKind } from "@/lib/questionKinds";
 import { validateQuestionDraft } from "@/lib/questionValidation";
 
+export type ImportPair = { left: string; right: string };
+
 export type ImportDraft = {
   /** Dòng/thứ tự trong tệp nguồn, dùng để báo lỗi. */
   line: number;
@@ -18,10 +20,27 @@ export type ImportDraft = {
   points: number;
   explanation: string;
   tags: string[];
+  /** Câu nhiều đáp án: danh sách chỉ số đúng. */
+  correct_indices?: number[];
+  /** Câu điền đáp án: các đáp án được chấp nhận. */
+  accepted_answers?: string[];
+  /** Câu nối cặp. */
+  pairs?: ImportPair[];
+  /** Câu sắp xếp: thứ tự đúng theo chỉ số phương án. */
+  correct_order?: number[];
+  /** Giải thích riêng cho từng phương án (song song với `options`). */
+  option_explanations?: string[];
+  /** Mô tả ảnh minh hoạ cho trình đọc màn hình. */
+  image_alt?: string;
+  /** Giới hạn thời gian riêng của câu (giây); null = dùng giờ chung. */
+  time_limit_seconds?: number | null;
+  /** Thứ tự hiển thị khi cuộc thi tắt xáo trộn câu hỏi. */
+  order_index?: number;
   /** Chỉ số ảnh trong tệp .docx (lớp UI sẽ đổi thành tệp thật). */
   imageRef?: number | null;
   optionImageRefs?: (number | null)[];
 };
+
 
 export type ImportStatus = "ok" | "warn" | "error";
 
