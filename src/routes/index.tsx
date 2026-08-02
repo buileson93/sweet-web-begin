@@ -328,7 +328,7 @@ function HomePage() {
                     type="button"
                     onClick={() => navigate({ to: "/cuoc-thi/$quizId", params: { quizId: q.id } })}
                     className={cn(
-                      "game-card quiz-card group relative flex min-w-0 flex-col overflow-hidden p-4 text-left sm:p-5 md:h-full md:w-auto w-full md:flex-row md:items-center md:gap-6 md:px-6",
+                      "game-card quiz-card group relative flex min-w-0 flex-col overflow-hidden p-4 text-left sm:p-5 md:h-full md:w-full w-full md:flex-row md:items-center md:gap-6 md:px-6",
                       st === "closed" && "opacity-70",
                     )}
                   >
