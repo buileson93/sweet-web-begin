@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArenaHero, ArenaPage } from "@/components/arena/ArenaPage";
 import { SectionHeading } from "@/components/ui-kit";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
   arenaEndActive,
@@ -330,6 +331,7 @@ function ArenaLobby() {
     );
 
   const profile = home?.profile;
+  const onlineCount = presence?.online.length ?? 0;
   return (
     <ArenaPage>
       <ArenaHero
@@ -343,7 +345,7 @@ function ArenaLobby() {
         aside={
           <Button asChild variant="secondary" size="sm" className="rounded-full">
             <Link to="/dau-truong/thong-ke">
-              <BarChart3 className="mr-2 size-4" /> Thống kê
+              <BarChart3 className="mr-1.5 size-4" /> Thống kê
             </Link>
           </Button>
         }
@@ -362,104 +364,96 @@ function ArenaLobby() {
       {profile ? <ProfileStrip profile={profile} /> : null}
 
       {presence?.active ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-400/60 bg-amber-500/10 p-4">
-          <PlayCircle className="size-5 text-amber-600" />
-          <p className="min-w-0 flex-1 text-sm font-medium">
-            Bạn đang trong một ván so tài với {presence.active.opponent}.
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-amber-400/60 bg-amber-500/10 p-3 sm:flex sm:flex-wrap">
+          <p className="flex min-w-0 items-center gap-2 text-sm font-medium">
+            <PlayCircle className="size-4 shrink-0 text-amber-600" />
+            <span className="truncate">Đang so tài với {presence.active.opponent}</span>
           </p>
-          <Button
-            size="sm"
-            onClick={() =>
-              void navigate({
-                to: "/dau-truong/$duelId",
-                params: { duelId: presence.active!.duelId },
-              })
-            }
-          >
-            Vào tiếp
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={ending}
-            onClick={async () => {
-              setEnding(true);
-              try {
-                await endActive({ data: { token } });
-                setPresence({ ...presence, active: null });
-                toast.success("Đã kết thúc ván so tài dang dở.");
-              } catch (e) {
-                toast.error(e instanceof Error ? e.message : "Không kết thúc được.");
-              } finally {
-                setEnding(false);
+          <div className="flex shrink-0 gap-2">
+            <Button
+              size="sm"
+              onClick={() =>
+                void navigate({
+                  to: "/dau-truong/$duelId",
+                  params: { duelId: presence.active!.duelId },
+                })
               }
-            }}
-          >
-            {ending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <LogOut className="mr-2 size-4" />}
-            Kết thúc
-          </Button>
+            >
+              Vào tiếp
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={ending}
+              onClick={async () => {
+                setEnding(true);
+                try {
+                  await endActive({ data: { token } });
+                  setPresence({ ...presence, active: null });
+                  toast.success("Đã kết thúc ván so tài dang dở.");
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Không kết thúc được.");
+                } finally {
+                  setEnding(false);
+                }
+              }}
+            >
+              {ending ? <Loader2 className="mr-1.5 size-4 animate-spin" /> : <LogOut className="mr-1.5 size-4" />}
+              Kết thúc
+            </Button>
+          </div>
         </div>
       ) : null}
 
-      <div className="flex flex-col items-center gap-3">
+      {/* Hai lối chơi chính nằm gọn trong một màn hình điện thoại, không phải cuộn tìm. */}
+      <div className="grid gap-2.5 sm:grid-cols-2">
         {searching ? (
-          <div className="flex flex-col items-center gap-2">
-            <Button size="lg" variant="secondary" onClick={() => setSearching(false)}>
-              <X className="mr-2 size-4" /> Huỷ tìm đối thủ
+          <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-primary/40 bg-primary/5 p-3">
+            <Button size="sm" variant="secondary" className="rounded-full" onClick={() => setSearching(false)}>
+              <X className="mr-1.5 size-4" /> Huỷ tìm đối thủ
             </Button>
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> Đang tìm đối thủ cùng trình độ…
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="size-3.5 animate-spin" /> Đang tìm đối thủ cùng trình độ…
             </p>
           </div>
         ) : (
-          <Button
-            size="lg"
-            className="cta-glow pulse-ready h-14 rounded-full px-10 text-lg"
+          <button
+            type="button"
             disabled={Boolean(presence?.active)}
             onClick={() => {
               waitedRef.current = 0;
               setSearching(true);
             }}
+            className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/20 via-card to-card p-3.5 text-left transition hover:-translate-y-0.5 hover:border-primary hover:shadow-lg disabled:pointer-events-none disabled:opacity-60"
           >
-            <Zap className="mr-2 size-5" /> So tài nhanh
-          </Button>
+            <span className="cta-glow grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+              <Zap className="size-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold">So tài nhanh</span>
+              <span className="type-meta block truncate">Ghép cặp tự động theo Elo · 5 câu</span>
+            </span>
+            <ArrowRight className="ml-auto size-4 shrink-0 text-primary transition-transform group-hover:translate-x-1" />
+          </button>
         )}
+
+        {/* Lối vào Tháp Không Lưu — gọn ngang, vẫn nổi bật ngay đầu trang. */}
+        <Link
+          to="/dau-truong/leo-thap"
+          className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-amber-400/15 via-card to-card p-3.5 transition hover:-translate-y-0.5 hover:border-primary hover:shadow-lg"
+        >
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-amber-500/15 text-amber-600">
+            <Castle className="size-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="flex items-center gap-1.5 text-sm font-bold">
+              Tháp Không Lưu <DueBadge />
+            </span>
+            <span className="type-meta block truncate">Ôn nghiệp vụ 12 tầng · không tính vào kỳ thi</span>
+          </span>
+          <ArrowRight className="ml-auto size-4 shrink-0 text-primary transition-transform group-hover:translate-x-1" />
+        </Link>
       </div>
-
-      <ClassPicker value={classId} onChange={chooseClass} disabled={searching} />
-
-      <ShareChallenge token={token} />
-
-      {/* Lối vào Tháp Không Lưu — đặt nổi bật để ai cũng thấy ngay khi vào sảnh. */}
-      <Link
-        to="/dau-truong/leo-thap"
-        className="group relative block overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-lg"
-      >
-        <Castle
-          aria-hidden
-          className="pointer-events-none absolute -right-6 -top-6 size-32 text-primary/10 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6"
-        />
-        <div className="relative flex flex-wrap items-center gap-2">
-          <Castle className="size-5 text-primary" />
-          <h3 className="text-base font-bold">Tháp Không Lưu (TWR ATC)</h3>
-          <DueBadge />
-        </div>
-        <p className="relative mt-1 max-w-xl text-sm text-muted-foreground">
-          Ôn nghiệp vụ điều hành bay theo lịch lặp lại ngắt quãng — 5 tầng từ sân đỗ lên đường dài,
-          mỗi ca trực khoảng 12–15 phút và không tính vào kết quả kỳ thi.
-        </p>
-        <span className="relative mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
-          Vào ca trực
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-        </span>
-      </Link>
-
-      <PracticePanel
-        token={token}
-        classId={classId}
-        disabled={Boolean(presence?.active) || searching}
-        onStarted={(duelId) => void navigate({ to: "/dau-truong/$duelId", params: { duelId } })}
-      />
 
       <InviteDialog
         invite={
@@ -484,132 +478,172 @@ function ArenaLobby() {
         }}
       />
 
-      <OnlineList
-        token={token}
-        players={presence?.online ?? []}
-        disabled={Boolean(presence?.active)}
-      />
-
-
-      {home?.invites.incoming.length ? (
-        <section className="space-y-2">
-          <SectionHeading title="Lời mời thách đấu" />
-          {home.invites.incoming.map((inv) => (
-            <div
-              key={inv.id}
-              className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3"
-            >
-              <span className="font-medium">{inv.from_name} thách đấu bạn</span>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={async () => {
-                    const res = await respond({
-                      data: { token, inviteId: inv.id, accept: true, deviceHash: getDeviceId() },
-                    });
-                    if (res.duelId)
-                      void navigate({ to: "/dau-truong/$duelId", params: { duelId: res.duelId } });
-                  }}
-                >
-                  Nhận
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() =>
-                    void respond({ data: { token, inviteId: inv.id, accept: false } }).then(() =>
-                      toast.message("Đã từ chối lời mời."),
-                    )
-                  }
-                >
-                  Từ chối
-                </Button>
-              </div>
-            </div>
-          ))}
-        </section>
-      ) : null}
-
-      <ChallengeByName token={token} />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="space-y-2">
-          <SectionHeading title="Bảng xếp hạng Elo" />
-          <ol className="space-y-1.5">
-            {(home?.leaderboard.players ?? []).map((p, i) => (
-              <li
-                key={`${p.rank}-${p.short_name}`}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl border bg-card px-3 py-2",
-                  i === 0 && "border-amber-400/60 bg-amber-500/10",
-                )}
-              >
-                <span className="w-6 text-center font-bold text-muted-foreground">{i + 1}</span>
-                <AvatarBubble name={p.short_name ?? ""} size="xs" live />
-                <span className="min-w-0 flex-1 truncate font-medium">{p.short_name}</span>
-                <span className="text-xs text-muted-foreground">{p.unit}</span>
-                <span className="font-mono font-semibold text-primary">{p.elo}</span>
-              </li>
-            ))}
-            {!home?.leaderboard.players.length ? (
-              <li className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
-                Chưa có ai lên bảng. Hãy là người đầu tiên!
-              </li>
+      {/*
+        Ba nhóm nội dung gộp vào thẻ chuyển tab: điện thoại chỉ cuộn trong một nhóm,
+        máy tính vẫn thấy đủ nhờ lưới hai cột bên trong.
+      */}
+      <Tabs defaultValue="vao-tran" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 rounded-xl">
+          <TabsTrigger value="vao-tran" className="text-xs sm:text-sm">
+            Vào trận
+          </TabsTrigger>
+          <TabsTrigger value="doi-thu" className="text-xs sm:text-sm">
+            Đối thủ
+            {onlineCount ? (
+              <span className="ml-1 rounded-full bg-primary/15 px-1.5 text-[10px] font-bold text-primary">
+                {onlineCount}
+              </span>
             ) : null}
-          </ol>
-        </section>
+          </TabsTrigger>
+          <TabsTrigger value="xep-hang" className="text-xs sm:text-sm">
+            Xếp hạng
+          </TabsTrigger>
+        </TabsList>
 
-        <section className="space-y-2">
-          <SectionHeading title="So tài gần đây" />
-          <ul className="space-y-1.5">
-            {(home?.history ?? []).map((h) => (
-              <li
-                key={h.duelId}
-                className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2 text-sm"
-              >
-                <span
-                  className={cn(
-                    "rounded-md px-2 py-0.5 text-xs font-semibold",
-                    h.won
-                      ? "bg-emerald-500/15 text-emerald-600"
-                      : h.draw
-                        ? "bg-muted text-muted-foreground"
-                        : "bg-rose-500/15 text-rose-600",
-                  )}
+        <TabsContent value="vao-tran" className="mt-3 space-y-3">
+          <ClassPicker value={classId} onChange={chooseClass} disabled={searching} />
+          <PracticePanel
+            token={token}
+            classId={classId}
+            disabled={Boolean(presence?.active) || searching}
+            onStarted={(duelId) => void navigate({ to: "/dau-truong/$duelId", params: { duelId } })}
+          />
+          <ShareChallenge token={token} />
+        </TabsContent>
+
+        <TabsContent value="doi-thu" className="mt-3 space-y-3">
+          {home?.invites.incoming.length ? (
+            <section className="space-y-2">
+              <SectionHeading title="Lời mời thách đấu" />
+              {home.invites.incoming.map((inv) => (
+                <div
+                  key={inv.id}
+                  className="flex items-center justify-between gap-2 rounded-xl border bg-card px-3 py-2"
                 >
-                  {h.won ? "Thắng" : h.draw ? "Hoà" : "Thua"}
-                </span>
-                <span className="min-w-0 flex-1 truncate">vs {h.opponent}</span>
-                <span className="font-mono">
-                  {h.score}–{h.opponentScore}
-                </span>
-                <span
-                  className={cn(
-                    "w-12 text-right font-mono",
-                    h.eloDelta >= 0 ? "text-emerald-600" : "text-rose-600",
-                  )}
-                >
-                  {h.eloDelta >= 0 ? "+" : ""}
-                  {h.eloDelta}
-                </span>
-                <Button asChild size="sm" variant="ghost" className="shrink-0">
-                  <Link to="/dau-truong/xem-lai/$duelId" params={{ duelId: h.duelId }}>
-                    Xem lại
-                  </Link>
-                </Button>
-              </li>
-            ))}
-            {!home?.history.length ? (
-              <li className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
-                Chưa có ván so tài nào.
-              </li>
-            ) : null}
-          </ul>
-        </section>
-      </div>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    {inv.from_name} thách đấu bạn
+                  </span>
+                  <div className="flex shrink-0 gap-1.5">
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        const res = await respond({
+                          data: { token, inviteId: inv.id, accept: true, deviceHash: getDeviceId() },
+                        });
+                        if (res.duelId)
+                          void navigate({ to: "/dau-truong/$duelId", params: { duelId: res.duelId } });
+                      }}
+                    >
+                      Nhận
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        void respond({ data: { token, inviteId: inv.id, accept: false } }).then(() =>
+                          toast.message("Đã từ chối lời mời."),
+                        )
+                      }
+                    >
+                      Từ chối
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </section>
+          ) : null}
+
+          <OnlineList
+            token={token}
+            players={presence?.online ?? []}
+            disabled={Boolean(presence?.active)}
+          />
+
+          <ChallengeByName token={token} />
+        </TabsContent>
+
+        <TabsContent value="xep-hang" className="mt-3">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <section className="space-y-2">
+              <SectionHeading title="Bảng xếp hạng Elo" />
+              <ol className="space-y-1.5">
+                {(home?.leaderboard.players ?? []).map((p, i) => (
+                  <li
+                    key={`${p.rank}-${p.short_name}`}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-xl border bg-card px-2.5 py-1.5",
+                      i === 0 && "border-amber-400/60 bg-amber-500/10",
+                    )}
+                  >
+                    <span className="w-5 text-center text-sm font-bold text-muted-foreground">{i + 1}</span>
+                    <AvatarBubble name={p.short_name ?? ""} size="xs" live />
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.short_name}</span>
+                    <span className="hidden max-w-24 truncate text-xs text-muted-foreground sm:block">{p.unit}</span>
+                    <span className="font-mono text-sm font-semibold text-primary">{p.elo}</span>
+                  </li>
+                ))}
+                {!home?.leaderboard.players.length ? (
+                  <li className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
+                    Chưa có ai lên bảng. Hãy là người đầu tiên!
+                  </li>
+                ) : null}
+              </ol>
+            </section>
+
+            <section className="space-y-2">
+              <SectionHeading title="So tài gần đây" />
+              <ul className="space-y-1.5">
+                {(home?.history ?? []).map((h) => (
+                  <li
+                    key={h.duelId}
+                    className="flex items-center gap-2 rounded-xl border bg-card px-2.5 py-1.5 text-sm"
+                  >
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-semibold",
+                        h.won
+                          ? "bg-emerald-500/15 text-emerald-600"
+                          : h.draw
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-rose-500/15 text-rose-600",
+                      )}
+                    >
+                      {h.won ? "Thắng" : h.draw ? "Hoà" : "Thua"}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">vs {h.opponent}</span>
+                    <span className="shrink-0 font-mono text-xs">
+                      {h.score}–{h.opponentScore}
+                    </span>
+                    <span
+                      className={cn(
+                        "w-9 shrink-0 text-right font-mono text-xs",
+                        h.eloDelta >= 0 ? "text-emerald-600" : "text-rose-600",
+                      )}
+                    >
+                      {h.eloDelta >= 0 ? "+" : ""}
+                      {h.eloDelta}
+                    </span>
+                    <Button asChild size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs">
+                      <Link to="/dau-truong/xem-lai/$duelId" params={{ duelId: h.duelId }}>
+                        Xem lại
+                      </Link>
+                    </Button>
+                  </li>
+                ))}
+                {!home?.history.length ? (
+                  <li className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
+                    Chưa có ván so tài nào.
+                  </li>
+                ) : null}
+              </ul>
+            </section>
+          </div>
+        </TabsContent>
+      </Tabs>
     </ArenaPage>
   );
 }
+
 
 /** Danh sách đồng nghiệp đang trực tuyến (máy chủ xác nhận qua nhịp tim). */
 function OnlineList({
@@ -808,30 +842,31 @@ function ProfileStrip({ profile }: { profile: ArenaProfile }) {
     { icon: Coins, label: "Xu", value: profile.coins },
   ];
   return (
-    <div className="arena-panel arena-radar p-4">
-      <div className="relative flex flex-wrap items-center gap-3">
+    <div className="arena-panel arena-radar p-3 sm:p-4">
+      {/* Một hàng duy nhất trên điện thoại: tên + 4 chỉ số, không đẩy nội dung xuống dưới. */}
+      <div className="relative grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2.5 sm:flex sm:flex-wrap sm:gap-3">
         <ArenaSelfAvatar profile={profile} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-semibold">{profile.displayName}</p>
+        <div className="min-w-0 sm:flex-1">
+          <p className="truncate text-sm font-semibold sm:text-base">{profile.displayName}</p>
           <p className="truncate text-xs text-muted-foreground">{profile.unit}</p>
         </div>
-        <div className="grid w-full grid-cols-4 gap-2 sm:w-auto">
+        <div className="col-span-2 grid w-full grid-cols-4 gap-1.5 sm:col-auto sm:w-auto sm:gap-2">
           {items.map((it) => (
-            <div key={it.label} className="stat-chip">
-              <it.icon className="size-4 text-primary" />
+            <div key={it.label} className="stat-chip px-1.5 py-1">
+              <it.icon className="size-3.5 text-primary" />
               <p className="text-sm font-bold tabular-nums">{it.value}</p>
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{it.label}</p>
+              <p className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">{it.label}</p>
             </div>
           ))}
         </div>
       </div>
       {profile.badges.length ? (
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="scrollbar-none -mx-1 mt-2 flex gap-1.5 overflow-x-auto px-1 pb-0.5 sm:flex-wrap sm:overflow-visible">
           {profile.badges.map((b) => (
             <span
               key={b.code}
               title={b.name}
-              className="rounded-full border bg-background px-2 py-0.5 text-xs"
+              className="shrink-0 rounded-full border bg-background px-2 py-0.5 text-xs"
             >
               {b.icon} {b.name}
             </span>
@@ -840,4 +875,5 @@ function ProfileStrip({ profile }: { profile: ArenaProfile }) {
       ) : null}
     </div>
   );
+
 }
