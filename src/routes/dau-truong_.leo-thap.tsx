@@ -48,6 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SectionHeading } from "@/components/ui-kit";
+import { ArenaActionBar } from "@/components/arena/ArenaActionBar";
 import { ArenaHero, ArenaPage } from "@/components/arena/ArenaPage";
 import { readExamEntry } from "@/lib/examSession";
 import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
@@ -1372,7 +1373,7 @@ function TowerPage() {
       {/* Phòng xử lý tình huống / tình huống phức tạp / sự cố lớn */}
       {run && !summary && !outcome && run.room && perRoom > 0 && question && (
         <section
-          className="space-y-4 rounded-2xl border bg-card/70 p-5"
+          className="space-y-3 rounded-2xl border bg-card/70 p-3 pb-16 sm:space-y-4 sm:p-5 lg:pb-5"
           aria-label={`${boss ? boss.name : ROOM_META[run.room.kind].label} — câu ${idx + 1} trên ${perRoom}`}
         >
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -1461,7 +1462,8 @@ function TowerPage() {
             }}
           />
 
-          <div className="flex flex-wrap justify-end gap-2">
+          {/* Máy tính: hàng nút nằm ngay dưới câu hỏi. */}
+          <div className="hidden flex-wrap justify-end gap-2 lg:flex">
             <Button variant="outline" disabled={idx <= 0} onClick={() => setIdx((i) => Math.max(0, i - 1))}>
               <ArrowLeft className="mr-2 size-4" /> Câu trước
             </Button>
@@ -1472,6 +1474,37 @@ function TowerPage() {
             ) : (
               <Button onClick={() => (blanks > 0 ? setConfirmClose(true) : closeRoom(answers))}>Chốt phòng</Button>
             )}
+          </div>
+
+          {/* Điện thoại: đưa nút vào vùng ngón cái, nằm ngay trên thanh tab. */}
+          <div className="lg:hidden">
+            <ArenaActionBar>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-11 shrink-0 rounded-xl"
+                aria-label="Câu trước"
+                disabled={idx <= 0}
+                onClick={() => setIdx((i) => Math.max(0, i - 1))}
+              >
+                <ArrowLeft className="size-4" />
+              </Button>
+              <span className="shrink-0 rounded-xl border px-3 py-2 font-mono text-xs text-muted-foreground">
+                {idx + 1}/{perRoom}
+              </span>
+              {idx < perRoom - 1 ? (
+                <Button className="h-11 flex-1 rounded-xl" onClick={() => setIdx((i) => i + 1)}>
+                  Câu tiếp theo <ArrowRight className="ml-2 size-4" />
+                </Button>
+              ) : (
+                <Button
+                  className="h-11 flex-1 rounded-xl"
+                  onClick={() => (blanks > 0 ? setConfirmClose(true) : closeRoom(answers))}
+                >
+                  Chốt phòng
+                </Button>
+              )}
+            </ArenaActionBar>
           </div>
         </section>
       )}

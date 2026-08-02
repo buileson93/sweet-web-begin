@@ -17,7 +17,7 @@ import { WaitStatus } from "@/components/arena/WaitStatus";
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
 import { ArenaActionBar } from "@/components/arena/ArenaActionBar";
-import { PageContainer } from "@/components/ui-kit";
+import { ArenaPage } from "@/components/arena/ArenaPage";
 import { useDuelChannel } from "@/hooks/useDuelChannel";
 import {
   arenaAnswer,
@@ -249,7 +249,7 @@ function DuelRoom() {
 
   if (!token || !state)
     return (
-      <PageContainer className="grid min-h-[60vh] place-items-center">
+      <ArenaPage className="grid min-h-[60vh] place-items-center">
         {error ? (
           <div className="text-center">
             <p className="text-destructive">{error}</p>
@@ -274,14 +274,14 @@ function DuelRoom() {
             </p>
           </div>
         )}
-      </PageContainer>
+      </ArenaPage>
     );
 
   return (
-    <PageContainer className="space-y-4 py-4 pb-[calc(11rem+env(safe-area-inset-bottom))] lg:pb-[calc(7rem+env(safe-area-inset-bottom))]">
+    <ArenaPage className="space-y-3 pb-16 sm:space-y-4 lg:pb-8">
       <header
         className={cn(
-          "flex items-center gap-3",
+          "flex items-stretch gap-1.5 sm:gap-3",
           camShake >= 16 ? "animate-cam-shake-hard" : camShake > 0 ? "animate-cam-shake" : "",
         )}
       >
@@ -293,7 +293,7 @@ function DuelRoom() {
           skill={state.lastResult?.lines.find((l) => l.employeeId === me?.employeeId)?.skill}
           foeClassId={foe?.classId}
         />
-        <div className="flex w-16 shrink-0 flex-col items-center gap-1 text-center text-xs text-muted-foreground sm:w-auto">
+        <div className="flex w-12 shrink-0 flex-col items-center justify-center gap-1 text-center text-[10px] leading-tight text-muted-foreground sm:w-auto sm:text-xs">
           <Swords className="size-5 text-primary" />
           <span className="leading-tight">
             Câu {Math.min(state.currentRound + 1, state.roundCount)}/{state.roundCount}
@@ -475,7 +475,7 @@ function DuelRoom() {
           <Button onClick={() => void navigate({ to: "/dau-truong" })}>Về đấu trường</Button>
         </div>
       )}
-    </PageContainer>
+    </ArenaPage>
   );
 }
 
