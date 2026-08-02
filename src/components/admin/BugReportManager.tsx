@@ -32,6 +32,7 @@ type Report = {
   description: string;
   contact: string;
   reporter_name: string;
+  employee_unit: string | null;
   path: string;
   shot_path: string;
   status: string;
@@ -53,7 +54,7 @@ export function BugReportManager() {
       let q = supabase
         .from("bug_reports")
         .select(
-          "id, created_at, kind, title, description, contact, reporter_name, path, shot_path, status, admin_note, device, user_agent, ip",
+          "id, created_at, kind, title, description, contact, reporter_name, path, shot_path, status, admin_note, device, user_agent, ip, employee_id, employee_unit",
         )
         .order("created_at", { ascending: false })
         .limit(300);
@@ -147,7 +148,7 @@ export function BugReportManager() {
                       {r.description}
                     </p>
                     <p className="type-meta mt-2 truncate">
-                      {[r.reporter_name || "Ẩn danh", r.contact, r.path, r.ip].filter(Boolean).join(" · ")}
+                      {[r.reporter_name || "Ẩn danh", r.employee_unit, r.contact, r.path, r.ip].filter(Boolean).join(" · ")}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col gap-2">
