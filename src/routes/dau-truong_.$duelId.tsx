@@ -195,7 +195,12 @@ function DuelRoom() {
     const pump = () => {
       if (stopped) return;
       lastPumpRef.current = Date.now();
-      void closeExpired({ data: { token, duelId, roundIndex: round } }).catch(() => undefined);
+      void closeExpired({ data: { token, duelId, roundIndex: round } })
+        .then((r) => {
+          if (r?.closed) void refresh(true);
+        })
+        .catch(() => undefined);
+
       timer = window.setTimeout(pump, NUDGE_INTERVAL_MS);
     };
     const wait = Math.max(0, deadline - Date.now());
