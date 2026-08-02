@@ -146,7 +146,7 @@ function HomePage() {
               className="block w-full text-left"
               aria-label="Xem giới thiệu Đấu trường tri thức VATM"
             >
-              <h1 className="hero-title type-h1 group max-w-[calc(100%-3.5rem)] cursor-pointer truncate text-pretty uppercase [hyphens:none]">
+              <h1 className="hero-title font-heading group cursor-pointer whitespace-nowrap text-[clamp(1rem,4.4vw,2.6rem)] font-extrabold uppercase leading-tight tracking-tight [hyphens:none]">
                 <span className="hero-line">Chinh phục bầu trời </span>
                 <span className="hero-line hero-line-accent">
                   kiến thức
