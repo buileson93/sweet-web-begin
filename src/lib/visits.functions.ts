@@ -25,10 +25,13 @@ const num = (v: unknown, max = 100000) => {
 const str = (v: unknown, max: number) => String(v ?? "").slice(0, max);
 
 export const recordDeviceVisit = createServerFn({ method: "POST" })
-  .inputValidator((data: DeviceVisitPayload & Partial<DeviceExtras>) => data)
+  .inputValidator((data: DeviceVisitPayload & Partial<DeviceExtras> & { employee_id?: string }) => data)
   .handler(async ({ data }) => {
     const { ip, source } = resolveClientIp();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { resolveEmployeeStamp } = await import("@/lib/identity.server");
+    // Ai đã đăng nhập nhanh thì thống kê ghi kèm định danh (tra lại từ danh bạ).
+    const stamp = await resolveEmployeeStamp(data.employee_id);
 
     const row = {
       visitor_key: str(data.visitor_key, 64),
@@ -59,6 +62,7 @@ export const recordDeviceVisit = createServerFn({ method: "POST" })
       downlink: num(data.downlink, 10000),
       save_data: Boolean(data.save_data),
       user_agent: str(data.user_agent, 400),
+      ...stamp,
     };
 
     const { error } = await supabaseAdmin.from("device_visits").insert(row);

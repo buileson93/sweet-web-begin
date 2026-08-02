@@ -14,6 +14,8 @@ export type BugReportInput = {
   user_agent: string;
   /** Ảnh chụp màn hình đã nén ở phía trình duyệt, dạng data URL JPEG. */
   shot_data_url?: string;
+  /** Mã nhân viên nếu người gửi đã đăng nhập nhanh. */
+  employee_id?: string;
 };
 
 const str = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
@@ -55,6 +57,8 @@ export const submitBugReport = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { ip, source } = resolveClientIp();
+    const { resolveEmployeeStamp } = await import("@/lib/identity.server");
+    const stamp = await resolveEmployeeStamp(data.employee_id);
 
     let shotPath = "";
     if (data.shot_data_url) {
@@ -74,7 +78,9 @@ export const submitBugReport = createServerFn({ method: "POST" })
       title: str(data.title, 160),
       description,
       contact: str(data.contact, 160),
-      reporter_name: str(data.reporter_name, 120),
+      reporter_name: stamp.employee_name || str(data.reporter_name, 120),
+      employee_id: stamp.employee_id,
+      employee_unit: stamp.employee_unit,
       path: str(data.path, 200),
       shot_path: shotPath,
       device: (data.device ?? {}) as never,
