@@ -544,17 +544,22 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           {verified ? null : (
             <Button
               variant="secondary"
-              className="h-11 flex-1 rounded-xl"
+              className="h-11 min-w-0 flex-1 rounded-xl px-2 text-xs sm:px-4 sm:text-sm"
               onClick={handleVerify}
               disabled={verifying || !canVerify}
             >
-              {verifying ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
-              {verifying ? "Đang đối chiếu..." : "Xác thực thông tin"}
+              {verifying ? <Loader2 className="size-4 shrink-0 animate-spin" /> : <ShieldCheck className="size-4 shrink-0" />}
+              <span className="truncate">{verifying ? "Đang đối chiếu..." : "Xác thực thông tin"}</span>
             </Button>
           )}
-          <Button className="game-button h-11 flex-1 rounded-xl" onClick={handleStart} disabled={submitting || !canStart}>
-            {submitting ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-            {submitting ? "Đang tạo phiên..." : "Bắt đầu làm bài"}
+          <Button
+            className="game-button h-11 min-w-0 flex-1 rounded-xl px-2 text-xs sm:px-4 sm:text-sm"
+            onClick={handleStart}
+            disabled={submitting || !canStart}
+          >
+            {submitting ? <Loader2 className="size-4 shrink-0 animate-spin" /> : <Play className="size-4 shrink-0" />}
+            <span className="truncate">{submitting ? "Đang tạo phiên..." : "Bắt đầu làm bài"}</span>
+
           </Button>
         </div>
 

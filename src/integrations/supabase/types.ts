@@ -161,6 +161,54 @@ export type Database = {
         }
         Relationships: []
       }
+      carousel_events: {
+        Row: {
+          clicked: boolean
+          clicked_index: number
+          created_at: string
+          device_type: string
+          dwell_ms: number
+          id: string
+          label: string
+          max_index: number
+          path: string
+          swipes: number
+          total_cards: number
+          viewed_cards: number
+          visitor_key: string
+        }
+        Insert: {
+          clicked?: boolean
+          clicked_index?: number
+          created_at?: string
+          device_type?: string
+          dwell_ms?: number
+          id?: string
+          label?: string
+          max_index?: number
+          path?: string
+          swipes?: number
+          total_cards?: number
+          viewed_cards?: number
+          visitor_key?: string
+        }
+        Update: {
+          clicked?: boolean
+          clicked_index?: number
+          created_at?: string
+          device_type?: string
+          dwell_ms?: number
+          id?: string
+          label?: string
+          max_index?: number
+          path?: string
+          swipes?: number
+          total_cards?: number
+          viewed_cards?: number
+          visitor_key?: string
+        }
+        Relationships: []
+      }
       device_locks: {
         Row: {
           candidate_name: string

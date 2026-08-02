@@ -112,7 +112,16 @@ function HomePage() {
     },
   });
 
-  const quizzes = quizzesQuery.data ?? [];
+  // Cuộc thi đang mở luôn nằm đầu danh sách, rồi tới sắp diễn ra, tạm dừng, đã kết thúc
+  const STATUS_RANK: Record<string, number> = { open: 0, upcoming: 1, paused: 2, closed: 3 };
+  const quizzes = [...(quizzesQuery.data ?? [])].sort((a, b) => {
+    const ra = STATUS_RANK[quizStatus(a)] ?? 9;
+    const rb = STATUS_RANK[quizStatus(b)] ?? 9;
+    if (ra !== rb) return ra - rb;
+    const ta = a.start_time ? new Date(a.start_time).getTime() : 0;
+    const tb = b.start_time ? new Date(b.start_time).getTime() : 0;
+    return ta - tb;
+  });
   const openCount = quizzes.filter((q) => quizStatus(q) === "open").length;
 
   return (
