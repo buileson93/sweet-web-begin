@@ -235,7 +235,9 @@ export async function createDuel(input: {
   if (player.blocked) throw new Error("Tài khoản của bạn đang bị tạm khoá thi đấu.");
   await assertFree(input.employeeId);
 
-  const roundCount = Math.min(20, Math.max(3, input.roundCount ?? settings.default_rounds));
+  // Đấu tới khi một bên hết máu: mở trần số câu, trận chỉ dừng khi hạ gục / xử thua / chạm trần cứng.
+  const roundCount = HARD_ROUND_CAP;
+
   const seconds = Math.min(
     MAX_ROUND_SECONDS,
     Math.max(5, input.secondsPerRound ?? settings.default_seconds),
