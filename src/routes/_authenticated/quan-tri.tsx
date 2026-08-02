@@ -141,10 +141,22 @@ function AdminPage() {
   const search = Route.useSearch();
   const [email, setEmail] = useState<string>("");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Thu gọn danh mục để có thêm không gian làm việc; ghi nhớ lựa chọn của người dùng.
+  const [railCollapsed, setRailCollapsed] = useState(false);
+
+  useEffect(() => {
+    setRailCollapsed(localStorage.getItem("admin-rail-collapsed") === "1");
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("admin-rail-collapsed", railCollapsed ? "1" : "0");
+  }, [railCollapsed]);
 
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
   }, []);
+
+
 
   // Ctrl/Cmd + K: mở bảng tìm kiếm nhanh các mục quản trị.
   useEffect(() => {
