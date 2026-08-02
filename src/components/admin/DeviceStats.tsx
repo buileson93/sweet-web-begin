@@ -161,21 +161,58 @@ export function DeviceStats() {
 
   async function exportExcel() {
     const sheets: [string, { name: string; count: number; visitors: number; percent: number }[]][] = [
+      ["KieuMay", byModel],
       ["TrinhDuyet", byBrowser],
       ["HeDieuHanh", byOs],
       ["LoaiThietBi", byDevice],
       ["ManHinh", byScreen],
+      ["MangKetNoi", byNetwork],
       ["TrangTruyCap", byPath],
       ["DiaChiIP", byIp],
     ];
     await downloadXlsx(
-      sheets.map(([name, data]) => ({
-        name,
-        data: [
-          ["Giá trị", "Lượt xem", "Phiên", "Tỉ lệ (%)"],
-          ...data.map((d) => [d.name, d.count, d.visitors, d.percent]),
-        ] as (string | number)[][],
-      })),
+      [
+        ...sheets.map(([name, data]) => ({
+          name,
+          data: [
+            ["Giá trị", "Lượt xem", "Phiên", "Tỉ lệ (%)"],
+            ...data.map((d) => [d.name, d.count, d.visitors, d.percent]),
+          ] as (string | number)[][],
+        })),
+        {
+          name: "ChiTietLuotTruyCap",
+          data: [
+            [
+              "Thời gian",
+              "Kiểu máy",
+              "Loại thiết bị",
+              "Hệ điều hành",
+              "Trình duyệt",
+              "CPU (lõi)",
+              "RAM (GB)",
+              "Mạng",
+              "Màn hình",
+              "Địa chỉ IP",
+              "Đường dẫn",
+              "User agent",
+            ],
+            ...recent.map((r) => [
+              new Date(r.created_at).toLocaleString("vi-VN"),
+              r.device_model || "Không rõ",
+              DEVICE_LABEL[r.device_type] ?? r.device_type,
+              [r.os, r.os_version].filter(Boolean).join(" "),
+              [r.browser, r.browser_version].filter(Boolean).join(" "),
+              r.cpu_cores || 0,
+              r.memory_gb || 0,
+              r.network_type || "",
+              screenBucket(r.screen_w, r.screen_h),
+              r.ip || "",
+              r.path || "/",
+              r.user_agent || "",
+            ]),
+          ] as (string | number)[][],
+        },
+      ],
       "thong-ke-thiet-bi.xlsx",
     );
   }
