@@ -103,16 +103,15 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
               <li key={item.to}>
                 <Link
                   to={item.to}
-                  
                   aria-label={item.label}
-                  className="flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors active:scale-95"
+                  className="group flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] font-medium text-muted-foreground transition-colors active:scale-95"
                   activeProps={{ className: "text-primary" }}
                   activeOptions={{ exact: item.to === "/" }}
                 >
-                  <span className="relative">
+                  <span className="relative grid h-8 w-14 place-items-center rounded-full transition-colors group-aria-[current=page]:bg-primary/12">
                     <item.icon className="size-5" strokeWidth={2} absoluteStrokeWidth />
                     {"beta" in item && item.beta ? (
-                      <BetaBadge compact className="absolute -right-4 -top-2" />
+                      <BetaBadge compact className="absolute -right-1 -top-1" />
                     ) : null}
                   </span>
                   <span className="truncate">{item.label}</span>
@@ -120,6 +119,7 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
               </li>
             ))}
           </ul>
+
         </nav>
 
         {/* Panel phụ */}
