@@ -29,6 +29,10 @@ import { CurseOffer } from "@/components/tower/CurseOffer";
 import { ScoreSources } from "@/components/tower/ScoreSources";
 import { RunTimeline } from "@/components/tower/RunTimeline";
 import { ComfortToggle } from "@/components/tower/ComfortToggle";
+import { TowerBattle, type BattleFx } from "@/components/tower/TowerBattle";
+import { ClassPicker, useWarriorClass } from "@/components/arena/ClassPicker";
+import { classTowerStats, heroHit, monsterById, monsterHit } from "@/lib/tower/monsters";
+import { gradeLocal } from "@/lib/tower/grade.local";
 
 import { saveRunRecord } from "@/lib/tower/history";
 import { RichText } from "@/components/RichText";
@@ -51,7 +55,7 @@ import { CredentialInput } from "@/components/CredentialInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { AnswerValue } from "@/lib/questionKinds";
-import { bankIsStale, bankQuizzes, filterBankByQuizzes, type QuestionBank } from "@/lib/tower/bank";
+import { bankIsStale, bankQuizzes, filterBankByQuizzes, type BankQuestion, type QuestionBank } from "@/lib/tower/bank";
 import { START_HP } from "@/lib/tower/config";
 import { bossAt } from "@/lib/tower/bosses";
 import { curseById } from "@/lib/tower/curses";
@@ -202,6 +206,11 @@ function RunBar({ run }: { run: TowerRun }) {
 
 
 function TowerPage() {
+  const { classId, choose: chooseClass } = useWarriorClass();
+  const [battleFx, setBattleFx] = useState<BattleFx | null>(null);
+  const [foeHp, setFoeHp] = useState(0);
+  const fxSeq = useRef(0);
+  const gradedRef = useRef<Record<string, boolean>>({});
   const openTower = useServerFn(openTowerFn);
   const fetchBank = useServerFn(getTowerBankFn);
   const sync = useServerFn(syncTowerFn);
@@ -546,6 +555,7 @@ function TowerPage() {
       void writeCachedState(nextState);
       setOutcome(graded.outcome);
       setRun(graded.run);
+      if (graded.outcome.foeHp !== undefined) setFoeHp(graded.outcome.foeHp);
       setPickedRelic(undefined);
       if (graded.outcome.combos.length) {
         comboLogRef.current = [
@@ -562,6 +572,32 @@ function TowerPage() {
   useEffect(() => {
     onTimeUpRef.current = () => closeRoom(answers);
   }, [closeRoom, answers]);
+
+  /**
+   * Diễn hoạt ngay khi người chơi chọn đáp án: đúng thì nhân vật ra đòn vào quái,
+   * sai thì quái phản đòn. Con số cuối cùng vẫn do bộ máy chấm lại lúc chốt phòng.
+   */
+  const reactToAnswer = useCallback(
+    (slot: number, q: BankQuestion, value: AnswerValue) => {
+      if (!run?.monster) return;
+      const empty = value === undefined || value === null || value === "";
+      if (empty || gradedRef.current[String(slot)]) return;
+      const foe = monsterById(run.monster.id);
+      if (!foe) return;
+      gradedRef.current[String(slot)] = true;
+      const correct = gradeLocal(q, value) >= 1;
+      fxSeq.current += 1;
+      if (correct) {
+        const hit = heroHit(run.classId, foe, 12 + run.combo * 2);
+        setFoeHp((hp) => Math.max(0, hp - hit.damage));
+        setBattleFx({ side: "hero", damage: hit.damage, note: hit.label, nonce: fxSeq.current });
+      } else {
+        const bite = monsterHit(run.classId, foe, ROOM_RULES[run.room?.kind ?? "combat"].wrongHp, run.floor);
+        setBattleFx({ side: "foe", damage: bite.damage, note: bite.label, nonce: fxSeq.current });
+      }
+    },
+    [run],
+  );
 
   function confirmIdentity() {
     const name = formName.trim();
@@ -604,6 +640,7 @@ function TowerPage() {
       }
       const seed = daily ? dailySeed(vnDayKey(Date.now())) : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const fresh = createRun(scoped, state, seed, new Date(), {
+        classId,
         daily,
         ascension: meta.ascension,
         unlocked: meta.unlocked,
@@ -615,6 +652,8 @@ function TowerPage() {
       setSummary(null);
       setNote("");
       setPickedRelic(undefined);
+      setBattleFx(null);
+      gradedRef.current = {};
       comboLogRef.current = [];
       deadlineRef.current = 0;
 
@@ -635,6 +674,9 @@ function TowerPage() {
     setNote("");
     setChallengeValue(undefined);
     setMapOpen(false);
+    setFoeHp(next.monster?.hp ?? 0);
+    setBattleFx(null);
+    gradedRef.current = {};
     deadlineRef.current = next.room && next.room.questions > 0 ? Date.now() + roomSeconds(next) * 1000 : 0;
     toTop();
   }
@@ -670,6 +712,23 @@ function TowerPage() {
   const nonCombat = run?.room && run.room.questions === 0 && run.challenge?.done ? run.room.kind : null;
   /** Đang ở trong một phòng: che bản đồ để người chơi chỉ thấy nội dung cần xử lý. */
   const inRoom = Boolean(run && !summary && !outcome && run.room);
+
+  // Phím tắt 1–4: chọn nhanh đáp án câu một lựa chọn khi đang trong phòng xử lý tình huống.
+  useEffect(() => {
+    if (!inRoom || !question || question.kind !== "single") return;
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const pos = Number(e.key) - 1;
+      if (!Number.isInteger(pos) || pos < 0 || pos >= question.options.length) return;
+      e.preventDefault();
+      setAnswers((prev) => ({ ...prev, [String(idx)]: pos }));
+      reactToAnswer(idx, question, pos);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [inRoom, question, idx, reactToAnswer]);
 
   // Đóng tab / tải lại lúc đang dở phòng: nhắc lại một lần để khỏi mất trạng thái.
   useEffect(() => {
@@ -812,7 +871,18 @@ function TowerPage() {
           )}
 
 
-          <div className="mt-5 grid gap-3 text-left sm:grid-cols-2">
+          <div className="mt-5 rounded-xl border bg-background/60 p-4 text-left">
+            <p className="text-sm font-semibold">Chọn nhân vật leo tháp</p>
+            <p className="type-meta mt-1">
+              Dùng chung nhân vật với Đấu trường 1vs1. Mỗi lớp có chỉ số công · thủ riêng và khắc chế một hệ sự cố.
+            </p>
+            <div className="mt-3">
+              <ClassPicker value={classId} onChange={chooseClass} />
+            </div>
+            <TowerClassStats classId={classId} />
+          </div>
+
+          <div className="mt-3 grid gap-3 text-left sm:grid-cols-2">
             <div className="rounded-xl border bg-background/60 p-4">
               <p className="text-sm font-semibold">Thử thách hằng ngày</p>
               <p className="type-meta mt-1">
@@ -1373,6 +1443,8 @@ function TowerPage() {
             })}
           </div>
 
+          <TowerBattle run={run} foeHp={foeHp} fx={battleFx} />
+
           <div className="text-base font-medium">
             <RichText>{question.question}</RichText>
           </div>
@@ -1383,7 +1455,10 @@ function TowerPage() {
             optionImages={question.optionImages}
             matchLeft={question.pairs.map((p) => p.left)}
             value={answers[String(idx)]}
-            onChange={(v) => setAnswers((prev) => ({ ...prev, [String(idx)]: v }))}
+            onChange={(v) => {
+              setAnswers((prev) => ({ ...prev, [String(idx)]: v }));
+              reactToAnswer(idx, question, v);
+            }}
           />
 
           <div className="flex flex-wrap justify-end gap-2">
@@ -1464,5 +1539,32 @@ function TowerPage() {
         </AlertDialogContent>
       </AlertDialog>
     </ArenaPage>
+  );
+}
+
+
+/** Bảng chỉ số ngắn của lớp nhân vật khi leo tháp: công, thủ và vòng khắc hệ. */
+function TowerClassStats({ classId }: { classId: string }) {
+  const { attackPct, defensePct, counter, weak } = classTowerStats(classId);
+  const sign = (n: number) => `${n > 0 ? "+" : ""}${n}%`;
+  return (
+    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+      <div className="rounded-lg border bg-card/60 p-2.5 text-xs">
+        <div className="font-semibold">Chỉ số chiến đấu</div>
+        <div className="mt-1 text-muted-foreground">
+          Sát thương gây ra <span className="font-semibold text-foreground">{sign(attackPct)}</span> · Sát thương phải nhận{" "}
+          <span className={cn("font-semibold", defensePct <= 0 ? "text-emerald-600" : "text-destructive")}>
+            {sign(defensePct)}
+          </span>
+        </div>
+      </div>
+      <div className="rounded-lg border bg-card/60 p-2.5 text-xs">
+        <div className="font-semibold">Khắc hệ sự cố</div>
+        <div className="mt-1 text-muted-foreground">
+          Khắc chế <span className={cn("font-semibold", counter.tone)}>{counter.icon} {counter.name}</span> (+25%) · Bị{" "}
+          <span className={cn("font-semibold", weak.tone)}>{weak.icon} {weak.name}</span> khắc (nhận +25%)
+        </div>
+      </div>
+    </div>
   );
 }
