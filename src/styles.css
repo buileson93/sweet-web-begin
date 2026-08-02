@@ -2178,3 +2178,66 @@ html.twr-calm *::after {
 @media (prefers-reduced-motion: reduce) {
   .tower-card__shine { animation: none; opacity: 0; }
 }
+
+/* ---- Hiệu ứng ra đòn riêng cho từng lớp nhân vật (đấu trường 1vs1) ---- */
+
+/* Kiếm sĩ: hai vệt chém chéo quét qua đối thủ. */
+@keyframes fx-slash-arc {
+  0% { opacity: 0; transform: translateX(-10%) rotate(-38deg) scaleX(0.3); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(85%) rotate(-16deg) scaleX(1.35); }
+}
+@keyframes fx-slash-arc-flip {
+  0% { opacity: 0; transform: translateX(10%) rotate(38deg) scaleX(0.3); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-85%) rotate(16deg) scaleX(1.35); }
+}
+.animate-slash-arc { animation: fx-slash-arc 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+.animate-slash-arc-flip { animation: fx-slash-arc-flip 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+/* Pháp sư: quả cầu phép bay ngang sân, kèm đuôi sáng và nổ nhỏ. */
+@keyframes fx-orb-right {
+  0% { opacity: 0; transform: translateX(-20%) scale(0.4); }
+  18% { opacity: 1; transform: translateX(0) scale(1); }
+  100% { opacity: 0.9; transform: translateX(150%) scale(1.25); }
+}
+@keyframes fx-orb-left {
+  0% { opacity: 0; transform: translateX(20%) scale(0.4); }
+  18% { opacity: 1; transform: translateX(0) scale(1); }
+  100% { opacity: 0.9; transform: translateX(-150%) scale(1.25); }
+}
+.animate-orb-right { animation: fx-orb-right 0.62s cubic-bezier(0.4, 0, 0.3, 1) forwards; }
+.animate-orb-left { animation: fx-orb-left 0.62s cubic-bezier(0.4, 0, 0.3, 1) forwards; }
+@keyframes fx-cast-charge {
+  0% { opacity: 0; transform: scale(0.3); }
+  45% { opacity: 0.85; transform: scale(1.15); }
+  100% { opacity: 0; transform: scale(0.6); }
+}
+.animate-cast-charge { animation: fx-cast-charge 0.5s ease-out forwards; }
+
+/* Vệ binh: khiên dựng lên đỡ đòn rồi rung nhẹ. */
+@keyframes fx-shield-block {
+  0% { opacity: 0; transform: scale(0.6) rotate(-12deg); }
+  25% { opacity: 1; transform: scale(1.12) rotate(0deg); }
+  45% { transform: scale(1) rotate(4deg); }
+  65% { transform: scale(1.04) rotate(-3deg); }
+  100% { opacity: 0; transform: scale(1) rotate(0deg); }
+}
+.animate-shield-block { animation: fx-shield-block 0.85s ease-out forwards; }
+@keyframes fx-shield-wave {
+  0% { opacity: 0.7; transform: scale(0.5); }
+  100% { opacity: 0; transform: scale(1.9); }
+}
+.animate-shield-wave { animation: fx-shield-wave 0.7s ease-out forwards; }
+/* Vệ binh ra đòn: đập khiên tạo sóng xung kích. */
+@keyframes fx-bash {
+  0% { opacity: 0; transform: scale(0.5); }
+  30% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(1.75); }
+}
+.animate-bash { animation: fx-bash 0.55s ease-out forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slash-arc, .animate-slash-arc-flip, .animate-orb-right, .animate-orb-left,
+  .animate-cast-charge, .animate-shield-block, .animate-shield-wave, .animate-bash { animation: none; opacity: 0; }
+}
