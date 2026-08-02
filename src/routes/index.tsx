@@ -112,6 +112,39 @@ function HomePage() {
     },
   });
 
+  // Vài số liệu ngắn cho thẻ cuộc thi ở màn hình rộng: lượt thi và tỉ lệ đạt.
+  const quizIds = (quizzesQuery.data ?? []).map((q) => q.id);
+  const quizStatsQuery = useQuery({
+    queryKey: ["results", "per-quiz", quizIds.join(",")],
+    enabled: quizIds.length > 0,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const pairs = await Promise.all(
+        quizIds.map(async (id) => {
+          const [all, passed] = await Promise.all([
+            supabase
+              .from("results")
+              .select("id", { count: "exact", head: true })
+              .eq("quiz_id", id)
+              .eq("disqualified", false),
+            supabase
+              .from("results")
+              .select("id", { count: "exact", head: true })
+              .eq("quiz_id", id)
+              .eq("disqualified", false)
+              .eq("passed", true),
+          ]);
+          if (all.error) throw all.error;
+          if (passed.error) throw passed.error;
+          return [id, { attempts: all.count ?? 0, passed: passed.count ?? 0 }] as const;
+        }),
+      );
+      return Object.fromEntries(pairs) as Record<string, { attempts: number; passed: number }>;
+    },
+  });
+  const quizStats = quizStatsQuery.data ?? {};
+
+
   // Ưu tiên cuộc thi sắp diễn ra lên đầu, rồi đang mở, tạm dừng, đã kết thúc
   const STATUS_RANK: Record<string, number> = { upcoming: 0, open: 1, paused: 2, closed: 3 };
   const quizzes = [...(quizzesQuery.data ?? [])].sort((a, b) => {
