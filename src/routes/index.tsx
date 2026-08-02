@@ -139,26 +139,22 @@ function HomePage() {
               <BookOpen className="animate-book-flip relative size-6 text-primary/70 drop-shadow-sm sm:size-9" />
             </div>
 
-            {/* Một hàng gọn: nhãn + tiêu đề rút gọn, bấm để mở bảng giới thiệu đầy đủ */}
+            {/* Tiêu đề gọn trên một hàng, bấm để mở bảng giới thiệu đầy đủ */}
             <button
               type="button"
               onClick={() => setHeroOpen(true)}
-              className="type-eyebrow inline-flex max-w-[calc(100%-4.5rem)] items-center gap-2 rounded-full bg-secondary px-3 py-1 text-left text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              className="block w-full text-left"
+              aria-label="Xem giới thiệu Đấu trường tri thức VATM"
             >
-              <span className="relative flex size-2 shrink-0">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-75" />
-                <span className="relative inline-flex size-2 rounded-full bg-primary" />
-              </span>
-              <span className="truncate">Đấu trường tri thức VATM</span>
-              <ChevronUp className="size-3.5 shrink-0" />
+              <h1 className="hero-title type-h1 group max-w-[calc(100%-3.5rem)] cursor-pointer truncate text-pretty uppercase [hyphens:none]">
+                <span className="hero-line">Chinh phục bầu trời </span>
+                <span className="hero-line hero-line-accent">
+                  kiến thức
+                  <span className="hero-underline" aria-hidden />
+                </span>
+              </h1>
             </button>
-            <h1 className="hero-title type-h1 group mt-2 max-w-[24ch] cursor-default text-pretty uppercase [hyphens:none] sm:pr-24">
-              <span className="hero-line inline">Chinh phục bầu trời </span>
-              <span className="hero-line hero-line-accent inline">
-                kiến thức
-                <span className="hero-underline" aria-hidden />
-              </span>
-            </h1>
+
           </div>
 
 
