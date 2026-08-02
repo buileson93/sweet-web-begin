@@ -546,7 +546,14 @@ function TowerPage() {
       setOutcome(graded.outcome);
       setRun(graded.run);
       setPickedRelic(undefined);
+      if (graded.outcome.combos.length) {
+        comboLogRef.current = [
+          ...comboLogRef.current,
+          ...graded.outcome.combos.map((c) => ({ floor: run.floor, label: c.label })),
+        ];
+      }
       if (graded.run.finished) finishRun(graded.run);
+
     },
     [run, outcome, finishRun],
   );
