@@ -470,12 +470,16 @@ function TowerPage() {
         answered: finished.answered,
         win: finished.win,
         hp: finished.hp,
+        maxHp: finished.maxHp,
         relics: finished.relics,
         curses: finished.curses,
         ascension: finished.ascension,
         seed: finished.seed,
         log: finished.log,
+        combos: comboLogRef.current,
+        path: finished.path,
       });
+
       void pushSync(stateRef.current, floors);
 
       // Lưu lại ngay tại máy để xem lại và thống kê được cả khi mất mạng.
