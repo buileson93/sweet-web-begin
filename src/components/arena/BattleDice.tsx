@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { seededRollDurations } from "@/lib/arena/seed";
+import { sfxDiceRoll, sfxDiceSettle } from "@/lib/arena/sfx";
+
+
 /** Vị trí chấm của từng mặt xúc xắc (lưới 3x3). */
 const PIPS: Record<number, number[]> = {
   1: [4],
