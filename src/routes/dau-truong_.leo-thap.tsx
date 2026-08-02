@@ -614,7 +614,9 @@ function TowerPage() {
       setSummary(null);
       setNote("");
       setPickedRelic(undefined);
+      comboLogRef.current = [];
       deadlineRef.current = 0;
+
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Chưa có câu hỏi nghiệp vụ để ôn tập.");
     }
