@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 
-import type { DeviceVisitPayload } from "@/lib/deviceInfo";
+import type { DeviceExtras, DeviceVisitPayload } from "@/lib/deviceInfo";
 
 /** Lấy IP thật của khách từ header của proxy/CDN. */
 function resolveClientIp(): { ip: string; source: string } {
@@ -25,7 +25,7 @@ const num = (v: unknown, max = 100000) => {
 const str = (v: unknown, max: number) => String(v ?? "").slice(0, max);
 
 export const recordDeviceVisit = createServerFn({ method: "POST" })
-  .inputValidator((data: DeviceVisitPayload) => data)
+  .inputValidator((data: DeviceVisitPayload & Partial<DeviceExtras>) => data)
   .handler(async ({ data }) => {
     const { ip, source } = resolveClientIp();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -50,6 +50,15 @@ export const recordDeviceVisit = createServerFn({ method: "POST" })
       referrer_host: str(data.referrer_host, 120),
       ip,
       ip_source: source,
+      device_model: str(data.device_model, 80),
+      platform_version: str(data.platform_version, 40),
+      architecture: str(data.architecture, 40),
+      cpu_cores: num(data.cpu_cores, 512),
+      memory_gb: num(data.memory_gb, 1024),
+      network_type: str(data.network_type, 20),
+      downlink: num(data.downlink, 10000),
+      save_data: Boolean(data.save_data),
+      user_agent: str(data.user_agent, 400),
     };
 
     const { error } = await supabaseAdmin.from("device_visits").insert(row);
