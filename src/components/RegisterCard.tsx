@@ -575,27 +575,6 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
         </p>
         ) : null}
         <QuizPeekCard peek={peek} />
-
-        <div className="flex items-center justify-center gap-2 border-t border-border pt-3">
-          <IconTip label="Lịch sử làm bài của bạn">
-            <Link
-              to="/lich-su"
-              aria-label="Lịch sử làm bài"
-              className="grid size-9 place-items-center rounded-xl bg-secondary text-muted-foreground transition-all duration-200 hover:scale-110 hover:bg-primary hover:text-primary-foreground"
-            >
-              <HistoryIcon className="size-4.5" strokeWidth={2.4} />
-            </Link>
-          </IconTip>
-          <IconTip label="Luật chơi & hướng dẫn">
-            <Link
-              to="/huong-dan"
-              aria-label="Luật chơi"
-              className="grid size-9 place-items-center rounded-xl bg-secondary text-muted-foreground transition-all duration-200 hover:scale-110 hover:bg-primary hover:text-primary-foreground"
-            >
-              <BookOpen className="size-4.5" strokeWidth={2.4} />
-            </Link>
-          </IconTip>
-        </div>
         </div>
       </div>
     </div>
