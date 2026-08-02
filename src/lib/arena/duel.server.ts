@@ -53,7 +53,7 @@ const COUNTDOWN_MS = 4_000;
 const REVEAL_MS = 2_000;
 
 /** Thời lượng hiệu ứng xúc xắc — do máy chủ quy định để hai bên khớp nhau. */
-const DICE_MS = 2_400;
+const DICE_MS = 1_600;
 /** Độ trễ mạng được tha thứ khi gửi đáp án (ms) — giữ nhỏ để hết giờ là chốt lượt ngay. */
 const NETWORK_GRACE_MS = 700;
 /** Thời gian chờ đối thủ mất kết nối trước khi xử thua kỹ thuật (ms). */
