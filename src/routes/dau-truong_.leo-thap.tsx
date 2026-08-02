@@ -1432,6 +1432,22 @@ function TowerPage() {
         </section>
       )}
 
+      <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rời phòng đang xử lý?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn đang ở trong một phòng của tháp. Tiến trình được lưu tại máy, nhưng phần trả lời dở trong phòng này sẽ
+              mất. Bạn vẫn muốn về sảnh Đấu trường chứ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Ở lại làm tiếp</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void navigate({ to: "/dau-truong" })}>Vẫn rời đi</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
         <AlertDialogContent>
           <AlertDialogHeader>
