@@ -163,8 +163,10 @@ export type Database = {
       }
       carousel_events: {
         Row: {
+          card_labels: string[]
           clicked: boolean
           clicked_index: number
+          clicked_label: string
           created_at: string
           device_type: string
           dwell_ms: number
@@ -178,8 +180,10 @@ export type Database = {
           visitor_key: string
         }
         Insert: {
+          card_labels?: string[]
           clicked?: boolean
           clicked_index?: number
+          clicked_label?: string
           created_at?: string
           device_type?: string
           dwell_ms?: number
@@ -193,8 +197,10 @@ export type Database = {
           visitor_key?: string
         }
         Update: {
+          card_labels?: string[]
           clicked?: boolean
           clicked_index?: number
+          clicked_label?: string
           created_at?: string
           device_type?: string
           dwell_ms?: number
@@ -1861,6 +1867,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      prune_carousel_events: { Args: { p_days?: number }; Returns: number }
       question_norm_key: { Args: { p_text: string }; Returns: string }
       refresh_org_topic_stats: { Args: never; Returns: undefined }
       set_player_avatar: {

@@ -19,6 +19,7 @@ export function SnapCarousel({
   gridClassName = "md:grid-cols-2 xl:grid-cols-3",
   itemWidth = "w-[86%]",
   label,
+  cardLabels,
   track: trackAnalytics = true,
 }: {
   children: ReactNode;
@@ -26,6 +27,8 @@ export function SnapCarousel({
   gridClassName?: string;
   itemWidth?: string;
   label?: string;
+  /** Tên từng thẻ theo đúng thứ tự, để báo cáo hiện tên thay vì "Thẻ 1". */
+  cardLabels?: string[];
   /** Bật/tắt ghi nhận hành vi vuốt cho dải thẻ này. */
   track?: boolean;
 }) {
@@ -43,6 +46,11 @@ export function SnapCarousel({
     clickedIndex: -1,
     sent: false,
   });
+
+  // Giữ tên thẻ mới nhất để lúc gửi số liệu không phụ thuộc thời điểm render
+  const labelsRef = useRef<string[]>(cardLabels ?? []);
+  labelsRef.current = cardLabels ?? [];
+
 
   const syncActive = useCallback(() => {
     const track = trackRef.current;
@@ -102,7 +110,10 @@ export function SnapCarousel({
           clicked_index: s.clickedIndex,
           device_type: detectDeviceType(navigator.userAgent, window.innerWidth),
           visitor_key: getVisitorKey(),
+          card_labels: labelsRef.current.slice(0, 30),
+          clicked_label: s.clickedIndex >= 0 ? (labelsRef.current[s.clickedIndex] ?? "") : "",
         },
+
       }).catch(() => undefined);
     };
 
