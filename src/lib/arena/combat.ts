@@ -151,9 +151,13 @@ export function resolveRoundCombat(
 
   const finalDamage = cls.damage;
 
+  // Cả hai cùng bỏ trống (hết giờ không ai trả lời) -> mỗi người tự mất máu phạt.
+  const timedOut = inputs.length > 0 && inputs.every((i) => !i.answered);
+  const idlePenalty = timedOut ? TIMEOUT_HP_LOSS : 0;
+
   const lines: CombatLine[] = inputs.map((i) => {
     const isStriker = !!striker && striker.employeeId === i.employeeId;
-    const taken = striker && !isStriker ? finalDamage : 0;
+    const taken = (striker && !isStriker ? finalDamage : 0) + idlePenalty;
     return {
       employeeId: i.employeeId,
       damageDealt: isStriker ? finalDamage : 0,
@@ -166,8 +170,9 @@ export function resolveRoundCombat(
   const ko = lines.find((l) => l.hpAfter <= 0) ?? null;
   return {
     lines,
-    neutral: !striker || finalDamage <= 0,
-    timedOut: inputs.length > 0 && inputs.every((i) => !i.answered),
+    neutral: (!striker || finalDamage <= 0) && idlePenalty <= 0,
+    timedOut,
+
     knockedOutId: ko ? ko.employeeId : null,
     dice: roll.dice,
     baseDamage,
