@@ -32,7 +32,7 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "onDark"
           <BrandLogo compact className="shrink-0 sm:px-2.5" />
           <span
             className={cn(
-              "hidden min-w-0 truncate text-[0.68rem] font-extrabold uppercase leading-tight tracking-tight xs:inline sm:text-xs",
+              "hidden min-w-0 truncate text-[0.68rem] font-extrabold uppercase leading-tight tracking-tight min-[360px]:inline sm:text-xs",
               onDark ? "text-primary-foreground/90" : "text-muted-foreground",
             )}
           >
