@@ -15,7 +15,10 @@ import {
   LogOut,
   MonitorSmartphone,
   MousePointerClick,
+  PanelLeftClose,
+  PanelLeftOpen,
   PieChart,
+
   RadioTower,
   ScrollText,
   ShieldAlert,
