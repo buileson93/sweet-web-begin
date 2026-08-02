@@ -177,8 +177,9 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {quizzes.map((quiz) => {
               const st = quizStatus(quiz);
-              const bank = counts[quiz.id] ?? 0;
-              const canPublish = bank >= quiz.question_count;
+              const bank = countsReady ? (counts[quiz.id] ?? 0) : null;
+              const canPublish = bank === null || bank >= quiz.question_count;
+
               return (
                 <div key={quiz.id} className="card-elevated flex flex-col p-5">
                   <div className="flex items-start justify-between gap-3">
