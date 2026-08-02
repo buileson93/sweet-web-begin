@@ -1354,6 +1354,24 @@ export type Database = {
         }
         Relationships: []
       }
+      result_events: {
+        Row: {
+          created_at: string
+          id: number
+          quiz_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          quiz_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          quiz_id?: string | null
+        }
+        Relationships: []
+      }
       results: {
         Row: {
           best_streak: number
