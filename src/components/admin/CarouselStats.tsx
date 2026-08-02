@@ -92,7 +92,8 @@ export function CarouselStats() {
               Dựa trên {total} lượt tương tác gần nhất. Nếu tỉ lệ xem tới thẻ 3–4 quá thấp, nên rút ngắn danh sách hoặc đưa cuộc thi quan trọng lên đầu.
             </p>
           </div>
-        )}
+        </div>
+
       </QueryState>
     </AdminSection>
   );
