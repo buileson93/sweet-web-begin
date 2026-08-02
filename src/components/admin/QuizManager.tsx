@@ -32,17 +32,27 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
   });
   const quizzes = quizzesQuery.data ?? [];
 
+  // Đếm bằng `head: true` cho từng đề: nếu tải toàn bộ hàng thì PostgREST cắt ở 1000 dòng
+  // nên các đề nằm sau sẽ bị báo nhầm là 0 câu.
   const { data: counts = {} } = useQuery({
-    queryKey: ["question-counts"],
+    queryKey: ["question-counts", quizzes.map((q) => q.id).join(",")],
+    enabled: quizzes.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase.from("questions").select("quiz_id").eq("is_archived", false);
-      if (error) throw error;
-      return data.reduce<Record<string, number>>((acc, r) => {
-        acc[r.quiz_id] = (acc[r.quiz_id] ?? 0) + 1;
-        return acc;
-      }, {});
+      const pairs = await Promise.all(
+        quizzes.map(async (q) => {
+          const { count, error } = await supabase
+            .from("questions")
+            .select("id", { count: "exact", head: true })
+            .eq("quiz_id", q.id)
+            .eq("is_archived", false);
+          if (error) throw error;
+          return [q.id, count ?? 0] as const;
+        }),
+      );
+      return Object.fromEntries(pairs) as Record<string, number>;
     },
   });
+
 
   const toggleActive = useMutation({
     mutationFn: async (quiz: QuizRow) => {
