@@ -315,7 +315,11 @@ function HomePage() {
               />
             }
           >
-            <SnapCarousel className="stagger" label="Danh sách cuộc thi">
+            <SnapCarousel
+              className="stagger"
+              label="Danh sách cuộc thi"
+              gridClassName="md:grid-cols-2 xl:grid-cols-3 md:auto-rows-[17.5rem] lg:auto-rows-[18.5rem]"
+            >
               {quizzes.slice(0, visibleQuizzes).map((q) => {
                 const st = quizStatus(q);
                 return (
@@ -366,7 +370,7 @@ function HomePage() {
                         {q.duration_minutes}′
                       </span>
                     </span>
-                    <h3 className="type-h3 relative mt-3 line-clamp-2 break-words text-pretty pr-1 transition-colors group-hover:text-primary md:line-clamp-none md:min-h-[2.8em]">
+                    <h3 className="type-h3 relative mt-3 line-clamp-2 break-words text-pretty pr-1 transition-colors group-hover:text-primary md:line-clamp-4 md:min-h-[4em]">
                       {q.title}
                     </h3>
                     <span className="relative mt-4 flex items-center justify-between gap-3 border-t border-border pt-3 md:mt-auto md:pt-4">
