@@ -707,7 +707,8 @@ async function questionAt(duel: DuelRow, index: number) {
     .maybeSingle();
   if (!data) return null;
   const orders = (duel.option_orders as number[][]) ?? [];
-  return { row: data as unknown as QuestionRow, order: orders[index] ?? [] };
+  return { row: data as unknown as QuestionRow, order: orders[slot] ?? [] };
+
 }
 
 const lastAnswerAt = new Map<string, number>();
