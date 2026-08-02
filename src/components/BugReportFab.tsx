@@ -150,7 +150,7 @@ function BugReportDialog({
 
           <Input
             className="rounded-xl"
-            placeholder="Tiêu đề ngắn gọn (không bắt buộc)"
+            placeholder="Mô tả ngắn gọn vấn đề bạn gặp (không bắt buộc)"
             value={title}
             maxLength={160}
             onChange={(e) => setTitle(e.target.value)}
