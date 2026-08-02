@@ -861,7 +861,7 @@ function ProfileStrip({ profile }: { profile: ArenaProfile }) {
         </div>
       </div>
       {profile.badges.length ? (
-        <div className="scrollbar-none -mx-1 mt-2 flex gap-1.5 overflow-x-auto px-1 pb-0.5 sm:flex-wrap sm:overflow-visible">
+        <div className="snap-row snap-row-soft -mx-1 mt-2 flex gap-1.5 px-1 pb-0.5 sm:flex-wrap sm:overflow-visible">
           {profile.badges.map((b) => (
             <span
               key={b.code}
