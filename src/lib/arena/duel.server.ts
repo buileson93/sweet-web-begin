@@ -693,8 +693,13 @@ async function serveRound(duel: DuelRow, roundIndex: number, delayMs = 0) {
 }
 
 async function questionAt(duel: DuelRow, index: number) {
-  const qid = duel.question_ids?.[index];
+  const ids = duel.question_ids ?? [];
+  if (ids.length === 0) return null;
+  // Vòng lại từ đầu khi ngân hàng ít câu hơn số hiệp thực đánh.
+  const slot = ((index % ids.length) + ids.length) % ids.length;
+  const qid = ids[slot];
   if (!qid) return null;
+
   const { data } = await supabaseAdmin
     .from("questions")
     .select(QUESTION_COLUMNS)
