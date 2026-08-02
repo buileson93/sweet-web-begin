@@ -54,8 +54,8 @@ const REVEAL_MS = 3_000;
 
 /** Thời lượng hiệu ứng xúc xắc — do máy chủ quy định để hai bên khớp nhau. */
 const DICE_MS = 2_400;
-/** Độ trễ mạng được tha thứ khi gửi đáp án (ms). */
-const NETWORK_GRACE_MS = 1_500;
+/** Độ trễ mạng được tha thứ khi gửi đáp án (ms) — giữ nhỏ để hết giờ là chốt lượt ngay. */
+const NETWORK_GRACE_MS = 700;
 /** Thời gian chờ đối thủ mất kết nối trước khi xử thua kỹ thuật (ms). */
 export const DISCONNECT_GRACE_MS = 20_000;
 /** Trần thời gian mỗi câu trong ván so tài (giây) — tốc chiến, không để ai câu giờ. */
