@@ -34,7 +34,7 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
 
   // Đếm bằng `head: true` cho từng đề: nếu tải toàn bộ hàng thì PostgREST cắt ở 1000 dòng
   // nên các đề nằm sau sẽ bị báo nhầm là 0 câu.
-  const { data: counts = {} } = useQuery({
+  const countsQuery = useQuery({
     queryKey: ["question-counts", quizzes.map((q) => q.id).join(",")],
     enabled: quizzes.length > 0,
     queryFn: async () => {
@@ -52,6 +52,11 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
       return Object.fromEntries(pairs) as Record<string, number>;
     },
   });
+  const counts = countsQuery.data ?? {};
+  // Chưa đếm xong (hoặc đếm lỗi) thì KHÔNG được coi là 0 câu, tránh báo nhầm
+  // "Ngân hàng: 0 câu" và khoá nút Xuất bản.
+  const countsReady = countsQuery.isSuccess;
+
 
 
   const toggleActive = useMutation({
@@ -172,8 +177,9 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {quizzes.map((quiz) => {
               const st = quizStatus(quiz);
-              const bank = counts[quiz.id] ?? 0;
-              const canPublish = bank >= quiz.question_count;
+              const bank = countsReady ? (counts[quiz.id] ?? 0) : null;
+              const canPublish = bank === null || bank >= quiz.question_count;
+
               return (
                 <div key={quiz.id} className="card-elevated flex flex-col p-5">
                   <div className="flex items-start justify-between gap-3">
@@ -204,13 +210,18 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
                     <span
                       className={cn(
                         "status-pill",
-                        bank < quiz.question_count
+                        bank !== null && bank < quiz.question_count
                           ? "bg-destructive/10 text-destructive"
                           : "bg-secondary text-muted-foreground",
                       )}
                     >
-                      Ngân hàng: {bank} câu
+                      {bank === null
+                        ? countsQuery.isError
+                          ? "Ngân hàng: chưa đọc được"
+                          : "Ngân hàng: đang đếm…"
+                        : `Ngân hàng: ${bank} câu`}
                     </span>
+
                   </div>
                   <p className="type-meta mt-3">
                     {formatDateTime(quiz.start_time)} → {formatDateTime(quiz.end_time)}
