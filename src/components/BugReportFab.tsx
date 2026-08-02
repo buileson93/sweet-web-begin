@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { submitBugReport } from "@/lib/bugReports.functions";
+import { readPlayerIdentity } from "@/lib/playerIdentity";
 import { compressShot } from "@/lib/bugShot";
 import { collectFullVisit } from "@/lib/deviceInfo";
 import { readQuickLogin } from "@/lib/quickLogin";
@@ -98,6 +99,7 @@ function BugReportDialog({
           description,
           contact,
           reporter_name: readQuickLogin()?.name ?? "",
+          employee_id: readPlayerIdentity()?.employeeId ?? "",
           path,
           device: device as unknown as Record<string, unknown>,
           user_agent: navigator.userAgent ?? "",

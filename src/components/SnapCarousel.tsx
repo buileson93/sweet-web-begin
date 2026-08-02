@@ -1,6 +1,7 @@
 import { Children, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { recordCarouselEvent } from "@/lib/carouselAnalytics.functions";
+import { readPlayerIdentity } from "@/lib/playerIdentity";
 import { detectDeviceType, getVisitorKey } from "@/lib/deviceInfo";
 import { cn } from "@/lib/utils";
 
@@ -112,6 +113,8 @@ export function SnapCarousel({
           visitor_key: getVisitorKey(),
           card_labels: labelsRef.current.slice(0, 30),
           clicked_label: s.clickedIndex >= 0 ? (labelsRef.current[s.clickedIndex] ?? "") : "",
+          // Đã đăng nhập nhanh thì gửi kèm mã nhân viên để thống kê có người định danh.
+          employee_id: readPlayerIdentity()?.employeeId ?? "",
         },
 
       }).catch(() => undefined);

@@ -16,6 +16,8 @@ export type CarouselEventInput = {
   card_labels?: string[];
   /** Tên thẻ được bấm, nếu có. */
   clicked_label?: string;
+  /** Mã nhân viên nếu người dùng đã đăng nhập nhanh. */
+  employee_id?: string;
 };
 
 const str = (v: unknown, max: number) => String(v ?? "").slice(0, max);
@@ -48,6 +50,9 @@ export const recordCarouselEvent = createServerFn({ method: "POST" })
       .gte("created_at", since);
     if ((count ?? 0) >= MAX_EVENTS_PER_HOUR) return { ok: false, reason: "rate_limited" as const };
 
+    const { resolveEmployeeStamp } = await import("@/lib/identity.server");
+    const stamp = await resolveEmployeeStamp(data.employee_id);
+
     const labels = Array.isArray(data.card_labels)
       ? data.card_labels.slice(0, MAX_LABELS).map((l) => str(l, 120))
       : [];
@@ -66,6 +71,7 @@ export const recordCarouselEvent = createServerFn({ method: "POST" })
       visitor_key: visitorKey,
       card_labels: labels,
       clicked_label: str(data.clicked_label, 120),
+      ...stamp,
     });
     if (error) {
       console.error("record carousel event failed:", error.message);

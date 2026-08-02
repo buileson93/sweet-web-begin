@@ -73,6 +73,8 @@ type Visit = {
   ip: string;
   user_agent: string;
   created_at: string;
+  employee_name: string | null;
+  employee_unit: string | null;
 };
 
 function tally(rows: Visit[], pick: (r: Visit) => string) {
@@ -104,7 +106,7 @@ export function DeviceStats() {
       let q = supabase
         .from("device_visits")
         .select(
-          "browser, browser_version, os, os_version, device_type, device_model, platform_version, architecture, cpu_cores, memory_gb, network_type, downlink, save_data, screen_w, screen_h, viewport_w, language, timezone, is_pwa, is_touch, referrer_host, visitor_key, path, ip, user_agent, created_at",
+          "browser, browser_version, os, os_version, device_type, device_model, platform_version, architecture, cpu_cores, memory_gb, network_type, downlink, save_data, screen_w, screen_h, viewport_w, language, timezone, is_pwa, is_touch, referrer_host, visitor_key, path, ip, user_agent, created_at, employee_name, employee_unit",
         )
         .order("created_at", { ascending: false })
         .limit(10000);
@@ -126,6 +128,11 @@ export function DeviceStats() {
   const byModel = useMemo(() => tally(rows, (r) => r.device_model || "Không rõ"), [rows]);
   const byScreen = useMemo(() => tally(rows, (r) => screenBucket(r.screen_w, r.screen_h)), [rows]);
   const byPath = useMemo(() => tally(rows, (r) => r.path || "/"), [rows]);
+  // Chỉ liệt kê lượt truy cập có định danh; khách vãng lai gom vào bảng khác.
+  const byEmployee = useMemo(
+    () => tally(rows.filter((r) => r.employee_name), (r) => r.employee_name || ""),
+    [rows],
+  );
   const byIp = useMemo(() => tally(rows, (r) => r.ip || "Không rõ"), [rows]);
   const byNetwork = useMemo(() => tally(rows, (r) => r.network_type || "Không rõ"), [rows]);
   const recent = useMemo(() => rows.slice(0, 500), [rows]);
@@ -363,6 +370,7 @@ export function DeviceStats() {
             { title: "Chi tiết hệ điều hành", data: byOs, head: "Hệ điều hành" },
             { title: "Độ phân giải màn hình", data: byScreen, head: "Kích thước" },
             { title: "Mạng kết nối", data: byNetwork, head: "Loại mạng" },
+            { title: "Người dùng đã đăng nhập", data: byEmployee, head: "Người dùng" },
             { title: "Trang được xem nhiều", data: byPath, head: "Đường dẫn" },
             { title: "Địa chỉ IP truy cập nhiều", data: byIp, head: "Địa chỉ IP" },
           ].map((t) => (
@@ -413,6 +421,19 @@ export function DeviceStats() {
                     {new Date(r.created_at).toLocaleString("vi-VN")}
                   </span>
                 ),
+              },
+              {
+                key: "employee",
+                header: "Người dùng",
+                value: (r) => r.employee_name || "Khách chưa đăng nhập",
+                filter: "select",
+                className: "font-medium",
+              },
+              {
+                key: "employee_unit",
+                header: "Đơn vị",
+                value: (r) => r.employee_unit || "—",
+                filter: "select",
               },
               { key: "device_model", header: "Kiểu máy", value: (r) => r.device_model || "Không rõ", filter: "select" },
               {

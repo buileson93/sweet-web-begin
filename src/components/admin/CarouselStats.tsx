@@ -19,6 +19,8 @@ type Row = {
   created_at: string;
   card_labels: string[] | null;
   clicked_label: string | null;
+  employee_name: string | null;
+  employee_unit: string | null;
 };
 
 /** Thống kê hành vi vuốt dải thẻ ngang (trang chủ) để tinh chỉnh bố cục. */
@@ -29,7 +31,7 @@ export function CarouselStats() {
       const { data, error } = await supabase
         .from("carousel_events")
         .select(
-          "label, path, total_cards, viewed_cards, max_index, swipes, dwell_ms, clicked, clicked_index, device_type, created_at, card_labels, clicked_label",
+          "label, path, total_cards, viewed_cards, max_index, swipes, dwell_ms, clicked, clicked_index, device_type, created_at, card_labels, clicked_label, employee_name, employee_unit",
         )
         .order("created_at", { ascending: false })
         .limit(1000);
@@ -71,6 +73,16 @@ export function CarouselStats() {
     clickedTally.set(name, (clickedTally.get(name) ?? 0) + 1);
   });
   const topClicked = [...clickedTally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+  // Ai đã đăng nhập thì quy về tên người dùng; còn lại gộp thành "Khách chưa đăng nhập".
+  const peopleTally = new Map<string, number>();
+  rows.forEach((r) => {
+    const name = r.employee_name
+      ? `${r.employee_name}${r.employee_unit ? ` · ${r.employee_unit}` : ""}`
+      : "Khách chưa đăng nhập";
+    peopleTally.set(name, (peopleTally.get(name) ?? 0) + 1);
+  });
+  const topPeople = [...peopleTally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
 
   return (
@@ -117,6 +129,20 @@ export function CarouselStats() {
                 <p className="mb-2 text-sm font-semibold">Thẻ được bấm nhiều nhất</p>
                 <ul className="space-y-1.5">
                   {topClicked.map(([name, n]) => (
+                    <li key={name} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="min-w-0 truncate">{name}</span>
+                      <span className="shrink-0 font-bold text-primary">{n} lượt</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {topPeople.length > 0 && (
+              <div className="rounded-2xl border border-border bg-card p-3">
+                <p className="mb-2 text-sm font-semibold">Người tương tác nhiều nhất</p>
+                <ul className="space-y-1.5">
+                  {topPeople.map(([name, n]) => (
                     <li key={name} className="flex items-center justify-between gap-3 text-sm">
                       <span className="min-w-0 truncate">{name}</span>
                       <span className="shrink-0 font-bold text-primary">{n} lượt</span>

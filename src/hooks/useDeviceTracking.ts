@@ -4,6 +4,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { collectFullVisit } from "@/lib/deviceInfo";
 import { recordDeviceVisit } from "@/lib/visits.functions";
 import { drainVisits, enqueueVisit } from "@/lib/visits/queue";
+import { readPlayerIdentity } from "@/lib/playerIdentity";
 
 
 /**
@@ -32,7 +33,8 @@ export function useDeviceTracking() {
     // Hoãn lại để không tranh tài nguyên với lần render đầu tiên.
     const timer = window.setTimeout(() => {
       void collectFullVisit(pathname).then((payload) => {
-        enqueueVisit(payload);
+        // Kèm mã nhân viên khi người dùng đã đăng nhập nhanh, để thống kê không bị vô danh.
+        enqueueVisit({ ...payload, employee_id: readPlayerIdentity()?.employeeId ?? "" });
         return flushVisits();
       });
     }, 1200);
