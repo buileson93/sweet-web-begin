@@ -8,6 +8,8 @@ import { AppShell } from "@/components/AppShell";
 import { AwardsBoard } from "@/components/AwardsBoard";
 import { ChampionBoard } from "@/components/ChampionBoard";
 import { LevelBoard } from "@/components/player/LevelBoard";
+import { MobileFold } from "@/components/MobileFold";
+
 
 import { EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 
