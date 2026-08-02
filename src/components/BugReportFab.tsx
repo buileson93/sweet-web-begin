@@ -125,10 +125,12 @@ function BugReportDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[88dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Báo lỗi & góp ý</DialogTitle>
+          <DialogTitle>Góp ý giúp VATM tốt hơn</DialogTitle>
           <DialogDescription>
-            Mô tả sự cố bạn gặp phải, kèm ảnh chụp màn hình nếu có. Thông tin thiết bị được gửi kèm để đội kỹ thuật
-            tái hiện lỗi nhanh hơn.
+            Cảm ơn bạn dành thời gian chia sẻ! Mỗi góp ý — dù là một lỗi nhỏ hay một ý tưởng mới — đều giúp
+            nền tảng VATM ngày càng hoàn thiện và thân thiện hơn với cộng đồng. Hãy mô tả sự cố bạn gặp phải,
+            kèm ảnh chụp màn hình nếu có. Thông tin thiết bị sẽ được gửi kèm để đội kỹ thuật tái hiện và xử lý
+            nhanh nhất.
           </DialogDescription>
         </DialogHeader>
 
@@ -148,21 +150,21 @@ function BugReportDialog({
 
           <Input
             className="rounded-xl"
-            placeholder="Tiêu đề ngắn gọn (không bắt buộc)"
+            placeholder="Mô tả ngắn gọn vấn đề bạn gặp (không bắt buộc)"
             value={title}
             maxLength={160}
             onChange={(e) => setTitle(e.target.value)}
           />
           <Textarea
             className="min-h-28 rounded-xl"
-            placeholder="Bạn đang làm gì thì gặp lỗi? Màn hình hiển thị ra sao?"
+            placeholder="Bạn đang thao tác gì, màn hình hiển thị ra sao? Càng rõ ràng, chúng tôi càng khắc phục nhanh được."
             value={description}
             maxLength={4000}
             onChange={(e) => setDescription(e.target.value)}
           />
           <Input
             className="rounded-xl"
-            placeholder="Số điện thoại hoặc email để liên hệ lại (không bắt buộc)"
+            placeholder="Để lại số điện thoại/email để chúng tôi phản hồi (không bắt buộc)"
             value={contact}
             maxLength={160}
             onChange={(e) => setContact(e.target.value)}
@@ -195,7 +197,7 @@ function BugReportDialog({
           </div>
 
           <Button className="w-full rounded-xl font-bold" onClick={() => void send()} disabled={busy}>
-            {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} Gửi cho đội kỹ thuật
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} Gửi góp ý
           </Button>
         </div>
       </DialogContent>
