@@ -57,6 +57,14 @@ export const Route = createFileRoute("/dau-truong_/$duelId")({
   }),
 });
 
+/** Thời gian công bố kết quả phía máy chủ (ms) — phải khớp REVEAL_MS trong duel.server.ts. */
+const REVEAL_MS = 3_000;
+/** Ân hạn mạng trước khi nhắc máy chủ chốt câu (khớp NETWORK_GRACE_MS máy chủ). */
+const NUDGE_GRACE_MS = 700;
+/** Nhịp nhắc lại khi máy chủ chưa kịp chuyển bước. */
+const NUDGE_INTERVAL_MS = 600;
+
+
 function DuelRoom() {
   const { duelId } = Route.useParams();
   const navigate = useNavigate();
@@ -98,6 +106,9 @@ function DuelRoom() {
   const [dice, setDice] = useState<number[]>([]);
   const [camShake, setCamShake] = useState(0);
   const expiringRef = useRef(false);
+  /** Lần nhắc máy chủ gần nhất — chặn nhắc dồn dập khi trạng thái đổi liên tục. */
+  const lastPumpRef = useRef(0);
+
   /** Dải diễn biến trong khung đấu — thay cho "bão" toast mỗi lượt. */
   const [battleLog, setBattleLog] = useState<{ id: number; tone: string; text: string }[]>([]);
 
@@ -160,23 +171,47 @@ function DuelRoom() {
     }
   }, [state, clock]);
 
-  // Hết thời gian công bố kết quả: nhắc máy chủ sang câu tiếp ngay, không chờ nhịp watchdog.
+  // Bơm nhắc máy chủ cho MỌI pha có mốc giờ: hết đếm ngược (1-2-3 GO), hết giờ câu,
+  // hết thời gian công bố kết quả. Khi mốc đã trôi qua mà trạng thái chưa đổi thì nhắc
+  // lại mỗi 600ms cho tới khi máy chủ chuyển bước — không phải chờ nhịp watchdog 5 giây.
   // Máy chủ vẫn tự kiểm giờ nên lời nhắc này không thể làm sai luật.
   useEffect(() => {
-    const r = state?.lastResult;
-    if (!state || !r?.resolvedAt || state.status !== "playing") return;
-    if (r.roundIndex !== state.currentRound) return;
-    const end = clock.toClientTime(r.resolvedAt) + 3_000;
-    const id = window.setTimeout(
-      () => {
-        void closeExpired({ data: { token, duelId, roundIndex: state.currentRound } }).catch(
-          () => undefined,
-        );
-      },
-      Math.max(150, end - Date.now() + 150),
-    );
-    return () => window.clearTimeout(id);
-  }, [state, clock, closeExpired, token, duelId]);
+    if (!token || !state) return;
+    if (state.status !== "countdown" && state.status !== "playing") return;
+    const r = state.lastResult;
+    let deadline: number | null = null;
+    if (state.status === "countdown") {
+      deadline = state.startedAt ? clock.toClientTime(state.startedAt) : null;
+    } else if (r?.resolvedAt && r.roundIndex === state.currentRound) {
+      deadline = clock.toClientTime(r.resolvedAt) + REVEAL_MS + 150;
+    } else if (state.roundServedAt) {
+      deadline = clock.toClientTime(state.roundServedAt) + state.secondsPerRound * 1000 + NUDGE_GRACE_MS;
+    }
+    if (deadline === null) return;
+
+    const round = state.currentRound;
+    let stopped = false;
+    let timer = 0;
+    const pump = () => {
+      if (stopped) return;
+      lastPumpRef.current = Date.now();
+      void closeExpired({ data: { token, duelId, roundIndex: round } })
+        .then((r) => {
+          if (r?.closed) void refresh(true);
+        })
+        .catch(() => undefined);
+
+      timer = window.setTimeout(pump, NUDGE_INTERVAL_MS);
+    };
+    const wait = Math.max(0, deadline - Date.now());
+    const gap = Math.max(0, NUDGE_INTERVAL_MS - (Date.now() - lastPumpRef.current));
+    timer = window.setTimeout(pump, Math.max(wait, gap));
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+    };
+  }, [state, clock, closeExpired, refresh, token, duelId]);
+
 
 
   if (!token || !state)
@@ -423,11 +458,12 @@ function WaitingPanel({
   useEffect(() => {
     if (state.status !== "countdown" || !state.startedAt) return;
     const target = toClientTime(state.startedAt);
-    const id = window.setInterval(
-      () => setLeft(Math.max(0, Math.ceil((target - Date.now()) / 1000))),
-      200,
-    );
+    // Đặt ngay số giây đầu tiên (trước đây khởi tạo 0 nên nháy "GO!" rồi mới đếm 3-2-1).
+    const tick = () => setLeft(Math.max(0, Math.ceil((target - Date.now()) / 1000)));
+    tick();
+    const id = window.setInterval(tick, 100);
     return () => window.clearInterval(id);
+
   }, [state.status, state.startedAt, toClientTime]);
 
   if (state.status === "countdown")
