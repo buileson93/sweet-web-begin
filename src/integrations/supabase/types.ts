@@ -1242,6 +1242,7 @@ export type Database = {
           allow_fifty_fifty: boolean
           allow_skip: boolean
           blueprint: Json
+          combo_fx: boolean
           cover_fit: string
           cover_url: string
           created_at: string
@@ -1277,6 +1278,7 @@ export type Database = {
           allow_fifty_fifty?: boolean
           allow_skip?: boolean
           blueprint?: Json
+          combo_fx?: boolean
           cover_fit?: string
           cover_url?: string
           created_at?: string
@@ -1312,6 +1314,7 @@ export type Database = {
           allow_fifty_fifty?: boolean
           allow_skip?: boolean
           blueprint?: Json
+          combo_fx?: boolean
           cover_fit?: string
           cover_url?: string
           created_at?: string
