@@ -338,6 +338,7 @@ function AdminPage() {
                 {current === "history" && <EmployeeHistoryManager />}
                 {current === "reminders" && <ReminderManager />}
                 {current === "audit" && <AuditLogManager />}
+                {current === "bugs" && canManageSystem && <BugReportManager />}
                 {current === "accounts" && canManageSystem && <RoleManager />}
                 {current === "backup" && canManageSystem && <BackupManager />}
               </div>
