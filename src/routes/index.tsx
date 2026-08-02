@@ -129,7 +129,7 @@ function HomePage() {
       <ProductTour steps={TOUR_STEPS} />
 
       {/* Bố cục chia đôi: trái = vào phòng thi, phải = bảng xếp hạng trực tiếp */}
-      <section className="grid gap-5 lg:grid-cols-12 lg:items-start lg:gap-8 xl:gap-10">
+      <section className="grid gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-8 xl:gap-10">
         <div className="flex min-w-0 flex-col gap-4 sm:gap-5 lg:col-span-7">
 
           <div className="animate-pop relative min-w-0">
@@ -171,6 +171,17 @@ function HomePage() {
 
           <div data-tour="register" className="animate-pop" style={{ animationDelay: "0.1s" }}>
             <RegisterCard quizzes={quizzes} loading={quizzesQuery.isLoading} value={quizId} onValueChange={setQuizId} />
+          </div>
+
+          {/* Trên desktop hai ô thống kê nằm ở cột trái để lấp khoảng trắng và cân chiều cao hai cột */}
+          <div className="stagger mt-auto hidden gap-4 lg:grid lg:grid-cols-2">
+            <StatTile label="Lượt thi" value={countQuery.isLoading ? "…" : String(countQuery.data ?? 0)} />
+            <StatTile
+              label="Đang mở"
+              value={`${openCount}/${quizzes.length}`}
+              tone="accent"
+              icon={<Trophy className="size-4" />}
+            />
           </div>
         </div>
 
@@ -269,7 +280,7 @@ function HomePage() {
             </Link>
           </div>
 
-          <div className="stagger grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="stagger grid grid-cols-2 gap-3 sm:gap-4 lg:hidden">
             <StatTile label="Lượt thi" value={countQuery.isLoading ? "…" : String(countQuery.data ?? 0)} />
             <StatTile
               label="Đang mở"
@@ -318,7 +329,7 @@ function HomePage() {
             <SnapCarousel
               className="stagger"
               label="Danh sách cuộc thi"
-              gridClassName="md:grid-cols-1 md:auto-rows-[7.5rem] lg:auto-rows-[8rem]"
+              gridClassName="md:grid-cols-1 md:auto-rows-[6rem] md:gap-3 lg:auto-rows-[6.5rem]"
             >
               {quizzes.slice(0, visibleQuizzes).map((q) => {
                 const st = quizStatus(q);
@@ -344,7 +355,7 @@ function HomePage() {
                       data-ready="0"
                       onLoad={(e) => e.currentTarget.setAttribute("data-ready", "1")}
                       className={cn(
-                        "quiz-card-art pointer-events-none absolute inset-y-0 right-0 h-full w-[62%] max-w-none select-none bg-secondary/30 object-right sm:w-[68%] md:w-[34%]",
+                        "quiz-card-art pointer-events-none absolute inset-y-0 right-0 h-full w-[62%] max-w-none select-none bg-secondary/30 object-right sm:w-[68%] md:w-[40%]",
                         q.cover_fit === "cover" ? "object-cover" : "object-contain",
                       )}
                     />
