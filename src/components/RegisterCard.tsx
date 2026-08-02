@@ -529,19 +529,6 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           </div>
         ) : null}
 
-        {verified ? null : (
-
-          <Button
-            variant="secondary"
-            className="h-10 w-full rounded-xl"
-            onClick={handleVerify}
-            disabled={verifying || !canVerify}
-          >
-            {verifying ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
-            {verifying ? "Đang đối chiếu..." : "Xác thực thông tin"}
-          </Button>
-        )}
-
         {intro && (
           <div className="space-y-2 rounded-xl border border-border bg-secondary/60 p-3">
             <p className="text-sm font-semibold">Hướng dẫn &amp; nội quy</p>
@@ -570,10 +557,27 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           </p>
         )}
 
-        <Button className="game-button h-11 w-full rounded-xl" onClick={handleStart} disabled={submitting || !canStart}>
-          {submitting ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-          {submitting ? "Đang tạo phiên thi..." : "Bắt đầu làm bài"}
-        </Button>
+        {/* Gộp xác thực + bắt đầu vào một hàng để tiết kiệm diện tích */}
+        <div className="flex items-center gap-2">
+          {verified ? null : (
+            <IconTip label={verifying ? "Đang đối chiếu..." : "Xác thực thông tin"}>
+              <Button
+                variant="secondary"
+                size="icon"
+                aria-label="Xác thực thông tin"
+                className="size-11 shrink-0 rounded-xl"
+                onClick={handleVerify}
+                disabled={verifying || !canVerify}
+              >
+                {verifying ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+              </Button>
+            </IconTip>
+          )}
+          <Button className="game-button h-11 flex-1 rounded-xl" onClick={handleStart} disabled={submitting || !canStart}>
+            {submitting ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
+            {submitting ? "Đang tạo phiên thi..." : "Bắt đầu làm bài"}
+          </Button>
+        </div>
 
         {hint ? (
         <p
