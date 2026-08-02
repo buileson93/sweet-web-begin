@@ -147,3 +147,85 @@ export function screenBucket(w: number, h: number) {
   if (!w || !h) return "Không rõ";
   return `${w}×${h}`;
 }
+
+/* ------------------------- Thông tin thiết bị mở rộng ------------------------- */
+
+export type DeviceExtras = {
+  device_model: string;
+  platform_version: string;
+  architecture: string;
+  cpu_cores: number;
+  memory_gb: number;
+  network_type: string;
+  downlink: number;
+  save_data: boolean;
+  user_agent: string;
+};
+
+type UaDataLike = {
+  platform?: string;
+  getHighEntropyValues?: (hints: string[]) => Promise<Record<string, unknown>>;
+};
+
+/**
+ * Thu thập thêm model máy, phiên bản hệ điều hành, cấu hình phần cứng và chất lượng mạng.
+ * Mọi trường đều "cố gắng hết sức": trình duyệt không hỗ trợ thì trả về giá trị rỗng.
+ */
+export async function collectDeviceExtras(): Promise<DeviceExtras> {
+  const nav = navigator as Navigator & {
+    userAgentData?: UaDataLike;
+    deviceMemory?: number;
+    connection?: { effectiveType?: string; downlink?: number; saveData?: boolean };
+  };
+
+  let model = "";
+  let platformVersion = "";
+  let architecture = "";
+  try {
+    const values = await nav.userAgentData?.getHighEntropyValues?.([
+      "model",
+      "platformVersion",
+      "architecture",
+      "bitness",
+      "fullVersionList",
+    ]);
+    if (values) {
+      model = String(values.model ?? "");
+      platformVersion = String(values.platformVersion ?? "");
+      architecture = [values.architecture, values.bitness].filter(Boolean).join("-");
+    }
+  } catch {
+    /* trình duyệt từ chối cung cấp — bỏ qua */
+  }
+
+  if (!model) model = modelFromUserAgent(navigator.userAgent ?? "");
+
+  const connection = nav.connection;
+  return {
+    device_model: model.slice(0, 80),
+    platform_version: platformVersion.slice(0, 40),
+    architecture: architecture.slice(0, 40),
+    cpu_cores: Math.max(0, Math.round(nav.hardwareConcurrency ?? 0)),
+    memory_gb: Number(nav.deviceMemory ?? 0),
+    network_type: String(connection?.effectiveType ?? "").slice(0, 20),
+    downlink: Number(connection?.downlink ?? 0),
+    save_data: Boolean(connection?.saveData),
+    user_agent: (navigator.userAgent ?? "").slice(0, 400),
+  };
+}
+
+/** Đoán tên máy từ chuỗi User-Agent khi trình duyệt không cung cấp "model". */
+export function modelFromUserAgent(ua: string): string {
+  const android = ua.match(/Android [\d.]+;\s*([^;)]+?)(?:\s+Build|[;)])/);
+  if (android?.[1]) return android[1].trim();
+  if (/iPhone/.test(ua)) return "iPhone";
+  if (/iPad/.test(ua)) return "iPad";
+  if (/Macintosh/.test(ua)) return "Mac";
+  if (/Windows NT/.test(ua)) return "PC Windows";
+  return "";
+}
+
+/** Bản ghi truy cập đầy đủ (đồng bộ + phần mở rộng cần chờ trình duyệt trả lời). */
+export async function collectFullVisit(path: string): Promise<DeviceVisitPayload & DeviceExtras> {
+  return { ...collectDeviceVisit(path), ...(await collectDeviceExtras()) };
+}
