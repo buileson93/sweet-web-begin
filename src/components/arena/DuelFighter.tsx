@@ -123,7 +123,7 @@ export const DuelFighter = memo(function DuelFighter({
   return (
     <div
       className={cn(
-        "relative flex min-w-0 flex-1 flex-col gap-2 overflow-visible rounded-xl border bg-card p-3 transition",
+        "relative flex min-w-0 flex-1 flex-col gap-1.5 overflow-visible rounded-xl border bg-card p-2 transition sm:gap-2 sm:p-3",
         mine ? "border-primary/50" : "border-border",
         player?.left && "opacity-50",
         // Sắc màu cảnh báo thể trạng: hổ phách khi bị thương, đỏ nhấp nháy khi sắp gục.
@@ -171,7 +171,7 @@ export const DuelFighter = memo(function DuelFighter({
           className={cn(shake > 0 && "animate-avatar-recoil")}
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">
+          <p className="truncate text-xs font-semibold sm:text-sm">
             {player?.displayName ?? "Đang chờ đối thủ…"}
           </p>
           <p className="truncate text-[11px] text-muted-foreground">
@@ -187,7 +187,7 @@ export const DuelFighter = memo(function DuelFighter({
       </div>
       <div
         className={cn(
-          "relative flex h-44 items-end overflow-hidden rounded-lg bg-gradient-to-b from-primary/5 to-muted/40 sm:h-52",
+          "relative flex h-28 items-end overflow-hidden rounded-lg bg-gradient-to-b from-primary/5 to-muted/40 sm:h-44 md:h-52",
           // Hai nhân vật đứng quay mặt vào nhau, dồn sát về phía sân giữa.
           mine ? "justify-end pr-0" : "justify-start pl-0",
         )}
@@ -257,7 +257,7 @@ export const DuelFighter = memo(function DuelFighter({
         ) : null}
 
         {/* Bọc ngoài để nháy trắng (filter) không đè hoạt ảnh lao/giật (transform). */}
-        <div className={cn(pose === "hurt" && "animate-sprite-flash")}>
+        <div className={cn("origin-bottom scale-[0.62] sm:scale-100", pose === "hurt" && "animate-sprite-flash")}>
           <ClassSprite
             classId={player?.classId}
             action={pose}
@@ -277,7 +277,7 @@ export const DuelFighter = memo(function DuelFighter({
 
 
       <HpBar hp={hp} hpStart={hpStart} mine={mine} />
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-[10px] text-muted-foreground sm:text-[11px]">
         ⚔️ {player?.damageDealt ?? 0} sát thương · ✅ {player?.correct ?? 0} câu đúng
       </p>
     </div>
