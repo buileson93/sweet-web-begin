@@ -27,18 +27,19 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "onDark"
         onDark ? "border-primary-foreground/15 bg-primary/70 text-primary-foreground" : "border-border bg-background/85",
       )}
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
-        <Link to="/" aria-label="Trang chủ" className="flex min-w-0 items-center gap-2.5">
-          <BrandLogo />
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-3 sm:h-16 sm:gap-3 sm:px-4">
+        <Link to="/" aria-label="Trang chủ" className="flex min-w-0 items-center gap-2">
+          <BrandLogo compact className="shrink-0 sm:px-2.5" />
           <span
             className={cn(
-              "min-w-0 truncate text-[0.7rem] font-extrabold uppercase tracking-tight sm:text-xs",
+              "hidden min-w-0 truncate text-[0.68rem] font-extrabold uppercase leading-tight tracking-tight xs:inline sm:text-xs",
               onDark ? "text-primary-foreground/90" : "text-muted-foreground",
             )}
           >
             Đấu trường tri thức VATM
           </span>
         </Link>
+
 
 
         <nav className="hidden items-center gap-1 text-sm font-medium md:flex">
