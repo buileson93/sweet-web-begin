@@ -67,9 +67,8 @@ export function CarouselStats() {
           />
         }
       >
-        {(
+        <div className="space-y-4">
 
-          <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
               <StatTile icon={LayoutGrid} label="Số thẻ xem trung bình" value={`${avgViewed.toFixed(1)} / ${maxCards}`} />
               <StatTile icon={Timer} label="Thời gian dừng trung bình" value={`${(avgDwell / 1000).toFixed(1)} giây`} />
