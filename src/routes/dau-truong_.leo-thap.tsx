@@ -1373,7 +1373,7 @@ function TowerPage() {
       {/* Phòng xử lý tình huống / tình huống phức tạp / sự cố lớn */}
       {run && !summary && !outcome && run.room && perRoom > 0 && question && (
         <section
-          className="space-y-4 rounded-2xl border bg-card/70 p-5"
+          className="space-y-3 rounded-2xl border bg-card/70 p-3 pb-16 sm:space-y-4 sm:p-5 lg:pb-5"
           aria-label={`${boss ? boss.name : ROOM_META[run.room.kind].label} — câu ${idx + 1} trên ${perRoom}`}
         >
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
