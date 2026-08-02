@@ -74,6 +74,8 @@ export function useExamAnswers(opts: {
   }, [current, runX2, session, x2Index]);
 
   const instant = Boolean(session?.settings?.instantFeedback);
+  // Hiệu ứng combo bật/tắt riêng: có thể KHÔNG cộng điểm thưởng chuỗi mà vẫn hiện x2, x3...
+  const comboFx = session?.settings?.comboFx !== false;
   const locked = (idx: number) => instant && feedback[String(idx)] !== undefined;
 
   const handleAnswer = useCallback(
@@ -111,7 +113,7 @@ export function useExamAnswers(opts: {
         setAnswerFx({ id: Date.now() + idx, correct: isCorrect });
         setCombo((c) => {
           const next = isCorrect ? c + 1 : 0;
-          if (isCorrect && next >= COMBO_MIN) {
+          if (comboFx && isCorrect && next >= COMBO_MIN) {
             setComboEvent({ id: Date.now() + idx, combo: next });
           } else {
             setComboEvent(null);
@@ -124,7 +126,7 @@ export function useExamAnswers(opts: {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [instant, feedback, runCheck, session, setAnswers],
+    [instant, comboFx, feedback, runCheck, session, setAnswers],
   );
 
 
@@ -153,6 +155,7 @@ export function useExamAnswers(opts: {
     answerFx,
     combo,
     comboEvent,
+    comboFx,
     instant,
     locked,
     handleAnswer,
