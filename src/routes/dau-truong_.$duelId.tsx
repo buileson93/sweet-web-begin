@@ -106,6 +106,9 @@ function DuelRoom() {
   const [dice, setDice] = useState<number[]>([]);
   const [camShake, setCamShake] = useState(0);
   const expiringRef = useRef(false);
+  /** Lần nhắc máy chủ gần nhất — chặn nhắc dồn dập khi trạng thái đổi liên tục. */
+  const lastPumpRef = useRef(0);
+
   /** Dải diễn biến trong khung đấu — thay cho "bão" toast mỗi lượt. */
   const [battleLog, setBattleLog] = useState<{ id: number; tone: string; text: string }[]>([]);
 
