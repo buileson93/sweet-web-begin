@@ -160,23 +160,42 @@ function DuelRoom() {
     }
   }, [state, clock]);
 
-  // Hết thời gian công bố kết quả: nhắc máy chủ sang câu tiếp ngay, không chờ nhịp watchdog.
+  // Bơm nhắc máy chủ cho MỌI pha có mốc giờ: hết đếm ngược (1-2-3 GO), hết giờ câu,
+  // hết thời gian công bố kết quả. Khi mốc đã trôi qua mà trạng thái chưa đổi thì nhắc
+  // lại mỗi 600ms cho tới khi máy chủ chuyển bước — không phải chờ nhịp watchdog 5 giây.
   // Máy chủ vẫn tự kiểm giờ nên lời nhắc này không thể làm sai luật.
   useEffect(() => {
-    const r = state?.lastResult;
-    if (!state || !r?.resolvedAt || state.status !== "playing") return;
-    if (r.roundIndex !== state.currentRound) return;
-    const end = clock.toClientTime(r.resolvedAt) + 3_000;
-    const id = window.setTimeout(
-      () => {
-        void closeExpired({ data: { token, duelId, roundIndex: state.currentRound } }).catch(
-          () => undefined,
-        );
-      },
-      Math.max(150, end - Date.now() + 150),
-    );
-    return () => window.clearTimeout(id);
+    if (!token || !state) return;
+    if (state.status !== "countdown" && state.status !== "playing") return;
+    const r = state.lastResult;
+    let deadline: number | null = null;
+    if (state.status === "countdown") {
+      deadline = state.startedAt ? clock.toClientTime(state.startedAt) : null;
+    } else if (r?.resolvedAt && r.roundIndex === state.currentRound) {
+      deadline = clock.toClientTime(r.resolvedAt) + REVEAL_MS + 150;
+    } else if (state.roundServedAt) {
+      deadline = clock.toClientTime(state.roundServedAt) + state.secondsPerRound * 1000 + NUDGE_GRACE_MS;
+    }
+    if (deadline === null) return;
+
+    const round = state.currentRound;
+    let stopped = false;
+    let timer = 0;
+    const pump = () => {
+      if (stopped) return;
+      lastPumpRef.current = Date.now();
+      void closeExpired({ data: { token, duelId, roundIndex: round } }).catch(() => undefined);
+      timer = window.setTimeout(pump, NUDGE_INTERVAL_MS);
+    };
+    const wait = Math.max(0, deadline - Date.now());
+    const gap = Math.max(0, NUDGE_INTERVAL_MS - (Date.now() - lastPumpRef.current));
+    timer = window.setTimeout(pump, Math.max(wait, gap));
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+    };
   }, [state, clock, closeExpired, token, duelId]);
+
 
 
   if (!token || !state)
