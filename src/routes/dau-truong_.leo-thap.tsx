@@ -48,6 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SectionHeading } from "@/components/ui-kit";
+import { ArenaActionBar } from "@/components/arena/ArenaActionBar";
 import { ArenaHero, ArenaPage } from "@/components/arena/ArenaPage";
 import { readExamEntry } from "@/lib/examSession";
 import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
