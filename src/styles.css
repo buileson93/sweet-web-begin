@@ -179,20 +179,9 @@
     border-color: var(--color-border);
   }
 
-  /* Cuộn có gia tốc, êm ái trên cả desktop lẫn điện thoại */
+  /* Cuộn mượt có gia tốc trên cả desktop lẫn điện thoại */
   html {
     scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-stop: normal;
-  }
-
-  /* Bật cuộn quán tính (momentum) cho mọi vùng cuộn riêng */
-  [style*="overflow"],
-  [class*="overflow-"],
-  [class*="scroll"] {
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    overscroll-behavior: contain;
   }
 
   body {
@@ -200,8 +189,7 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    /* Giảm độ nảy khi chạm đáy/đỉnh trang */
-    overscroll-behavior-y: contain;
+    overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
   }
 
