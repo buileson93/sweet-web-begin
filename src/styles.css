@@ -219,6 +219,54 @@
   box-shadow: var(--shadow-soft);
 }
 
+/* Ẩn thanh cuộn ngang nhưng vẫn cho vuốt */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/**
+ * Hybrid scroll: trang cuộn dọc tự do, các dải nội dung ngang thì "hút" dứt khoát vào thẻ.
+ * .snap-row  — dải cuộn ngang có snap
+ * .snap-card — thẻ nằm trong dải, canh giữa khi dừng vuốt
+ * .snap-chip — chip/tab nhỏ, dùng proximity để không cản vuốt nhanh
+ */
+@utility snap-row {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility snap-row-soft {
+  scroll-snap-type: x proximity;
+}
+
+@utility snap-card {
+  scroll-snap-align: center;
+  scroll-snap-stop: normal;
+}
+
+@utility snap-chip {
+  scroll-snap-align: start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snap-row {
+    scroll-behavior: auto;
+  }
+}
+
+
 @utility grid-pattern {
   background-image:
     linear-gradient(oklch(1 0 0 / 0.06) 1px, transparent 1px),
