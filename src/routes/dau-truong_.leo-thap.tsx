@@ -28,6 +28,8 @@ import { BlessingCards } from "@/components/tower/BlessingCards";
 import { CurseOffer } from "@/components/tower/CurseOffer";
 import { ScoreSources } from "@/components/tower/ScoreSources";
 import { RunTimeline } from "@/components/tower/RunTimeline";
+import { ComfortToggle } from "@/components/tower/ComfortToggle";
+
 import { saveRunRecord } from "@/lib/tower/history";
 import { RichText } from "@/components/RichText";
 import { Button } from "@/components/ui/button";
