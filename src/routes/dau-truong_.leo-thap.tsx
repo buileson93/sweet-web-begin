@@ -1461,7 +1461,8 @@ function TowerPage() {
             }}
           />
 
-          <div className="flex flex-wrap justify-end gap-2">
+          {/* Máy tính: hàng nút nằm ngay dưới câu hỏi. */}
+          <div className="hidden flex-wrap justify-end gap-2 lg:flex">
             <Button variant="outline" disabled={idx <= 0} onClick={() => setIdx((i) => Math.max(0, i - 1))}>
               <ArrowLeft className="mr-2 size-4" /> Câu trước
             </Button>
@@ -1472,6 +1473,37 @@ function TowerPage() {
             ) : (
               <Button onClick={() => (blanks > 0 ? setConfirmClose(true) : closeRoom(answers))}>Chốt phòng</Button>
             )}
+          </div>
+
+          {/* Điện thoại: đưa nút vào vùng ngón cái, nằm ngay trên thanh tab. */}
+          <div className="lg:hidden">
+            <ArenaActionBar>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-11 shrink-0 rounded-xl"
+                aria-label="Câu trước"
+                disabled={idx <= 0}
+                onClick={() => setIdx((i) => Math.max(0, i - 1))}
+              >
+                <ArrowLeft className="size-4" />
+              </Button>
+              <span className="shrink-0 rounded-xl border px-3 py-2 font-mono text-xs text-muted-foreground">
+                {idx + 1}/{perRoom}
+              </span>
+              {idx < perRoom - 1 ? (
+                <Button className="h-11 flex-1 rounded-xl" onClick={() => setIdx((i) => i + 1)}>
+                  Câu tiếp theo <ArrowRight className="ml-2 size-4" />
+                </Button>
+              ) : (
+                <Button
+                  className="h-11 flex-1 rounded-xl"
+                  onClick={() => (blanks > 0 ? setConfirmClose(true) : closeRoom(answers))}
+                >
+                  Chốt phòng
+                </Button>
+              )}
+            </ArenaActionBar>
           </div>
         </section>
       )}
