@@ -172,6 +172,17 @@ function HomePage() {
           <div data-tour="register" className="animate-pop" style={{ animationDelay: "0.1s" }}>
             <RegisterCard quizzes={quizzes} loading={quizzesQuery.isLoading} value={quizId} onValueChange={setQuizId} />
           </div>
+
+          {/* Trên desktop hai ô thống kê nằm ở cột trái để lấp khoảng trắng và cân chiều cao hai cột */}
+          <div className="stagger mt-auto hidden gap-4 lg:grid lg:grid-cols-2">
+            <StatTile label="Lượt thi" value={countQuery.isLoading ? "…" : String(countQuery.data ?? 0)} />
+            <StatTile
+              label="Đang mở"
+              value={`${openCount}/${quizzes.length}`}
+              tone="accent"
+              icon={<Trophy className="size-4" />}
+            />
+          </div>
         </div>
 
         <div data-tour="leaderboard" className="flex min-w-0 flex-col gap-3 sm:gap-4 lg:col-span-5">
