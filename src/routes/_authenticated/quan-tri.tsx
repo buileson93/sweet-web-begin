@@ -14,6 +14,7 @@ import {
   ListChecks,
   LogOut,
   MonitorSmartphone,
+  MousePointerClick,
   PieChart,
   RadioTower,
   ScrollText,
@@ -42,6 +43,7 @@ import { UnitStats } from "@/components/admin/UnitStats";
 import { DeviceStats } from "@/components/admin/DeviceStats";
 import { TopicReport } from "@/components/admin/TopicReport";
 import { BugReportManager } from "@/components/admin/BugReportManager";
+import { CarouselStats } from "@/components/admin/CarouselStats";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui-kit";
@@ -113,6 +115,7 @@ const GROUPS: { group: string; items: Section[] }[] = [
       { value: "results", label: "Kết quả", hint: "Bài thi đã nộp", icon: BarChart3 },
       { value: "unit-stats", label: "Thống kê đơn vị", hint: "Điểm trung bình, tỉ lệ đạt", icon: PieChart },
       { value: "devices", label: "Thiết bị & trình duyệt", hint: "Người dùng vào bằng máy gì", icon: MonitorSmartphone },
+      { value: "carousel", label: "Hành vi vuốt thẻ", hint: "Tối ưu bố cục trang chủ", icon: MousePointerClick, adminOnly: true },
       { value: "history", label: "Thành tích", hint: "Lịch sử theo nhân viên", icon: Trophy },
       { value: "audit", label: "Lịch sử thao tác", hint: "Nhật ký quản trị", icon: ScrollText },
       { value: "bugs", label: "Báo lỗi & góp ý", hint: "Phản hồi từ người dùng", icon: Bug, adminOnly: true },
@@ -334,6 +337,7 @@ function AdminPage() {
                   </div>
                 )}
                 {current === "devices" && <DeviceStats />}
+                {current === "carousel" && canManageSystem && <CarouselStats />}
 
                 {current === "history" && <EmployeeHistoryManager />}
                 {current === "reminders" && <ReminderManager />}
