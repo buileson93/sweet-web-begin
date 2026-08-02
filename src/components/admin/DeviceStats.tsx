@@ -128,6 +128,11 @@ export function DeviceStats() {
   const byModel = useMemo(() => tally(rows, (r) => r.device_model || "Không rõ"), [rows]);
   const byScreen = useMemo(() => tally(rows, (r) => screenBucket(r.screen_w, r.screen_h)), [rows]);
   const byPath = useMemo(() => tally(rows, (r) => r.path || "/"), [rows]);
+  // Chỉ liệt kê lượt truy cập có định danh; khách vãng lai gom vào bảng khác.
+  const byEmployee = useMemo(
+    () => tally(rows.filter((r) => r.employee_name), (r) => r.employee_name || ""),
+    [rows],
+  );
   const byIp = useMemo(() => tally(rows, (r) => r.ip || "Không rõ"), [rows]);
   const byNetwork = useMemo(() => tally(rows, (r) => r.network_type || "Không rõ"), [rows]);
   const recent = useMemo(() => rows.slice(0, 500), [rows]);
@@ -365,6 +370,7 @@ export function DeviceStats() {
             { title: "Chi tiết hệ điều hành", data: byOs, head: "Hệ điều hành" },
             { title: "Độ phân giải màn hình", data: byScreen, head: "Kích thước" },
             { title: "Mạng kết nối", data: byNetwork, head: "Loại mạng" },
+            { title: "Người dùng đã đăng nhập", data: byEmployee, head: "Người dùng" },
             { title: "Trang được xem nhiều", data: byPath, head: "Đường dẫn" },
             { title: "Địa chỉ IP truy cập nhiều", data: byIp, head: "Địa chỉ IP" },
           ].map((t) => (
