@@ -707,9 +707,15 @@
 }
 
 /* Lớp chữ luôn nằm trên ảnh và có nền mờ nhẹ để đọc rõ khi ảnh trượt vào */
-.quiz-card > *:not(.quiz-card-art):not(.quiz-card-scrim) {
+.quiz-card > *:not(.quiz-card-art):not(.quiz-card-scrim):not(.quiz-card-glow) {
   position: relative;
   z-index: 2;
+}
+
+/* Đốm sáng trang trí: luôn tuyệt đối, không được chiếm chỗ trong luồng (gây khoảng trắng lớn) */
+.quiz-card-glow {
+  position: absolute;
+  z-index: 1;
 }
 
 .quiz-card-scrim {
