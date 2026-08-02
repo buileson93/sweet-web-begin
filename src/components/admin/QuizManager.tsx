@@ -210,13 +210,18 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
                     <span
                       className={cn(
                         "status-pill",
-                        bank < quiz.question_count
+                        bank !== null && bank < quiz.question_count
                           ? "bg-destructive/10 text-destructive"
                           : "bg-secondary text-muted-foreground",
                       )}
                     >
-                      Ngân hàng: {bank} câu
+                      {bank === null
+                        ? countsQuery.isError
+                          ? "Ngân hàng: chưa đọc được"
+                          : "Ngân hàng: đang đếm…"
+                        : `Ngân hàng: ${bank} câu`}
                     </span>
+
                   </div>
                   <p className="type-meta mt-3">
                     {formatDateTime(quiz.start_time)} → {formatDateTime(quiz.end_time)}
