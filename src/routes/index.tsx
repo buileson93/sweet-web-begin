@@ -129,7 +129,7 @@ function HomePage() {
       <ProductTour steps={TOUR_STEPS} />
 
       {/* Bố cục chia đôi: trái = vào phòng thi, phải = bảng xếp hạng trực tiếp */}
-      <section className="grid gap-5 lg:grid-cols-12 lg:items-start lg:gap-8 xl:gap-10">
+      <section className="grid gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-8 xl:gap-10">
         <div className="flex min-w-0 flex-col gap-4 sm:gap-5 lg:col-span-7">
 
           <div className="animate-pop relative min-w-0">
