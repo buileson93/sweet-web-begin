@@ -13,6 +13,7 @@ import { ConnectionBadge } from "@/components/arena/ConnectionBadge";
 import { NetStatsWidget } from "@/components/arena/NetStatsWidget";
 import { DiagnosticsDialog } from "@/components/arena/DiagnosticsDialog";
 import { SkillBar } from "@/components/arena/SkillBar";
+import { WaitStatus } from "@/components/arena/WaitStatus";
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
 import { ArenaActionBar } from "@/components/arena/ArenaActionBar";
@@ -58,7 +59,7 @@ export const Route = createFileRoute("/dau-truong_/$duelId")({
 });
 
 /** Thời gian công bố kết quả phía máy chủ (ms) — phải khớp REVEAL_MS trong duel.server.ts. */
-const REVEAL_MS = 3_000;
+const REVEAL_MS = 2_000;
 /** Ân hạn mạng trước khi nhắc máy chủ chốt câu (khớp NETWORK_GRACE_MS máy chủ). */
 const NUDGE_GRACE_MS = 700;
 /** Nhịp nhắc lại khi máy chủ chưa kịp chuyển bước. */
@@ -271,6 +272,15 @@ function DuelRoom() {
       </div>
 
       <BattleDice dice={dice} />
+
+      <WaitStatus
+        state={state}
+        me={me}
+        foe={foe}
+        connectionStatus={connectionStatus}
+        latency={latency}
+        toClientTime={clock.toClientTime}
+      />
 
       {battleLog.length > 0 ? (
         <ul

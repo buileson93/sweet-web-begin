@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 
 import { ClassChip } from "@/components/arena/ClassPicker";
+import { ClassFx } from "@/components/arena/ClassFx";
 import { ClassSprite } from "@/components/arena/ClassSprite";
 import { HpBar } from "@/components/arena/HpBar";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
@@ -183,29 +184,17 @@ export const DuelFighter = memo(function DuelFighter({
             mine ? "right-10" : "left-10",
           )}
         />
-        {/* Vệt chém bay về phía đối thủ khi ra đòn. */}
-        {pose === "attack" ? (
-          <span
-            className={cn(
-              "pointer-events-none absolute bottom-12 z-20 h-10 w-24 rounded-full blur-[3px]",
-              mine
-                ? "right-2 animate-trail-right bg-gradient-to-r from-transparent via-primary/70 to-transparent"
-                : "left-2 animate-trail-left bg-gradient-to-l from-transparent via-rose-400/70 to-transparent",
-            )}
+        {/* Hiệu ứng riêng theo lớp: kiếm sĩ chém, pháp sư chưởng lửa/băng, vệ binh đỡ khiên. */}
+        {pose !== "idle" ? (
+          <ClassFx
+            key={`${pose}-${roundKey ?? 0}`}
+            classId={player?.classId}
+            pose={pose}
+            mine={mine}
+            variant={roundKey ?? 0}
           />
         ) : null}
-        {/* Tia va chạm khi trúng đòn. */}
-        {pose === "hurt" ? (
-          <span
-            className={cn(
-              "pointer-events-none absolute bottom-14 z-30 grid size-14 place-items-center text-3xl animate-impact-spark",
-              mine ? "right-16" : "left-16",
-            )}
-            aria-hidden
-          >
-            💥
-          </span>
-        ) : null}
+
         {/* Bọc ngoài để nháy trắng (filter) không đè hoạt ảnh lao/giật (transform). */}
         <div className={cn(pose === "hurt" && "animate-sprite-flash")}>
           <ClassSprite
