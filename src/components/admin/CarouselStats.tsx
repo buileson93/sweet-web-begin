@@ -103,7 +103,7 @@ export function CarouselStats() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={reach}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} height={64} angle={-18} textAnchor="end" />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip />
                   <Bar dataKey="Đã xem (%)" fill="var(--primary)" radius={[6, 6, 0, 0]} />
@@ -112,9 +112,24 @@ export function CarouselStats() {
               </ResponsiveContainer>
             </div>
 
+            {topClicked.length > 0 && (
+              <div className="rounded-2xl border border-border bg-card p-3">
+                <p className="mb-2 text-sm font-semibold">Thẻ được bấm nhiều nhất</p>
+                <ul className="space-y-1.5">
+                  {topClicked.map(([name, n]) => (
+                    <li key={name} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="min-w-0 truncate">{name}</span>
+                      <span className="shrink-0 font-bold text-primary">{n} lượt</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <p className="text-xs text-muted-foreground">
-              Dựa trên {total} lượt tương tác gần nhất. Nếu tỉ lệ xem tới thẻ 3–4 quá thấp, nên rút ngắn danh sách hoặc đưa cuộc thi quan trọng lên đầu.
+              Dựa trên {total} lượt tương tác gần nhất. Mỗi người chỉ được ghi tối đa 40 lượt/giờ và dữ liệu tự xoá sau 90 ngày để tránh phình cơ sở dữ liệu.
             </p>
+
           </div>
 
 
