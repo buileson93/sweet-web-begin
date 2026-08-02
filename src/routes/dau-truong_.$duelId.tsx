@@ -210,7 +210,7 @@ function DuelRoom() {
       stopped = true;
       window.clearTimeout(timer);
     };
-  }, [state, clock, closeExpired, token, duelId]);
+  }, [state, clock, closeExpired, refresh, token, duelId]);
 
 
 
