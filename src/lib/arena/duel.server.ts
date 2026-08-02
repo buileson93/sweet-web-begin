@@ -48,7 +48,9 @@ import {
 import type { Blueprint } from "@/lib/questionKinds";
 
 /** Thời gian đếm ngược trước khi vào câu đầu tiên (ms). */
-const COUNTDOWN_MS = 3_200;
+const COUNTDOWN_MS = 3_000;
+/** Cho phép vào trận sớm tối đa 400ms khi đếm ngược vừa chạm 0 (khỏi trễ pha "GO"). */
+const COUNTDOWN_EARLY_MS = 400;
 /** Thời gian hiển thị đáp án giữa hai câu (ms) — client tự chạy, máy chủ không chờ. */
 const REVEAL_MS = 2_000;
 
@@ -1043,7 +1045,7 @@ export async function advanceDuel(duelId: string): Promise<{ advanced: boolean }
   const now = Date.now();
 
   if (duel.status === "countdown") {
-    if (duel.started_at && Date.parse(duel.started_at) <= now) {
+    if (duel.started_at && Date.parse(duel.started_at) - COUNTDOWN_EARLY_MS <= now) {
       await serveRound(duel, 0, 0);
       return { advanced: true };
     }
