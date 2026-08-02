@@ -136,7 +136,7 @@ function TowerStatsPage() {
 
           <section className="space-y-3 rounded-2xl border bg-card/70 p-4">
             <SectionHeading title="Chọn hành trình để xem lại" />
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="snap-row snap-row-soft flex gap-2 pb-1">
               {rows.map((r) => (
                 <button
                   key={r.id}

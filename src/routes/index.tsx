@@ -6,6 +6,7 @@ import { ArrowRight, BookOpen, CalendarPlus, ChevronUp, Plane, Timer, Trophy } f
 import { AppShell } from "@/components/AppShell";
 import { CountdownBadge } from "@/components/CountdownBadge";
 import { Podium } from "@/components/Podium";
+import { SnapCarousel } from "@/components/SnapCarousel";
 import { ProductTour, type TourStep } from "@/components/ProductTour";
 import { RegisterCard } from "@/components/RegisterCard";
 import { EmptyState, ListSkeleton, QueryState, SectionHeading, StatusPill } from "@/components/ui-kit";
@@ -309,7 +310,7 @@ function HomePage() {
               />
             }
           >
-            <div className="stagger grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+            <SnapCarousel className="stagger" label="Danh sách cuộc thi">
               {quizzes.slice(0, visibleQuizzes).map((q) => {
                 const st = quizStatus(q);
                 return (
@@ -318,7 +319,7 @@ function HomePage() {
                     type="button"
                     onClick={() => navigate({ to: "/cuoc-thi/$quizId", params: { quizId: q.id } })}
                     className={cn(
-                      "game-card quiz-card group relative min-w-0 overflow-hidden p-4 text-left sm:p-5",
+                      "game-card quiz-card group relative min-w-0 overflow-hidden p-4 text-left sm:p-5 md:w-auto w-full",
                       st === "closed" && "opacity-70",
                     )}
                   >
@@ -377,7 +378,7 @@ function HomePage() {
                   </button>
                 );
               })}
-            </div>
+            </SnapCarousel>
             {quizzes.length > visibleQuizzes && (
               <div className="mt-4 flex justify-center">
                 <Button

@@ -272,7 +272,7 @@ function AdminPage() {
                   </kbd>
                 </Button>
 
-                <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 lg:mx-0 lg:block lg:space-y-4 lg:overflow-visible lg:px-0 lg:pb-0">
+                <div className="snap-row snap-row-soft -mx-1 flex gap-1 px-1 pb-2 lg:mx-0 lg:block lg:space-y-4 lg:overflow-visible lg:px-0 lg:pb-0">
                   {visibleGroups.map((g) => (
                     <div key={g.group} className="flex shrink-0 gap-1 lg:block lg:space-y-1">
                       <p className="type-eyebrow hidden px-3 text-muted-foreground lg:block">{g.group}</p>
