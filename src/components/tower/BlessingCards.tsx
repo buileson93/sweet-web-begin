@@ -52,7 +52,7 @@ export function BlessingCards({ offered, picked, onPick, onConfirm, onSkip }: Pr
         <Sparkles className="size-4 animate-pulse text-amber-500" /> Hỗ trợ kíp trực — lật bài và chọn một trang bị
       </p>
 
-      <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Hỗ trợ kíp trực trang bị">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3" role="radiogroup" aria-label="Hỗ trợ kíp trực trang bị">
         {offered.map((relic, i) => {
           const open = revealed > i;
           const risk = riskOf(relic);
@@ -63,46 +63,56 @@ export function BlessingCards({ offered, picked, onPick, onConfirm, onSkip }: Pr
               type="button"
               role="radio"
               aria-checked={active}
+              aria-label={`${relic.name} — ${RARITY_LABEL[relic.rarity]}. ${relic.desc}`}
               onClick={() => (open ? onPick(relic.id) : setRevealed(i + 1))}
-              className={cn("tower-card group relative h-44 w-full text-left", open && "is-open")}
+              className={cn(
+                "tower-card tower-card--tall group relative w-full text-left",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "transition-transform duration-300 hover:-translate-y-1",
+                open && "is-open",
+                active && "is-picked -translate-y-1",
+              )}
             >
               <span className="tower-card__inner">
                 {/* Mặt úp */}
                 <span className="tower-card__face tower-card__back">
-                  <span className="text-2xl">🎴</span>
+                  <span className="text-3xl">🎴</span>
                   <span className="type-meta mt-1">Chạm để lật</span>
                 </span>
-                {/* Mặt ngửa */}
+                {/* Mặt ngửa — khung thẻ bài dọc */}
                 <span
                   className={cn(
-                    "tower-card__face tower-card__front bg-gradient-to-b p-3",
+                    "tower-card__face tower-card__front tower-card__front--deluxe bg-gradient-to-b",
                     RARITY_TONE[relic.rarity],
-                    active && "ring-2 ring-primary",
                   )}
                 >
-                  <span className="flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-wide opacity-70">
-                    <span>{RARITY_LABEL[relic.rarity]}</span>
-                    <span>{ELEMENT_LABEL[relic.element]}</span>
-                  </span>
-                  <span className="mt-1 text-2xl transition-transform duration-300 group-hover:scale-110">
-                    {relic.icon}
-                  </span>
-                  <span className="mt-1 text-sm font-bold leading-tight">{relic.name}</span>
-                  <span className="type-meta mt-1 leading-snug">{relic.desc}</span>
-                  {risk ? (
-                    <span className="mt-auto flex items-start gap-1 text-left text-[11px] leading-snug text-amber-600">
-                      <AlertTriangle className="mt-0.5 size-3 shrink-0" />
-                      {risk}
+                  <span aria-hidden className="tower-card__shine" />
+                  <span className="tower-card__frame">
+                    <span className="flex w-full items-center justify-between text-[10px] font-bold uppercase tracking-wide opacity-70">
+                      <span>{RARITY_LABEL[relic.rarity]}</span>
+                      <span>{ELEMENT_LABEL[relic.element]}</span>
                     </span>
-                  ) : (
-                    <span className="mt-auto text-[11px] text-emerald-600">Không có mặt trái.</span>
-                  )}
+                    <span className="tower-card__art mt-1 transition-transform duration-300 group-hover:scale-105">
+                      {relic.icon}
+                    </span>
+                    <span className="mt-1.5 line-clamp-2 text-[13px] font-extrabold leading-tight">{relic.name}</span>
+                    <span className="type-meta mt-0.5 line-clamp-3 leading-snug">{relic.desc}</span>
+                    {risk ? (
+                      <span className="mt-auto flex items-start gap-1 pt-1 text-left text-[10px] leading-snug text-amber-600">
+                        <AlertTriangle className="mt-0.5 size-3 shrink-0" />
+                        <span className="line-clamp-2">{risk}</span>
+                      </span>
+                    ) : (
+                      <span className="mt-auto pt-1 text-[10px] text-emerald-600">Không có mặt trái.</span>
+                    )}
+                  </span>
                 </span>
               </span>
             </button>
           );
         })}
       </div>
+
 
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" disabled={!picked} onClick={onConfirm}>

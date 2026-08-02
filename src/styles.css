@@ -2039,3 +2039,79 @@ body.fx-shaking {
   .tower-card__inner { transition: none; }
   .tower-link, .tower-node__spark { animation: none; }
 }
+
+/* ——— Leo Tháp: tuỳ chọn thân thiện (cỡ chữ lớn, giảm chuyển động) ——— */
+html.twr-large-text {
+  font-size: 112.5%;
+}
+html.twr-large-text .type-meta {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+html.twr-calm *,
+html.twr-calm *::before,
+html.twr-calm *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ——— Leo Tháp: thẻ bài dọc kiểu game thẻ bài ——— */
+.tower-card--tall {
+  aspect-ratio: 3 / 4;
+  height: auto;
+}
+.tower-card__front--deluxe {
+  padding: 0.42rem;
+  border-width: 2px;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 10px 26px -14px color-mix(in oklab, var(--foreground) 60%, transparent);
+}
+.tower-card__frame {
+  position: relative;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  border: 1px solid color-mix(in oklab, var(--foreground) 14%, transparent);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--card) 92%, transparent), color-mix(in oklab, var(--card) 70%, transparent));
+  padding: 0.5rem;
+  text-align: center;
+}
+.tower-card__art {
+  display: grid;
+  width: 100%;
+  flex: 1 1 auto;
+  place-items: center;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in oklab, var(--foreground) 10%, transparent);
+  background:
+    radial-gradient(120% 90% at 50% 10%, color-mix(in oklab, currentColor 22%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in oklab, var(--background) 70%, transparent), transparent);
+  font-size: clamp(1.9rem, 8cqw, 2.8rem);
+}
+.tower-card__shine {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, color-mix(in oklab, white 45%, transparent) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: tower-card-shine 4.5s ease-in-out infinite;
+}
+@keyframes tower-card-shine {
+  0%, 60% { transform: translateX(-120%); }
+  85%, 100% { transform: translateX(120%); }
+}
+.tower-card.is-picked .tower-card__front--deluxe {
+  box-shadow:
+    0 0 0 2px var(--primary),
+    0 14px 30px -12px color-mix(in oklab, var(--primary) 70%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tower-card__shine { animation: none; opacity: 0; }
+}

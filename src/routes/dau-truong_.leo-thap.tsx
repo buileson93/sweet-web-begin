@@ -1,6 +1,6 @@
 import { ErrorState } from "@/components/ui-kit";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
@@ -28,6 +28,8 @@ import { BlessingCards } from "@/components/tower/BlessingCards";
 import { CurseOffer } from "@/components/tower/CurseOffer";
 import { ScoreSources } from "@/components/tower/ScoreSources";
 import { RunTimeline } from "@/components/tower/RunTimeline";
+import { ComfortToggle } from "@/components/tower/ComfortToggle";
+
 import { saveRunRecord } from "@/lib/tower/history";
 import { RichText } from "@/components/RichText";
 import { Button } from "@/components/ui/button";
@@ -207,6 +209,7 @@ function TowerPage() {
   const fetchBoard = useServerFn(getTowerBoardFn);
 
   type Ident = { name: string; credential: string; extraCredential?: string };
+  const navigate = useNavigate();
   const [entry, setEntry] = useState<Ident | null>(null);
   const [formName, setFormName] = useState("");
   const [formCredential, setFormCredential] = useState("");
@@ -231,19 +234,29 @@ function TowerPage() {
     answered: number;
     win: boolean;
     hp: number;
+    maxHp: number;
     relics: string[];
     curses: string[];
     ascension: number;
     seed: string;
     log: TowerRun["log"];
+    /** Các mốc chuỗi đúng đã đạt trong cả hành trình, theo thứ tự. */
+    combos: { floor: number; label: string }[];
+    /** Loại phòng từng tầng — dùng để truy vết các sự cố lớn đã đi qua. */
+    path: TowerRun["path"];
   } | null>(
     null,
   );
   const [challengeValue, setChallengeValue] = useState<AnswerValue | undefined>(undefined);
   const [confirmClose, setConfirmClose] = useState(false);
+  /** Xác nhận khi bấm rời trang lúc đang dở phòng trắc nghiệm. */
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [lowTime, setLowTime] = useState(false);
+  /** Nhật ký mốc chuỗi đúng của cả hành trình (ref vì cần đọc ngay trong lúc chốt phòng). */
+  const comboLogRef = useRef<{ floor: number; label: string }[]>([]);
   /** Khi đang ở trong phòng, bản đồ được thu lại; người chơi mở xem khi cần. */
   const [mapOpen, setMapOpen] = useState(false);
+
 
   const [meta, setMeta] = useState<Meta>(EMPTY_META);
   const [daily, setDaily] = useState(false);
@@ -458,12 +471,16 @@ function TowerPage() {
         answered: finished.answered,
         win: finished.win,
         hp: finished.hp,
+        maxHp: finished.maxHp,
         relics: finished.relics,
         curses: finished.curses,
         ascension: finished.ascension,
         seed: finished.seed,
         log: finished.log,
+        combos: comboLogRef.current,
+        path: finished.path,
       });
+
       void pushSync(stateRef.current, floors);
 
       // Lưu lại ngay tại máy để xem lại và thống kê được cả khi mất mạng.
@@ -530,7 +547,14 @@ function TowerPage() {
       setOutcome(graded.outcome);
       setRun(graded.run);
       setPickedRelic(undefined);
+      if (graded.outcome.combos.length) {
+        comboLogRef.current = [
+          ...comboLogRef.current,
+          ...graded.outcome.combos.map((c) => ({ floor: run.floor, label: c.label })),
+        ];
+      }
       if (graded.run.finished) finishRun(graded.run);
+
     },
     [run, outcome, finishRun],
   );
@@ -591,7 +615,9 @@ function TowerPage() {
       setSummary(null);
       setNote("");
       setPickedRelic(undefined);
+      comboLogRef.current = [];
       deadlineRef.current = 0;
+
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Chưa có câu hỏi nghiệp vụ để ôn tập.");
     }
@@ -645,6 +671,18 @@ function TowerPage() {
   /** Đang ở trong một phòng: che bản đồ để người chơi chỉ thấy nội dung cần xử lý. */
   const inRoom = Boolean(run && !summary && !outcome && run.room);
 
+  // Đóng tab / tải lại lúc đang dở phòng: nhắc lại một lần để khỏi mất trạng thái.
+  useEffect(() => {
+    if (!inRoom) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [inRoom]);
+
+
 
   function submitChallenge() {
     if (!run) return;
@@ -669,11 +707,19 @@ function TowerPage() {
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/dau-truong">
+        {inRoom ? (
+          <Button variant="ghost" size="sm" onClick={() => setConfirmLeave(true)}>
             <ArrowLeft className="mr-1.5 size-4" /> Về sảnh Đấu trường
-          </Link>
-        </Button>
+          </Button>
+        ) : (
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/dau-truong">
+              <ArrowLeft className="mr-1.5 size-4" /> Về sảnh Đấu trường
+            </Link>
+          </Button>
+        )}
+        <ComfortToggle />
+
         {offline && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600">
             <WifiOff className="size-3.5" /> Đang ôn ngoại tuyến
@@ -870,9 +916,10 @@ function TowerPage() {
       {run && summary && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
           <SectionHeading title={summary.win ? "Chinh phục đỉnh tháp!" : "Hành trình khép lại"} />
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {[
               { label: "Tầng đã qua", value: summary.floors },
+              { label: "An toàn còn lại", value: `${summary.hp}/${summary.maxHp}` },
               { label: "Điểm hành trình", value: summary.score },
               { label: "Câu đúng", value: summary.correct },
               { label: "Thẻ còn đến hạn", value: dueCount },
@@ -883,6 +930,50 @@ function TowerPage() {
               </div>
             ))}
           </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border bg-background/60 p-3">
+              <p className="mb-2 text-sm font-semibold">Chuỗi đúng &amp; phần thưởng đã nhận</p>
+              {summary.combos.length === 0 ? (
+                <p className="type-meta">Chưa đạt mốc chuỗi đúng nào — lần sau cố giữ nhịp 3 câu liên tiếp nhé.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {summary.combos.map((c, i) => (
+                    <li key={`${c.floor}-${i}`} className="flex items-start gap-2 rounded-lg border bg-card/60 px-2.5 py-1.5 text-xs">
+                      <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">
+                        T{c.floor}
+                      </span>
+                      <span className="leading-snug">{c.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="rounded-xl border bg-background/60 p-3">
+              <p className="mb-2 text-sm font-semibold">Các sự cố lớn đã đi qua</p>
+              <ol className="space-y-1.5">
+                {summary.path
+                  .map((kind, i) => ({ kind, floor: i + 1 }))
+                  .filter((r) => r.kind === "boss")
+                  .map((r) => {
+                    const cleared = r.floor <= summary.floors;
+                    return (
+                      <li
+                        key={r.floor}
+                        className="flex items-center gap-2 rounded-lg border bg-card/60 px-2.5 py-1.5 text-xs"
+                      >
+                        <span className="font-semibold tabular-nums">Tầng {r.floor}</span>
+                        <span className="min-w-0 flex-1 truncate">{bossAt(r.floor)?.name ?? "Sự cố lớn"}</span>
+                        <span className={cleared ? "font-semibold text-emerald-600" : "type-meta"}>
+                          {cleared ? "Đã xử lý" : "Chưa tới"}
+                        </span>
+                      </li>
+                    );
+                  })}
+              </ol>
+            </div>
+          </div>
+
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-xl border bg-background/60 p-3">
               <p className="mb-2 text-sm font-semibold">Điểm đến từ đâu</p>
@@ -904,6 +995,7 @@ function TowerPage() {
               </div>
             </div>
           </div>
+
           <div className="flex flex-wrap gap-2">
             <Button onClick={begin}>
               <RefreshCw className="mr-2 size-4" /> Hành trình mới
@@ -1340,6 +1432,22 @@ function TowerPage() {
           )}
         </section>
       )}
+
+      <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rời phòng đang xử lý?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn đang ở trong một phòng của tháp. Tiến trình được lưu tại máy, nhưng phần trả lời dở trong phòng này sẽ
+              mất. Bạn vẫn muốn về sảnh Đấu trường chứ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Ở lại làm tiếp</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void navigate({ to: "/dau-truong" })}>Vẫn rời đi</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
         <AlertDialogContent>
