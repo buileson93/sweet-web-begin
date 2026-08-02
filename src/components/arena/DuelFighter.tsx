@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 
 import { ClassChip } from "@/components/arena/ClassPicker";
-import { ClassFx } from "@/components/arena/ClassFx";
+import { ClassFx, ClassGear } from "@/components/arena/ClassFx";
 import { ClassSprite } from "@/components/arena/ClassSprite";
 import { HpBar } from "@/components/arena/HpBar";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
@@ -87,6 +87,13 @@ export const DuelFighter = memo(function DuelFighter({
     // Chỉ phát lại khi sang lượt mới — không phát lại mỗi lần máu đổi.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [def?.id, roundKey]);
+
+  // Tư thế theo thể trạng: còn nhiều máu đứng thẳng, yếu thì nghiêng người thở dốc,
+  // nguy kịch thì quỳ gục xuống, hết máu thì đổ nghiêng.
+  const ratio = hpStart > 0 ? hp / hpStart : 1;
+  const stance = hp <= 0 ? "ko" : ratio <= 0.2 ? "critical" : ratio <= 0.4 ? "wounded" : "ok";
+  const stanceClass =
+    stance === "ko" ? "stance-ko" : stance === "critical" ? "stance-critical" : stance === "wounded" ? "stance-wounded" : "";
 
   // Cường độ rung tăng dần theo mức sát thương phải nhận.
   const shakeClass =
@@ -184,6 +191,27 @@ export const DuelFighter = memo(function DuelFighter({
             mine ? "right-10" : "left-10",
           )}
         />
+        {/* Vầng máu đỏ + giọt máu khi sắp gục. */}
+        {stance === "critical" || stance === "ko" ? (
+          <>
+            <span
+              className={cn(
+                "pointer-events-none absolute bottom-6 h-24 w-24 rounded-full bg-rose-600/40 blur-2xl animate-low-hp",
+                mine ? "right-8" : "left-8",
+              )}
+            />
+            <span
+              className={cn(
+                "pointer-events-none absolute bottom-16 size-1.5 rounded-full bg-rose-500 animate-blood-drip",
+                mine ? "right-16" : "left-16",
+              )}
+            />
+          </>
+        ) : null}
+
+        {/* Trang bị riêng theo lớp: giáp kiếm sĩ, áo choàng + quyền trượng pháp sư, giáp nặng vệ binh. */}
+        {player && stance !== "ko" ? <ClassGear classId={player.classId} mine={mine} /> : null}
+
         {/* Hiệu ứng riêng theo lớp: kiếm sĩ chém, pháp sư chưởng lửa/băng, vệ binh đỡ khiên. */}
         {pose !== "idle" ? (
           <ClassFx
@@ -204,7 +232,8 @@ export const DuelFighter = memo(function DuelFighter({
             size={196}
             className={cn(
               "-mb-3 drop-shadow-[0_8px_12px_rgba(0,0,0,0.35)]",
-              pose === "idle" && "animate-idle-bob",
+              pose === "idle" && stance === "ok" && "animate-idle-bob",
+              pose === "idle" && stanceClass,
               pose === "attack" && (mine ? "animate-lunge-right" : "animate-lunge-left"),
               pose === "hurt" && (mine ? "animate-recoil-left" : "animate-recoil-right"),
             )}

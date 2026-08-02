@@ -185,7 +185,8 @@ function DuelRoom() {
     const r = state.lastResult;
     let deadline: number | null = null;
     if (state.status === "countdown") {
-      deadline = state.startedAt ? clock.toClientTime(state.startedAt) : null;
+      // Nhắc sớm 350ms: máy chủ cho phép vào trận sớm nên câu đầu hiện ngay khi đếm về 0.
+      deadline = state.startedAt ? clock.toClientTime(state.startedAt) - 350 : null;
     } else if (r?.resolvedAt && r.roundIndex === state.currentRound) {
       deadline = clock.toClientTime(r.resolvedAt) + REVEAL_MS + 150;
     } else if (state.roundServedAt) {
