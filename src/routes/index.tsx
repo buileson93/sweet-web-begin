@@ -318,7 +318,7 @@ function HomePage() {
             <SnapCarousel
               className="stagger"
               label="Danh sách cuộc thi"
-              gridClassName="md:grid-cols-2 xl:grid-cols-3 md:auto-rows-[17.5rem] lg:auto-rows-[18.5rem]"
+              gridClassName="md:grid-cols-1 md:auto-rows-[7.5rem] lg:auto-rows-[8rem]"
             >
               {quizzes.slice(0, visibleQuizzes).map((q) => {
                 const st = quizStatus(q);
@@ -328,7 +328,7 @@ function HomePage() {
                     type="button"
                     onClick={() => navigate({ to: "/cuoc-thi/$quizId", params: { quizId: q.id } })}
                     className={cn(
-                      "game-card quiz-card group relative flex min-w-0 flex-col overflow-hidden p-4 text-left sm:p-5 md:h-full md:w-auto w-full",
+                      "game-card quiz-card group relative flex min-w-0 flex-col overflow-hidden p-4 text-left sm:p-5 md:h-full md:w-auto w-full md:flex-row md:items-center md:gap-6 md:px-6",
                       st === "closed" && "opacity-70",
                     )}
                   >
@@ -344,7 +344,7 @@ function HomePage() {
                       data-ready="0"
                       onLoad={(e) => e.currentTarget.setAttribute("data-ready", "1")}
                       className={cn(
-                        "quiz-card-art pointer-events-none absolute inset-y-0 right-0 h-full w-[62%] max-w-none select-none bg-secondary/30 object-right sm:w-[68%]",
+                        "quiz-card-art pointer-events-none absolute inset-y-0 right-0 h-full w-[62%] max-w-none select-none bg-secondary/30 object-right sm:w-[68%] md:w-[34%]",
                         q.cover_fit === "cover" ? "object-cover" : "object-contain",
                       )}
                     />
@@ -363,19 +363,19 @@ function HomePage() {
                               : "bg-muted",
                       )}
                     />
-                    <span className="relative flex items-start justify-between gap-3">
+                    <span className="relative flex items-start justify-between gap-3 md:w-32 md:shrink-0 md:flex-col md:items-start md:gap-2">
                       <StatusPill status={st} className={st === "open" ? "animate-glow" : undefined} />
                       <span className="type-meta inline-flex items-center gap-1 font-bold">
                         <Timer className="size-3.5" />
                         {q.duration_minutes}′
                       </span>
                     </span>
-                    <h3 className="type-h3 relative mt-3 line-clamp-2 break-words text-pretty pr-1 transition-colors group-hover:text-primary md:line-clamp-4 md:min-h-[4em]">
+                    <h3 className="type-h3 relative mt-3 line-clamp-2 break-words text-pretty pr-1 transition-colors group-hover:text-primary md:mt-0 md:min-w-0 md:flex-1">
                       {q.title}
                     </h3>
-                    <span className="relative mt-4 flex items-center justify-between gap-3 border-t border-border pt-3 md:mt-auto md:pt-4">
-                      <span className="min-w-0">
-                        <span className="type-meta block truncate md:whitespace-normal md:break-words md:[overflow:visible] md:[text-overflow:clip]">
+                    <span className="relative mt-4 flex items-center justify-between gap-3 border-t border-border pt-3 md:mt-0 md:w-auto md:shrink-0 md:justify-end md:gap-5 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+                      <span className="min-w-0 md:text-right">
+                        <span className="type-meta block truncate md:whitespace-nowrap">
                           {q.question_count} câu • {formatDateTime(q.start_time)}
                         </span>
 
@@ -389,6 +389,7 @@ function HomePage() {
                 );
               })}
             </SnapCarousel>
+
             {quizzes.length > visibleQuizzes && (
               <div className="mt-4 flex justify-center">
                 <Button
