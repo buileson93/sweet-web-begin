@@ -50,7 +50,7 @@ import type { Blueprint } from "@/lib/questionKinds";
 /** Thời gian đếm ngược trước khi vào câu đầu tiên (ms). */
 const COUNTDOWN_MS = 4_000;
 /** Thời gian hiển thị đáp án giữa hai câu (ms) — client tự chạy, máy chủ không chờ. */
-const REVEAL_MS = 3_000;
+const REVEAL_MS = 2_000;
 
 /** Thời lượng hiệu ứng xúc xắc — do máy chủ quy định để hai bên khớp nhau. */
 const DICE_MS = 2_400;
