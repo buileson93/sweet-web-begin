@@ -17,7 +17,7 @@ import { WaitStatus } from "@/components/arena/WaitStatus";
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { Button } from "@/components/ui/button";
 import { ArenaActionBar } from "@/components/arena/ArenaActionBar";
-import { PageContainer } from "@/components/ui-kit";
+import { ArenaPage } from "@/components/arena/ArenaPage";
 import { useDuelChannel } from "@/hooks/useDuelChannel";
 import {
   arenaAnswer,
