@@ -219,14 +219,18 @@ export function buildImportPreview(
         question: draft.question,
         options: draft.options,
         correct_index: draft.correct_index,
-        correct_indices: [],
-        accepted_answers: "",
-        pairs: [],
+        correct_indices: draft.correct_indices ?? [],
+        accepted_answers: (draft.accepted_answers ?? []).join("\n"),
+        pairs: draft.pairs ?? [],
         points: draft.points,
-        time_limit_seconds: null,
+        time_limit_seconds: draft.time_limit_seconds ?? null,
       },
       [],
     );
+    // Câu sắp xếp phải khai đủ thứ tự đúng cho mọi mục.
+    if (draft.kind === "ordering" && (draft.correct_order ?? []).length !== draft.options.length)
+      messages.push("Cột dap_an phải liệt kê đủ thứ tự đúng của tất cả các mục (ví dụ B;A;C;D).");
+
     Object.values(result.errors).forEach((m) => messages.push(String(m)));
     const warnCount = messages.length;
     Object.values(result.warnings).forEach((m) => messages.push(String(m)));
