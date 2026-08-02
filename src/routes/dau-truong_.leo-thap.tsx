@@ -209,6 +209,7 @@ function TowerPage() {
   const fetchBoard = useServerFn(getTowerBoardFn);
 
   type Ident = { name: string; credential: string; extraCredential?: string };
+  const navigate = useNavigate();
   const [entry, setEntry] = useState<Ident | null>(null);
   const [formName, setFormName] = useState("");
   const [formCredential, setFormCredential] = useState("");
