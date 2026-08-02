@@ -164,7 +164,7 @@ function BugReportDialog({
           />
           <Input
             className="rounded-xl"
-            placeholder="Số điện thoại hoặc email để liên hệ lại (không bắt buộc)"
+            placeholder="Để lại số điện thoại/email để chúng tôi phản hồi (không bắt buộc)"
             value={contact}
             maxLength={160}
             onChange={(e) => setContact(e.target.value)}
