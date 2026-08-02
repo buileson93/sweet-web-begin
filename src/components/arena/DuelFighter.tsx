@@ -126,6 +126,9 @@ export const DuelFighter = memo(function DuelFighter({
         "relative flex min-w-0 flex-1 flex-col gap-2 overflow-visible rounded-xl border bg-card p-3 transition",
         mine ? "border-primary/50" : "border-border",
         player?.left && "opacity-50",
+        // Sắc màu cảnh báo thể trạng: hổ phách khi bị thương, đỏ nhấp nháy khi sắp gục.
+        stance === "wounded" && "border-amber-400/60 bg-amber-500/5",
+        stance === "critical" && "border-rose-500/70 bg-rose-500/10 animate-critical-pulse",
         shakeClass,
       )}
     >
@@ -135,6 +138,15 @@ export const DuelFighter = memo(function DuelFighter({
           <span className={cn("pointer-events-none absolute inset-y-4 z-20 w-20 animate-slash-hit", mine ? "-right-3" : "-left-3")} />
         </>
       ) : null}
+      {stance === "critical" ? (
+        <span
+          className="pointer-events-none absolute -top-2.5 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white shadow-lg animate-critical-badge"
+          role="status"
+        >
+          ⚠️ {mine ? "Bạn sắp gục!" : "Đối thủ sắp gục!"}
+        </span>
+      ) : null}
+
       <div className="pointer-events-none absolute inset-x-0 -top-2 z-10 flex flex-col items-center">
         {fx.map((f) => (
           <span
