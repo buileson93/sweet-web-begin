@@ -290,34 +290,20 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
 
   return (
     <div className="card-elevated relative overflow-hidden rounded-2xl text-card-foreground">
-      {/* Dải tiêu đề nổi bật cho thẻ đăng ký vào phòng thi */}
-      <div className="surface-hero relative overflow-hidden px-5 py-4 sm:px-6">
+      {/* Dải tiêu đề gọn cho thẻ đăng ký vào phòng thi */}
+      <div className="surface-hero relative overflow-hidden px-4 py-2.5 sm:px-6 sm:py-3.5">
         <Plane
           aria-hidden
-          className="animate-float absolute -right-3 -top-2 size-24 rotate-12 text-primary-foreground/10"
+          className="animate-float absolute -right-3 -top-2 size-16 rotate-12 text-primary-foreground/10 sm:size-24"
           strokeWidth={1.4}
         />
-        <div className="relative flex items-center gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl surface-gold shadow-[var(--shadow-gold)]">
-            <LogIn className="size-5" strokeWidth={2.4} />
+        <div className="relative flex items-center gap-2.5">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg surface-gold shadow-[var(--shadow-gold)] sm:size-10 sm:rounded-xl">
+            <LogIn className="size-4 sm:size-5" strokeWidth={2.4} />
           </span>
           <div className="min-w-0">
-            <h2 className="type-h3 text-primary-foreground">Vào phòng thi</h2>
+            <h2 className="type-h3 truncate text-primary-foreground">Vào phòng thi</h2>
           </div>
-        </div>
-        {/* Đặc điểm phòng thi diễn tả bằng icon + tooltip, không dùng chữ */}
-        <div className="relative mt-3 flex flex-wrap gap-2">
-          {[
-            { Icon: ShieldCheck, label: "Một thiết bị chỉ dành cho một nhân viên trong 30 phút" },
-            { Icon: Zap, label: "Chấm điểm ngay khi bạn chọn đáp án" },
-            { Icon: Repeat, label: "Thi lại không giới hạn số lần" },
-          ].map(({ Icon, label }) => (
-            <IconTip key={label} label={label}>
-              <span className="grid size-9 place-items-center rounded-xl bg-primary-foreground/12 text-primary-foreground/90 backdrop-blur transition-transform duration-200 hover:scale-110 hover:bg-primary-foreground/20">
-                <Icon className="size-4.5" strokeWidth={2.4} />
-              </span>
-            </IconTip>
-          ))}
         </div>
       </div>
 
