@@ -129,13 +129,13 @@ function HomePage() {
       <ProductTour steps={TOUR_STEPS} />
 
       {/* Bố cục chia đôi: trái = vào phòng thi, phải = bảng xếp hạng trực tiếp */}
-      <section className="grid gap-5 lg:grid-cols-12 lg:items-start lg:gap-6">
+      <section className="grid gap-5 lg:grid-cols-12 lg:items-start lg:gap-8 xl:gap-10">
         <div className="flex min-w-0 flex-col gap-4 sm:gap-5 lg:col-span-7">
 
           <div className="animate-pop relative min-w-0">
             {/* Máy bay bay vòng quanh cuốn sách tri thức — thu nhỏ dần trên màn hình thấp */}
             <div
-              className="pointer-events-none absolute -top-1 right-0 grid size-14 place-items-center sm:size-24 lg:right-6"
+              className="pointer-events-none absolute -top-1 right-0 grid size-14 place-items-center sm:size-24 lg:-right-2 lg:size-20"
               aria-hidden
             >
               <span className="plane-orbit">
@@ -155,7 +155,7 @@ function HomePage() {
               className="block w-full text-left"
               aria-label="Xem giới thiệu Đấu trường tri thức VATM"
             >
-              <h1 className="hero-title font-heading group cursor-pointer whitespace-nowrap text-[clamp(1rem,4.4vw,2.6rem)] font-extrabold uppercase leading-tight tracking-tight [hyphens:none]">
+              <h1 className="hero-title font-heading group cursor-pointer whitespace-nowrap text-[clamp(1rem,4.4vw,2.6rem)] font-extrabold uppercase leading-tight tracking-tight [hyphens:none] lg:whitespace-normal lg:text-balance lg:pr-24 lg:text-[clamp(1.6rem,2.35vw,2.5rem)]">
                 <span className="hero-line">Chinh phục bầu trời </span>
                 <span className="hero-line hero-line-accent">
                   kiến thức

@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 export function SnapCarousel({
   children,
   className,
-  gridClassName = "md:grid-cols-2 2xl:grid-cols-3",
+  gridClassName = "md:grid-cols-2 xl:grid-cols-3",
   itemWidth = "w-[86%]",
   label,
   track: trackAnalytics = true,
