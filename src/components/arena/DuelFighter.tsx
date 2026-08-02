@@ -6,6 +6,8 @@ import { ClassSprite } from "@/components/arena/ClassSprite";
 import { HpBar } from "@/components/arena/HpBar";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
 import type { DuelPlayerView } from "@/lib/arena/types";
+import { attackInfo } from "@/lib/arena/attacks";
+import { sfxHit, sfxKo, sfxLowHp, sfxWounded } from "@/lib/arena/sfx";
 import { skillById } from "@/lib/arena/skills";
 import { levelTitle } from "@/lib/xp";
 import { cn } from "@/lib/utils";
@@ -19,6 +21,7 @@ export const DuelFighter = memo(function DuelFighter({
   mine,
   skill,
   roundKey,
+  foeClassId,
 }: {
   player?: DuelPlayerView;
   hpStart: number;
@@ -27,7 +30,10 @@ export const DuelFighter = memo(function DuelFighter({
   skill?: string | null;
   /** Số hiệu lượt đấu — đổi lượt mới cho phép hiện lại hiệu ứng kỹ năng. */
   roundKey?: number;
+  /** Lớp của đối thủ — để con số sát thương hiện đúng biểu tượng loại đòn. */
+  foeClassId?: string | null;
 }) {
+
   const hp = player?.hp ?? hpStart;
   const [fx, setFx] = useState<Fx[]>([]);
   const [shake, setShake] = useState(0);
