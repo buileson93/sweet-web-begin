@@ -162,6 +162,7 @@ function RootComponent() {
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
         <BackNav />
+        <PrimaryFab />
       </TooltipProvider>
       <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
