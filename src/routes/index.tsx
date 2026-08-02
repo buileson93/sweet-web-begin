@@ -329,7 +329,7 @@ function HomePage() {
             <SnapCarousel
               className="stagger"
               label="Danh sách cuộc thi"
-              gridClassName="md:grid-cols-1 md:auto-rows-[7.5rem] lg:auto-rows-[8rem]"
+              gridClassName="md:grid-cols-1 md:auto-rows-[6rem] md:gap-3 lg:auto-rows-[6.5rem]"
             >
               {quizzes.slice(0, visibleQuizzes).map((q) => {
                 const st = quizStatus(q);
