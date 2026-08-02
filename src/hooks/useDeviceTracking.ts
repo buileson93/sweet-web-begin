@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 
-import { collectDeviceVisit } from "@/lib/deviceInfo";
+import { collectFullVisit } from "@/lib/deviceInfo";
 import { recordDeviceVisit } from "@/lib/visits.functions";
 import { drainVisits, enqueueVisit } from "@/lib/visits/queue";
 
@@ -31,8 +31,10 @@ export function useDeviceTracking() {
 
     // Hoãn lại để không tranh tài nguyên với lần render đầu tiên.
     const timer = window.setTimeout(() => {
-      enqueueVisit(collectDeviceVisit(pathname));
-      void flushVisits();
+      void collectFullVisit(pathname).then((payload) => {
+        enqueueVisit(payload);
+        return flushVisits();
+      });
     }, 1200);
 
 

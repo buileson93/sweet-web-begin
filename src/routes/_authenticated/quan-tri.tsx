@@ -18,6 +18,7 @@ import {
   RadioTower,
   ScrollText,
   ShieldAlert,
+  Bug,
 
   ShieldCheck,
   Trophy,
@@ -40,6 +41,7 @@ import { LiveMonitor } from "@/components/admin/LiveMonitor";
 import { UnitStats } from "@/components/admin/UnitStats";
 import { DeviceStats } from "@/components/admin/DeviceStats";
 import { TopicReport } from "@/components/admin/TopicReport";
+import { BugReportManager } from "@/components/admin/BugReportManager";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui-kit";
@@ -113,6 +115,7 @@ const GROUPS: { group: string; items: Section[] }[] = [
       { value: "devices", label: "Thiết bị & trình duyệt", hint: "Người dùng vào bằng máy gì", icon: MonitorSmartphone },
       { value: "history", label: "Thành tích", hint: "Lịch sử theo nhân viên", icon: Trophy },
       { value: "audit", label: "Lịch sử thao tác", hint: "Nhật ký quản trị", icon: ScrollText },
+      { value: "bugs", label: "Báo lỗi & góp ý", hint: "Phản hồi từ người dùng", icon: Bug, adminOnly: true },
     ],
   },
 
@@ -335,6 +338,7 @@ function AdminPage() {
                 {current === "history" && <EmployeeHistoryManager />}
                 {current === "reminders" && <ReminderManager />}
                 {current === "audit" && <AuditLogManager />}
+                {current === "bugs" && canManageSystem && <BugReportManager />}
                 {current === "accounts" && canManageSystem && <RoleManager />}
                 {current === "backup" && canManageSystem && <BackupManager />}
               </div>

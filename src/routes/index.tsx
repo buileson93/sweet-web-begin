@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowRight, BookOpen, CalendarPlus, Plane, Timer, Trophy } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarPlus, ChevronUp, Plane, Timer, Trophy } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { CountdownBadge } from "@/components/CountdownBadge";
@@ -11,6 +11,7 @@ import { RegisterCard } from "@/components/RegisterCard";
 import { EmptyState, ListSkeleton, QueryState, SectionHeading, StatusPill } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, quizStatus } from "@/lib/format";
@@ -60,6 +61,9 @@ const TOUR_STEPS: TourStep[] = [
 function HomePage() {
   const navigate = useNavigate();
   const [quizId, setQuizId] = useState("");
+  const [heroOpen, setHeroOpen] = useState(false);
+  // Danh sách cuộc thi tải dần để trang chủ không phải cuộn quá dài
+  const [visibleQuizzes, setVisibleQuizzes] = useState(4);
 
   const quizzesQuery = useQuery({
     queryKey: ["quizzes", "public"],
@@ -119,37 +123,43 @@ function HomePage() {
         <div className="flex min-w-0 flex-col gap-4 sm:gap-5 lg:col-span-7">
 
           <div className="animate-pop relative min-w-0">
-            {/* Máy bay bay vòng quanh cuốn sách tri thức — hiện trên mọi kích thước màn hình */}
+            {/* Máy bay bay vòng quanh cuốn sách tri thức — thu nhỏ dần trên màn hình thấp */}
             <div
-              className="pointer-events-none absolute -top-1 right-0 grid size-20 place-items-center sm:size-28 lg:right-6"
+              className="pointer-events-none absolute -top-1 right-0 grid size-14 place-items-center sm:size-24 lg:right-6"
               aria-hidden
             >
               <span className="plane-orbit">
                 <span className="plane-orbit-ring">
                   <span className="plane-orbit-craft">
-                    <Plane className="size-4 text-accent drop-shadow-sm sm:size-5" strokeWidth={2.2} />
+                    <Plane className="size-3.5 text-accent drop-shadow-sm sm:size-5" strokeWidth={2.2} />
                   </span>
                 </span>
               </span>
-              <BookOpen className="animate-book-flip relative size-7 text-primary/70 drop-shadow-sm sm:size-9" />
+              <BookOpen className="animate-book-flip relative size-6 text-primary/70 drop-shadow-sm sm:size-9" />
             </div>
 
-            <span className="type-eyebrow inline-flex max-w-[calc(100%-5.5rem)] items-center gap-2 rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
+            {/* Một hàng gọn: nhãn + tiêu đề rút gọn, bấm để mở bảng giới thiệu đầy đủ */}
+            <button
+              type="button"
+              onClick={() => setHeroOpen(true)}
+              className="type-eyebrow inline-flex max-w-[calc(100%-4.5rem)] items-center gap-2 rounded-full bg-secondary px-3 py-1 text-left text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+            >
               <span className="relative flex size-2 shrink-0">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-75" />
                 <span className="relative inline-flex size-2 rounded-full bg-primary" />
               </span>
-              Đấu trường tri thức VATM
-            </span>
-            <h1 className="hero-title type-h1 group mt-3 max-w-[24ch] cursor-default text-pretty uppercase [hyphens:none] sm:pr-28">
+              <span className="truncate">Đấu trường tri thức VATM</span>
+              <ChevronUp className="size-3.5 shrink-0" />
+            </button>
+            <h1 className="hero-title type-h1 group mt-2 max-w-[24ch] cursor-default text-pretty uppercase [hyphens:none] sm:pr-24">
               <span className="hero-line inline">Chinh phục bầu trời </span>
               <span className="hero-line hero-line-accent inline">
                 kiến thức
                 <span className="hero-underline" aria-hidden />
               </span>
             </h1>
-
           </div>
+
 
           <PlayerHeroCard className="animate-pop" />
 
@@ -300,7 +310,7 @@ function HomePage() {
             }
           >
             <div className="stagger grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-              {quizzes.map((q) => {
+              {quizzes.slice(0, visibleQuizzes).map((q) => {
                 const st = quizStatus(q);
                 return (
                   <button
@@ -368,9 +378,44 @@ function HomePage() {
                 );
               })}
             </div>
+            {quizzes.length > visibleQuizzes && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  className="rounded-full font-semibold"
+                  onClick={() => setVisibleQuizzes((n) => n + 4)}
+                >
+                  Xem thêm cuộc thi ({quizzes.length - visibleQuizzes})
+                </Button>
+              </div>
+            )}
           </QueryState>
         </div>
       </section>
+
+      {/* Giới thiệu đầy đủ nằm trong bảng trượt để không chiếm chiều cao trang chủ */}
+      <Sheet open={heroOpen} onOpenChange={setHeroOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl">
+          <SheetHeader className="text-left">
+            <SheetTitle>Đấu trường tri thức VATM</SheetTitle>
+            <SheetDescription>
+              Sân chơi kiến thức nội bộ của Công ty Quản lý bay miền Trung: thi thử không giới hạn, chấm điểm tức thì,
+              tích luỹ điểm kinh nghiệm và leo bảng xếp hạng cùng đồng nghiệp.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 flex flex-wrap gap-2 pb-2">
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/huong-dan">Luật chơi</Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/dau-truong">Đấu trường</Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/bang-xep-hang">Bảng xếp hạng</Link>
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </AppShell>
   );
 }

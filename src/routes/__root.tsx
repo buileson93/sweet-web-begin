@@ -14,7 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { BackNav } from "@/components/BackNav";
-import { PrimaryFab } from "@/components/PrimaryFab";
+import { BugReportFab } from "@/components/BugReportFab";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/palette";
 import { useDeviceTracking } from "@/hooks/useDeviceTracking";
@@ -163,7 +163,7 @@ function RootComponent() {
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
         <BackNav />
-        <PrimaryFab />
+        <BugReportFab />
       </TooltipProvider>
       <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
