@@ -34,7 +34,7 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
 
   // Đếm bằng `head: true` cho từng đề: nếu tải toàn bộ hàng thì PostgREST cắt ở 1000 dòng
   // nên các đề nằm sau sẽ bị báo nhầm là 0 câu.
-  const { data: counts = {} } = useQuery({
+  const countsQuery = useQuery({
     queryKey: ["question-counts", quizzes.map((q) => q.id).join(",")],
     enabled: quizzes.length > 0,
     queryFn: async () => {
@@ -52,6 +52,11 @@ export function QuizManager({ canEdit = true }: { canEdit?: boolean }) {
       return Object.fromEntries(pairs) as Record<string, number>;
     },
   });
+  const counts = countsQuery.data ?? {};
+  // Chưa đếm xong (hoặc đếm lỗi) thì KHÔNG được coi là 0 câu, tránh báo nhầm
+  // "Ngân hàng: 0 câu" và khoá nút Xuất bản.
+  const countsReady = countsQuery.isSuccess;
+
 
 
   const toggleActive = useMutation({
