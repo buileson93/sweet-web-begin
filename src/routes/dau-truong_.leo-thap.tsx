@@ -915,9 +915,10 @@ function TowerPage() {
       {run && summary && (
         <section className="space-y-4 rounded-2xl border bg-card/70 p-6">
           <SectionHeading title={summary.win ? "Chinh phục đỉnh tháp!" : "Hành trình khép lại"} />
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {[
               { label: "Tầng đã qua", value: summary.floors },
+              { label: "An toàn còn lại", value: `${summary.hp}/${summary.maxHp}` },
               { label: "Điểm hành trình", value: summary.score },
               { label: "Câu đúng", value: summary.correct },
               { label: "Thẻ còn đến hạn", value: dueCount },
@@ -928,6 +929,50 @@ function TowerPage() {
               </div>
             ))}
           </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border bg-background/60 p-3">
+              <p className="mb-2 text-sm font-semibold">Chuỗi đúng &amp; phần thưởng đã nhận</p>
+              {summary.combos.length === 0 ? (
+                <p className="type-meta">Chưa đạt mốc chuỗi đúng nào — lần sau cố giữ nhịp 3 câu liên tiếp nhé.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {summary.combos.map((c, i) => (
+                    <li key={`${c.floor}-${i}`} className="flex items-start gap-2 rounded-lg border bg-card/60 px-2.5 py-1.5 text-xs">
+                      <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">
+                        T{c.floor}
+                      </span>
+                      <span className="leading-snug">{c.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="rounded-xl border bg-background/60 p-3">
+              <p className="mb-2 text-sm font-semibold">Các sự cố lớn đã đi qua</p>
+              <ol className="space-y-1.5">
+                {summary.path
+                  .map((kind, i) => ({ kind, floor: i + 1 }))
+                  .filter((r) => r.kind === "boss")
+                  .map((r) => {
+                    const cleared = r.floor <= summary.floors;
+                    return (
+                      <li
+                        key={r.floor}
+                        className="flex items-center gap-2 rounded-lg border bg-card/60 px-2.5 py-1.5 text-xs"
+                      >
+                        <span className="font-semibold tabular-nums">Tầng {r.floor}</span>
+                        <span className="min-w-0 flex-1 truncate">{bossAt(r.floor)?.name ?? "Sự cố lớn"}</span>
+                        <span className={cleared ? "font-semibold text-emerald-600" : "type-meta"}>
+                          {cleared ? "Đã xử lý" : "Chưa tới"}
+                        </span>
+                      </li>
+                    );
+                  })}
+              </ol>
+            </div>
+          </div>
+
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-xl border bg-background/60 p-3">
               <p className="mb-2 text-sm font-semibold">Điểm đến từ đâu</p>
@@ -949,6 +994,7 @@ function TowerPage() {
               </div>
             </div>
           </div>
+
           <div className="flex flex-wrap gap-2">
             <Button onClick={begin}>
               <RefreshCw className="mr-2 size-4" /> Hành trình mới
