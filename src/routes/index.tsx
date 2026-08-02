@@ -71,7 +71,9 @@ function HomePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quizzes")
-        .select("id, title, description, start_time, end_time, is_active, question_count, duration_minutes, intro_markdown, cover_url, cover_fit, peek_rewards, pass_percent")
+        // Phải lấy cả `status`: thiếu cột này thì quizStatus() tưởng cuộc thi
+        // đã đóng vẫn "Đang mở", dẫn tới bấm vào thi mới báo "Cuộc thi đã đóng".
+        .select("id, title, description, start_time, end_time, is_active, status, question_count, duration_minutes, intro_markdown, cover_url, cover_fit, peek_rewards, pass_percent")
         .neq("status", "draft")
         .order("start_time", { ascending: true });
       if (error) throw error;
