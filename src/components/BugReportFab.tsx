@@ -125,10 +125,12 @@ function BugReportDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[88dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Báo lỗi & góp ý</DialogTitle>
+          <DialogTitle>Góp ý giúp VATM tốt hơn</DialogTitle>
           <DialogDescription>
-            Mô tả sự cố bạn gặp phải, kèm ảnh chụp màn hình nếu có. Thông tin thiết bị được gửi kèm để đội kỹ thuật
-            tái hiện lỗi nhanh hơn.
+            Cảm ơn bạn dành thời gian chia sẻ! Mỗi góp ý — dù là một lỗi nhỏ hay một ý tưởng mới — đều giúp
+            nền tảng VATM ngày càng hoàn thiện và thân thiện hơn với cộng đồng. Hãy mô tả sự cố bạn gặp phải,
+            kèm ảnh chụp màn hình nếu có. Thông tin thiết bị sẽ được gửi kèm để đội kỹ thuật tái hiện và xử lý
+            nhanh nhất.
           </DialogDescription>
         </DialogHeader>
 
