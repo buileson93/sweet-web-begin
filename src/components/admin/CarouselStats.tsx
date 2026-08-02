@@ -17,6 +17,8 @@ type Row = {
   clicked_index: number;
   device_type: string;
   created_at: string;
+  card_labels: string[] | null;
+  clicked_label: string | null;
 };
 
 /** Thống kê hành vi vuốt dải thẻ ngang (trang chủ) để tinh chỉnh bố cục. */
@@ -26,7 +28,9 @@ export function CarouselStats() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("carousel_events")
-        .select("label, path, total_cards, viewed_cards, max_index, swipes, dwell_ms, clicked, clicked_index, device_type, created_at")
+        .select(
+          "label, path, total_cards, viewed_cards, max_index, swipes, dwell_ms, clicked, clicked_index, device_type, created_at, card_labels, clicked_label",
+        )
         .order("created_at", { ascending: false })
         .limit(1000);
       if (error) throw error;
@@ -41,13 +45,33 @@ export function CarouselStats() {
   const avgDwell = total ? rows.reduce((s, r) => s + r.dwell_ms, 0) / total : 0;
   const clickRate = total ? (rows.filter((r) => r.clicked).length / total) * 100 : 0;
 
-  // Tỉ lệ người xem tới từng vị trí thẻ
+  // Tên thẻ phổ biến nhất ở từng vị trí, để biểu đồ hiện đúng tên cuộc thi.
   const maxCards = rows.reduce((m, r) => Math.max(m, r.total_cards), 0);
+  const nameAt = (i: number) => {
+    const tally = new Map<string, number>();
+    rows.forEach((r) => {
+      const name = r.card_labels?.[i];
+      if (name) tally.set(name, (tally.get(name) ?? 0) + 1);
+    });
+    const best = [...tally.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+    return best ? `${i + 1}. ${best}` : `Thẻ ${i + 1}`;
+  };
+
   const reach = Array.from({ length: Math.min(maxCards, 10) }, (_, i) => ({
-    name: `Thẻ ${i + 1}`,
+    name: nameAt(i),
     "Đã xem (%)": total ? Math.round((rows.filter((r) => r.max_index >= i).length / total) * 100) : 0,
     "Đã bấm": rows.filter((r) => r.clicked && r.clicked_index === i).length,
   }));
+
+  // Xếp hạng thẻ được bấm nhiều nhất theo tên (không phụ thuộc vị trí).
+  const clickedTally = new Map<string, number>();
+  rows.forEach((r) => {
+    if (!r.clicked) return;
+    const name = r.clicked_label || r.card_labels?.[r.clicked_index] || `Thẻ ${r.clicked_index + 1}`;
+    clickedTally.set(name, (clickedTally.get(name) ?? 0) + 1);
+  });
+  const topClicked = [...clickedTally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+
 
   return (
     <AdminSection title="Hành vi vuốt dải thẻ" description="Người dùng đi qua bao nhiêu thẻ, dừng bao lâu và bấm vào thẻ nào.">
