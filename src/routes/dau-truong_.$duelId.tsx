@@ -453,11 +453,12 @@ function WaitingPanel({
   useEffect(() => {
     if (state.status !== "countdown" || !state.startedAt) return;
     const target = toClientTime(state.startedAt);
-    const id = window.setInterval(
-      () => setLeft(Math.max(0, Math.ceil((target - Date.now()) / 1000))),
-      200,
-    );
+    // Đặt ngay số giây đầu tiên (trước đây khởi tạo 0 nên nháy "GO!" rồi mới đếm 3-2-1).
+    const tick = () => setLeft(Math.max(0, Math.ceil((target - Date.now()) / 1000)));
+    tick();
+    const id = window.setInterval(tick, 100);
     return () => window.clearInterval(id);
+
   }, [state.status, state.startedAt, toClientTime]);
 
   if (state.status === "countdown")
