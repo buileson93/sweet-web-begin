@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArenaHero, ArenaPage } from "@/components/arena/ArenaPage";
 import { SectionHeading } from "@/components/ui-kit";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
   arenaEndActive,
@@ -330,6 +331,7 @@ function ArenaLobby() {
     );
 
   const profile = home?.profile;
+  const onlineCount = presence?.online.length ?? 0;
   return (
     <ArenaPage>
       <ArenaHero
