@@ -64,6 +64,11 @@ export const DISCONNECT_GRACE_MS = 20_000;
 export const MAX_ROUND_SECONDS = 15;
 /** Bỏ trống liên tiếp bấy nhiêu câu thì bị xử thua kỹ thuật. */
 export const MAX_CONSECUTIVE_MISSES = 3;
+/** Số câu tối thiểu ngân hàng phải có để mở trận. */
+const MIN_QUESTION_POOL = 3;
+/** Trần cứng số câu một ván (chống trận kéo dài vô tận khi cả hai cùng sai). */
+export const HARD_ROUND_CAP = 40;
+
 
 /**
  * Gửi kèm ảnh chụp trạng thái đầy đủ trong CÙNG một lô broadcast.
