@@ -141,17 +141,14 @@ function HomePage() {
               </span>
               Đấu trường tri thức VATM
             </span>
-            <h1 className="hero-title type-h1 group mt-3 max-w-[20ch] cursor-default text-pretty uppercase [hyphens:none] sm:pr-28">
-              <span className="hero-line block sm:whitespace-nowrap">Chinh phục bầu trời</span>
-              <span className="hero-line hero-line-accent block sm:whitespace-nowrap">
+            <h1 className="hero-title type-h1 group mt-3 max-w-[24ch] cursor-default text-pretty uppercase [hyphens:none] sm:pr-28">
+              <span className="hero-line inline">Chinh phục bầu trời </span>
+              <span className="hero-line hero-line-accent inline">
                 kiến thức
                 <span className="hero-underline" aria-hidden />
               </span>
             </h1>
 
-            <p className="type-lead mt-2 max-w-xl text-balance text-muted-foreground">
-              Thi thử không giới hạn — mỗi lượt là một lần vững kiến thức hơn.
-            </p>
           </div>
 
           <PlayerHeroCard className="animate-pop" />

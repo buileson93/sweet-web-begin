@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Sparkles } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import { AvatarBubble } from "@/components/player/AvatarBubble";
 import { usePlayerIdentity } from "@/hooks/usePlayerIdentity";
@@ -12,22 +12,9 @@ import { cn } from "@/lib/utils";
 export function PlayerHeroCard({ className }: { className?: string }) {
   const { identity } = usePlayerIdentity();
 
-  if (!identity)
-    return (
-      <Link
-        to="/nhan-vat"
-        aria-label="Tạo nhân vật của bạn"
-        title="Tạo nhân vật — nhận kinh nghiệm sau mỗi lượt thi"
-        className={cn(
-          "group inline-flex items-center gap-1.5 self-start rounded-full border border-dashed border-border/70 px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/50 hover:bg-secondary/40 hover:text-foreground",
-          className,
-        )}
-      >
-        <Sparkles className="size-4 shrink-0 text-primary" />
-        <span>Nhân vật</span>
-        <ChevronRight className="size-3.5 shrink-0 transition-transform group-hover:translate-x-0.5" />
-      </Link>
-    );
+  // Chưa có nhân vật: không hiển thị gì để tiết kiệm diện tích trang chủ.
+  if (!identity) return null;
+
 
 
   return (
