@@ -276,3 +276,44 @@ describe("trang bị, yếu tố bất lợi và điểm hành trình", () => {
     expect(run.maxHp).toBe(START_HP);
   });
 });
+
+describe("quái vật và khắc hệ trong hành trình", () => {
+  const bank: QuestionBank = {
+    version: 1,
+    builtAt: new Date().toISOString(),
+    questions: Array.from({ length: 40 }, (_, i) => base({ id: `m${i}` })),
+  };
+  const pickCombat = (run: ReturnType<typeof createRun>) => {
+    const floor = run.map[0]!;
+    return chooseRoom(run, floor.findIndex((r) => r.questions > 0));
+  };
+
+  it("phòng có câu hỏi thì phát quái, phòng nghỉ ca thì không", () => {
+    let run = createRun(bank, emptyState(), "quai-1", new Date(0), { classId: "ve_binh" });
+    expect(run.classId).toBe("ve_binh");
+    run = pickCombat(run);
+    expect(run.monster).not.toBeNull();
+    expect(run.monster!.hp).toBe(run.monster!.maxHp);
+  });
+
+  it("cùng hạt cho cùng con quái ở cùng tầng", () => {
+    const a = pickCombat(createRun(bank, emptyState(), "quai-2", new Date(0)));
+    const b = pickCombat(createRun(bank, emptyState(), "quai-2", new Date(0)));
+    expect(a.monster?.id).toBe(b.monster?.id);
+  });
+
+  it("trả lời đúng thì máu quái giảm, sai thì người chơi mất an toàn", () => {
+    let run = pickCombat(createRun(bank, emptyState(), "quai-3", new Date(0)));
+    const qs = roomQuestions(run);
+    const allRight: Record<string, number> = {};
+    qs.forEach((q, i) => (allRight[String(i)] = q.answerIndex));
+    const good = gradeStage(run, allRight);
+    expect(good.outcome.foeHp).toBeLessThan(run.monster!.maxHp);
+    expect(good.run.hp).toBe(run.hp);
+
+    const allWrong: Record<string, number> = {};
+    qs.forEach((q, i) => (allWrong[String(i)] = (q.answerIndex + 1) % Math.max(2, q.options.length)));
+    const bad = gradeStage(run, allWrong);
+    expect(bad.run.hp).toBeLessThan(run.hp);
+  });
+});

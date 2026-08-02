@@ -12,6 +12,8 @@ import { QUESTIONS_PER_RUN, SECONDS_PER_QUESTION, START_HP } from "@/lib/tower/c
 import { curseTotals, offerCurse } from "@/lib/tower/curses";
 import { gradeLocal } from "@/lib/tower/grade.local";
 import { FLOORS, isBossFloor, type MapNode, mapFor, reachableAt, type Room, type RoomKind } from "@/lib/tower/map";
+import { heroHit, monsterById, monsterHit, pickMonster, type MonsterInstance } from "@/lib/tower/monsters";
+import { DEFAULT_CLASS, type ClassId } from "@/lib/arena/classes";
 import { comboRewardAt, ROOM_RULES, roomLossCap, wrongDamage, type ComboReward } from "@/lib/tower/rooms";
 import { ascensionMods, relicPoolIds } from "@/lib/tower/meta";
 import { offerRelics, RELICS, relicTotals, type Relic } from "@/lib/tower/relics";
@@ -46,6 +48,10 @@ export type TowerRun = {
   maxHp: number;
   shield: number;
   combo: number;
+  /** Lớp nhân vật đang dùng (kế thừa từ Đấu trường): quyết định công, thủ và khắc hệ. */
+  classId: ClassId;
+  /** Quái (sự cố) của phòng đang chơi — null khi phòng không có giao tranh. */
+  monster: MonsterInstance | null;
   correct: number;
   answered: number;
   relics: string[];
@@ -101,6 +107,10 @@ export type StageOutcome = {
   hpLost: number;
   /** Các mốc chuỗi đúng đã đạt trong phòng. */
   combos: ComboReward[];
+  /** Diễn giải khắc hệ giữa lớp nhân vật và quái (rỗng nếu cân bằng). */
+  affinityNote?: string;
+  /** Máu quái còn lại sau phòng (undefined nếu phòng không có quái). */
+  foeHp?: number;
 };
 
 const ROOM_LABEL: Record<RoomKind, string> = {
@@ -218,7 +228,7 @@ export function createRun(
   state: TowerState,
   seed: string,
   now: Date = new Date(),
-  opts: { daily?: boolean; ascension?: number; unlocked?: string[] } = {},
+  opts: { daily?: boolean; ascension?: number; unlocked?: string[]; classId?: ClassId } = {},
 ): TowerRun {
   const rand = branch(seed, "questions");
   const picked = pickRunQuestions(bank, state, rand, now, MAX_RUN_QUESTIONS).map((q) =>
@@ -247,6 +257,8 @@ export function createRun(
     maxHp,
     shield: 0,
     combo: 0,
+    classId: opts.classId ?? DEFAULT_CLASS,
+    monster: null,
     correct: 0,
     answered: 0,
     relics: [],
@@ -289,9 +301,13 @@ export function chooseRoom(run: TowerRun, index: number): TowerRun {
   const challenge =
     ROOM_RULES[room.kind].challenge > 0 ? { slot: slots.length - 1, done: false, correct: false } : null;
 
+  const monster =
+    room.questions > 0 ? pickMonster(branch(run.seed, `monster-${run.floor}`), room.kind, run.floor) : null;
+
   return {
     ...run,
     room,
+    monster,
     slots,
     cursor,
     node: pick.index,
@@ -445,6 +461,9 @@ export function gradeStage(
   let hpLost = 0;
   const combos: ComboReward[] = [];
   const kind = run.room?.kind ?? "combat";
+  const foe = run.monster ? monsterById(run.monster.id) : undefined;
+  let foeHp = run.monster?.hp ?? 0;
+  let affinityNote = "";
 
   const results: StageOutcome["results"] = slice.map((q, i) => {
     const value = answers[String(i)];
@@ -459,6 +478,13 @@ export function gradeStage(
       hit += mods.relics.comboDamage * Math.max(0, combo - 1);
       if (q.difficulty === "hard") hit += mods.relics.hardBonus;
       if (mods.relics.lowHpRagePct > 0 && hp / run.maxHp < 0.3) hit = Math.round(hit * (1 + mods.relics.lowHpRagePct));
+      // Lớp nhân vật + khắc hệ với quái: quyết định đòn ra nặng hay nhẹ.
+      if (foe) {
+        const strike = heroHit(run.classId, foe, hit);
+        hit = strike.damage;
+        if (strike.label) affinityNote = strike.label;
+        foeHp = Math.max(0, foeHp - hit);
+      }
       // Phần thưởng chuỗi đúng: mốc 3 · 5 · 7 · 10 (xem LUẬT PHÒNG trong rooms.ts).
       const reward = comboRewardAt(combo);
       if (reward) {
@@ -474,7 +500,13 @@ export function gradeStage(
       if (blocks > 0) {
         blocks--; // Vùng đệm an toàn chặn đứng một đòn mỗi tầng.
       } else {
-        const raw = wrongDamage(kind, mods.damageTakenPct, mods.damageReducePct);
+        let raw = wrongDamage(kind, mods.damageTakenPct, mods.damageReducePct);
+        // Quái phản đòn: quái càng mạnh, tầng càng cao thì mất càng nhiều an toàn.
+        if (foe) {
+          const bite = monsterHit(run.classId, foe, raw, run.floor);
+          raw = bite.damage;
+          if (bite.label) affinityNote = bite.label;
+        }
         // Trần thiệt hại mỗi phòng: sai cả phòng vẫn còn cửa đi tiếp.
         const room = roomLossCap(kind, run.maxHp);
         const incoming = Math.max(0, Math.min(raw, room - hpLost));
@@ -529,13 +561,14 @@ export function gradeStage(
     challenge: null,
     finished,
     win,
+    monster: run.monster ? { ...run.monster, hp: foeHp } : null,
   };
 
   next.log = logged(run, {
     floor: run.floor,
     kind: "combat",
     label: `Tầng ${run.floor} — ${correctCount}/${slice.length} câu đúng`,
-    detail: `Gây ${damage} điểm xử lý${cleared ? "" : " · phải dừng ca"}`,
+    detail: `Gây ${damage} điểm xử lý${foe ? ` cho ${foe.icon} ${foe.name}` : ""}${affinityNote ? ` · ${affinityNote}` : ""}${cleared ? "" : " · phải dừng ca"}`,
     hp: next.hp,
   });
   if (finished) {
@@ -556,7 +589,10 @@ export function gradeStage(
     ascension: next.ascension,
   });
 
-  return { run: next, outcome: { results, damage, softStop: !cleared, hpLost, combos } };
+  return {
+    run: next,
+    outcome: { results, damage, softStop: !cleared, hpLost, combos, affinityNote, foeHp: foe ? foeHp : undefined },
+  };
 }
 
 /** Hỗ trợ kíp trực sau mỗi tầng thắng: rút 3 trang bị theo trọng số hiếm, kèm cơ hội nhận yếu tố bất lợi. */
