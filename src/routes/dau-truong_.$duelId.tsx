@@ -57,6 +57,14 @@ export const Route = createFileRoute("/dau-truong_/$duelId")({
   }),
 });
 
+/** Thời gian công bố kết quả phía máy chủ (ms) — phải khớp REVEAL_MS trong duel.server.ts. */
+const REVEAL_MS = 3_000;
+/** Ân hạn mạng trước khi nhắc máy chủ chốt câu (khớp NETWORK_GRACE_MS máy chủ). */
+const NUDGE_GRACE_MS = 700;
+/** Nhịp nhắc lại khi máy chủ chưa kịp chuyển bước. */
+const NUDGE_INTERVAL_MS = 600;
+
+
 function DuelRoom() {
   const { duelId } = Route.useParams();
   const navigate = useNavigate();
