@@ -208,7 +208,9 @@ function HomePage() {
               <Podium className="relative" rows={topQuery.data ?? []} />
             )}
 
-            <div className="relative mt-6 space-y-2">
+            {/* Trên điện thoại bục vinh danh đã đủ thông tin — danh sách chi tiết chỉ hiện từ sm trở lên */}
+            <div className="relative mt-6 hidden space-y-2 sm:block">
+
               {(topQuery.data ?? []).slice(0, 3).map((r, i) => (
                 <div
                   key={r.id}
@@ -247,13 +249,13 @@ function HomePage() {
 
             <Link
               to="/bang-xep-hang"
-              className="relative mt-5 flex items-center justify-center gap-2 rounded-2xl bg-secondary py-3 text-xs font-bold uppercase tracking-widest text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              className="relative mt-4 flex items-center justify-center gap-2 rounded-2xl bg-secondary py-2.5 text-xs font-bold uppercase tracking-widest text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground sm:mt-5 sm:py-3"
             >
               Xem toàn bộ xếp hạng <ArrowRight className="size-4" />
             </Link>
           </div>
 
-          <div className="stagger grid grid-cols-2 gap-4">
+          <div className="stagger grid grid-cols-2 gap-3 sm:gap-4">
             <StatTile label="Lượt thi" value={countQuery.isLoading ? "…" : String(countQuery.data ?? 0)} />
             <StatTile
               label="Đang mở"
@@ -263,6 +265,7 @@ function HomePage() {
             />
           </div>
         </div>
+
       </section>
 
       {/* Danh sách cuộc thi */}
@@ -386,18 +389,19 @@ function StatTile({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="card-elevated p-4">
+    <div className="card-elevated p-3 sm:p-4">
       <span className="type-eyebrow flex items-center gap-1.5 text-muted-foreground">
         {icon} {label}
       </span>
       <span
         className={cn(
-          "font-heading mt-1 block text-2xl font-extrabold tabular-nums",
+          "font-heading mt-0.5 block text-xl font-extrabold tabular-nums sm:mt-1 sm:text-2xl",
           tone === "accent" ? "text-primary" : "text-foreground",
         )}
       >
         {value}
       </span>
     </div>
+
   );
 }
