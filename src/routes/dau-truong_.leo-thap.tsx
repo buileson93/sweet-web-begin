@@ -233,19 +233,29 @@ function TowerPage() {
     answered: number;
     win: boolean;
     hp: number;
+    maxHp: number;
     relics: string[];
     curses: string[];
     ascension: number;
     seed: string;
     log: TowerRun["log"];
+    /** Các mốc chuỗi đúng đã đạt trong cả hành trình, theo thứ tự. */
+    combos: { floor: number; label: string }[];
+    /** Loại phòng từng tầng — dùng để truy vết các sự cố lớn đã đi qua. */
+    path: TowerRun["path"];
   } | null>(
     null,
   );
   const [challengeValue, setChallengeValue] = useState<AnswerValue | undefined>(undefined);
   const [confirmClose, setConfirmClose] = useState(false);
+  /** Xác nhận khi bấm rời trang lúc đang dở phòng trắc nghiệm. */
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [lowTime, setLowTime] = useState(false);
+  /** Nhật ký mốc chuỗi đúng của cả hành trình (ref vì cần đọc ngay trong lúc chốt phòng). */
+  const comboLogRef = useRef<{ floor: number; label: string }[]>([]);
   /** Khi đang ở trong phòng, bản đồ được thu lại; người chơi mở xem khi cần. */
   const [mapOpen, setMapOpen] = useState(false);
+
 
   const [meta, setMeta] = useState<Meta>(EMPTY_META);
   const [daily, setDaily] = useState(false);
