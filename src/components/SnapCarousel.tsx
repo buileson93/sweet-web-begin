@@ -110,7 +110,10 @@ export function SnapCarousel({
           clicked_index: s.clickedIndex,
           device_type: detectDeviceType(navigator.userAgent, window.innerWidth),
           visitor_key: getVisitorKey(),
+          card_labels: labelsRef.current.slice(0, 30),
+          clicked_label: s.clickedIndex >= 0 ? (labelsRef.current[s.clickedIndex] ?? "") : "",
         },
+
       }).catch(() => undefined);
     };
 
