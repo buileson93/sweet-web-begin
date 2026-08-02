@@ -1019,7 +1019,10 @@ export async function closeRound(duelId: string, roundIndex: number) {
   result.resolvedAt = nowIso();
   result.revealMs = DICE_MS;
 
-  const isLast = roundIndex + 1 >= duel.round_count || !!combat.knockedOutId || !!noShow;
+  // Trận chỉ dừng khi có người hết máu, bị xử thua kỹ thuật, hoặc chạm trần cứng số câu.
+  const isLast =
+    !!combat.knockedOutId || !!noShow || roundIndex + 1 >= Math.max(duel.round_count, HARD_ROUND_CAP);
+
   result.finishAfter = isLast;
   result.noShowId = noShow?.employee_id ?? null;
 
