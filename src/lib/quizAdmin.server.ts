@@ -75,14 +75,26 @@ export async function previewQuizPaper(quizId: string): Promise<QuizPreview> {
 
 /** Thống kê kho câu hỏi của một cuộc thi (chỉ tính câu đang dùng). */
 export async function quizPoolStats(quizId: string): Promise<PoolStats> {
-  const { data, error } = await supabaseAdmin
-    .from("questions")
-    .select("difficulty, tags")
-    .eq("quiz_id", quizId)
-    .eq("is_archived", false);
-  if (error) throw new Error(error.message);
-  return summarizePool((data ?? []) as { difficulty: Difficulty; tags: string[] | null }[]);
+  // PostgREST trả tối đa 1000 dòng mỗi lần nên phải đọc theo trang, nếu không
+  // các đề lớn sẽ bị thống kê thiếu (thậm chí báo 0 câu).
+  const page = 1000;
+  const rows: { difficulty: Difficulty; tags: string[] | null }[] = [];
+  for (let from = 0; ; from += page) {
+    const { data, error } = await supabaseAdmin
+      .from("questions")
+      .select("difficulty, tags")
+      .eq("quiz_id", quizId)
+      .eq("is_archived", false)
+      .order("id", { ascending: true })
+      .range(from, from + page - 1);
+    if (error) throw new Error(error.message);
+    const chunk = (data ?? []) as { difficulty: Difficulty; tags: string[] | null }[];
+    rows.push(...chunk);
+    if (chunk.length < page) break;
+  }
+  return summarizePool(rows);
 }
+
 
 export type AudienceStats = {
   unitNames: string[];
