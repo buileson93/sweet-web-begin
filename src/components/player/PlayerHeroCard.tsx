@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Sparkles } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import { AvatarBubble } from "@/components/player/AvatarBubble";
 import { usePlayerIdentity } from "@/hooks/usePlayerIdentity";
