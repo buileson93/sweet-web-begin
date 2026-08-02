@@ -104,6 +104,63 @@ export type Database = {
         }
         Relationships: []
       }
+      bug_reports: {
+        Row: {
+          admin_note: string
+          contact: string
+          created_at: string
+          description: string
+          device: Json
+          id: string
+          ip: string
+          ip_source: string
+          kind: string
+          path: string
+          reporter_name: string
+          resolved_at: string | null
+          shot_path: string
+          status: string
+          title: string
+          user_agent: string
+        }
+        Insert: {
+          admin_note?: string
+          contact?: string
+          created_at?: string
+          description?: string
+          device?: Json
+          id?: string
+          ip?: string
+          ip_source?: string
+          kind?: string
+          path?: string
+          reporter_name?: string
+          resolved_at?: string | null
+          shot_path?: string
+          status?: string
+          title?: string
+          user_agent?: string
+        }
+        Update: {
+          admin_note?: string
+          contact?: string
+          created_at?: string
+          description?: string
+          device?: Json
+          id?: string
+          ip?: string
+          ip_source?: string
+          kind?: string
+          path?: string
+          reporter_name?: string
+          resolved_at?: string | null
+          shot_path?: string
+          status?: string
+          title?: string
+          user_agent?: string
+        }
+        Relationships: []
+      }
       device_locks: {
         Row: {
           candidate_name: string
@@ -133,70 +190,97 @@ export type Database = {
       }
       device_visits: {
         Row: {
+          architecture: string
           browser: string
           browser_version: string
+          cpu_cores: number
           created_at: string
+          device_model: string
           device_type: string
+          downlink: number
           id: string
           ip: string
           ip_source: string
           is_pwa: boolean
           is_touch: boolean
           language: string
+          memory_gb: number
+          network_type: string
           os: string
           os_version: string
           path: string
           pixel_ratio: number
+          platform_version: string
           referrer_host: string
+          save_data: boolean
           screen_h: number
           screen_w: number
           timezone: string
+          user_agent: string
           viewport_h: number
           viewport_w: number
           visitor_key: string
         }
         Insert: {
+          architecture?: string
           browser?: string
           browser_version?: string
+          cpu_cores?: number
           created_at?: string
+          device_model?: string
           device_type?: string
+          downlink?: number
           id?: string
           ip?: string
           ip_source?: string
           is_pwa?: boolean
           is_touch?: boolean
           language?: string
+          memory_gb?: number
+          network_type?: string
           os?: string
           os_version?: string
           path?: string
           pixel_ratio?: number
+          platform_version?: string
           referrer_host?: string
+          save_data?: boolean
           screen_h?: number
           screen_w?: number
           timezone?: string
+          user_agent?: string
           viewport_h?: number
           viewport_w?: number
           visitor_key?: string
         }
         Update: {
+          architecture?: string
           browser?: string
           browser_version?: string
+          cpu_cores?: number
           created_at?: string
+          device_model?: string
           device_type?: string
+          downlink?: number
           id?: string
           ip?: string
           ip_source?: string
           is_pwa?: boolean
           is_touch?: boolean
           language?: string
+          memory_gb?: number
+          network_type?: string
           os?: string
           os_version?: string
           path?: string
           pixel_ratio?: number
+          platform_version?: string
           referrer_host?: string
+          save_data?: boolean
           screen_h?: number
           screen_w?: number
           timezone?: string
+          user_agent?: string
           viewport_h?: number
           viewport_w?: number
           visitor_key?: string
