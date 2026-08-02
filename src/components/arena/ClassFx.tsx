@@ -276,13 +276,11 @@ function GuardAttack({ mine, side, step }: { mine?: boolean; side: Side; step: n
           <span
             key={i}
             aria-hidden
-            className={cn(
-              "pointer-events-none absolute bottom-4 z-20 size-2 rounded-sm bg-foreground/40 animate-rock-up",
-              at(side, `right-${8 + i * 6}`, `left-${8 + i * 6}`),
-              i === 1 && "[animation-delay:0.08s]",
-              i === 2 && "[animation-delay:0.16s]",
-              i === 3 && "[animation-delay:0.24s]",
-            )}
+            style={{
+              [side]: `${32 + i * 24}px`,
+              animationDelay: `${i * 0.08}s`,
+            }}
+            className="pointer-events-none absolute bottom-4 z-20 size-2 rounded-sm bg-foreground/40 animate-rock-up"
           />
         ))}
         <span
