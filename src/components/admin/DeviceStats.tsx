@@ -354,75 +354,98 @@ export function DeviceStats() {
           </div>
         </div>
 
-        {/* Bảng chi tiết */}
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        {/* Bảng chi tiết kiểu Airtable: lọc từng cột, sắp xếp, phân trang */}
+        <div className="mt-4 grid gap-4 xl:grid-cols-2">
           {[
+            { title: "Kiểu máy thiết bị", data: byModel, head: "Kiểu máy" },
             { title: "Chi tiết trình duyệt", data: byBrowser, head: "Trình duyệt" },
             { title: "Chi tiết hệ điều hành", data: byOs, head: "Hệ điều hành" },
             { title: "Độ phân giải màn hình", data: byScreen, head: "Kích thước" },
+            { title: "Mạng kết nối", data: byNetwork, head: "Loại mạng" },
             { title: "Trang được xem nhiều", data: byPath, head: "Đường dẫn" },
             { title: "Địa chỉ IP truy cập nhiều", data: byIp, head: "Địa chỉ IP" },
           ].map((t) => (
-            <div key={t.title} className="card-elevated overflow-x-auto">
-              <p className="type-eyebrow px-4 pt-4 text-muted-foreground">{t.title}</p>
-              <table className="mt-2 w-full min-w-[420px] text-sm">
-                <thead className="bg-secondary text-secondary-foreground">
-                  <tr className="text-left">
-                    <th className="px-4 py-2 font-semibold">{t.head}</th>
-                    <th className="px-4 py-2 font-semibold">Lượt xem</th>
-                    <th className="px-4 py-2 font-semibold">Phiên</th>
-                    <th className="px-4 py-2 font-semibold">Tỉ lệ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {t.data.map((d) => (
-                    <tr key={d.name} className="border-t border-border transition-colors hover:bg-secondary/40">
-                      <td className="max-w-[220px] truncate px-4 py-2 font-medium">{d.name}</td>
-                      <td className="px-4 py-2 font-mono text-muted-foreground">{d.count}</td>
-                      <td className="px-4 py-2 font-mono text-muted-foreground">{d.visitors}</td>
-                      <td className="px-4 py-2">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-16 overflow-hidden rounded-full bg-secondary">
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${d.percent}%` }} />
-                          </div>
-                          <span className="font-mono text-xs">{d.percent}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataGrid
+              key={t.title}
+              title={t.title}
+              data={t.data}
+              minWidth="30rem"
+              pageSize={10}
+              columns={[
+                { key: "name", header: t.head, value: (d) => d.name, className: "font-medium" },
+                { key: "count", header: "Lượt xem", value: (d) => d.count, align: "right", filter: "none" },
+                { key: "visitors", header: "Phiên", value: (d) => d.visitors, align: "right", filter: "none" },
+                {
+                  key: "percent",
+                  header: "Tỉ lệ",
+                  value: (d) => d.percent,
+                  filter: "none",
+                  render: (d) => (
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-16 overflow-hidden rounded-full bg-secondary">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${d.percent}%` }} />
+                      </div>
+                      <span className="font-mono text-xs">{d.percent}%</span>
+                    </div>
+                  ),
+                },
+              ]}
+            />
           ))}
         </div>
 
-        {/* Lượt truy cập gần nhất kèm địa chỉ IP */}
-        <div className="card-elevated mt-4 overflow-x-auto">
-          <p className="type-eyebrow px-4 pt-4 text-muted-foreground">Lượt truy cập gần nhất</p>
-          <table className="mt-2 w-full min-w-[640px] text-sm">
-            <thead className="bg-secondary text-secondary-foreground">
-              <tr className="text-left">
-                <th className="px-4 py-2 font-semibold">Thời gian</th>
-                <th className="px-4 py-2 font-semibold">Địa chỉ IP</th>
-                <th className="px-4 py-2 font-semibold">Thiết bị</th>
-                <th className="px-4 py-2 font-semibold">Trình duyệt</th>
-                <th className="px-4 py-2 font-semibold">Đường dẫn</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recent.map((r, i) => (
-                <tr key={`${r.visitor_key}-${r.created_at}-${i}`} className="border-t border-border transition-colors hover:bg-secondary/40">
-                  <td className="whitespace-nowrap px-4 py-2 font-mono text-xs text-muted-foreground">
+        {/* Nhật ký truy cập đầy đủ thông tin thiết bị */}
+        <div className="mt-4">
+          <DataGrid
+            title="Nhật ký truy cập chi tiết"
+            description="Lọc theo kiểu máy, hệ điều hành, IP..."
+            data={recent}
+            minWidth="72rem"
+            pageSize={25}
+            columns={[
+              {
+                key: "created_at",
+                header: "Thời gian",
+                value: (r) => r.created_at,
+                render: (r) => (
+                  <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
                     {new Date(r.created_at).toLocaleString("vi-VN")}
-                  </td>
-                  <td className="px-4 py-2 font-mono">{r.ip || "Không rõ"}</td>
-                  <td className="px-4 py-2">{DEVICE_LABEL[r.device_type] ?? r.device_type}</td>
-                  <td className="px-4 py-2">{[r.browser, r.browser_version].filter(Boolean).join(" ")}</td>
-                  <td className="max-w-[220px] truncate px-4 py-2 text-muted-foreground">{r.path || "/"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </span>
+                ),
+              },
+              { key: "device_model", header: "Kiểu máy", value: (r) => r.device_model || "Không rõ", filter: "select" },
+              {
+                key: "device_type",
+                header: "Loại",
+                value: (r) => DEVICE_LABEL[r.device_type] ?? r.device_type,
+                filter: "select",
+              },
+              {
+                key: "os",
+                header: "Hệ điều hành",
+                value: (r) => [r.os, r.os_version].filter(Boolean).join(" "),
+                filter: "select",
+              },
+              {
+                key: "browser",
+                header: "Trình duyệt",
+                value: (r) => [r.browser, r.browser_version].filter(Boolean).join(" "),
+              },
+              { key: "cpu", header: "CPU", value: (r) => r.cpu_cores || 0, align: "right", filter: "none" },
+              { key: "ram", header: "RAM (GB)", value: (r) => r.memory_gb || 0, align: "right", filter: "none" },
+              { key: "network", header: "Mạng", value: (r) => r.network_type || "—", filter: "select" },
+              { key: "screen", header: "Màn hình", value: (r) => screenBucket(r.screen_w, r.screen_h) },
+              { key: "ip", header: "Địa chỉ IP", value: (r) => r.ip || "Không rõ", className: "font-mono text-xs" },
+              {
+                key: "path",
+                header: "Đường dẫn",
+                value: (r) => r.path || "/",
+                className: "max-w-[220px] truncate text-muted-foreground",
+              },
+            ]}
+          />
+        </div>
+
         </div>
 
         {/* Tóm tắt nhanh theo loại thiết bị */}
