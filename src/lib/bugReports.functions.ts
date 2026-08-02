@@ -117,7 +117,7 @@ export const updateBugReport = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase as never);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: Record<string, unknown> = {};
+    const patch: { status?: string; resolved_at?: string | null; admin_note?: string } = {};
     if (data.status && STATUSES.includes(data.status)) {
       patch.status = data.status;
       patch.resolved_at = data.status === "done" ? new Date().toISOString() : null;
@@ -125,7 +125,7 @@ export const updateBugReport = createServerFn({ method: "POST" })
     if (typeof data.admin_note === "string") patch.admin_note = data.admin_note.slice(0, 2000);
     if (Object.keys(patch).length === 0) return { ok: true as const };
 
-    const { error } = await supabaseAdmin.from("bug_reports").update(patch).eq("id", data.id);
+    const { error } = await supabaseAdmin.from("bug_reports").update(patch as never).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
