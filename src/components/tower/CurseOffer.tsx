@@ -50,23 +50,28 @@ export function CurseOffer({ curseId, coins, onAccept, onDecline }: Props) {
         <span className="type-meta">Nhận rủi ro để đổi lấy phần thưởng — hoàn toàn tự nguyện.</span>
       </div>
 
-      <div className={cn("tower-card mt-3 h-36 w-full max-w-xs", open && "is-open")}>
+      <div className={cn("tower-card tower-card--tall mt-3 w-40 max-w-full sm:w-44", open && "is-open")}>
         <span className="tower-card__inner">
           <span className="tower-card__face tower-card__back tower-card__back--curse">
-            <span className="text-2xl">🃏</span>
-            <span className="type-meta mt-1">Đang lật yếu tố bất lợi…</span>
+            <span className="text-3xl">🃏</span>
+            <span className="type-meta mt-1">Đang lật…</span>
           </span>
-          <span className="tower-card__face tower-card__front border-destructive/50 bg-gradient-to-b from-destructive/25 to-destructive/5 p-3">
-            <span className="text-2xl">{curse.icon}</span>
-            <span className="mt-1 text-sm font-bold">{curse.name}</span>
-            <span className="type-meta mt-0.5">{curse.desc}</span>
-            <span className="mt-auto flex items-start gap-1 text-left text-[11px] leading-snug text-destructive">
-              <AlertTriangle className="mt-0.5 size-3 shrink-0" />
-              {CONSEQUENCE[curse.id] ?? "Ảnh hưởng kéo dài tới hết hành trình."}
+          <span className="tower-card__face tower-card__front tower-card__front--deluxe border-destructive/60 bg-gradient-to-b from-destructive/30 to-destructive/5">
+            <span aria-hidden className="tower-card__shine" />
+            <span className="tower-card__frame text-destructive">
+              <span className="w-full text-[10px] font-bold uppercase tracking-wide opacity-70">Bậc {curse.rank}</span>
+              <span className="tower-card__art mt-1">{curse.icon}</span>
+              <span className="mt-1.5 text-[13px] font-extrabold leading-tight text-foreground">{curse.name}</span>
+              <span className="type-meta mt-0.5 line-clamp-3 leading-snug">{curse.desc}</span>
+              <span className="mt-auto flex items-start gap-1 pt-1 text-left text-[10px] leading-snug text-destructive">
+                <AlertTriangle className="mt-0.5 size-3 shrink-0" />
+                <span className="line-clamp-3">{CONSEQUENCE[curse.id] ?? "Ảnh hưởng kéo dài tới hết hành trình."}</span>
+              </span>
             </span>
           </span>
         </span>
       </div>
+
 
       <p className="type-meta mt-2">
         Đổi lại: <strong className="text-amber-600">+{coins} tín chỉ</strong> và +{curse.rank * 30} điểm hành trình khi kết
