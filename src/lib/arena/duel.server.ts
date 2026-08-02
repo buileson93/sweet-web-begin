@@ -53,6 +53,9 @@ const COUNTDOWN_MS = 2_600;
 const COUNTDOWN_EARLY_MS = 650;
 /** Thời gian hiển thị đáp án giữa hai câu (ms) — client tự chạy, máy chủ không chờ. */
 const REVEAL_MS = 2_000;
+/** Câu cả hai cùng bỏ trống: chỉ nhá kết quả rất ngắn rồi sang câu mới. */
+const TIMEOUT_REVEAL_MS = 900;
+
 
 /** Thời lượng hiệu ứng xúc xắc — do máy chủ quy định để hai bên khớp nhau. */
 const DICE_MS = 1_600;
