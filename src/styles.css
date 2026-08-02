@@ -1862,7 +1862,7 @@ body.fx-shaking {
   100% { opacity: 0; transform: translateX(45px) rotate(-24deg) scaleY(0.6); }
 }
 @keyframes avatar-recoil { 20% { filter: saturate(0.2) brightness(1.5); transform: translateX(-5px) rotate(-3deg); } 100% { filter: none; transform: none; } }
-.animate-dice-stage { animation: dice-stage 2.4s ease-in-out forwards; }
+.animate-dice-stage { animation: dice-stage 2s ease-in-out forwards; }
 .animate-dice-roll { animation: dice-roll 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .animate-slash-hit { background: linear-gradient(90deg, transparent, var(--color-destructive), transparent); animation: slash-hit 0.48s ease-out forwards; }
 .animate-avatar-recoil { animation: avatar-recoil 0.6s ease-out; }
@@ -1911,7 +1911,7 @@ body.fx-shaking {
 
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-hit-soft, .animate-hit-mid, .animate-hit-hard, .animate-skill-pulse, .animate-dice-roll, .animate-slash-hit, .animate-avatar-recoil,
+  .animate-hit-soft, .animate-hit-mid, .animate-hit-hard, .animate-skill-pulse, .animate-dice-roll, .dice-cube-rolling, .dice-scene, .animate-slash-hit, .animate-avatar-recoil,
   .animate-lunge-right, .animate-lunge-left, .animate-recoil-right, .animate-recoil-left,
   .animate-aura-pulse, .animate-aura-ring, .animate-idle-bob, .animate-ground-dust, .animate-sprite-flash,
   .animate-impact-spark, .animate-trail-right, .animate-trail-left,
