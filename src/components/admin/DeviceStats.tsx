@@ -51,6 +51,14 @@ type Visit = {
   os: string;
   os_version: string;
   device_type: string;
+  device_model: string;
+  platform_version: string;
+  architecture: string;
+  cpu_cores: number;
+  memory_gb: number;
+  network_type: string;
+  downlink: number;
+  save_data: boolean;
   screen_w: number;
   screen_h: number;
   viewport_w: number;
@@ -62,6 +70,7 @@ type Visit = {
   visitor_key: string;
   path: string;
   ip: string;
+  user_agent: string;
   created_at: string;
 };
 
