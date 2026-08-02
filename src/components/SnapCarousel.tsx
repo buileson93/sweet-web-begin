@@ -1,5 +1,7 @@
 import { Children, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
+import { recordCarouselEvent } from "@/lib/carouselAnalytics.functions";
+import { detectDeviceType, getVisitorKey } from "@/lib/deviceInfo";
 import { cn } from "@/lib/utils";
 
 /**
@@ -8,6 +10,8 @@ import { cn } from "@/lib/utils";
  *
  * Luôn chừa một phần thẻ kế tiếp lộ ra ở mép phải + chấm phân trang để người dùng
  * biết vẫn còn nội dung phía sau.
+ *
+ * Kèm đo lường: số thẻ đã đi qua, số lần vuốt, thời gian dừng và có bấm vào thẻ hay không.
  */
 export function SnapCarousel({
   children,
@@ -15,16 +19,30 @@ export function SnapCarousel({
   gridClassName = "md:grid-cols-2 2xl:grid-cols-3",
   itemWidth = "w-[86%]",
   label,
+  track: trackAnalytics = true,
 }: {
   children: ReactNode;
   className?: string;
   gridClassName?: string;
   itemWidth?: string;
   label?: string;
+  /** Bật/tắt ghi nhận hành vi vuốt cho dải thẻ này. */
+  track?: boolean;
 }) {
   const items = Children.toArray(children);
   const trackRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+
+  // Số liệu đo lường tích luỹ trong suốt vòng đời dải thẻ
+  const stats = useRef({
+    startedAt: Date.now(),
+    seen: new Set<number>([0]),
+    maxIndex: 0,
+    swipes: 0,
+    clicked: false,
+    clickedIndex: -1,
+    sent: false,
+  });
 
   const syncActive = useCallback(() => {
     const track = trackRef.current;
@@ -41,7 +59,14 @@ export function SnapCarousel({
         best = i;
       }
     });
-    setActive(best);
+    setActive((prev) => {
+      if (prev !== best) {
+        stats.current.swipes += 1;
+        stats.current.seen.add(best);
+        stats.current.maxIndex = Math.max(stats.current.maxIndex, best);
+      }
+      return best;
+    });
   }, []);
 
   useEffect(() => {
@@ -51,6 +76,42 @@ export function SnapCarousel({
     track.addEventListener("scroll", syncActive, { passive: true });
     return () => track.removeEventListener("scroll", syncActive);
   }, [syncActive, items.length]);
+
+  // Gửi số liệu một lần khi người dùng rời dải thẻ / rời trang
+  const total = items.length;
+  useEffect(() => {
+    if (!trackAnalytics || total === 0) return;
+    const s = stats.current;
+
+    const flush = () => {
+      if (s.sent) return;
+      const dwell = Date.now() - s.startedAt;
+      // Bỏ qua lượt xem thoáng qua để tránh nhiễu số liệu
+      if (dwell < 1500 && s.swipes === 0 && !s.clicked) return;
+      s.sent = true;
+      void recordCarouselEvent({
+        data: {
+          label: label ?? "carousel",
+          path: window.location.pathname,
+          total_cards: total,
+          viewed_cards: s.seen.size,
+          max_index: s.maxIndex,
+          swipes: s.swipes,
+          dwell_ms: dwell,
+          clicked: s.clicked,
+          clicked_index: s.clickedIndex,
+          device_type: detectDeviceType(navigator.userAgent, window.innerWidth),
+          visitor_key: getVisitorKey(),
+        },
+      }).catch(() => undefined);
+    };
+
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, [label, total, trackAnalytics]);
 
   function goTo(index: number) {
     const track = trackRef.current;
@@ -72,7 +133,14 @@ export function SnapCarousel({
         )}
       >
         {items.map((child, i) => (
-          <div key={i} className={cn("snap-card min-w-0 shrink-0", itemWidth, "md:w-auto md:shrink")}>
+          <div
+            key={i}
+            className={cn("snap-card min-w-0 shrink-0", itemWidth, "md:w-auto md:shrink")}
+            onClickCapture={() => {
+              stats.current.clicked = true;
+              stats.current.clickedIndex = i;
+            }}
+          >
             {child}
           </div>
         ))}
