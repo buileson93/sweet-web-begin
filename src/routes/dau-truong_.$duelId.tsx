@@ -249,7 +249,7 @@ function DuelRoom() {
 
   if (!token || !state)
     return (
-      <PageContainer className="grid min-h-[60vh] place-items-center">
+      <ArenaPage className="grid min-h-[60vh] place-items-center">
         {error ? (
           <div className="text-center">
             <p className="text-destructive">{error}</p>
@@ -274,11 +274,11 @@ function DuelRoom() {
             </p>
           </div>
         )}
-      </PageContainer>
+      </ArenaPage>
     );
 
   return (
-    <PageContainer className="space-y-4 py-4 pb-[calc(11rem+env(safe-area-inset-bottom))] lg:pb-[calc(7rem+env(safe-area-inset-bottom))]">
+    <ArenaPage className="space-y-3 pb-16 sm:space-y-4 lg:pb-8">
       <header
         className={cn(
           "flex items-center gap-3",
@@ -475,7 +475,7 @@ function DuelRoom() {
           <Button onClick={() => void navigate({ to: "/dau-truong" })}>Về đấu trường</Button>
         </div>
       )}
-    </PageContainer>
+    </ArenaPage>
   );
 }
 
