@@ -112,6 +112,39 @@ function HomePage() {
     },
   });
 
+  // Vài số liệu ngắn cho thẻ cuộc thi ở màn hình rộng: lượt thi và tỉ lệ đạt.
+  const quizIds = (quizzesQuery.data ?? []).map((q) => q.id);
+  const quizStatsQuery = useQuery({
+    queryKey: ["results", "per-quiz", quizIds.join(",")],
+    enabled: quizIds.length > 0,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const pairs = await Promise.all(
+        quizIds.map(async (id) => {
+          const [all, passed] = await Promise.all([
+            supabase
+              .from("results")
+              .select("id", { count: "exact", head: true })
+              .eq("quiz_id", id)
+              .eq("disqualified", false),
+            supabase
+              .from("results")
+              .select("id", { count: "exact", head: true })
+              .eq("quiz_id", id)
+              .eq("disqualified", false)
+              .eq("passed", true),
+          ]);
+          if (all.error) throw all.error;
+          if (passed.error) throw passed.error;
+          return [id, { attempts: all.count ?? 0, passed: passed.count ?? 0 }] as const;
+        }),
+      );
+      return Object.fromEntries(pairs) as Record<string, { attempts: number; passed: number }>;
+    },
+  });
+  const quizStats = quizStatsQuery.data ?? {};
+
+
   // Ưu tiên cuộc thi sắp diễn ra lên đầu, rồi đang mở, tạm dừng, đã kết thúc
   const STATUS_RANK: Record<string, number> = { upcoming: 0, open: 1, paused: 2, closed: 3 };
   const quizzes = [...(quizzesQuery.data ?? [])].sort((a, b) => {
@@ -386,6 +419,30 @@ function HomePage() {
                     <h3 className="type-h3 relative mt-3 line-clamp-2 break-words text-pretty pr-1 transition-colors group-hover:text-primary md:mt-0 md:min-w-0 md:flex-1">
                       {q.title}
                     </h3>
+                    {/* Chỉ hiện ở màn hình rộng: vài số liệu ngắn cho thẻ đỡ trống */}
+                    <span className="relative hidden md:flex md:shrink-0 md:items-center md:gap-5 lg:gap-7">
+                      <span className="text-right">
+                        <span className="block text-base font-extrabold leading-none text-foreground">
+                          {quizStatsQuery.isSuccess ? (quizStats[q.id]?.attempts ?? 0) : "—"}
+                        </span>
+                        <span className="type-meta block whitespace-nowrap">Lượt thi</span>
+                      </span>
+                      <span className="text-right">
+                        <span className="block text-base font-extrabold leading-none text-success">
+                          {quizStatsQuery.isSuccess && (quizStats[q.id]?.attempts ?? 0) > 0
+                            ? `${Math.round(((quizStats[q.id]?.passed ?? 0) / (quizStats[q.id]?.attempts ?? 1)) * 100)}%`
+                            : "—"}
+                        </span>
+                        <span className="type-meta block whitespace-nowrap">Tỉ lệ đạt</span>
+                      </span>
+                      <span className="text-right">
+                        <span className="block text-base font-extrabold leading-none text-primary">
+                          {q.pass_percent ?? 50}%
+                        </span>
+                        <span className="type-meta block whitespace-nowrap">Ngưỡng đạt</span>
+                      </span>
+                    </span>
+
                     <span className="relative mt-4 flex items-center justify-between gap-3 border-t border-border pt-3 md:mt-0 md:w-auto md:shrink-0 md:justify-end md:gap-5 md:border-l md:border-t-0 md:pl-6 md:pt-0">
                       <span className="min-w-0 md:text-right">
                         <span className="type-meta block truncate md:whitespace-nowrap">
