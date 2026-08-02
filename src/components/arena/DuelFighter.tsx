@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 
 import { ClassChip } from "@/components/arena/ClassPicker";
+import { ClassFx } from "@/components/arena/ClassFx";
 import { ClassSprite } from "@/components/arena/ClassSprite";
 import { HpBar } from "@/components/arena/HpBar";
 import { AvatarBubble } from "@/components/player/AvatarBubble";
