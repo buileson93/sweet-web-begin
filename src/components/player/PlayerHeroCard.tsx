@@ -16,23 +16,19 @@ export function PlayerHeroCard({ className }: { className?: string }) {
     return (
       <Link
         to="/nhan-vat"
+        aria-label="Tạo nhân vật của bạn"
+        title="Tạo nhân vật — nhận kinh nghiệm sau mỗi lượt thi"
         className={cn(
-          "group flex items-center gap-3 rounded-2xl border border-dashed border-border/70 p-3 transition-colors hover:border-primary/50 hover:bg-secondary/40",
+          "group inline-flex items-center gap-1.5 self-start rounded-full border border-dashed border-border/70 px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/50 hover:bg-secondary/40 hover:text-foreground",
           className,
         )}
       >
-        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary text-primary">
-          <Sparkles className="size-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-extrabold">Tạo nhân vật của bạn</span>
-          <span className="block truncate text-xs text-muted-foreground">
-            Nhận kinh nghiệm và thăng cấp sau mỗi lượt thi
-          </span>
-        </span>
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        <Sparkles className="size-4 shrink-0 text-primary" />
+        <span>Nhân vật</span>
+        <ChevronRight className="size-3.5 shrink-0 transition-transform group-hover:translate-x-0.5" />
       </Link>
     );
+
 
   return (
     <Link
