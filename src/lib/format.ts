@@ -42,8 +42,9 @@ export function quizStatus(quiz: {
   /** Trạng thái soạn thảo: nháp / đã xuất bản / đã đóng. */
   status?: string | null;
 }): QuizStatus {
+  // Không cần bấm "Xuất bản": cuộc thi tự mở khi tới giờ.
+  // Chỉ bản nháp và công tắc "Đang hoạt động" mới chặn thí sinh vào thi.
   if (quiz.status === "draft") return "paused";
-  if (quiz.status === "closed") return "closed";
   if (!quiz.is_active) return "paused";
   const now = Date.now();
   if (quiz.start_time && now < new Date(quiz.start_time).getTime()) return "upcoming";

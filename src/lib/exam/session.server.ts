@@ -71,7 +71,8 @@ export async function startExamSession(input: {
   if (!quiz) throw new Error("Không tìm thấy cuộc thi.");
   if (!quiz.is_active) throw new Error("Cuộc thi này hiện đang tạm dừng.");
   if (quiz.status === "draft") throw new Error("Cuộc thi đang ở trạng thái nháp, chưa mở cho thí sinh.");
-  if (quiz.status === "closed") throw new Error("Cuộc thi đã đóng.");
+  // Cuộc thi tự mở/đóng theo mốc thời gian bên dưới; quản trị viên muốn dừng
+  // khẩn cấp thì tắt công tắc "Đang hoạt động".
 
   const now = new Date();
   if (quiz.start_time && now < new Date(quiz.start_time)) {
