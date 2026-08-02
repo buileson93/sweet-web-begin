@@ -332,7 +332,7 @@ function HomePage() {
                       st === "closed" && "opacity-70",
                     )}
                   >
-                    {/* Ảnh ngang chủ đề: trượt ra từ mép phải khi rê chuột, luôn nằm dưới lớp chữ */}
+                    {/* Mobile: ảnh nền mờ phía sau chữ. Desktop: thumbnail riêng, không che chữ */}
                     <img
                       src={resolveQuizCover(q.cover_url, q.id, q.title)}
                       alt=""
@@ -344,11 +344,24 @@ function HomePage() {
                       data-ready="0"
                       onLoad={(e) => e.currentTarget.setAttribute("data-ready", "1")}
                       className={cn(
-                        "quiz-card-art pointer-events-none absolute inset-y-0 right-0 h-full w-[62%] max-w-none select-none bg-secondary/30 object-right sm:w-[68%] md:w-[34%]",
+                        "quiz-card-art pointer-events-none absolute inset-y-0 right-0 h-full w-[62%] max-w-none select-none bg-secondary/30 object-right sm:w-[68%] md:hidden",
                         q.cover_fit === "cover" ? "object-cover" : "object-contain",
                       )}
                     />
-                    <span className="quiz-card-scrim" aria-hidden />
+                    <span className="quiz-card-scrim md:hidden" aria-hidden />
+
+                    <img
+                      src={resolveQuizCover(q.cover_url, q.id, q.title)}
+                      alt=""
+                      aria-hidden
+                      loading="lazy"
+                      decoding="async"
+                      className={cn(
+                        "relative hidden shrink-0 select-none rounded-xl bg-secondary/40 md:block md:h-[calc(100%-1.5rem)] md:w-40 lg:w-48",
+                        q.cover_fit === "cover" ? "object-cover" : "object-contain",
+                      )}
+                    />
+
 
                     <span
                       aria-hidden
