@@ -35,12 +35,12 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
     <div className="min-h-screen bg-background lg:p-5">
       <div className="mx-auto flex w-full max-w-[100rem] flex-col overflow-hidden bg-card lg:min-h-[calc(100vh-2.5rem)] lg:flex-row lg:rounded-[2.5rem] lg:shadow-[var(--shadow-lift)]">
         {/* Thanh điều hướng biểu tượng — desktop */}
-        <aside className="hidden shrink-0 flex-col items-center justify-between bg-sidebar py-8 lg:flex lg:w-24">
-          <div className="flex flex-col items-center gap-8">
+        <aside className="hidden shrink-0 flex-col items-center justify-between bg-sidebar py-6 lg:flex lg:w-16">
+          <div className="flex flex-col items-center gap-6">
             <Link to="/" aria-label="Trang chủ" className="animate-bob">
-              <BrandMark className="size-12 rounded-2xl" />
+              <BrandMark className="size-9 rounded-xl" />
             </Link>
-            <nav className="flex flex-col gap-2">
+            <nav className="flex flex-col gap-1">
               {navItems.map((item) => (
                 <Link
                   key={item.to}
@@ -73,8 +73,8 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
               />
             </Link>
           ) : (
-            <span className="grid size-11 place-items-center rounded-2xl surface-gold shadow-[var(--shadow-gold)]">
-              <Trophy className="size-5" />
+            <span className="grid size-9 place-items-center rounded-xl surface-gold shadow-[var(--shadow-gold)]">
+              <Trophy className="size-4" />
             </span>
           )}
         </aside>
