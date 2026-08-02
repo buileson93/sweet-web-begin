@@ -74,13 +74,17 @@ export const DuelFighter = memo(function DuelFighter({
     prevHp.current = hp;
     if (diff <= 0) return;
     seq.current += 1;
-    const item: Fx = { id: seq.current, text: `-${diff}`, tone: "hit" };
+    // Con số sát thương kèm biểu tượng đúng loại đòn của đối thủ (chém/đâm/cầu lửa/…).
+    const blow = attackInfo(foeClassId, roundKey ?? 0);
+    const item: Fx = { id: seq.current, text: `${blow.icon} -${diff}`, tone: "hit" };
     setFx((f) => [...f, item]);
     setShake(diff);
     setPose("hurt");
+    sfxHit(diff, !!mine);
     later(() => setFx((f) => f.filter((x) => x.id !== item.id)), 1100);
     later(() => setShake(0), 600);
     later(() => setPose((p) => (p === "hurt" ? "idle" : p)), 800);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hp]);
 
   const def = skillById(skill);
@@ -101,9 +105,20 @@ export const DuelFighter = memo(function DuelFighter({
   const stanceClass =
     stance === "ko" ? "stance-ko" : stance === "critical" ? "stance-critical" : stance === "wounded" ? "stance-wounded" : "";
 
+  // Âm thanh báo thể trạng — chỉ phát ĐÚNG lúc vừa vượt ngưỡng.
+  const prevStance = useRef(stance);
+  useEffect(() => {
+    if (prevStance.current === stance) return;
+    prevStance.current = stance;
+    if (stance === "ko") sfxKo();
+    else if (stance === "critical") sfxLowHp(!!mine);
+    else if (stance === "wounded") sfxWounded(!!mine);
+  }, [stance, mine]);
+
   // Cường độ rung tăng dần theo mức sát thương phải nhận.
   const shakeClass =
     shake >= 16 ? "animate-hit-hard" : shake >= 8 ? "animate-hit-mid" : shake > 0 ? "animate-hit-soft" : "";
+
 
   return (
     <div
