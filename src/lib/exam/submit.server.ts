@@ -320,8 +320,11 @@ export async function submitExamSession(input: {
       late_submit: lateSubmit,
       disqualify_reason: lateSubmit
         ? "Nộp sau giờ"
-        : disqualified
-          ? `Vi phạm quy chế (điểm liêm chính ${integrityScore}/${threshold})`
+        : speedPenalty > 0
+          ? `Nộp bài quá nhanh bất thường (${timeSeconds}s cho ${answeredCount} câu)`
+          : disqualified
+            ? `Vi phạm quy chế (điểm liêm chính ${integrityScore}/${threshold})`
+
           : integrityFlagged
             ? `Cảnh báo liêm chính ${integrityScore}/${threshold}`
             : null,
