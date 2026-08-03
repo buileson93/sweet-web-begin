@@ -9,12 +9,15 @@ export function CountdownBadge({
   target,
   className,
   size = "sm",
+  label = "Đếm ngược tới giờ mở thi",
 }: {
   target: string | null | undefined;
   className?: string;
   size?: "sm" | "lg";
+  label?: string;
 }) {
   const [left, setLeft] = useState(() => msUntil(target) ?? 0);
+
 
   useEffect(() => {
     setLeft(msUntil(target) ?? 0);
@@ -40,7 +43,7 @@ export function CountdownBadge({
         className,
       )}
       role="timer"
-      aria-label="Đếm ngược tới giờ mở thi"
+      aria-label={label}
     >
       <Hourglass className={cn("animate-pulse", size === "lg" ? "size-4" : "size-3.5")} strokeWidth={2.4} />
       <span className="flex items-center gap-1">

@@ -17,6 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, quizStatus } from "@/lib/format";
 import { rankUniqueResults } from "@/lib/leaderboard";
+import { getPublicParticipationRates } from "@/lib/participationRate.functions";
+
 import { resolveQuizCover } from "@/lib/quizCover";
 import { PlayerHeroCard } from "@/components/player/PlayerHeroCard";
 import { cn } from "@/lib/utils";
@@ -167,6 +169,16 @@ function HomePage() {
     },
   });
   const quizStats = quizStatsQuery.data ?? {};
+
+  // Tỉ lệ tham gia (số nhân viên thuộc diện đã dự thi) để vẽ thanh tiến độ nhỏ trên thẻ.
+  const rateQuery = useQuery({
+    queryKey: ["participation", "public", quizIds.join(",")],
+    enabled: quizIds.length > 0,
+    staleTime: 120_000,
+    queryFn: () => getPublicParticipationRates({ data: { quizIds: quizIds.slice(0, 30) } }),
+  });
+  const rates = rateQuery.data ?? {};
+
 
 
   // Ưu tiên cuộc thi sắp diễn ra lên đầu, rồi đang mở, tạm dừng, đã kết thúc
@@ -467,6 +479,27 @@ function HomePage() {
                       </span>
                     </span>
 
+                    {/* Thanh nhỏ thể hiện tỉ lệ nhân viên thuộc diện đã dự thi */}
+                    <span className="relative mt-3 block md:mt-0 md:w-32 md:shrink-0">
+                      <span className="type-meta flex items-center justify-between gap-2">
+                        <span>Tham gia</span>
+                        <span className="font-bold tabular-nums text-foreground">
+                          {rates[q.id] ? `${rates[q.id].percent}%` : "—"}
+                        </span>
+                      </span>
+                      <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-secondary" aria-hidden>
+                        <span
+                          className="block h-full rounded-full bg-success transition-[width] duration-700"
+                          style={{ width: `${rates[q.id]?.percent ?? 0}%` }}
+                        />
+                      </span>
+                      {rates[q.id] && (
+                        <span className="type-meta mt-0.5 block tabular-nums">
+                          {rates[q.id].done}/{rates[q.id].total} người
+                        </span>
+                      )}
+                    </span>
+
                     <span className="relative mt-4 flex items-center justify-between gap-3 border-t border-border pt-3 md:mt-0 md:w-auto md:shrink-0 md:justify-end md:gap-5 md:border-l md:border-t-0 md:pl-6 md:pt-0">
                       <span className="min-w-0 md:text-right">
                         <span className="type-meta block truncate md:whitespace-nowrap">
@@ -474,7 +507,15 @@ function HomePage() {
                         </span>
 
                         {st === "upcoming" && <CountdownBadge target={q.start_time} className="mt-1.5" />}
+                        {st === "open" && q.end_time && (
+                          <CountdownBadge
+                            target={q.end_time}
+                            className="mt-1.5 bg-destructive/12 text-destructive"
+                            label="Đếm ngược tới giờ kết thúc"
+                          />
+                        )}
                       </span>
+
                       <span className="grid size-9 place-items-center rounded-xl bg-secondary text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground">
                         <ArrowRight className="size-4" />
                       </span>
