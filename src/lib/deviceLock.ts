@@ -14,11 +14,13 @@ export function maskName(fullName: string): string {
   return [...initials, last].join(" ");
 }
 
-/** Diễn giải số giây còn lại thành "x phút y giây". */
+/** Diễn giải số giây còn lại thành "x giờ y phút" / "x phút y giây". */
 export function humanizeWait(seconds: number): string {
   const s = Math.max(0, Math.ceil(seconds));
-  const m = Math.floor(s / 60);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
   const rest = s % 60;
+  if (h > 0) return m === 0 ? `${h} giờ` : `${h} giờ ${m} phút`;
   if (m <= 0) return `${rest} giây`;
   if (rest === 0) return `${m} phút`;
   return `${m} phút ${rest} giây`;
