@@ -47,3 +47,14 @@ describe("rankUniqueResults", () => {
     expect(out.map((r) => `${r.candidate_name}-${r.score}`)).toEqual(["A-19", "B-17"]);
   });
 });
+
+describe("phá hoà theo số lần thi", () => {
+  it("cùng tỉ lệ đúng và cùng thời gian thì ai thi ít lần hơn xếp trên", () => {
+    const rows = [
+      { candidate_name: "Nhiều", unit: "Đài 1", score: 12, total: 20, time_seconds: 300 },
+      { candidate_name: "Nhiều", unit: "Đài 1", score: 18, total: 20, time_seconds: 150 },
+      { candidate_name: "Ít", unit: "Đài 2", score: 18, total: 20, time_seconds: 150 },
+    ];
+    expect(rankUniqueResults(rows).map((r) => r.candidate_name)).toEqual(["Ít", "Nhiều"]);
+  });
+});
