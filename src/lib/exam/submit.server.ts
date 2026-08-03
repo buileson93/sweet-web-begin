@@ -179,14 +179,24 @@ export async function submitExamSession(input: {
   ]);
 
   const quiz = quizRes.data;
+  // Máy chủ chỉ chấm đáp án đã lưu qua tiến trình làm bài; request nộp bài chỉ được
+  // kèm thêm tối đa MAX_NEW_ANSWERS_ON_SUBMIT câu MỚI (phần đuôi chưa kịp autosave).
+  // Nhờ vậy không thể gửi trọn bộ đáp án bằng một request duy nhất, mà cũng không
+  // phạt oan ai cả — phần vượt trần chỉ bị bỏ qua.
+  const clientAnswers = limitNewAnswers(
+    savedAnswers,
+    input.answers ?? {},
+    MAX_NEW_ANSWERS_ON_SUBMIT,
+  );
   // Cuộc thi chấm ngay: đáp án đã CHỐT trên máy chủ là quyết định, máy khách không được ghi đè
   // (nếu không, có thể dò đáp án đúng qua chấm-ngay rồi nộp lại đáp án chuẩn).
   const answersToGrade =
     replay || lateSubmit
       ? (savedAnswers ?? input.answers)
       : quiz?.instant_feedback
-        ? { ...input.answers, ...savedAnswers }
-        : { ...savedAnswers, ...input.answers };
+        ? { ...clientAnswers, ...savedAnswers }
+        : { ...savedAnswers, ...clientAnswers };
+
 
   if (rowsRes.error) throw new Error(rowsRes.error.message);
   const rows = (rowsRes.data ?? []) as unknown as QuestionRow[];
