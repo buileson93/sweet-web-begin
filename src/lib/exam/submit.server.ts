@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { DISQUALIFY_THRESHOLD_DEFAULT, shouldDisqualify, speedrunPenalty } from "@/lib/integrity";
+import { bulkSubmitPenalty, bulkSubmitReason } from "@/lib/exam/humanPresence";
 import {
   PASS_PERCENT_DEFAULT,
   baseOptions,
