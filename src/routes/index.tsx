@@ -168,6 +168,16 @@ function HomePage() {
   });
   const quizStats = quizStatsQuery.data ?? {};
 
+  // Tỉ lệ tham gia (số nhân viên thuộc diện đã dự thi) để vẽ thanh tiến độ nhỏ trên thẻ.
+  const rateQuery = useQuery({
+    queryKey: ["participation", "public", quizIds.join(",")],
+    enabled: quizIds.length > 0,
+    staleTime: 120_000,
+    queryFn: () => getPublicParticipationRates({ data: { quizIds: quizIds.slice(0, 30) } }),
+  });
+  const rates = rateQuery.data ?? {};
+
+
 
   // Ưu tiên cuộc thi sắp diễn ra lên đầu, rồi đang mở, tạm dừng, đã kết thúc
   const STATUS_RANK: Record<string, number> = { upcoming: 0, open: 1, paused: 2, closed: 3 };
