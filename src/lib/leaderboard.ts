@@ -33,13 +33,13 @@ export function isRankable(r: RankableResult): boolean {
 }
 
 /**
- * So sánh hai kết quả: tỉ lệ đúng → tỉ lệ điểm thưởng → thời gian làm bài ngắn hơn.
+ * So sánh hai kết quả: tỉ lệ đúng → thời gian làm bài ngắn hơn.
+ * Điểm thưởng KHÔNG tham gia xếp hạng (tránh việc bài chậm hơn nhưng có combo
+ * lại vượt bài cùng số câu đúng làm nhanh hơn).
  */
 export function compareResults(a: RankableResult, b: RankableResult): number {
   const acc = accuracyOf(b) - accuracyOf(a);
   if (Math.abs(acc) > 1e-9) return acc;
-  const bonus = bonusRatioOf(b) - bonusRatioOf(a);
-  if (Math.abs(bonus) > 1e-9) return bonus;
   return a.time_seconds - b.time_seconds;
 }
 
