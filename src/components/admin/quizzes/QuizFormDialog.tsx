@@ -115,6 +115,8 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
       double_points_after: Number(editing.double_points_after ?? 0),
       show_question_map: editing.show_question_map ?? true,
       negative_marking: Number(editing.negative_marking ?? 0),
+      strict_mode: editing.strict_mode ?? false,
+      disqualify_threshold: Number(editing.disqualify_threshold ?? 6),
       bp_easy: Number(editing.blueprint?.easy ?? 0),
       bp_medium: Number(editing.blueprint?.medium ?? 0),
       bp_hard: Number(editing.blueprint?.hard ?? 0),
