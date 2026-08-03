@@ -13,6 +13,7 @@ export const EXAM_EVENT_KINDS = [
   "resize_suspect",
   "reconnect",
   "multi_tab",
+  "devtools_open",
 ] as const;
 
 export type ExamEventKind = (typeof EXAM_EVENT_KINDS)[number];
