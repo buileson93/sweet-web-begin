@@ -28,6 +28,8 @@ export type QuizRow = {
   cover_fit: string | null;
   peek_rewards: string[] | null;
   blueprint: { easy?: number; medium?: number; hard?: number; tags?: Record<string, number> } | null;
+  strict_mode: boolean;
+  disqualify_threshold: number;
 };
 
 export const QUIZ_STATUS_LABEL: Record<string, string> = {
