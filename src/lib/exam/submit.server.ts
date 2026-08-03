@@ -455,7 +455,7 @@ export async function saveExamProgress(input: {
 }): Promise<{ savedAt: string; seq: number }> {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
-    .select("id, question_ids, status, submit_token, answers, answers_seq, expires_at")
+    .select("id, question_ids, status, submit_token, answers, helpers, answers_seq, expires_at")
     .eq("id", input.sessionId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -482,7 +482,11 @@ export async function saveExamProgress(input: {
     incoming[String(idx)] = value;
   }
 
-  const merged = { ...savedAnswers, ...incoming };
+  // Câu đã chốt bằng chấm-ngay thì autosave KHÔNG được ghi đè: nếu không, có thể
+  // ghi thử từng phương án rồi hỏi chấm-ngay để dò ra đáp án đúng của mọi câu.
+  const savable = filterSavableAnswers(incoming, readCheckedIndexes(session.helpers));
+  const merged = { ...savedAnswers, ...savable };
+
   const { error: upErr } = await supabaseAdmin
     .from("exam_sessions")
     .update({ answers: merged as never, answers_seq: input.clientSeq })
