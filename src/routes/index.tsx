@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowRight, BookOpen, CalendarPlus, Plane, Timer, Trophy } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, quizStatus } from "@/lib/format";
+import { rankUniqueResults } from "@/lib/leaderboard";
 import { resolveQuizCover } from "@/lib/quizCover";
 import { PlayerHeroCard } from "@/components/player/PlayerHeroCard";
 import { cn } from "@/lib/utils";
