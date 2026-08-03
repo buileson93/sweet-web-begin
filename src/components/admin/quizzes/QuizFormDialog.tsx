@@ -58,6 +58,8 @@ const emptyForm = {
   double_points_after: 0,
   show_question_map: true,
   negative_marking: 0,
+  strict_mode: false,
+  disqualify_threshold: 6,
   bp_easy: 0,
   bp_medium: 0,
   bp_hard: 0,
