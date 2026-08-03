@@ -256,15 +256,20 @@ export async function submitExamSession(input: {
   }
 
   // Quyết định huỷ bài dựa trên điểm liêm chính do MÁY CHỦ tích luỹ.
-  const integrityScore = Number(session.integrity_score ?? 0);
+  // Cộng thêm phạt "nộp nhanh bất thường" (dấu hiệu gửi đáp án bằng script).
+  const answeredCount = Object.keys(storedAnswers).length;
+  const speedPenalty = replay ? 0 : speedrunPenalty(timeSeconds, answeredCount);
+  const integrityScore = Number(session.integrity_score ?? 0) + speedPenalty;
   const strictMode = Boolean(quiz?.strict_mode);
   const threshold = Number(quiz?.disqualify_threshold ?? DISQUALIFY_THRESHOLD_DEFAULT);
+  // Nộp nhanh bất thường thì huỷ bài kể cả khi cuộc thi không bật chế độ nghiêm ngặt.
   const disqualified =
     replay && existing
       ? existing.disqualified
-      : shouldDisqualify(integrityScore, threshold, strictMode);
+      : speedPenalty > 0 || shouldDisqualify(integrityScore, threshold, strictMode);
   /** Cờ cảnh báo cho quản trị khi không bật chế độ nghiêm ngặt nhưng điểm liêm chính đã chạm ngưỡng. */
   const integrityFlagged = !disqualified && integrityScore >= threshold;
+
   const total = session.question_ids.length;
   const finalScore = disqualified ? 0 : score;
   const finalPoints = disqualified ? 0 : Math.max(0, Math.round(points));
