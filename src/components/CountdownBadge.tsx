@@ -43,7 +43,7 @@ export function CountdownBadge({
         className,
       )}
       role="timer"
-      aria-label="Đếm ngược tới giờ mở thi"
+      aria-label={label}
     >
       <Hourglass className={cn("animate-pulse", size === "lg" ? "size-4" : "size-3.5")} strokeWidth={2.4} />
       <span className="flex items-center gap-1">
