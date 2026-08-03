@@ -84,6 +84,8 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
       return 5;
     case "resize_suspect":
       return 1;
+    case "devtools_open":
+      return 4;
     case "reconnect":
       return 0;
     default:
@@ -107,12 +109,11 @@ export function shouldDisqualify(
 }
 
 /**
- * Số lần rời màn hình được tha thứ trước khi buộc thi lại.
- * Nới rộng để tránh phạt oan (thông báo đẩy, cuộc gọi, chuyển ứng dụng ngắn):
- * máy tính 1 lần, điện thoại 3 lần. Chống gian lận dựa vào biện pháp kỹ thuật.
+ * Không tha lần nào: rời khỏi màn hình thi một lần là buộc làm lại từ đầu
+ * (mức phạt/huỷ bài cuối cùng vẫn do cấu hình cuộc thi trong trang quản trị quyết định).
  */
-export function leaveAllowance(isMobile: boolean): number {
-  return isMobile ? 3 : 1;
+export function leaveAllowance(_isMobile: boolean): number {
+  return 0;
 }
 
 /** Đã vượt quá mức tha thứ => buộc thi lại từ đầu. */
