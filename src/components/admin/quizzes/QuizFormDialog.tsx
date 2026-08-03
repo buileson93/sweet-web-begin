@@ -214,6 +214,8 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
         double_points_after: Math.max(0, Number(form.double_points_after) || 0),
         show_question_map: form.show_question_map,
         negative_marking: Number(form.negative_marking) || 0,
+        strict_mode: form.strict_mode,
+        disqualify_threshold: Math.max(1, Number(form.disqualify_threshold) || 1),
         blueprint,
       };
 
