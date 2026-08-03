@@ -84,6 +84,7 @@ function ExamPage() {
     status: saveStatus,
     savedAt: lastSavedAt,
     markAcked,
+    flush: flushAutosave,
   } = useExamAutosave({
     sessionId: session?.sessionId ?? null,
     submitToken: session?.submitToken ?? null,
@@ -106,6 +107,13 @@ function ExamPage() {
       submittedRef.current = true;
       setSending(true);
       setSubmitRetry(0);
+      // Đẩy nốt phần đáp án chưa kịp lưu trước khi nộp: máy chủ chỉ chấm đáp án đã lưu
+      // (mỗi request chỉ nhận thêm một số câu MỚI có hạn).
+      try {
+        await flushAutosave();
+      } catch {
+        /* mất mạng: vẫn nộp, phần đã lưu trước đó được chấm */
+      }
       const payload = {
         sessionId: session.sessionId,
         // Mã nộp bài dùng một lần do máy chủ cấp khi mở phiên thi.
@@ -115,6 +123,7 @@ function ExamPage() {
         disqualifyReason: opts?.reason,
       };
       try {
+
         // Nộp bài có thử lại theo backoff 2s/5s/15s — mất mạng đúng lúc nộp là tình huống căng nhất.
         let lastError: unknown = null;
         for (let attempt = 0; attempt < SUBMIT_BACKOFF_MS.length + 1; attempt += 1) {
@@ -146,7 +155,7 @@ function ExamPage() {
         setSubmitRetry(0);
       }
     },
-    [answers, clearLocal, runSubmit, session],
+    [answers, clearLocal, flushAutosave, runSubmit, session],
   );
 
   const { clock, timeUp } = useExamTimer({

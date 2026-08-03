@@ -110,9 +110,19 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
         return;
       }
       seqRef.current = Math.max(nextSeq, serverSeq);
-      ackedRef.current = { ...ackedRef.current, ...delta };
+      // Máy chủ giới hạn số câu MỚI mỗi lần lưu: chỉ đánh dấu đã lưu phần được xác nhận,
+      // phần còn lại giữ trong hàng đợi và gửi tiếp ở lần lưu sau.
+      const acceptedKeys = Array.isArray(res.accepted) ? res.accepted : Object.keys(delta);
+      const acceptedDelta: Record<string, AnswerValue> = {};
+      for (const key of acceptedKeys) if (key in delta) acceptedDelta[key] = delta[key]!;
+      ackedRef.current = { ...ackedRef.current, ...acceptedDelta };
+      const leftover = Object.keys(delta).filter((k) => !(k in acceptedDelta));
       attemptRef.current = 0;
       persistQueue({});
+      if (leftover.length > 0) {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => void flush(), DEBOUNCE_MS);
+      }
       try {
         window.sessionStorage.setItem(seqKey(sessionId), String(seqRef.current));
       } catch {

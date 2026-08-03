@@ -123,24 +123,12 @@ export function isMobileDevice(): boolean {
   return /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(ua) || touch;
 }
 
-/**
- * Ngưỡng "bất khả thi với con người" (giây/câu): dưới mức này thì ngay cả người thuộc bài
- * cũng không kịp đọc câu hỏi và bấm chuột. Cố ý để rất thấp — thi nhanh thật KHÔNG bị phạt.
+/*
+ * Ghi chú: KHÔNG dùng luật tốc độ (giây/câu) để phạt hay huỷ bài — thi nhanh thật
+ * (ví dụ 15-20 giây cho 2 câu) là bình thường và từng gây phạt oan.
+ * Việc chống gửi đáp án bằng script được xử lý bằng biện pháp kỹ thuật ở
+ * `src/lib/exam/answerIntake.ts`: máy chủ chỉ chấm đáp án đã lưu qua tiến trình
+ * làm bài, và mỗi request chỉ ghi thêm số câu MỚI có hạn.
  */
-export const IMPOSSIBLE_SECONDS_PER_ANSWER = 0.8;
-/** Số câu tối thiểu để bắt đầu xét tốc độ (tránh oan cho bài rất ngắn). */
-export const SPEEDRUN_MIN_ANSWERS = 5;
 
-/**
- * Phạt "nộp nhanh bất khả thi": chỉ áp dụng khi tốc độ vượt xa giới hạn thao tác của con người
- * (dấu hiệu gửi đáp án bằng script). Trả về điểm liêm chính cộng thêm.
- */
-export function speedrunPenalty(timeSeconds: number, answered: number): number {
-  if (!Number.isFinite(timeSeconds) || !Number.isFinite(answered)) return 0;
-  if (answered < SPEEDRUN_MIN_ANSWERS) return 0;
-  const limit = answered * IMPOSSIBLE_SECONDS_PER_ANSWER;
-  if (timeSeconds >= limit) return 0;
-  const ratio = Math.max(0, Math.min(1, 1 - timeSeconds / limit));
-  return Math.max(8, Math.round(ratio * 20));
-}
 

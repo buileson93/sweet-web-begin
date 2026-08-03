@@ -1,6 +1,11 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { DISQUALIFY_THRESHOLD_DEFAULT, shouldDisqualify, speedrunPenalty } from "@/lib/integrity";
-import { bulkSubmitPenalty, bulkSubmitReason } from "@/lib/exam/humanPresence";
+import { DISQUALIFY_THRESHOLD_DEFAULT, shouldDisqualify } from "@/lib/integrity";
+import {
+  MAX_NEW_ANSWERS_ON_SUBMIT,
+  MAX_NEW_ANSWERS_PER_SAVE,
+  limitNewAnswers,
+} from "@/lib/exam/answerIntake";
+
 import {
   PASS_PERCENT_DEFAULT,
   baseOptions,
@@ -174,14 +179,24 @@ export async function submitExamSession(input: {
   ]);
 
   const quiz = quizRes.data;
+  // Máy chủ chỉ chấm đáp án đã lưu qua tiến trình làm bài; request nộp bài chỉ được
+  // kèm thêm tối đa MAX_NEW_ANSWERS_ON_SUBMIT câu MỚI (phần đuôi chưa kịp autosave).
+  // Nhờ vậy không thể gửi trọn bộ đáp án bằng một request duy nhất, mà cũng không
+  // phạt oan ai cả — phần vượt trần chỉ bị bỏ qua.
+  const clientAnswers = limitNewAnswers(
+    savedAnswers,
+    input.answers ?? {},
+    MAX_NEW_ANSWERS_ON_SUBMIT,
+  );
   // Cuộc thi chấm ngay: đáp án đã CHỐT trên máy chủ là quyết định, máy khách không được ghi đè
   // (nếu không, có thể dò đáp án đúng qua chấm-ngay rồi nộp lại đáp án chuẩn).
   const answersToGrade =
     replay || lateSubmit
       ? (savedAnswers ?? input.answers)
       : quiz?.instant_feedback
-        ? { ...input.answers, ...savedAnswers }
-        : { ...savedAnswers, ...input.answers };
+        ? { ...clientAnswers, ...savedAnswers }
+        : { ...savedAnswers, ...clientAnswers };
+
 
   if (rowsRes.error) throw new Error(rowsRes.error.message);
   const rows = (rowsRes.data ?? []) as unknown as QuestionRow[];
@@ -285,28 +300,17 @@ export async function submitExamSession(input: {
     });
   }
 
-  // Quyết định huỷ bài dựa trên điểm liêm chính do MÁY CHỦ tích luỹ.
-  // Cộng thêm phạt "nộp nhanh bất thường" (dấu hiệu gửi đáp án bằng script).
-  const answeredCount = Object.keys(storedAnswers).length;
-  const speedPenalty = replay ? 0 : speedrunPenalty(timeSeconds, answeredCount);
-  // Phạt "đáp án gửi hàng loạt": script gọi thẳng API chỉ lưu một lần cho cả bài,
-  // trong khi người thi thật lưu tiến độ nhiều lần khi chọn từng câu.
-  const presence = {
-    answered: answeredCount,
-    answersSeq: Number(session.answers_seq ?? 0),
-    timeSeconds,
-  };
-  const bulkPenalty = replay ? 0 : bulkSubmitPenalty(presence);
-  const integrityScore = Number(session.integrity_score ?? 0) + speedPenalty + bulkPenalty;
+  // Quyết định huỷ bài CHỈ dựa trên điểm liêm chính do MÁY CHỦ tích luỹ từ sự kiện hành vi.
+  // KHÔNG dùng luật tốc độ: thi nhanh thật không bị coi là gian lận.
+  // Chống script được xử lý bằng biện pháp kỹ thuật ở cửa nhận đáp án (answerIntake).
+  const integrityScore = Number(session.integrity_score ?? 0);
   const strictMode = Boolean(quiz?.strict_mode);
   const threshold = Number(quiz?.disqualify_threshold ?? DISQUALIFY_THRESHOLD_DEFAULT);
-  // Nộp nhanh bất thường thì huỷ bài kể cả khi cuộc thi không bật chế độ nghiêm ngặt.
   const disqualified =
     replay && existing
       ? existing.disqualified
-      : speedPenalty > 0 ||
-        bulkPenalty > 0 ||
-        shouldDisqualify(integrityScore, threshold, strictMode);
+      : shouldDisqualify(integrityScore, threshold, strictMode);
+
   /** Cờ cảnh báo cho quản trị khi không bật chế độ nghiêm ngặt nhưng điểm liêm chính đã chạm ngưỡng. */
   const integrityFlagged = !disqualified && integrityScore >= threshold;
 
@@ -361,15 +365,12 @@ export async function submitExamSession(input: {
       late_submit: lateSubmit,
       disqualify_reason: lateSubmit
         ? "Nộp sau giờ"
-        : speedPenalty > 0
-          ? `Nộp bài quá nhanh bất thường (${timeSeconds}s cho ${answeredCount} câu)`
-          : bulkPenalty > 0
-            ? bulkSubmitReason(presence)
-            : disqualified
-              ? `Vi phạm quy chế (điểm liêm chính ${integrityScore}/${threshold})`
-              : integrityFlagged
-                ? `Cảnh báo liêm chính ${integrityScore}/${threshold}`
-                : null,
+        : disqualified
+          ? `Vi phạm quy chế (điểm liêm chính ${integrityScore}/${threshold})`
+          : integrityFlagged
+            ? `Cảnh báo liêm chính ${integrityScore}/${threshold}`
+            : null,
+
 
       submitted_at: now.toISOString(),
     });
@@ -466,7 +467,7 @@ export async function saveExamProgress(input: {
   submitToken: string;
   answers: Record<string, AnswerValue>;
   clientSeq: number;
-}): Promise<{ savedAt: string; seq: number }> {
+}): Promise<{ savedAt: string; seq: number; accepted: string[] }> {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
     .select("id, question_ids, status, submit_token, answers, helpers, answers_seq, expires_at")
@@ -485,7 +486,7 @@ export async function saveExamProgress(input: {
   const savedAnswers = (session.answers as Record<string, AnswerValue>) ?? {};
   // Gói tin đến muộn (seq nhỏ hơn hoặc bằng) bị bỏ qua để không ghi đè bản mới hơn.
   if (input.clientSeq <= currentSeq) {
-    return { savedAt: new Date().toISOString(), seq: currentSeq };
+    return { savedAt: new Date().toISOString(), seq: currentSeq, accepted: [] };
   }
 
   const total = (session.question_ids as string[]).length;
@@ -499,7 +500,11 @@ export async function saveExamProgress(input: {
   // Câu đã chốt bằng chấm-ngay thì autosave KHÔNG được ghi đè: nếu không, có thể
   // ghi thử từng phương án rồi hỏi chấm-ngay để dò ra đáp án đúng của mọi câu.
   const savable = filterSavableAnswers(incoming, readCheckedIndexes(session.helpers));
-  const merged = { ...savedAnswers, ...savable };
+  // Trần số câu MỚI cho mỗi lần lưu: người thi thật lưu theo nhịp nên không bao giờ chạm,
+  // còn script không thể nhồi cả bài trong một request. Sửa câu đã lưu vẫn tự do.
+  const accepted = limitNewAnswers(savedAnswers, savable, MAX_NEW_ANSWERS_PER_SAVE);
+  const merged = { ...savedAnswers, ...accepted };
+
 
   const { error: upErr } = await supabaseAdmin
     .from("exam_sessions")
@@ -508,7 +513,13 @@ export async function saveExamProgress(input: {
     .eq("status", "active");
   if (upErr) throw new Error(upErr.message);
 
-  return { savedAt: new Date().toISOString(), seq: input.clientSeq };
+  // Trả về danh sách câu THỰC SỰ được ghi để máy khách chỉ đánh dấu đã lưu phần đó
+  // và tự gửi lại phần còn thừa ở lần lưu kế tiếp (không mất đáp án khi mất mạng lâu).
+  return {
+    savedAt: new Date().toISOString(),
+    seq: input.clientSeq,
+    accepted: Object.keys(accepted),
+  };
 }
 
 /** Đọc lại đáp án đã lưu trên máy chủ để hợp nhất khi thí sinh F5 / vào lại phòng thi. */
