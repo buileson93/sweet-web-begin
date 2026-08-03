@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeResults } from "@/hooks/useRealtimeResults";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
 import { formatDateTime, formatSeconds } from "@/lib/format";
-import { rankResults } from "@/lib/leaderboard";
+import { rankUniqueResults } from "@/lib/leaderboard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/bang-xep-hang")({
