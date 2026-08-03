@@ -622,6 +622,37 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
                 </div>
               ))}
             </div>
+
+            <div className="rounded-xl border border-border p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">Chế độ nghiêm ngặt (anti-gian lận)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Bật để tự động huỷ bài thi khi điểm liêm chính vượt ngưỡng (mỗi lần rời màn hình cộng 1, lần đầu trên
+                    điện thoại được miễn).
+                  </p>
+                </div>
+                <Switch
+                  checked={form.strict_mode}
+                  onCheckedChange={(v) => setForm({ ...form, strict_mode: v })}
+                />
+              </div>
+              <div className="mt-3 space-y-2">
+                <Label>Ngưỡng huỷ bài (số lần rời màn hình)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={form.disqualify_threshold}
+                  disabled={!form.strict_mode}
+                  onChange={(e) => setForm({ ...form, disqualify_threshold: Number(e.target.value) })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Khi điểm liêm chính ≥ ngưỡng này, bài bị huỷ và không vào bảng xếp hạng. Tắt chế độ nghiêm ngặt thì
+                  chỉ cảnh báo cho admin, không huỷ bài.
+                </p>
+              </div>
+            </div>
           </TabsContent>
 
           {/* ---------- Đối tượng ---------- */}
