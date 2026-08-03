@@ -90,17 +90,32 @@ function HomePage() {
     queryFn: async () => {
       let q = supabase
         .from("results")
-        .select("id, candidate_name, unit, score, total, time_seconds")
+        .select("id, candidate_name, unit, employee_id, score, total, points, max_points, time_seconds")
         .eq("disqualified", false);
       if (boardQuiz !== "all") q = q.eq("quiz_id", boardQuiz);
+      // Lấy nhiều dòng rồi gộp theo thí sinh phía client để mỗi người chỉ hiện
+      // bài tốt nhất — dữ liệu CSDL vẫn giữ nguyên toàn bộ lượt thi.
       const { data, error } = await q
         .order("score", { ascending: false })
         .order("time_seconds", { ascending: true })
-        .limit(3);
+        .limit(200);
       if (error) throw error;
-      return data;
+      return (data ?? []) as Array<{
+        id: string;
+        candidate_name: string | null;
+        unit: string | null;
+        employee_id: string | null;
+        score: number;
+        total: number;
+        points: number | null;
+        max_points: number | null;
+        time_seconds: number;
+      }>;
     },
   });
+
+  // Mỗi thí sinh chỉ giữ bài tốt nhất, lấy top 3 sau khi gộp.
+  const top3 = useMemo(() => rankUniqueResults(topQuery.data ?? []).slice(0, 3), [topQuery.data]);
 
 
   const countQuery = useQuery({
