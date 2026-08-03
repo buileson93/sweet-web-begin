@@ -174,6 +174,10 @@ function ExamPage() {
     submitToken: session?.submitToken,
     active: Boolean(session) && !result,
     isSubmitted: () => submittedRef.current,
+    onDevtools: () =>
+      toast.error(
+        "Phát hiện mở công cụ nhà phát triển (Inspect). Hành vi này đã được ghi nhận cho ban tổ chức.",
+      ),
     onHiddenViolation: () =>
       setViolations((v) => {
         const next = v + 1;

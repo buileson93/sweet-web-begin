@@ -96,15 +96,19 @@ describe("quota sự kiện", () => {
   });
 });
 
-describe("chính sách rời màn hình (nới rộng để tránh phạt oan)", () => {
-  it("máy tính: tha 1 lần, lần thứ hai mới buộc thi lại", () => {
-    expect(leaveAllowance(false)).toBe(1);
-    expect(shouldForceRestart(1, false)).toBe(false);
-    expect(shouldForceRestart(2, false)).toBe(true);
+describe("chính sách rời màn hình (không tha lần nào)", () => {
+  it("rời màn hình 1 lần là buộc thi lại, cả máy tính lẫn điện thoại", () => {
+    expect(leaveAllowance(false)).toBe(0);
+    expect(leaveAllowance(true)).toBe(0);
+    expect(shouldForceRestart(1, false)).toBe(true);
+    expect(shouldForceRestart(1, true)).toBe(true);
+    expect(shouldForceRestart(0, true)).toBe(false);
   });
-  it("điện thoại: tha 3 lần, lần thứ tư mới buộc thi lại", () => {
-    expect(leaveAllowance(true)).toBe(3);
-    expect(shouldForceRestart(3, true)).toBe(false);
-    expect(shouldForceRestart(4, true)).toBe(true);
+});
+
+describe("chống dò đáp án bằng Inspect", () => {
+  it("mở DevTools bị ghi nhận nặng", () => {
+    expect(scoreEvent("devtools_open")).toBe(4);
+    expect(isExamEventKind("devtools_open")).toBe(true);
   });
 });
