@@ -628,9 +628,10 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">Chế độ nghiêm ngặt (anti-gian lận)</p>
                   <p className="text-xs text-muted-foreground">
-                    Bật để tự động huỷ bài thi khi điểm liêm chính vượt ngưỡng (mỗi lần rời màn hình cộng 1, lần đầu trên
-                    điện thoại được miễn).
+                    Bật để tự động huỷ bài khi điểm liêm chính chạm ngưỡng. Rời màn hình dưới 15 giây +2, lâu hơn +4;
+                    sao chép/dán +3; mở nhiều tab +5; mở DevTools +4. Không còn miễn lần đầu trên điện thoại.
                   </p>
+
                 </div>
                 <Switch
                   checked={form.strict_mode}
