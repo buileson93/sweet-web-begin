@@ -84,6 +84,7 @@ function ExamPage() {
     status: saveStatus,
     savedAt: lastSavedAt,
     markAcked,
+    flush: flushAutosave,
   } = useExamAutosave({
     sessionId: session?.sessionId ?? null,
     submitToken: session?.submitToken ?? null,
