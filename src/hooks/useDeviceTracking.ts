@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 
-import { collectFullVisit } from "@/lib/deviceInfo";
-import { recordDeviceVisit } from "@/lib/visits.functions";
+import { collectFullVisit, getVisitorKey } from "@/lib/deviceInfo";
+import { attachVisitIdentity, recordDeviceVisit } from "@/lib/visits.functions";
 import { drainVisits, enqueueVisit } from "@/lib/visits/queue";
-import { readPlayerIdentity } from "@/lib/playerIdentity";
+import { PLAYER_IDENTITY_EVENT, readPlayerIdentity } from "@/lib/playerIdentity";
 
 
 /**
@@ -49,6 +49,20 @@ export function useDeviceTracking() {
     const onOnline = () => void flushVisits();
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
+  }, []);
+
+  // Người dùng đăng nhập nhanh SAU khi trang đã ghi thống kê -> gán ngược định danh
+  // cho các lượt ẩn danh của chính thiết bị này, tránh báo cáo toàn "Khách chưa đăng nhập".
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sync = () => {
+      const employeeId = readPlayerIdentity()?.employeeId;
+      if (!employeeId) return;
+      void attachVisitIdentity({ data: { visitor_key: getVisitorKey(), employee_id: employeeId } }).catch(() => {});
+    };
+    sync();
+    window.addEventListener(PLAYER_IDENTITY_EVENT, sync);
+    return () => window.removeEventListener(PLAYER_IDENTITY_EVENT, sync);
   }, []);
 }
 
