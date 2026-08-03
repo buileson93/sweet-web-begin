@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { AwardsBoard } from "@/components/AwardsBoard";
-import { ChampionBoard } from "@/components/ChampionBoard";
+
 import { LevelBoard } from "@/components/player/LevelBoard";
 import { MobileFold } from "@/components/MobileFold";
 
