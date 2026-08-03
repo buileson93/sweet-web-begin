@@ -50,6 +50,20 @@ export function useDeviceTracking() {
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
   }, []);
+
+  // Người dùng đăng nhập nhanh SAU khi trang đã ghi thống kê -> gán ngược định danh
+  // cho các lượt ẩn danh của chính thiết bị này, tránh báo cáo toàn "Khách chưa đăng nhập".
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sync = () => {
+      const employeeId = readPlayerIdentity()?.employeeId;
+      if (!employeeId) return;
+      void attachVisitIdentity({ data: { visitor_key: getVisitorKey(), employee_id: employeeId } }).catch(() => {});
+    };
+    sync();
+    window.addEventListener(PLAYER_IDENTITY_EVENT, sync);
+    return () => window.removeEventListener(PLAYER_IDENTITY_EVENT, sync);
+  }, []);
 }
 
 /** Gửi lần lượt các bản ghi đang xếp hàng; thất bại thì trả lại hàng đợi. */
