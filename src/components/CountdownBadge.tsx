@@ -9,12 +9,15 @@ export function CountdownBadge({
   target,
   className,
   size = "sm",
+  label = "Đếm ngược tới giờ mở thi",
 }: {
   target: string | null | undefined;
   className?: string;
   size?: "sm" | "lg";
+  label?: string;
 }) {
   const [left, setLeft] = useState(() => msUntil(target) ?? 0);
+
 
   useEffect(() => {
     setLeft(msUntil(target) ?? 0);
