@@ -366,15 +366,12 @@ export async function submitExamSession(input: {
       late_submit: lateSubmit,
       disqualify_reason: lateSubmit
         ? "Nộp sau giờ"
-        : speedPenalty > 0
-          ? `Nộp bài quá nhanh bất thường (${timeSeconds}s cho ${answeredCount} câu)`
-          : bulkPenalty > 0
-            ? bulkSubmitReason(presence)
-            : disqualified
-              ? `Vi phạm quy chế (điểm liêm chính ${integrityScore}/${threshold})`
-              : integrityFlagged
-                ? `Cảnh báo liêm chính ${integrityScore}/${threshold}`
-                : null,
+        : disqualified
+          ? `Vi phạm quy chế (điểm liêm chính ${integrityScore}/${threshold})`
+          : integrityFlagged
+            ? `Cảnh báo liêm chính ${integrityScore}/${threshold}`
+            : null,
+
 
       submitted_at: now.toISOString(),
     });
