@@ -55,9 +55,7 @@ export async function checkExamAnswer(input: {
 
   const savedSoFar = (session.answers as Record<string, AnswerValue>) ?? {};
   const already = savedSoFar[String(input.index)];
-  if (already !== undefined && already !== null && already !== "") {
-    throw new Error("Câu này đã chốt đáp án.");
-  }
+  const locked = already !== undefined && already !== null && (already as unknown) !== "";
 
   const { data: rowRaw } = await supabaseAdmin
     .from("questions")
@@ -67,23 +65,25 @@ export async function checkExamAnswer(input: {
   const row = rowRaw as unknown as QuestionRow | null;
   if (!row) throw new Error("Câu hỏi không tồn tại.");
 
-
   const display = baseOptions(row);
   const orders = (session.option_orders as unknown as number[][]) ?? [];
   const order = orders[input.index] ?? display.map((_, i) => i);
-  const correct = gradeOne(row, order, input.value);
+  // Câu đã chốt thì luôn chấm lại theo đáp án ĐÃ LƯU, không theo giá trị vừa gửi lên.
+  // Nhờ vậy tải lại trang vẫn xem được phản hồi cũ, còn script thì không thể thử
+  // lần lượt từng phương án để dò ra đáp án đúng.
+  const graded = locked ? (already as AnswerValue) : input.value;
+  const correct = gradeOne(row, order, graded);
 
-  const answers = {
-    ...((session.answers as Record<string, AnswerValue>) ?? {}),
-    [String(input.index)]: input.value,
-  };
-  await supabaseAdmin
-    .from("exam_sessions")
-    .update({ answers: answers as never })
-    .eq("id", session.id);
+  if (!locked) {
+    await supabaseAdmin
+      .from("exam_sessions")
+      .update({ answers: { ...savedSoFar, [String(input.index)]: input.value } as never })
+      .eq("id", session.id);
+  }
 
   return { correct, correctText: correctTextOf(row), explanation: row.explanation ?? "" };
 }
+
 
 export async function submitExamSession(input: {
   sessionId: string;
