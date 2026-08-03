@@ -115,7 +115,13 @@ function HomePage() {
   });
 
   // Mỗi thí sinh chỉ giữ bài tốt nhất, lấy top 3 sau khi gộp.
-  const top3 = useMemo(() => rankUniqueResults(topQuery.data ?? []).slice(0, 3), [topQuery.data]);
+  const top3 = useMemo(
+    () =>
+      rankUniqueResults(topQuery.data ?? [])
+        .slice(0, 3)
+        .map((r) => ({ ...r, candidate_name: r.candidate_name ?? "Không rõ" })),
+    [topQuery.data],
+  );
 
 
   const countQuery = useQuery({
