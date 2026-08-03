@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { accuracyOf, bonusRatioOf, isRankable, rankResults } from "@/lib/leaderboard";
+import { accuracyOf, bonusRatioOf, isRankable, rankResults, rankUniqueResults } from "@/lib/leaderboard";
 
 const thao = { candidate_name: "Thảo", score: 19, total: 20, points: 19, max_points: 0, time_seconds: 206 };
 const tho = { candidate_name: "Thọ", score: 12, total: 20, points: 40, max_points: 20, time_seconds: 177 };
@@ -33,5 +33,17 @@ describe("rankResults", () => {
     expect(accuracyOf(empty)).toBe(0);
     expect(bonusRatioOf(empty)).toBe(0);
     expect(rankResults([empty])).toEqual([]);
+  });
+});
+
+describe("rankUniqueResults", () => {
+  it("mỗi thí sinh chỉ hiện bài tốt nhất", () => {
+    const rows = [
+      { candidate_name: "A", unit: "Đài 1", score: 15, total: 20, time_seconds: 100 },
+      { candidate_name: "A", unit: "Đài 1", score: 19, total: 20, time_seconds: 120 },
+      { candidate_name: "B", unit: "Đài 2", score: 17, total: 20, time_seconds: 90 },
+    ];
+    const out = rankUniqueResults(rows);
+    expect(out.map((r) => `${r.candidate_name}-${r.score}`)).toEqual(["A-19", "B-17"]);
   });
 });

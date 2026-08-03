@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeResults } from "@/hooks/useRealtimeResults";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
 import { formatDateTime, formatSeconds } from "@/lib/format";
-import { rankResults } from "@/lib/leaderboard";
+import { rankUniqueResults } from "@/lib/leaderboard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/bang-xep-hang")({
@@ -82,8 +82,8 @@ function LeaderboardPage() {
   const all = resultsQuery.data ?? [];
   const rows = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-    // rankResults đã loại bài dưới 50% và sắp xếp công bằng theo tỉ lệ đúng.
-    return rankResults(all).filter(
+    // rankUniqueResults: loại bài dưới 50%, sắp xếp công bằng, mỗi thí sinh chỉ giữ bài tốt nhất.
+    return rankUniqueResults(all).filter(
       (r) => !kw || r.candidate_name.toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
     );
   }, [all, keyword]);

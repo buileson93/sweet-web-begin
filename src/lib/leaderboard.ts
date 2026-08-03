@@ -47,3 +47,30 @@ export function compareResults(a: RankableResult, b: RankableResult): number {
 export function rankResults<T extends RankableResult>(rows: T[]): T[] {
   return rows.filter(isRankable).sort(compareResults);
 }
+
+/**
+ * Chỉ hiển thị bài TỐT NHẤT của mỗi thí sinh (dữ liệu gốc trong CSDL giữ nguyên).
+ * Khoá gộp ưu tiên employee_id, không có thì dùng tên + đơn vị.
+ */
+export function dedupeByCandidate<
+  T extends RankableResult & { employee_id?: string | null; candidate_name?: string | null; unit?: string | null },
+>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const r of rows) {
+    const key =
+      r.employee_id ??
+      `${(r.candidate_name ?? "").trim().toLowerCase()}|${(r.unit ?? "").trim().toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(r);
+  }
+  return out;
+}
+
+/** Xếp hạng rồi gộp: mỗi thí sinh một dòng duy nhất với kết quả cao nhất. */
+export function rankUniqueResults<
+  T extends RankableResult & { employee_id?: string | null; candidate_name?: string | null; unit?: string | null },
+>(rows: T[]): T[] {
+  return dedupeByCandidate(rankResults(rows));
+}
