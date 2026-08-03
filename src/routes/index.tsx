@@ -287,13 +287,13 @@ function HomePage() {
                 <Skeleton className="h-16 w-full rounded-t-2xl" />
               </div>
             ) : (
-              <Podium className="relative" rows={topQuery.data ?? []} />
+              <Podium className="relative" rows={top3} />
             )}
 
             {/* Trên điện thoại bục vinh danh đã đủ thông tin — danh sách chi tiết chỉ hiện từ sm trở lên */}
             <div className="relative mt-6 hidden space-y-2 sm:block">
 
-              {(topQuery.data ?? []).slice(0, 3).map((r, i) => (
+              {top3.map((r, i) => (
                 <div
                   key={r.id}
                   className={cn(
