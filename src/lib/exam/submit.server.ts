@@ -467,7 +467,7 @@ export async function saveExamProgress(input: {
   submitToken: string;
   answers: Record<string, AnswerValue>;
   clientSeq: number;
-}): Promise<{ savedAt: string; seq: number }> {
+}): Promise<{ savedAt: string; seq: number; accepted: string[] }> {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
     .select("id, question_ids, status, submit_token, answers, helpers, answers_seq, expires_at")
@@ -486,7 +486,7 @@ export async function saveExamProgress(input: {
   const savedAnswers = (session.answers as Record<string, AnswerValue>) ?? {};
   // Gói tin đến muộn (seq nhỏ hơn hoặc bằng) bị bỏ qua để không ghi đè bản mới hơn.
   if (input.clientSeq <= currentSeq) {
-    return { savedAt: new Date().toISOString(), seq: currentSeq };
+    return { savedAt: new Date().toISOString(), seq: currentSeq, accepted: [] };
   }
 
   const total = (session.question_ids as string[]).length;
@@ -513,7 +513,13 @@ export async function saveExamProgress(input: {
     .eq("status", "active");
   if (upErr) throw new Error(upErr.message);
 
-  return { savedAt: new Date().toISOString(), seq: input.clientSeq };
+  // Trả về danh sách câu THỰC SỰ được ghi để máy khách chỉ đánh dấu đã lưu phần đó
+  // và tự gửi lại phần còn thừa ở lần lưu kế tiếp (không mất đáp án khi mất mạng lâu).
+  return {
+    savedAt: new Date().toISOString(),
+    seq: input.clientSeq,
+    accepted: Object.keys(accepted),
+  };
 }
 
 /** Đọc lại đáp án đã lưu trên máy chủ để hợp nhất khi thí sinh F5 / vào lại phòng thi. */
