@@ -72,3 +72,35 @@ export const recordDeviceVisit = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+/**
+ * Gán định danh cho các lượt truy cập vừa ghi ẩn danh của cùng một thiết bị.
+ *
+ * Lý do: thống kê được ghi ngay khi mở trang (trước lúc người dùng đăng nhập nhanh),
+ * nên nếu không gán ngược thì phần lớn lượt xem sẽ mãi là "Khách chưa đăng nhập".
+ */
+export const attachVisitIdentity = createServerFn({ method: "POST" })
+  .inputValidator((data: { visitor_key?: string; employee_id?: string }) => data)
+  .handler(async ({ data }) => {
+    const visitorKey = str(data.visitor_key, 64);
+    if (!visitorKey) return { ok: false, updated: 0 };
+
+    const { resolveEmployeeStamp } = await import("@/lib/identity.server");
+    const stamp = await resolveEmployeeStamp(data.employee_id);
+    if (!stamp.employee_id) return { ok: false, updated: 0 };
+
+    const since = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("device_visits")
+      .update(stamp)
+      .eq("visitor_key", visitorKey)
+      .is("employee_id", null)
+      .gte("created_at", since)
+      .select("id");
+    if (error) {
+      console.error("attach visit identity failed:", error.message);
+      return { ok: false, updated: 0 };
+    }
+    return { ok: true, updated: rows?.length ?? 0 };
+  });
