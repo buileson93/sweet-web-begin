@@ -155,7 +155,7 @@ function ExamPage() {
         setSubmitRetry(0);
       }
     },
-    [answers, clearLocal, runSubmit, session],
+    [answers, clearLocal, flushAutosave, runSubmit, session],
   );
 
   const { clock, timeUp } = useExamTimer({
