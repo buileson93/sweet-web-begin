@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowRight, BookOpen, CalendarPlus, Plane, Timer, Trophy } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, quizStatus } from "@/lib/format";
+import { rankUniqueResults } from "@/lib/leaderboard";
 import { resolveQuizCover } from "@/lib/quizCover";
 import { PlayerHeroCard } from "@/components/player/PlayerHeroCard";
 import { cn } from "@/lib/utils";
@@ -89,17 +90,38 @@ function HomePage() {
     queryFn: async () => {
       let q = supabase
         .from("results")
-        .select("id, candidate_name, unit, score, total, time_seconds")
+        .select("id, candidate_name, unit, employee_id, score, total, points, max_points, time_seconds")
         .eq("disqualified", false);
       if (boardQuiz !== "all") q = q.eq("quiz_id", boardQuiz);
+      // Lấy nhiều dòng rồi gộp theo thí sinh phía client để mỗi người chỉ hiện
+      // bài tốt nhất — dữ liệu CSDL vẫn giữ nguyên toàn bộ lượt thi.
       const { data, error } = await q
         .order("score", { ascending: false })
         .order("time_seconds", { ascending: true })
-        .limit(3);
+        .limit(200);
       if (error) throw error;
-      return data;
+      return (data ?? []) as Array<{
+        id: string;
+        candidate_name: string | null;
+        unit: string | null;
+        employee_id: string | null;
+        score: number;
+        total: number;
+        points: number | null;
+        max_points: number | null;
+        time_seconds: number;
+      }>;
     },
   });
+
+  // Mỗi thí sinh chỉ giữ bài tốt nhất, lấy top 3 sau khi gộp.
+  const top3 = useMemo(
+    () =>
+      rankUniqueResults(topQuery.data ?? [])
+        .slice(0, 3)
+        .map((r) => ({ ...r, candidate_name: r.candidate_name ?? "Không rõ" })),
+    [topQuery.data],
+  );
 
 
   const countQuery = useQuery({
@@ -265,13 +287,13 @@ function HomePage() {
                 <Skeleton className="h-16 w-full rounded-t-2xl" />
               </div>
             ) : (
-              <Podium className="relative" rows={topQuery.data ?? []} />
+              <Podium className="relative" rows={top3} />
             )}
 
             {/* Trên điện thoại bục vinh danh đã đủ thông tin — danh sách chi tiết chỉ hiện từ sm trở lên */}
             <div className="relative mt-6 hidden space-y-2 sm:block">
 
-              {(topQuery.data ?? []).slice(0, 3).map((r, i) => (
+              {top3.map((r, i) => (
                 <div
                   key={r.id}
                   className={cn(
