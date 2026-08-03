@@ -23,8 +23,12 @@ import {
   type StartExamResult,
 } from "@/lib/exam/types";
 
-/** Thời gian nguội khi đổi người thi trên cùng một thiết bị (phút). */
-export const DEVICE_COOLDOWN_MINUTES = 30;
+/**
+ * Thời gian nguội khi ĐỔI NGƯỜI THI trên cùng một thiết bị (phút).
+ * Đây là biện pháp kỹ thuật chống thi hộ (không phạt ai cả): chính chủ thi
+ * bao nhiêu lượt cũng được, chỉ khi chuyền máy sang nhân viên khác mới phải chờ.
+ */
+export const DEVICE_COOLDOWN_MINUTES = 120;
 
 export async function startExamSession(input: {
   quizId: string;
