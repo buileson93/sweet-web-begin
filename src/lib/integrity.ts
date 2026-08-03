@@ -122,3 +122,21 @@ export function isMobileDevice(): boolean {
   const touch = (navigator.maxTouchPoints ?? 0) > 1;
   return /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(ua) || touch;
 }
+
+/** Thời gian tối thiểu hợp lý để đọc và trả lời một câu (giây). */
+export const MIN_SECONDS_PER_ANSWER = 3;
+/** Số câu tối thiểu để bắt đầu xét tốc độ (tránh oan cho bài rất ngắn). */
+export const SPEEDRUN_MIN_ANSWERS = 5;
+
+/**
+ * Phạt "nộp nhanh bất thường": bài làm nhanh hơn ngưỡng sinh học của con người
+ * gần như chắc chắn là gửi đáp án bằng script. Trả về điểm liêm chính cộng thêm.
+ */
+export function speedrunPenalty(timeSeconds: number, answered: number): number {
+  if (!Number.isFinite(timeSeconds) || !Number.isFinite(answered)) return 0;
+  if (answered < SPEEDRUN_MIN_ANSWERS) return 0;
+  const expected = answered * MIN_SECONDS_PER_ANSWER;
+  if (timeSeconds >= expected) return 0;
+  const ratio = Math.max(0, Math.min(1, 1 - timeSeconds / expected));
+  return Math.max(4, Math.round(ratio * 20));
+}

@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { DISQUALIFY_THRESHOLD_DEFAULT, shouldDisqualify } from "@/lib/integrity";
+import { DISQUALIFY_THRESHOLD_DEFAULT, shouldDisqualify, speedrunPenalty } from "@/lib/integrity";
 import {
   PASS_PERCENT_DEFAULT,
   baseOptions,
@@ -30,7 +30,7 @@ export async function checkExamAnswer(input: {
 }) {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
-    .select("id, question_ids, option_orders, status, submit_token, answers, expires_at")
+    .select("id, quiz_id, question_ids, option_orders, status, submit_token, answers, expires_at")
     .eq("id", input.sessionId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -44,6 +44,21 @@ export async function checkExamAnswer(input: {
   const qid = (session.question_ids as string[])[input.index];
   if (!qid) throw new Error("Câu hỏi không tồn tại.");
 
+  // Chỉ cuộc thi bật "chấm ngay" mới được trả đáp án đúng, và mỗi câu chỉ chốt MỘT lần —
+  // nếu không, có thể gọi lặp nhiều phương án để dò toàn bộ đáp án rồi nộp bài trong vài giây.
+  const { data: quizFlags } = await supabaseAdmin
+    .from("quizzes")
+    .select("instant_feedback")
+    .eq("id", session.quiz_id)
+    .maybeSingle();
+  if (!quizFlags?.instant_feedback) throw new Error("Cuộc thi này không bật chấm ngay.");
+
+  const savedSoFar = (session.answers as Record<string, AnswerValue>) ?? {};
+  const already = savedSoFar[String(input.index)];
+  if (already !== undefined && already !== null && already !== "") {
+    throw new Error("Câu này đã chốt đáp án.");
+  }
+
   const { data: rowRaw } = await supabaseAdmin
     .from("questions")
     .select(QUESTION_COLUMNS)
@@ -51,6 +66,7 @@ export async function checkExamAnswer(input: {
     .maybeSingle();
   const row = rowRaw as unknown as QuestionRow | null;
   if (!row) throw new Error("Câu hỏi không tồn tại.");
+
 
   const display = baseOptions(row);
   const orders = (session.option_orders as unknown as number[][]) ?? [];
@@ -119,15 +135,13 @@ export async function submitExamSession(input: {
   // lên máy chủ trước khi hết giờ. Trong ân hạn (độ trễ mạng lúc bấm nộp) thì vẫn gộp bình thường.
   const late = lateness(new Date().toISOString(), session.expires_at);
   const lateSubmit = !replay && late.expired && !late.withinGrace;
-  const answersToGrade =
-    replay || lateSubmit ? (savedAnswers ?? input.answers) : { ...savedAnswers, ...input.answers };
 
   // Tải song song để rút ngắn thời gian chấm bài.
   const [quizRes, rowsRes, historyRes, existingRes] = await Promise.all([
     supabaseAdmin
       .from("quizzes")
       .select(
-        "title, pass_percent, negative_marking, streak_bonus, streak_step, streak_max_bonus, double_points_after, strict_mode, disqualify_threshold",
+        "title, pass_percent, negative_marking, streak_bonus, streak_step, streak_max_bonus, double_points_after, strict_mode, disqualify_threshold, instant_feedback",
       )
       .eq("id", session.quiz_id)
       .maybeSingle(),
@@ -146,6 +160,15 @@ export async function submitExamSession(input: {
   ]);
 
   const quiz = quizRes.data;
+  // Cuộc thi chấm ngay: đáp án đã CHỐT trên máy chủ là quyết định, máy khách không được ghi đè
+  // (nếu không, có thể dò đáp án đúng qua chấm-ngay rồi nộp lại đáp án chuẩn).
+  const answersToGrade =
+    replay || lateSubmit
+      ? (savedAnswers ?? input.answers)
+      : quiz?.instant_feedback
+        ? { ...input.answers, ...savedAnswers }
+        : { ...savedAnswers, ...input.answers };
+
   if (rowsRes.error) throw new Error(rowsRes.error.message);
   const rows = (rowsRes.data ?? []) as unknown as QuestionRow[];
   const history = historyRes.data;
@@ -249,15 +272,20 @@ export async function submitExamSession(input: {
   }
 
   // Quyết định huỷ bài dựa trên điểm liêm chính do MÁY CHỦ tích luỹ.
-  const integrityScore = Number(session.integrity_score ?? 0);
+  // Cộng thêm phạt "nộp nhanh bất thường" (dấu hiệu gửi đáp án bằng script).
+  const answeredCount = Object.keys(storedAnswers).length;
+  const speedPenalty = replay ? 0 : speedrunPenalty(timeSeconds, answeredCount);
+  const integrityScore = Number(session.integrity_score ?? 0) + speedPenalty;
   const strictMode = Boolean(quiz?.strict_mode);
   const threshold = Number(quiz?.disqualify_threshold ?? DISQUALIFY_THRESHOLD_DEFAULT);
+  // Nộp nhanh bất thường thì huỷ bài kể cả khi cuộc thi không bật chế độ nghiêm ngặt.
   const disqualified =
     replay && existing
       ? existing.disqualified
-      : shouldDisqualify(integrityScore, threshold, strictMode);
+      : speedPenalty > 0 || shouldDisqualify(integrityScore, threshold, strictMode);
   /** Cờ cảnh báo cho quản trị khi không bật chế độ nghiêm ngặt nhưng điểm liêm chính đã chạm ngưỡng. */
   const integrityFlagged = !disqualified && integrityScore >= threshold;
+
   const total = session.question_ids.length;
   const finalScore = disqualified ? 0 : score;
   const finalPoints = disqualified ? 0 : Math.max(0, Math.round(points));
@@ -308,11 +336,14 @@ export async function submitExamSession(input: {
       late_submit: lateSubmit,
       disqualify_reason: lateSubmit
         ? "Nộp sau giờ"
-        : disqualified
-          ? `Vi phạm quy chế (điểm liêm chính ${integrityScore}/${threshold})`
-          : integrityFlagged
-            ? `Cảnh báo liêm chính ${integrityScore}/${threshold}`
-            : null,
+        : speedPenalty > 0
+          ? `Nộp bài quá nhanh bất thường (${timeSeconds}s cho ${answeredCount} câu)`
+          : disqualified
+            ? `Vi phạm quy chế (điểm liêm chính ${integrityScore}/${threshold})`
+            : integrityFlagged
+              ? `Cảnh báo liêm chính ${integrityScore}/${threshold}`
+              : null,
+
       submitted_at: now.toISOString(),
     });
 
