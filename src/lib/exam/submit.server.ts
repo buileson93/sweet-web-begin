@@ -30,7 +30,9 @@ export async function checkExamAnswer(input: {
 }) {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
-    .select("id, quiz_id, question_ids, option_orders, status, submit_token, answers, expires_at")
+    .select(
+      "id, quiz_id, question_ids, option_orders, status, submit_token, answers, helpers, expires_at",
+    )
     .eq("id", input.sessionId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -54,8 +56,10 @@ export async function checkExamAnswer(input: {
   if (!quizFlags?.instant_feedback) throw new Error("Cuộc thi này không bật chấm ngay.");
 
   const savedSoFar = (session.answers as Record<string, AnswerValue>) ?? {};
-  const already = savedSoFar[String(input.index)];
-  const locked = already !== undefined && already !== null && (already as unknown) !== "";
+  // Danh sách CHỐT nằm riêng trong helpers.checked: autosave không thể chạm vào,
+  // nên không thể "ghi thử từng phương án rồi hỏi đúng/sai" để dò đáp án.
+  const checked = readCheckedIndexes(session.helpers);
+  const locked = checked.includes(input.index);
 
   const { data: rowRaw } = await supabaseAdmin
     .from("questions")
@@ -69,17 +73,20 @@ export async function checkExamAnswer(input: {
   const orders = (session.option_orders as unknown as number[][]) ?? [];
   const order = orders[input.index] ?? display.map((_, i) => i);
   // Câu đã chốt thì luôn chấm lại theo đáp án ĐÃ LƯU, không theo giá trị vừa gửi lên.
-  // Nhờ vậy tải lại trang vẫn xem được phản hồi cũ, còn script thì không thể thử
-  // lần lượt từng phương án để dò ra đáp án đúng.
-  const graded = locked ? (already as AnswerValue) : input.value;
+  // Nhờ vậy tải lại trang vẫn xem được phản hồi cũ, còn script thì không dò được gì mới.
+  const graded = locked ? (savedSoFar[String(input.index)] as AnswerValue) : input.value;
   const correct = gradeOne(row, order, graded);
 
   if (!locked) {
     await supabaseAdmin
       .from("exam_sessions")
-      .update({ answers: { ...savedSoFar, [String(input.index)]: input.value } as never })
+      .update({
+        answers: { ...savedSoFar, [String(input.index)]: input.value } as never,
+        helpers: withCheckedIndex(session.helpers, input.index) as never,
+      })
       .eq("id", session.id);
   }
+
 
   return { correct, correctText: correctTextOf(row), explanation: row.explanation ?? "" };
 }
