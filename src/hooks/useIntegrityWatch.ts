@@ -31,14 +31,18 @@ export function useIntegrityWatch(opts: {
   isSubmitted: () => boolean;
   /** Người thi rời màn hình thi quá lâu. */
   onHiddenViolation: () => void;
+  /** Phát hiện mở công cụ nhà phát triển (Inspect). */
+  onDevtools?: () => void;
 }) {
   const runReportEvent = useServerFn(reportEvent);
   const { sessionId, submitToken, active } = opts;
 
   const submittedRef = useRef(opts.isSubmitted);
   const violationRef = useRef(opts.onHiddenViolation);
+  const devtoolsRef = useRef<() => void>(() => {});
   submittedRef.current = opts.isSubmitted;
   violationRef.current = opts.onHiddenViolation;
+  devtoolsRef.current = opts.onDevtools ?? (() => {});
 
   useEffect(() => {
     if (!active || !sessionId || !submitToken) return;
