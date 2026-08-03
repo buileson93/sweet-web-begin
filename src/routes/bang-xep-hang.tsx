@@ -178,7 +178,7 @@ function LeaderboardPage() {
         hint="Chạm để xem giải thưởng, quán quân và cấp bậc"
       >
         <AwardsBoard className="mt-3" rows={awardRows} />
-        <ChampionBoard className="mt-3" rows={all} />
+        
         <LevelBoard className="mt-3" />
       </MobileFold>
 
