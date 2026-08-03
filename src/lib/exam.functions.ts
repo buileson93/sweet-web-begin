@@ -36,6 +36,10 @@ const progressSchema = z.object({
   submitToken: z.string().uuid(),
   answers: z.record(z.string(), answerSchema),
   clientSeq: z.number().int().min(0),
+  /** Mắt xích chuỗi băm: mã băm máy chủ đã xác nhận ở gói trước. */
+  chainPrev: z.string().length(64).optional(),
+  /** Mã băm của chính gói này (băm mắt xích trước + seq + đáp án). */
+  chainHash: z.string().length(64).optional(),
 });
 
 export const saveProgress = createServerFn({ method: "POST" })
@@ -143,4 +147,47 @@ export const reportEvent = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { reportExamEvent } = await import("@/lib/exam.server");
     return reportExamEvent(data);
+  });
+
+/** Đăng ký khoá công khai liveness của thiết bị đang thi (chống thay người giữa chừng). */
+export const livenessRegister = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        sessionId: z.string().uuid(),
+        submitToken: z.string().uuid(),
+        publicJwk: z.record(z.string(), z.unknown()),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { registerLivenessKey } = await import("@/lib/exam/liveness.server");
+    return registerLivenessKey(data);
+  });
+
+/** Lấy thử thách liveness (nonce ngẫu nhiên, hết hạn sau 2 phút). */
+export const livenessChallenge = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ sessionId: z.string().uuid(), submitToken: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { issueLivenessChallenge } = await import("@/lib/exam/liveness.server");
+    return issueLivenessChallenge(data);
+  });
+
+/** Nộp chữ ký trả lời thử thách liveness. */
+export const livenessAnswer = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        sessionId: z.string().uuid(),
+        submitToken: z.string().uuid(),
+        nonce: z.string().min(8).max(120),
+        signature: z.string().min(16).max(500),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { answerLivenessChallenge } = await import("@/lib/exam/liveness.server");
+    return answerLivenessChallenge(data);
   });
