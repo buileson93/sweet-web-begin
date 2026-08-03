@@ -500,7 +500,11 @@ export async function saveExamProgress(input: {
   // Câu đã chốt bằng chấm-ngay thì autosave KHÔNG được ghi đè: nếu không, có thể
   // ghi thử từng phương án rồi hỏi chấm-ngay để dò ra đáp án đúng của mọi câu.
   const savable = filterSavableAnswers(incoming, readCheckedIndexes(session.helpers));
-  const merged = { ...savedAnswers, ...savable };
+  // Trần số câu MỚI cho mỗi lần lưu: người thi thật lưu theo nhịp nên không bao giờ chạm,
+  // còn script không thể nhồi cả bài trong một request. Sửa câu đã lưu vẫn tự do.
+  const accepted = limitNewAnswers(savedAnswers, savable, MAX_NEW_ANSWERS_PER_SAVE);
+  const merged = { ...savedAnswers, ...accepted };
+
 
   const { error: upErr } = await supabaseAdmin
     .from("exam_sessions")
