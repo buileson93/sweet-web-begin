@@ -10,10 +10,10 @@ describe("rankResults", () => {
     expect(rankResults([tho, thao]).map((r) => r.candidate_name)).toEqual(["Thảo", "Thọ"]);
   });
 
-  it("cùng tỉ lệ đúng thì xét tỉ lệ điểm thưởng", () => {
+  it("cùng tỉ lệ đúng thì ai nhanh hơn đứng trên, điểm thưởng không tính", () => {
     const a = { candidate_name: "A", score: 16, total: 20, points: 16, max_points: 40, time_seconds: 100 };
     const b = { candidate_name: "B", score: 16, total: 20, points: 32, max_points: 40, time_seconds: 300 };
-    expect(rankResults([a, b]).map((r) => r.candidate_name)).toEqual(["B", "A"]);
+    expect(rankResults([a, b]).map((r) => r.candidate_name)).toEqual(["A", "B"]);
   });
 
   it("cùng tỉ lệ đúng và thưởng thì ai nhanh hơn đứng trên", () => {

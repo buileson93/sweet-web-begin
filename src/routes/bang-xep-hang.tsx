@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { AwardsBoard } from "@/components/AwardsBoard";
-import { ChampionBoard } from "@/components/ChampionBoard";
+
 import { LevelBoard } from "@/components/player/LevelBoard";
 import { MobileFold } from "@/components/MobileFold";
 
@@ -166,7 +166,8 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none">
-              Chỉ xếp hạng bài đạt từ 50% trở lên. Xếp theo tỉ lệ câu đúng, sau đó tới điểm thưởng và thời gian làm bài.
+              Chỉ xếp hạng bài đạt từ 50% trở lên. Mỗi thí sinh lấy bài tốt nhất: nhiều câu đúng nhất, sau đó tới thời
+              gian làm bài ngắn hơn.
             </p>
           </div>
         </div>
@@ -178,7 +179,7 @@ function LeaderboardPage() {
         hint="Chạm để xem giải thưởng, quán quân và cấp bậc"
       >
         <AwardsBoard className="mt-3" rows={awardRows} />
-        <ChampionBoard className="mt-3" rows={all} />
+        
         <LevelBoard className="mt-3" />
       </MobileFold>
 
