@@ -119,15 +119,13 @@ export async function submitExamSession(input: {
   // lên máy chủ trước khi hết giờ. Trong ân hạn (độ trễ mạng lúc bấm nộp) thì vẫn gộp bình thường.
   const late = lateness(new Date().toISOString(), session.expires_at);
   const lateSubmit = !replay && late.expired && !late.withinGrace;
-  const answersToGrade =
-    replay || lateSubmit ? (savedAnswers ?? input.answers) : { ...savedAnswers, ...input.answers };
 
   // Tải song song để rút ngắn thời gian chấm bài.
   const [quizRes, rowsRes, historyRes, existingRes] = await Promise.all([
     supabaseAdmin
       .from("quizzes")
       .select(
-        "title, pass_percent, negative_marking, streak_bonus, streak_step, streak_max_bonus, double_points_after, strict_mode, disqualify_threshold",
+        "title, pass_percent, negative_marking, streak_bonus, streak_step, streak_max_bonus, double_points_after, strict_mode, disqualify_threshold, instant_feedback",
       )
       .eq("id", session.quiz_id)
       .maybeSingle(),
@@ -146,6 +144,15 @@ export async function submitExamSession(input: {
   ]);
 
   const quiz = quizRes.data;
+  // Cuộc thi chấm ngay: đáp án đã CHỐT trên máy chủ là quyết định, máy khách không được ghi đè
+  // (nếu không, có thể dò đáp án đúng qua chấm-ngay rồi nộp lại đáp án chuẩn).
+  const answersToGrade =
+    replay || lateSubmit
+      ? (savedAnswers ?? input.answers)
+      : quiz?.instant_feedback
+        ? { ...input.answers, ...savedAnswers }
+        : { ...savedAnswers, ...input.answers };
+
   if (rowsRes.error) throw new Error(rowsRes.error.message);
   const rows = (rowsRes.data ?? []) as unknown as QuestionRow[];
   const history = historyRes.data;
