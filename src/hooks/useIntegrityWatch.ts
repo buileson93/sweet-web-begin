@@ -3,6 +3,12 @@ import { useServerFn } from "@tanstack/react-start";
 
 import { reportEvent } from "@/lib/exam.functions";
 import {
+  DEVTOOLS_CHECK_MS,
+  DEVTOOLS_DEBUGGER_MS,
+  isDevtoolsBySize,
+  isInspectShortcut,
+} from "@/lib/antiInspect";
+import {
   MAX_EXEMPT_EVENTS_PER_SESSION,
   TAB_HIDDEN_MIN_MS,
   WINDOW_BLUR_MIN_MS,
