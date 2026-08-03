@@ -639,7 +639,7 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
                 />
               </div>
               <div className="mt-3 space-y-2">
-                <Label>Ngưỡng huỷ bài (số lần rời màn hình)</Label>
+                <Label>Ngưỡng huỷ bài (điểm liêm chính)</Label>
                 <Input
                   type="number"
                   min={1}
