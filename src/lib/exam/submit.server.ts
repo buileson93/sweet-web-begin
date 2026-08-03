@@ -30,6 +30,8 @@ import {
   readCheckedIndexes,
   withCheckedIndex,
 } from "@/lib/exam/answerLock";
+import { genesisHash, readChain, verifyChainLink, withChain } from "@/lib/exam/hashChain";
+
 
 
 
