@@ -324,10 +324,10 @@ export async function submitExamSession(input: {
           ? `Nộp bài quá nhanh bất thường (${timeSeconds}s cho ${answeredCount} câu)`
           : disqualified
             ? `Vi phạm quy chế (điểm liêm chính ${integrityScore}/${threshold})`
+            : integrityFlagged
+              ? `Cảnh báo liêm chính ${integrityScore}/${threshold}`
+              : null,
 
-          : integrityFlagged
-            ? `Cảnh báo liêm chính ${integrityScore}/${threshold}`
-            : null,
       submitted_at: now.toISOString(),
     });
 
