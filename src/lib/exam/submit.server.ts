@@ -44,6 +44,21 @@ export async function checkExamAnswer(input: {
   const qid = (session.question_ids as string[])[input.index];
   if (!qid) throw new Error("Câu hỏi không tồn tại.");
 
+  // Chỉ cuộc thi bật "chấm ngay" mới được trả đáp án đúng, và mỗi câu chỉ chốt MỘT lần —
+  // nếu không, có thể gọi lặp nhiều phương án để dò toàn bộ đáp án rồi nộp bài trong vài giây.
+  const { data: quizFlags } = await supabaseAdmin
+    .from("quizzes")
+    .select("instant_feedback")
+    .eq("id", session.quiz_id)
+    .maybeSingle();
+  if (!quizFlags?.instant_feedback) throw new Error("Cuộc thi này không bật chấm ngay.");
+
+  const savedSoFar = (session.answers as Record<string, AnswerValue>) ?? {};
+  const already = savedSoFar[String(input.index)];
+  if (already !== undefined && already !== null && already !== "") {
+    throw new Error("Câu này đã chốt đáp án.");
+  }
+
   const { data: rowRaw } = await supabaseAdmin
     .from("questions")
     .select(QUESTION_COLUMNS)
@@ -51,6 +66,7 @@ export async function checkExamAnswer(input: {
     .maybeSingle();
   const row = rowRaw as unknown as QuestionRow | null;
   if (!row) throw new Error("Câu hỏi không tồn tại.");
+
 
   const display = baseOptions(row);
   const orders = (session.option_orders as unknown as number[][]) ?? [];
