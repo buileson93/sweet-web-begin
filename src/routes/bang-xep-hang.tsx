@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Download, FileSpreadsheet, Medal, Radio, Search, SearchX, Trophy } from "lucide-react";
+import { Download, FileSpreadsheet, Medal, Radio, RotateCcw, Search, SearchX, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
@@ -128,6 +128,7 @@ function LeaderboardPage() {
       "Điểm số": r.points ?? 0,
       "Số câu đúng": `${r.score}/${r.total}`,
       "Chuỗi dài nhất": r.best_streak ?? 0,
+      "Số lượt thi": r.attempts ?? 1,
       "Thời gian làm bài": formatSeconds(r.time_seconds),
       "Thời điểm nộp": formatDateTime(r.submitted_at),
     }));
@@ -167,7 +168,7 @@ function LeaderboardPage() {
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none">
               Chỉ xếp hạng bài đạt từ 50% trở lên. Mỗi thí sinh lấy bài tốt nhất: nhiều câu đúng nhất, sau đó tới thời
-              gian làm bài ngắn hơn.
+              gian làm bài ngắn hơn. Nếu vẫn bằng nhau, ai thi ÍT lượt hơn được xếp trên.
             </p>
           </div>
         </div>
@@ -337,6 +338,13 @@ function LeaderboardPage() {
                     <div className="min-w-0">
                       <p className="truncate font-heading font-bold">{r.candidate_name}</p>
                       <p className="type-meta truncate">{r.unit}</p>
+                      <span
+                        className="type-meta mt-0.5 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 font-medium"
+                        title={`Thí sinh đã thi ${r.attempts ?? 1} lượt. Khi bằng điểm và bằng thời gian, ai thi ít lượt hơn xếp trên.`}
+                      >
+                        <RotateCcw aria-hidden className="size-3" />
+                        {r.attempts ?? 1} lượt thi
+                      </span>
                       <p className="type-meta mt-0.5 truncate">
                         {r.quiz_title}
                         <span className="hidden sm:inline"> • {formatDateTime(r.submitted_at)}</span>
