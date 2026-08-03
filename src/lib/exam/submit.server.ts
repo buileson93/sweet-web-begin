@@ -30,7 +30,7 @@ export async function checkExamAnswer(input: {
 }) {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
-    .select("id, question_ids, option_orders, status, submit_token, answers, expires_at")
+    .select("id, quiz_id, question_ids, option_orders, status, submit_token, answers, expires_at")
     .eq("id", input.sessionId)
     .maybeSingle();
   if (error) throw new Error(error.message);
