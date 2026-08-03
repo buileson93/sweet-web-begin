@@ -96,14 +96,15 @@ describe("quota sự kiện", () => {
   });
 });
 
-describe("chính sách rời màn hình", () => {
-  it("máy tính: rời 1 lần là buộc thi lại", () => {
-    expect(leaveAllowance(false)).toBe(0);
-    expect(shouldForceRestart(1, false)).toBe(true);
+describe("chính sách rời màn hình (nới rộng để tránh phạt oan)", () => {
+  it("máy tính: tha 1 lần, lần thứ hai mới buộc thi lại", () => {
+    expect(leaveAllowance(false)).toBe(1);
+    expect(shouldForceRestart(1, false)).toBe(false);
+    expect(shouldForceRestart(2, false)).toBe(true);
   });
-  it("điện thoại: tha lần đầu, lần thứ hai buộc thi lại", () => {
-    expect(leaveAllowance(true)).toBe(1);
-    expect(shouldForceRestart(1, true)).toBe(false);
-    expect(shouldForceRestart(2, true)).toBe(true);
+  it("điện thoại: tha 3 lần, lần thứ tư mới buộc thi lại", () => {
+    expect(leaveAllowance(true)).toBe(3);
+    expect(shouldForceRestart(3, true)).toBe(false);
+    expect(shouldForceRestart(4, true)).toBe(true);
   });
 });
