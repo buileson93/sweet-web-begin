@@ -105,7 +105,7 @@ export function dedupeByCandidate<
 /** Gộp bài tốt nhất của mỗi thí sinh rồi xếp hạng theo quy tắc chung. */
 export function rankUniqueResults<
   T extends RankableResult & { employee_id?: string | null; candidate_name?: string | null; unit?: string | null },
->(rows: T[]): T[] {
+>(rows: T[]): Array<T & { attempts: number }> {
   // Đếm TỔNG số lần thi của mỗi thí sinh (kể cả bài chưa đạt) trước khi lọc,
   // để phá hoà khi cùng tỉ lệ đúng và cùng thời gian.
   const attemptsByKey = new Map<string, number>();
@@ -116,6 +116,6 @@ export function rankUniqueResults<
   const withAttempts = rows
     .filter(isRankable)
     .map((r) => ({ ...r, attempts: attemptsByKey.get(candidateKeyOf(r)) ?? 1 }));
-  return rankResults(dedupeByCandidate(withAttempts)) as T[];
+  return rankResults(dedupeByCandidate(withAttempts));
 }
 
