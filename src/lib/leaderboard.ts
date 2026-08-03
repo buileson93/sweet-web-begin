@@ -13,6 +13,8 @@ export type RankableResult = {
   points?: number | null;
   max_points?: number | null;
   time_seconds: number;
+  /** Số lần thí sinh đã thi cuộc thi này (dùng để phá hoà: thi ít lần hơn xếp trên). */
+  attempts?: number | null;
 };
 
 /** Tỉ lệ đúng 0–1. */
@@ -40,7 +42,26 @@ export function isRankable(r: RankableResult): boolean {
 export function compareResults(a: RankableResult, b: RankableResult): number {
   const acc = accuracyOf(b) - accuracyOf(a);
   if (Math.abs(acc) > 1e-9) return acc;
-  return a.time_seconds - b.time_seconds;
+  if (a.time_seconds !== b.time_seconds) return a.time_seconds - b.time_seconds;
+  // Cùng tỉ lệ đúng và cùng thời gian: ai thi ÍT LẦN hơn được xếp trên.
+  return attemptsOf(a) - attemptsOf(b);
+}
+
+/** Số lần thi (mặc định 1 nếu chưa được gắn). */
+export function attemptsOf(r: RankableResult): number {
+  return Math.max(1, r.attempts ?? 1);
+}
+
+/** Khoá gộp theo thí sinh: ưu tiên employee_id, không có thì tên + đơn vị. */
+export function candidateKeyOf(r: {
+  employee_id?: string | null;
+  candidate_name?: string | null;
+  unit?: string | null;
+}): string {
+  return (
+    r.employee_id ??
+    `${(r.candidate_name ?? "").trim().toLowerCase()}|${(r.unit ?? "").trim().toLowerCase()}`
+  );
 }
 
 /** Lọc bài chưa đạt rồi sắp xếp theo quy tắc trên. */
@@ -69,9 +90,7 @@ export function dedupeByCandidate<
   const bestOf = new Map<string, T>();
   const order: string[] = [];
   for (const r of rows) {
-    const key =
-      r.employee_id ??
-      `${(r.candidate_name ?? "").trim().toLowerCase()}|${(r.unit ?? "").trim().toLowerCase()}`;
+    const key = candidateKeyOf(r);
     const cur = bestOf.get(key);
     if (!cur) {
       bestOf.set(key, r);
@@ -87,6 +106,16 @@ export function dedupeByCandidate<
 export function rankUniqueResults<
   T extends RankableResult & { employee_id?: string | null; candidate_name?: string | null; unit?: string | null },
 >(rows: T[]): T[] {
-  return rankResults(dedupeByCandidate(rows.filter(isRankable)));
+  // Đếm TỔNG số lần thi của mỗi thí sinh (kể cả bài chưa đạt) trước khi lọc,
+  // để phá hoà khi cùng tỉ lệ đúng và cùng thời gian.
+  const attemptsByKey = new Map<string, number>();
+  for (const r of rows) {
+    const k = candidateKeyOf(r);
+    attemptsByKey.set(k, (attemptsByKey.get(k) ?? 0) + 1);
+  }
+  const withAttempts = rows
+    .filter(isRankable)
+    .map((r) => ({ ...r, attempts: attemptsByKey.get(candidateKeyOf(r)) ?? 1 }));
+  return rankResults(dedupeByCandidate(withAttempts)) as T[];
 }
 
