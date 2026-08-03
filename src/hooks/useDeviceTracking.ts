@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 
-import { collectFullVisit } from "@/lib/deviceInfo";
-import { recordDeviceVisit } from "@/lib/visits.functions";
+import { collectFullVisit, getVisitorKey } from "@/lib/deviceInfo";
+import { attachVisitIdentity, recordDeviceVisit } from "@/lib/visits.functions";
 import { drainVisits, enqueueVisit } from "@/lib/visits/queue";
-import { readPlayerIdentity } from "@/lib/playerIdentity";
+import { PLAYER_IDENTITY_EVENT, readPlayerIdentity } from "@/lib/playerIdentity";
 
 
 /**
