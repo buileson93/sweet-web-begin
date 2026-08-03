@@ -288,16 +288,27 @@ export async function submitExamSession(input: {
   // Cộng thêm phạt "nộp nhanh bất thường" (dấu hiệu gửi đáp án bằng script).
   const answeredCount = Object.keys(storedAnswers).length;
   const speedPenalty = replay ? 0 : speedrunPenalty(timeSeconds, answeredCount);
-  const integrityScore = Number(session.integrity_score ?? 0) + speedPenalty;
+  // Phạt "đáp án gửi hàng loạt": script gọi thẳng API chỉ lưu một lần cho cả bài,
+  // trong khi người thi thật lưu tiến độ nhiều lần khi chọn từng câu.
+  const presence = {
+    answered: answeredCount,
+    answersSeq: Number(session.answers_seq ?? 0),
+    timeSeconds,
+  };
+  const bulkPenalty = replay ? 0 : bulkSubmitPenalty(presence);
+  const integrityScore = Number(session.integrity_score ?? 0) + speedPenalty + bulkPenalty;
   const strictMode = Boolean(quiz?.strict_mode);
   const threshold = Number(quiz?.disqualify_threshold ?? DISQUALIFY_THRESHOLD_DEFAULT);
   // Nộp nhanh bất thường thì huỷ bài kể cả khi cuộc thi không bật chế độ nghiêm ngặt.
   const disqualified =
     replay && existing
       ? existing.disqualified
-      : speedPenalty > 0 || shouldDisqualify(integrityScore, threshold, strictMode);
+      : speedPenalty > 0 ||
+        bulkPenalty > 0 ||
+        shouldDisqualify(integrityScore, threshold, strictMode);
   /** Cờ cảnh báo cho quản trị khi không bật chế độ nghiêm ngặt nhưng điểm liêm chính đã chạm ngưỡng. */
   const integrityFlagged = !disqualified && integrityScore >= threshold;
+
 
   const total = session.question_ids.length;
   const finalScore = disqualified ? 0 : score;
