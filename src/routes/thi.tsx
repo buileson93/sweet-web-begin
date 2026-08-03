@@ -26,6 +26,7 @@ import { useExamAutosave } from "@/hooks/useExamAutosave";
 import { useExamRestore } from "@/hooks/useExamRestore";
 import { useExamTimer } from "@/hooks/useExamTimer";
 import { useIntegrityWatch } from "@/hooks/useIntegrityWatch";
+import { useLivenessWatch } from "@/hooks/useLivenessWatch";
 import { isMobileDevice, leaveAllowance, shouldForceRestart } from "@/lib/integrity";
 import { isAnswered } from "@/lib/questionKinds";
 
@@ -93,12 +94,19 @@ function ExamPage() {
     initialSeq: serverSeq,
   });
 
+  // Kiểm tra liveness liên tục bằng challenge-response (WebCrypto): phát hiện thay người giữa chừng.
+  useLivenessWatch({
+    sessionId: session?.sessionId ?? null,
+    submitToken: session?.submitToken ?? null,
+    active: Boolean(session) && !result,
+  });
+
   // Sau khi khôi phục xong, báo cho autosave biết máy chủ đã có sẵn những đáp án nào.
   useEffect(() => {
     const ack = autosaveAckRef.current;
     if (!ack) return;
     autosaveAckRef.current = null;
-    markAcked(ack.answers, ack.seq);
+    markAcked(ack.answers, ack.seq, ack.chainHead);
   }, [autosaveAckRef, markAcked, serverSeq]);
 
   const finish = useCallback(
