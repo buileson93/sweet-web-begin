@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { AnswerValue } from "@/lib/questionKinds";
 import { saveProgress } from "@/lib/exam.functions";
+import { genesisHash, linkHash } from "@/lib/exam/hashChain";
 
 /** Nhịp lưu định kỳ và các mốc chống dồn request. */
 const HEARTBEAT_MS = 12_000;
@@ -26,6 +27,8 @@ type Params = {
   enabled: boolean;
   /** Seq khởi đầu (lấy từ máy chủ sau khi hợp nhất bài làm). */
   initialSeq?: number;
+  /** Mắt xích chuỗi băm máy chủ đang giữ (lấy khi khôi phục bài làm). */
+  initialChainHead?: string | null;
 };
 
 /**
@@ -35,7 +38,14 @@ type Params = {
  * - Gửi ngay khi tab bị ẩn (visibilitychange) và khi rời trang (pagehide) qua sendBeacon.
  * - Mất mạng: giữ hàng đợi trong bộ nhớ và sessionStorage, thử lại với backoff 2s/5s/15s.
  */
-export function useExamAutosave({ sessionId, submitToken, answers, enabled, initialSeq }: Params) {
+export function useExamAutosave({
+  sessionId,
+  submitToken,
+  answers,
+  enabled,
+  initialSeq,
+  initialChainHead,
+}: Params) {
   const [status, setStatus] = useState<AutosaveStatus>("idle");
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
@@ -50,6 +60,22 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
   const lastSentAtRef = useRef(0);
   const attemptRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Mắt xích chuỗi băm đã được máy chủ xác nhận (chống gửi lại / ghép gói đáp án). */
+  const chainHeadRef = useRef<string | null>(null);
+
+  // Mắt xích khởi đầu gắn với đúng phiên thi.
+  useEffect(() => {
+    if (!sessionId) return;
+    let alive = true;
+    void (async () => {
+      const head = initialChainHead ?? (await genesisHash(sessionId));
+      if (alive && !chainHeadRef.current) chainHeadRef.current = head;
+      if (alive && initialChainHead) chainHeadRef.current = initialChainHead;
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [initialChainHead, sessionId]);
 
   useEffect(() => {
     if (typeof initialSeq === "number") {
@@ -97,9 +123,27 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
     const nextSeq = Math.max(seqRef.current, usedSeqRef.current) + 1;
     usedSeqRef.current = nextSeq;
     try {
+      const prevHead = chainHeadRef.current ?? (await genesisHash(sessionId));
+      const chainHash = await linkHash(prevHead, nextSeq, delta);
       const res = await saveProgress({
-        data: { sessionId, submitToken, answers: delta, clientSeq: nextSeq },
+        data: {
+          sessionId,
+          submitToken,
+          answers: delta,
+          clientSeq: nextSeq,
+          chainPrev: prevHead,
+          chainHash,
+        },
       });
+      if (res.chainHead) chainHeadRef.current = res.chainHead;
+      if (res.rejected === "chain") {
+        // Máy chủ từ chối vì gãy chuỗi (gói cũ / gửi lại): đồng bộ lại mắt xích rồi gửi lại đúng thứ tự.
+        seqRef.current = Math.max(seqRef.current, Number(res.seq ?? 0));
+        setStatus("saving");
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => void flush(), DEBOUNCE_MS);
+        return;
+      }
       const serverSeq = Number(res.seq ?? 0);
       if (serverSeq < nextSeq) {
         // Máy chủ bỏ qua gói tin (seq bị lùi): đồng bộ lại seq, GIỮ hàng đợi và thử lại.
@@ -223,11 +267,15 @@ export function useExamAutosave({ sessionId, submitToken, answers, enabled, init
   useEffect(() => () => void (timerRef.current && clearTimeout(timerRef.current)), []);
 
   /** Đánh dấu các đáp án đã có sẵn trên máy chủ (sau khi khôi phục) để không gửi lại thừa. */
-  const markAcked = useCallback((serverAnswers: Record<string, AnswerValue>, seq: number) => {
+  const markAcked = useCallback(
+    (serverAnswers: Record<string, AnswerValue>, seq: number, chainHead?: string) => {
+    if (chainHead) chainHeadRef.current = chainHead;
     ackedRef.current = { ...serverAnswers };
     seqRef.current = Math.max(seqRef.current, seq);
     usedSeqRef.current = Math.max(usedSeqRef.current, seqRef.current);
-  }, []);
+    },
+    [],
+  );
 
   return { status, savedAt, flush, markAcked };
 }

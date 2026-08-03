@@ -14,6 +14,7 @@ export const EXAM_EVENT_KINDS = [
   "reconnect",
   "multi_tab",
   "devtools_open",
+  "liveness_failed",
 ] as const;
 
 export type ExamEventKind = (typeof EXAM_EVENT_KINDS)[number];
@@ -86,6 +87,10 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
       return 1;
     case "devtools_open":
       return 4;
+    // Không ký lại được thử thách liveness: dấu hiệu đổi thiết bị/thay người giữa chừng
+    // hoặc gọi API bằng script (không có khoá riêng trong trình duyệt đang thi).
+    case "liveness_failed":
+      return Number((detail as { reason?: string }).reason === "stale" ? 1 : 3);
     case "reconnect":
       return 0;
     default:

@@ -24,7 +24,11 @@ export function useExamRestore(finished: boolean) {
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   /** Seq autosave lấy từ máy chủ sau khi khôi phục bài làm. */
   const [serverSeq, setServerSeq] = useState(0);
-  const autosaveAckRef = useRef<{ answers: Record<string, AnswerValue>; seq: number } | null>(null);
+  const autosaveAckRef = useRef<{
+    answers: Record<string, AnswerValue>;
+    seq: number;
+    chainHead?: string;
+  } | null>(null);
 
   useEffect(() => {
     const restored = restoreExamSession(
@@ -65,6 +69,7 @@ export function useExamRestore(finished: boolean) {
         autosaveAckRef.current = {
           answers: (server.answers as Record<string, AnswerValue>) ?? {},
           seq: server.seq,
+          chainHead: server.chainHead,
         };
       } catch (error) {
         // Phiên đã bị đóng (hết giờ, mở lượt mới ở nơi khác, đã nộp): dọn sạch dấu vết

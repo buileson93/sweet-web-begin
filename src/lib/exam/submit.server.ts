@@ -30,6 +30,8 @@ import {
   readCheckedIndexes,
   withCheckedIndex,
 } from "@/lib/exam/answerLock";
+import { genesisHash, readChain, verifyChainLink, withChain } from "@/lib/exam/hashChain";
+
 
 
 
@@ -467,7 +469,15 @@ export async function saveExamProgress(input: {
   submitToken: string;
   answers: Record<string, AnswerValue>;
   clientSeq: number;
-}): Promise<{ savedAt: string; seq: number; accepted: string[] }> {
+  chainPrev?: string;
+  chainHash?: string;
+}): Promise<{
+  savedAt: string;
+  seq: number;
+  accepted: string[];
+  chainHead: string;
+  rejected?: "chain";
+}> {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
     .select("id, question_ids, status, submit_token, answers, helpers, answers_seq, expires_at")
@@ -484,9 +494,37 @@ export async function saveExamProgress(input: {
 
   const currentSeq = Number(session.answers_seq ?? 0);
   const savedAnswers = (session.answers as Record<string, AnswerValue>) ?? {};
+  const chain = readChain(session.helpers);
+  const expectedHead = chain?.head ?? (await genesisHash(session.id));
   // Gói tin đến muộn (seq nhỏ hơn hoặc bằng) bị bỏ qua để không ghi đè bản mới hơn.
   if (input.clientSeq <= currentSeq) {
-    return { savedAt: new Date().toISOString(), seq: currentSeq, accepted: [] };
+    return {
+      savedAt: new Date().toISOString(),
+      seq: currentSeq,
+      accepted: [],
+      chainHead: expectedHead,
+    };
+  }
+
+  // Chuỗi băm: gói này phải nối tiếp đúng mắt xích máy chủ đã xác nhận ở gói trước.
+  // Gói gửi lại (replay) hoặc ghép từ nhiều gói bắt được sẽ gãy chuỗi và bị bỏ qua
+  // (không ghi gì cả) — máy khách nhận lại chainHead thật để đồng bộ và gửi lại đúng thứ tự.
+  const check = await verifyChainLink({
+    expectedHead,
+    established: Boolean(chain),
+    seq: input.clientSeq,
+    delta: input.answers ?? {},
+    chainPrev: input.chainPrev,
+    chainHash: input.chainHash,
+  });
+  if (!check.ok) {
+    return {
+      savedAt: new Date().toISOString(),
+      seq: currentSeq,
+      accepted: [],
+      chainHead: expectedHead,
+      rejected: "chain",
+    };
   }
 
   const total = (session.question_ids as string[]).length;
@@ -505,10 +543,13 @@ export async function saveExamProgress(input: {
   const accepted = limitNewAnswers(savedAnswers, savable, MAX_NEW_ANSWERS_PER_SAVE);
   const merged = { ...savedAnswers, ...accepted };
 
-
   const { error: upErr } = await supabaseAdmin
     .from("exam_sessions")
-    .update({ answers: merged as never, answers_seq: input.clientSeq })
+    .update({
+      answers: merged as never,
+      answers_seq: input.clientSeq,
+      helpers: withChain(session.helpers, check.head, input.clientSeq) as never,
+    })
     .eq("id", session.id)
     .eq("status", "active");
   if (upErr) throw new Error(upErr.message);
@@ -519,6 +560,7 @@ export async function saveExamProgress(input: {
     savedAt: new Date().toISOString(),
     seq: input.clientSeq,
     accepted: Object.keys(accepted),
+    chainHead: check.head,
   };
 }
 
@@ -526,18 +568,21 @@ export async function saveExamProgress(input: {
 export async function getExamProgress(input: {
   sessionId: string;
   submitToken: string;
-}): Promise<{ answers: Record<string, AnswerValue>; seq: number }> {
+}): Promise<{ answers: Record<string, AnswerValue>; seq: number; chainHead: string }> {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
-    .select("id, status, submit_token, answers, answers_seq")
+    .select("id, status, submit_token, answers, answers_seq, helpers")
     .eq("id", input.sessionId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!session || session.status !== "active" || session.submit_token !== input.submitToken) {
     throw new Error("Phiên thi không hợp lệ.");
   }
+  const chain = readChain(session.helpers);
   return {
     answers: (session.answers as Record<string, AnswerValue>) ?? {},
     seq: Number(session.answers_seq ?? 0),
+    chainHead: chain?.head ?? (await genesisHash(session.id)),
   };
 }
+
