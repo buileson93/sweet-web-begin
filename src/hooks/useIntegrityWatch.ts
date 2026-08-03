@@ -133,6 +133,11 @@ export function useIntegrityWatch(opts: {
       else report("contextmenu");
     };
     const blockKeys = (e: KeyboardEvent) => {
+      if (isInspectShortcut(e)) {
+        e.preventDefault();
+        reportDevtools("shortcut");
+        return;
+      }
       if (
         (e.ctrlKey || e.metaKey) &&
         ["c", "v", "x", "p", "s", "u"].includes(e.key.toLowerCase())
@@ -144,6 +149,53 @@ export function useIntegrityWatch(opts: {
       e.preventDefault();
       e.returnValue = "";
     };
+
+    /* --- Chống dò đáp án bằng Inspect / DevTools --- */
+    let devtoolsReported = false;
+    const reportDevtools = (via: string) => {
+      if (devtoolsReported) return;
+      devtoolsReported = true;
+      report("devtools_open", { via });
+      devtoolsRef.current();
+    };
+    const checkDevtools = () => {
+      if (submittedRef.current()) return;
+      if (
+        isDevtoolsBySize({
+          outerWidth: window.outerWidth,
+          innerWidth: window.innerWidth,
+          outerHeight: window.outerHeight,
+          innerHeight: window.innerHeight,
+        })
+      ) {
+        reportDevtools("size");
+        return;
+      }
+      // Bẫy `debugger`: khi DevTools mở, lệnh này bị treo lại vài trăm ms.
+      const t0 = performance.now();
+      // eslint-disable-next-line no-debugger
+      debugger;
+      if (performance.now() - t0 > DEVTOOLS_DEBUGGER_MS) reportDevtools("debugger");
+    };
+    const devtoolsTimer = setInterval(checkDevtools, DEVTOOLS_CHECK_MS);
+    checkDevtools();
+
+    // Chặn React DevTools soi state của phòng thi (đáp án đã chọn, phản hồi tức thì).
+    const hookKey = "__REACT_DEVTOOLS_GLOBAL_HOOK__";
+    const win = window as unknown as Record<string, unknown>;
+    const prevHook = win[hookKey];
+    try {
+      win[hookKey] = {
+        isDisabled: true,
+        supportsFiber: true,
+        inject: () => undefined,
+        onCommitFiberRoot: () => undefined,
+        onCommitFiberUnmount: () => undefined,
+        renderers: new Map(),
+      };
+    } catch {
+      /* trình duyệt chặn ghi đè: bỏ qua */
+    }
 
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);
@@ -159,6 +211,12 @@ export function useIntegrityWatch(opts: {
     return () => {
       clearHiddenTimer();
       clearBlurTimer();
+      clearInterval(devtoolsTimer);
+      try {
+        win[hookKey] = prevHook;
+      } catch {
+        /* bỏ qua */
+      }
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", onBlur);
       window.removeEventListener("focus", onFocus);
