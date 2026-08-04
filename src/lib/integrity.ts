@@ -98,9 +98,7 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     // Không ký lại được thử thách liveness: dấu hiệu đổi thiết bị/thay người giữa chừng
     // hoặc gọi API bằng script (không có khoá riêng trong trình duyệt đang thi).
     case "liveness_failed":
-      // "stale" = thử thách hết hạn / bị thay bởi nhịp sau (mạng chậm, tab bị hệ điều
-      // hành đóng băng, khoá màn hình) -> KHÔNG phạt, tránh oan cho thí sinh thật.
-      return Number((detail as { reason?: string }).reason === "stale" ? 0 : 3);
+      return Number((detail as { reason?: string }).reason === "stale" ? 1 : 3);
     // Đáp án gửi lên mà KHÔNG có thao tác vật lý thật kèm theo: dấu hiệu gọi API bằng script.
     // Đáp án đó đã bị máy chủ từ chối ghi, đây chỉ là phần ghi nhận vi phạm.
     case "untrusted_input":
