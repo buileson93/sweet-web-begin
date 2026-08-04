@@ -4,6 +4,7 @@ import { IdCard, Loader2, Search, Trash2, UserRoundCheck, UserRoundX } from "luc
 import { toast } from "sonner";
 
 import { CsvImportDialog } from "@/components/admin/CsvImportDialog";
+import { EmployeeFormDialog } from "@/components/admin/EmployeeFormDialog";
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
