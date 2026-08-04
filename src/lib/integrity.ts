@@ -212,6 +212,11 @@ export function describeExamEvent(kind: string, detail: ExamEventDetail = {}): s
   const cv = num(detail["cv"]);
   if (cv !== null) parts.push(`độ lệch nhịp ${(cv * 100).toFixed(1)}%`);
 
+  // Số liệu cửa sổ khi phát hiện DevTools: để admin rà soát có phải sidebar oan không.
+  const dw = num(detail["dw"]);
+  const dh = num(detail["dh"]);
+  if (dw !== null || dh !== null) parts.push(`khoảng trống ngang ${dw ?? 0}px, dọc ${dh ?? 0}px`);
+
   const signals = detail["signals"];
   if (Array.isArray(signals) && signals.length) parts.push(`dấu hiệu: ${signals.join(", ")}`);
   if (typeof detail.reason === "string" && detail.reason) parts.push(detail.reason);
