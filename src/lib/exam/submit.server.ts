@@ -31,6 +31,7 @@ import {
   withCheckedIndex,
 } from "@/lib/exam/answerLock";
 import { genesisHash, readChain, verifyChainLink, withChain } from "@/lib/exam/hashChain";
+import { isRoboticTiming, unprovenKeys, type ProofLike } from "@/lib/exam/scriptDetect";
 
 
 
@@ -41,6 +42,7 @@ export async function checkExamAnswer(input: {
   submitToken: string;
   index: number;
   value: AnswerValue;
+  proof?: ProofLike;
 }) {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
@@ -59,6 +61,16 @@ export async function checkExamAnswer(input: {
   }
   const qid = (session.question_ids as string[])[input.index];
   if (!qid) throw new Error("Câu hỏi không tồn tại.");
+
+  // Chống dò đáp án bằng script: chấm-ngay chỉ phục vụ thao tác thật của thí sinh.
+  if (input.proof && input.proof.trusted !== true) {
+    const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+    await flagScriptEvent(session.id, "untrusted_input", {
+      source: "check",
+      index: input.index,
+    });
+    throw new Error("Không ghi nhận được thao tác chọn đáp án. Vui lòng chọn lại trên màn hình.");
+  }
 
   // Chỉ cuộc thi bật "chấm ngay" mới được trả đáp án đúng, và mỗi câu chỉ chốt MỘT lần —
   // nếu không, có thể gọi lặp nhiều phương án để dò toàn bộ đáp án rồi nộp bài trong vài giây.
@@ -110,6 +122,7 @@ export async function submitExamSession(input: {
   sessionId: string;
   submitToken: string;
   answers: Record<string, AnswerValue>;
+  proofs?: Record<string, ProofLike>;
   disqualified?: boolean;
   disqualifyReason?: string;
 }): Promise<SubmitExamResult> {
@@ -185,11 +198,15 @@ export async function submitExamSession(input: {
   // kèm thêm tối đa MAX_NEW_ANSWERS_ON_SUBMIT câu MỚI (phần đuôi chưa kịp autosave).
   // Nhờ vậy không thể gửi trọn bộ đáp án bằng một request duy nhất, mà cũng không
   // phạt oan ai cả — phần vượt trần chỉ bị bỏ qua.
-  const clientAnswers = limitNewAnswers(
-    savedAnswers,
-    input.answers ?? {},
-    MAX_NEW_ANSWERS_ON_SUBMIT,
-  );
+  const guarded = replay
+    ? { kept: input.answers ?? {} }
+    : await guardProofs({
+        sessionId: session.id,
+        saved: savedAnswers,
+        incoming: input.answers ?? {},
+        proofs: input.proofs,
+      });
+  const clientAnswers = limitNewAnswers(savedAnswers, guarded.kept, MAX_NEW_ANSWERS_ON_SUBMIT);
   // Cuộc thi chấm ngay: đáp án đã CHỐT trên máy chủ là quyết định, máy khách không được ghi đè
   // (nếu không, có thể dò đáp án đúng qua chấm-ngay rồi nộp lại đáp án chuẩn).
   const answersToGrade =
@@ -468,6 +485,7 @@ export async function saveExamProgress(input: {
   sessionId: string;
   submitToken: string;
   answers: Record<string, AnswerValue>;
+  proofs?: Record<string, ProofLike>;
   clientSeq: number;
   chainPrev?: string;
   chainHash?: string;
@@ -538,9 +556,19 @@ export async function saveExamProgress(input: {
   // Câu đã chốt bằng chấm-ngay thì autosave KHÔNG được ghi đè: nếu không, có thể
   // ghi thử từng phương án rồi hỏi chấm-ngay để dò ra đáp án đúng của mọi câu.
   const savable = filterSavableAnswers(incoming, readCheckedIndexes(session.helpers));
+
+  // CHỐNG SCRIPT: mỗi câu MỚI phải kèm bằng chứng thao tác vật lý thật (sự kiện isTrusted).
+  // Script gọi thẳng API hoặc bắn sự kiện giả không thể tạo ra bằng chứng này.
+  const { kept, flags } = await guardProofs({
+    sessionId: session.id,
+    saved: savedAnswers,
+    incoming: savable,
+    proofs: input.proofs,
+  });
+  void flags;
   // Trần số câu MỚI cho mỗi lần lưu: người thi thật lưu theo nhịp nên không bao giờ chạm,
   // còn script không thể nhồi cả bài trong một request. Sửa câu đã lưu vẫn tự do.
-  const accepted = limitNewAnswers(savedAnswers, savable, MAX_NEW_ANSWERS_PER_SAVE);
+  const accepted = limitNewAnswers(savedAnswers, kept, MAX_NEW_ANSWERS_PER_SAVE);
   const merged = { ...savedAnswers, ...accepted };
 
   const { error: upErr } = await supabaseAdmin
@@ -586,3 +614,55 @@ export async function getExamProgress(input: {
   };
 }
 
+/**
+ * Cửa kiểm tra "bằng chứng thao tác thật" cho các câu MỚI.
+ * - Câu mới không có bằng chứng => KHÔNG ghi vào bài làm và bị ghi nhận vi phạm.
+ * - Gói tin không kèm bằng chứng nào (máy khách cũ / gọi API thô) => vẫn ghi nhưng bị cảnh báo.
+ * - Nhịp trả lời đều như máy => ghi nhận cảnh báo script.
+ * Sửa lại câu đã lưu không bị ảnh hưởng (không phạt oan người thi sửa đáp án).
+ */
+async function guardProofs(args: {
+  sessionId: string;
+  saved: Record<string, AnswerValue>;
+  incoming: Record<string, AnswerValue>;
+  proofs?: Record<string, ProofLike>;
+}): Promise<{ kept: Record<string, AnswerValue>; flags: string[] }> {
+  const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+  const newKeys = Object.keys(args.incoming).filter(
+    (key) => !Object.prototype.hasOwnProperty.call(args.saved, key),
+  );
+  const flags: string[] = [];
+
+  if (newKeys.length === 0) return { kept: args.incoming, flags };
+
+  if (!args.proofs) {
+    await flagScriptEvent(args.sessionId, "script_suspect", {
+      reason: "no_proof_payload",
+      count: newKeys.length,
+    });
+    return { kept: args.incoming, flags: ["no_proof_payload"] };
+  }
+
+  const bad = unprovenKeys(newKeys, args.proofs);
+  const kept: Record<string, AnswerValue> = {};
+  for (const [key, value] of Object.entries(args.incoming)) {
+    if (!bad.includes(key)) kept[key] = value;
+  }
+  if (bad.length > 0) {
+    flags.push("untrusted_input");
+    await flagScriptEvent(args.sessionId, "untrusted_input", {
+      indexes: bad.slice(0, 20),
+      count: bad.length,
+    });
+  }
+
+  const stamps = newKeys
+    .map((key) => Number(args.proofs?.[key]?.at ?? NaN))
+    .filter((n) => Number.isFinite(n));
+  if (isRoboticTiming(stamps)) {
+    flags.push("robotic_timing");
+    await flagScriptEvent(args.sessionId, "script_suspect", { reason: "robotic_timing" });
+  }
+
+  return { kept, flags };
+}

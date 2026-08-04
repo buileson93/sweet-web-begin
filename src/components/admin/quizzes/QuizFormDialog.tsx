@@ -629,7 +629,8 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
                   <p className="text-sm font-semibold">Chế độ nghiêm ngặt (anti-gian lận)</p>
                   <p className="text-xs text-muted-foreground">
                     Bật để tự động huỷ bài khi điểm liêm chính chạm ngưỡng. Rời màn hình dưới 15 giây +2, lâu hơn +4;
-                    sao chép/dán +3; mở nhiều tab +5; mở DevTools +4. Không còn miễn lần đầu trên điện thoại.
+                    sao chép/dán +3; mở nhiều tab +5; mở DevTools +4. Chống script: trình duyệt tự động hoá +6,
+                    đáp án không có thao tác thật +4, nhịp trả lời máy móc +3. Không còn miễn lần đầu trên điện thoại.
                   </p>
 
                 </div>

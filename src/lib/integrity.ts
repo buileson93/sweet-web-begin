@@ -15,6 +15,10 @@ export const EXAM_EVENT_KINDS = [
   "multi_tab",
   "devtools_open",
   "liveness_failed",
+  // Chống script: đáp án không kèm bằng chứng thao tác thật / môi trường tự động hoá.
+  "untrusted_input",
+  "automation_detected",
+  "script_suspect",
 ] as const;
 
 export type ExamEventKind = (typeof EXAM_EVENT_KINDS)[number];
@@ -91,6 +95,16 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     // hoặc gọi API bằng script (không có khoá riêng trong trình duyệt đang thi).
     case "liveness_failed":
       return Number((detail as { reason?: string }).reason === "stale" ? 1 : 3);
+    // Đáp án gửi lên mà KHÔNG có thao tác vật lý thật kèm theo: dấu hiệu gọi API bằng script.
+    // Đáp án đó đã bị máy chủ từ chối ghi, đây chỉ là phần ghi nhận vi phạm.
+    case "untrusted_input":
+      return 4;
+    // Trình duyệt đang bị điều khiển tự động (webdriver / headless / Selenium / Playwright).
+    case "automation_detected":
+      return 6;
+    // Nhịp trả lời đều như máy hoặc gói tin thiếu bằng chứng: cảnh báo mức vừa.
+    case "script_suspect":
+      return 3;
     case "reconnect":
       return 0;
     default:
