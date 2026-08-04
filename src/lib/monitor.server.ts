@@ -219,22 +219,37 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
           phoneLast4: employee.phone_last4 ?? "",
         }
       : null,
-    device: visit
+    device: snap
       ? {
-          ip: visit.ip || "—",
-          browser: [visit.browser, visit.browser_version].filter(Boolean).join(" ") || "—",
-          os: [visit.os, visit.os_version].filter(Boolean).join(" ") || "—",
-          deviceType: visit.device_type || "—",
-          deviceModel: visit.device_model || "—",
-          screen: visit.screen_w && visit.screen_h ? `${visit.screen_w}×${visit.screen_h}` : "—",
-          network: visit.network_type || "—",
-          language: visit.language || "—",
-          timezone: visit.timezone || "—",
-          isPwa: Boolean(visit.is_pwa),
-          userAgent: visit.user_agent || "—",
-          seenAt: visit.created_at,
+          ip: s(snap["ip"]) || "—",
+          browser: [s(snap["browser"]), s(snap["browser_version"])].filter(Boolean).join(" ") || "—",
+          os: [s(snap["os"]), s(snap["os_version"])].filter(Boolean).join(" ") || "—",
+          deviceType: s(snap["device_type"]) || "—",
+          deviceModel: s(snap["device_model"]) || "—",
+          screen: s(snap["screen"]) || "—",
+          network: s(snap["network_type"]) || "—",
+          language: s(snap["language"]) || "—",
+          timezone: s(snap["timezone"]) || "—",
+          isPwa: Boolean(snap["is_pwa"]),
+          userAgent: s(snap["user_agent"]) || "—",
+          seenAt: s(snap["captured_at"]) || session.started_at,
         }
-      : null,
+      : visit
+        ? {
+            ip: visit.ip || "—",
+            browser: [visit.browser, visit.browser_version].filter(Boolean).join(" ") || "—",
+            os: [visit.os, visit.os_version].filter(Boolean).join(" ") || "—",
+            deviceType: visit.device_type || "—",
+            deviceModel: visit.device_model || "—",
+            screen: visit.screen_w && visit.screen_h ? `${visit.screen_w}×${visit.screen_h}` : "—",
+            network: visit.network_type || "—",
+            language: visit.language || "—",
+            timezone: visit.timezone || "—",
+            isPwa: Boolean(visit.is_pwa),
+            userAgent: visit.user_agent || "—",
+            seenAt: visit.created_at,
+          }
+        : null,
     answers,
   };
 }
