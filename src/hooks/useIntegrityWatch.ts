@@ -4,8 +4,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { reportEvent } from "@/lib/exam.functions";
 import {
   DEVTOOLS_CHECK_MS,
-  DEVTOOLS_DEBUGGER_MS,
   createConsoleBait,
+  createHitStreak,
+  isDebuggerPause,
   isInspectShortcut,
 } from "@/lib/antiInspect";
 import {
