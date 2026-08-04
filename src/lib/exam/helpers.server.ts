@@ -171,5 +171,13 @@ export async function reportExamEvent(input: {
     next = typeof bumped === "number" ? bumped : next + weight;
   }
 
+  // Dấu hiệu tự động hoá: khoá thao tác và bắt xác minh lại (chỉ với đề nghiêm ngặt).
+  if (input.kind === "automation_detected" || input.kind === "honeypot_hit") {
+    const { isStrictSession, lockForCaptcha } = await import("@/lib/exam/captchaGuard.server");
+    if (await isStrictSession(session.id)) {
+      await lockForCaptcha(session.id, input.kind);
+    }
+  }
+
   return { ok: true, integrityScore: next };
 }
