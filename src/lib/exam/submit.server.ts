@@ -30,6 +30,7 @@ import {
   readCheckedIndexes,
   withCheckedIndex,
 } from "@/lib/exam/answerLock";
+import { revealForCheck } from "@/lib/exam/checkReveal";
 import { genesisHash, readChain, verifyChainLink, withChain } from "@/lib/exam/hashChain";
 import { isRoboticTiming, unprovenKeys, type ProofLike } from "@/lib/exam/scriptDetect";
 
