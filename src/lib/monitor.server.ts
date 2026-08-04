@@ -133,6 +133,8 @@ export async function loadLivePage(limit: number, offset: number): Promise<Omit<
 const LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
 /** Chi tiết một phiên thi: 3 truy vấn cố định, câu hỏi lấy theo lô. */
+import { resolveSessionDevice } from "@/lib/exam/deviceSnapshot";
+
 export async function loadSessionDetail(sessionId: string): Promise<SessionDetail> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -178,22 +180,7 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
       .limit(20),
   ]);
 
-  const startedMs = new Date(session.started_at).getTime();
-  const visit =
-    (visits ?? [])
-      .slice()
-      .sort(
-        (a, b) =>
-          Math.abs(new Date(a.created_at).getTime() - startedMs) -
-          Math.abs(new Date(b.created_at).getTime() - startedMs),
-      )[0] ?? null;
-
-  // Ưu tiên bản ghi thiết bị lưu ngay trong phiên thi (luôn có, không phụ thuộc cookie).
-  const s = (v: unknown) => String(v ?? "").trim();
-  const rawSnap = (session.device_info ?? null) as Record<string, unknown> | null;
-  const snap = rawSnap && Object.keys(rawSnap).length ? rawSnap : null;
-
-
+  const device = resolveSessionDevice(session.device_info, visits, session.started_at);
 
   const byId = new Map((questions ?? []).map((q) => [q.id, q]));
   const rawAnswers = (session.answers ?? {}) as Record<string, number | number[] | string>;
@@ -240,37 +227,7 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
           phoneLast4: employee.phone_last4 ?? "",
         }
       : null,
-    device: snap
-      ? {
-          ip: s(snap["ip"]) || "—",
-          browser: [s(snap["browser"]), s(snap["browser_version"])].filter(Boolean).join(" ") || "—",
-          os: [s(snap["os"]), s(snap["os_version"])].filter(Boolean).join(" ") || "—",
-          deviceType: s(snap["device_type"]) || "—",
-          deviceModel: s(snap["device_model"]) || "—",
-          screen: s(snap["screen"]) || "—",
-          network: s(snap["network_type"]) || "—",
-          language: s(snap["language"]) || "—",
-          timezone: s(snap["timezone"]) || "—",
-          isPwa: Boolean(snap["is_pwa"]),
-          userAgent: s(snap["user_agent"]) || "—",
-          seenAt: s(snap["captured_at"]) || session.started_at,
-        }
-      : visit
-        ? {
-            ip: visit.ip || "—",
-            browser: [visit.browser, visit.browser_version].filter(Boolean).join(" ") || "—",
-            os: [visit.os, visit.os_version].filter(Boolean).join(" ") || "—",
-            deviceType: visit.device_type || "—",
-            deviceModel: visit.device_model || "—",
-            screen: visit.screen_w && visit.screen_h ? `${visit.screen_w}×${visit.screen_h}` : "—",
-            network: visit.network_type || "—",
-            language: visit.language || "—",
-            timezone: visit.timezone || "—",
-            isPwa: Boolean(visit.is_pwa),
-            userAgent: visit.user_agent || "—",
-            seenAt: visit.created_at,
-          }
-        : null,
+    device,
     answers,
   };
 }
