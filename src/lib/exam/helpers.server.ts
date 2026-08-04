@@ -1,8 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  MAX_EVENTS_PER_SESSION,
+  MAX_EVENTS_PER_KIND,
   MAX_EXEMPT_EVENTS_PER_SESSION,
-  QUOTA_EXEMPT_KINDS,
   isExamEventKind,
   isQuotaExempt,
   scoreEvent,
@@ -135,24 +134,25 @@ export async function reportExamEvent(input: {
   if (!isExamEventKind(input.kind))
     return { ok: false, integrityScore: session.integrity_score ?? 0 };
 
-  // Chống spam theo NHÓM: các loại nặng (tab_hidden, multi_tab) có quota riêng rất rộng
-  // để không bị "đốt" bởi việc bấm Ctrl+C liên tục đầu giờ.
-  const exempt = isQuotaExempt(input.kind);
-  let countQuery = supabaseAdmin
-    .from("exam_events")
-    .select("id", { count: "exact", head: true })
-    .eq("session_id", session.id);
-  countQuery = exempt
-    ? countQuery.in("kind", QUOTA_EXEMPT_KINDS as string[])
-    : countQuery.not("kind", "in", `(${QUOTA_EXEMPT_KINDS.join(",")})`);
-  const { count } = await countQuery;
-  const limit = exempt ? MAX_EXEMPT_EVENTS_PER_SESSION : MAX_EVENTS_PER_SESSION;
-  if ((count ?? 0) >= limit)
-    return { ok: false, integrityScore: session.integrity_score ?? 0 };
-
-
   const detail = (input.detail ?? {}) as ExamEventDetail;
   const weight = scoreEvent(input.kind, detail);
+
+  // Quota chống spam tính theo TỪNG LOẠI và chỉ đếm sự kiện CÓ TRỌNG SỐ.
+  // Sự kiện trọng số 0 (chỉ để tham chiếu) không bao giờ đốt được quota của loại khác,
+  // và toàn bộ nhóm chống-script được miễn quota.
+  const exempt = isQuotaExempt(input.kind);
+  if (weight > 0) {
+    let countQuery = supabaseAdmin
+      .from("exam_events")
+      .select("id", { count: "exact", head: true })
+      .eq("session_id", session.id)
+      .gt("weight", 0);
+    countQuery = exempt ? countQuery : countQuery.eq("kind", input.kind);
+    const { count } = await countQuery;
+    const limit = exempt ? MAX_EXEMPT_EVENTS_PER_SESSION : MAX_EVENTS_PER_KIND;
+    if ((count ?? 0) >= limit)
+      return { ok: false, integrityScore: session.integrity_score ?? 0 };
+  }
 
   await supabaseAdmin.from("exam_events").insert({
     session_id: session.id,
@@ -161,12 +161,15 @@ export async function reportExamEvent(input: {
     detail: detail as never,
   });
 
-  const next = (session.integrity_score ?? 0) + weight;
-  if (weight > 0)
-    await supabaseAdmin
-      .from("exam_sessions")
-      .update({ integrity_score: next })
-      .eq("id", session.id);
+  // Cộng dồn NGUYÊN TỬ trong một câu lệnh: nhiều request song song không làm mất điểm phạt.
+  let next = session.integrity_score ?? 0;
+  if (weight > 0) {
+    const { data: bumped } = await supabaseAdmin.rpc("bump_integrity", {
+      p_session: session.id,
+      p_weight: weight,
+    });
+    next = typeof bumped === "number" ? bumped : next + weight;
+  }
 
   return { ok: true, integrityScore: next };
 }

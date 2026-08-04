@@ -41,18 +41,33 @@ export const DISQUALIFY_THRESHOLD_DEFAULT = 6;
 export const TAB_HIDDEN_MIN_MS = 800;
 /** Mất focus cửa sổ (mà trang vẫn hiển thị) kéo dài từ mốc này mới bị ghi nhận nhẹ. */
 export const WINDOW_BLUR_MIN_MS = 4_000;
-/** Số sự kiện tối đa ghi nhận cho một phiên thi (chống spam). */
-export const MAX_EVENTS_PER_SESSION = 20;
 /**
- * Hai loại sự kiện nặng nhất được MIỄN quota chống spam:
- * nếu tính chung, thí sinh chỉ cần bấm Ctrl+C 20 lần đầu giờ là "đốt" hết quota
- * rồi rời tab thoải mái mà không bị ghi nhận.
+ * Quota chống spam tính theo TỪNG LOẠI sự kiện (không gộp chung).
+ *
+ * Vì sao: gộp chung một quota 20 bản ghi thì script chỉ cần bắn 20 sự kiện vô hại
+ * đầu giờ (contextmenu, copy...) là "đốt" sạch quota, khiến mọi vi phạm nặng sau đó
+ * không được ghi và chế độ nghiêm ngặt không bao giờ chạm ngưỡng huỷ bài.
  */
-export const QUOTA_EXEMPT_KINDS: readonly string[] = ["tab_hidden", "multi_tab"];
-/** Trần riêng (rất rộng) cho các loại được miễn quota, chỉ để chặn lạm dụng. */
+export const MAX_EVENTS_PER_KIND = 20;
+/**
+ * Các loại được MIỄN quota hoàn toàn: nhóm rời màn hình nặng nhất và toàn bộ
+ * nhóm chống-script (những loại này chính là bằng chứng gian lận, không được phép bị chặn).
+ */
+export const QUOTA_EXEMPT_KINDS: readonly string[] = [
+  "tab_hidden",
+  "multi_tab",
+  "devtools_open",
+  "liveness_failed",
+  "untrusted_input",
+  "automation_detected",
+  "script_suspect",
+  "captcha_failed",
+  "honeypot_hit",
+];
+/** Trần riêng (rất rộng) cho các loại được miễn quota, chỉ để chặn lạm dụng dung lượng. */
 export const MAX_EXEMPT_EVENTS_PER_SESSION = 200;
 
-/** Sự kiện này có bị tính vào quota 20 bản ghi/phiên hay không. */
+/** Sự kiện này có được miễn quota theo loại hay không. */
 export function isQuotaExempt(kind: string): boolean {
   return QUOTA_EXEMPT_KINDS.includes(kind);
 }
