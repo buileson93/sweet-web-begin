@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { checkVerdict } from "@/lib/exam/clientPayload";
 import { DISQUALIFY_THRESHOLD_DEFAULT, shouldDisqualify } from "@/lib/integrity";
 import {
   MAX_NEW_ANSWERS_ON_SUBMIT,
@@ -177,7 +178,7 @@ export async function checkExamAnswer(input: {
   // CHỈ trả về đúng/sai. Nội dung đáp án đúng và lời giải KHÔNG bao giờ đi xuống
   // máy khách trong lúc đang thi — mọi việc chấm nằm ở máy chủ, nên dù mở console
   // hay chặn gói tin cũng không đọc được đáp án. Xem lại đầy đủ ở phần kết quả sau khi nộp.
-  return { correct, correctText: "", explanation: "" };
+  return { ...checkVerdict(correct), correctText: "", explanation: "" };
 }
 
 
