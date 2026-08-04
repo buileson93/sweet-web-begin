@@ -779,6 +779,7 @@ export type Database = {
           best_streak: number
           birth_year: string
           candidate_name: string
+          device_info: Json
           employee_id: string | null
           expires_at: string
           helpers: Json
@@ -800,6 +801,7 @@ export type Database = {
           best_streak?: number
           birth_year?: string
           candidate_name: string
+          device_info?: Json
           employee_id?: string | null
           expires_at: string
           helpers?: Json
@@ -821,6 +823,7 @@ export type Database = {
           best_streak?: number
           birth_year?: string
           candidate_name?: string
+          device_info?: Json
           employee_id?: string | null
           expires_at?: string
           helpers?: Json
