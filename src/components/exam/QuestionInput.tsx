@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Check, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { questionImageSrc } from "@/lib/questionImage";
 import { Button } from "@/components/ui/button";
 import type { AnswerValue, QuestionKind } from "@/lib/questionKinds";
+import { buildCloak } from "@/lib/exam/optionCloak";
 import { cn } from "@/lib/utils";
 import { RichText } from "@/components/RichText";
 
@@ -21,6 +22,8 @@ export type QuestionInputProps = {
   disabled?: boolean;
   /** Phản hồi tức thì: đáp án đã chốt đúng hay sai. */
   feedback?: "correct" | "wrong" | null;
+  /** Có bấm trúng thẻ mồi ẩn (chỉ script quét DOM mới làm được). */
+  onTrap?: (info: { token: string }) => void;
 };
 
 const LETTER = (i: number) => String.fromCharCode(65 + i);
@@ -36,6 +39,7 @@ export function QuestionInput({
   removed = [],
   disabled,
   feedback = null,
+  onTrap,
 }: QuestionInputProps) {
   const [zoom, setZoom] = useState<string | null>(null);
 
@@ -154,24 +158,50 @@ export function QuestionInput({
 
   const hasImages = optionImages.some(Boolean);
 
+  // Biến đổi ngẫu nhiên: token dùng một lần + tráo thứ tự DOM + chèn thẻ mồi.
+  // Thứ tự NHÌN THẤY vẫn giữ nguyên nhờ CSS `order`.
+  const cloak = useMemo(() => buildCloak(options), [options]);
+
   return (
     <div
       className={cn(
-        "stagger mt-5",
-        hasImages ? "grid grid-cols-2 gap-2.5 sm:grid-cols-2" : "space-y-2.5",
+        "stagger mt-5 flex",
+        hasImages ? "grid grid-cols-2 gap-2.5 sm:grid-cols-2" : "flex-col gap-2.5",
       )}
     >
       {multi ? (
         <p className={cn("type-meta", hasImages && "col-span-2")}>Có thể chọn nhiều phương án.</p>
       ) : null}
-      {options.map((opt, i) => {
+      {cloak.slots.map((slot) => {
+        if (slot.kind === "trap") {
+          // Thẻ mồi: 1px, trong suốt, không nhận sự kiện chuột, ẩn với trình đọc màn hình
+          // => thí sinh thật KHÔNG THỂ bấm; script quét DOM sẽ bấm và tự lộ diện.
+          return (
+            <button
+              key={slot.key}
+              type="button"
+              tabIndex={-1}
+              aria-hidden="true"
+              data-opt={slot.token}
+              style={{ order: slot.visual }}
+              className="pointer-events-none absolute size-px overflow-hidden opacity-0"
+              onClick={() => onTrap?.({ token: slot.token })}
+            >
+              {slot.text}
+            </button>
+          );
+        }
+        const i = slot.index;
+        const opt = slot.text;
         const isRemoved = removed.includes(i);
         const active = selected.has(i);
         const state = active && feedback ? feedback : null;
         return (
           <button
-            key={i}
+            key={slot.key}
             type="button"
+            data-opt={slot.token}
+            style={{ order: slot.visual }}
             disabled={disabled || isRemoved}
             onClick={() => toggle(i)}
             className={cn(

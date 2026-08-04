@@ -29,6 +29,7 @@ export function QuestionCard({
   onX2,
   onFifty,
   onAnswer,
+  onTrap,
   onConfirm,
   onPrev,
   onNext,
@@ -56,6 +57,8 @@ export function QuestionCard({
   onX2: () => void;
   onFifty: () => void;
   onAnswer: (value: AnswerValue) => void;
+  /** Bấm trúng thẻ mồi ẩn — dấu hiệu script thao tác DOM. */
+  onTrap?: (info: { token: string }) => void;
   /** Chốt đáp án cho câu cần nhiều thao tác (chế độ chấm ngay). */
   onConfirm?: () => void;
   onPrev: () => void;
@@ -105,6 +108,7 @@ export function QuestionCard({
           disabled={disabled}
           feedback={feedback}
           onChange={onAnswer}
+          onTrap={onTrap}
         />
       </div>
 
