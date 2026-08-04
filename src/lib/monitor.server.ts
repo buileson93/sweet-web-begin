@@ -139,7 +139,7 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
     .select(
-      "id, quiz_id, employee_id, candidate_name, unit, started_at, expires_at, submitted_at, status, answers, question_ids, option_orders, points, best_streak, integrity_score",
+      "id, quiz_id, employee_id, candidate_name, unit, started_at, expires_at, submitted_at, status, answers, question_ids, option_orders, points, best_streak, integrity_score, device_info",
     )
     .eq("id", sessionId)
     .maybeSingle();
