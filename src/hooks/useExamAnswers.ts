@@ -7,6 +7,8 @@ import type { StartExamResult } from "@/lib/exam.server";
 import { COMBO_MIN } from "@/lib/comboFx";
 import type { AnswerValue } from "@/lib/questionKinds";
 import { inputProof } from "@/lib/exam/inputProof";
+import { signWithLivenessKey } from "@/lib/exam/liveness";
+import { checkMessage } from "@/lib/exam/payloadSign";
 
 /**
  * Ghi nhận đáp án, trợ giúp 50:50 và phản hồi tức thì.
@@ -92,6 +94,11 @@ export function useExamAnswers(opts: {
       const needsConfirm = kind !== "single" && kind !== "true_false";
       if (needsConfirm && !opt?.confirm) return;
       try {
+        const at = Date.now();
+        const signature = await signWithLivenessKey(
+          session.sessionId,
+          checkMessage({ sessionId: session.sessionId, index: idx, value, at }),
+        );
         const res = await runCheck({
           data: {
             sessionId: session.sessionId,
@@ -99,6 +106,8 @@ export function useExamAnswers(opts: {
             index: idx,
             value,
             proof: inputProof.collect([String(idx)])[String(idx)],
+            at,
+            ...(signature ? { signature } : {}),
           },
         });
         // Phòng trường hợp máy chủ trả về dữ liệu rỗng: báo lỗi rõ ràng thay vì vỡ giao diện.

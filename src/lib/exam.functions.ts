@@ -55,6 +55,10 @@ const progressSchema = z.object({
   chainPrev: z.string().length(64).optional(),
   /** Mã băm của chính gói này (băm mắt xích trước + seq + đáp án). */
   chainHash: z.string().length(64).optional(),
+  /** Chữ ký gói bằng khoá liveness (ECDSA P-256 không xuất được) của thiết bị đang thi. */
+  signature: z.string().min(16).max(500).optional(),
+  /** Mốc thời gian máy khách (ms) đã được ký kèm — chống phát lại. */
+  at: z.number().int().positive().optional(),
 });
 
 export const saveProgress = createServerFn({ method: "POST" })
@@ -122,6 +126,8 @@ export const checkAnswer = createServerFn({ method: "POST" })
             at: z.number().optional(),
           })
           .optional(),
+        signature: z.string().min(16).max(500).optional(),
+        at: z.number().int().positive().optional(),
       })
       .parse(input),
   )
