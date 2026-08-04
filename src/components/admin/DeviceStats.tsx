@@ -103,22 +103,30 @@ export function DeviceStats() {
   const query = useQuery({
     queryKey: ["admin-device-visits", range],
     queryFn: async () => {
-      let q = supabase
-        .from("device_visits")
-        .select(
-          "browser, browser_version, os, os_version, device_type, device_model, platform_version, architecture, cpu_cores, memory_gb, network_type, downlink, save_data, screen_w, screen_h, viewport_w, language, timezone, is_pwa, is_touch, referrer_host, visitor_key, path, ip, user_agent, created_at, employee_name, employee_unit",
-        )
-        .order("created_at", { ascending: false })
-        .limit(10000);
-      if (range !== "all") {
-        const since = new Date(Date.now() - Number(range) * 86400000).toISOString();
-        q = q.gte("created_at", since);
+      const COLUMNS =
+        "browser, browser_version, os, os_version, device_type, device_model, platform_version, architecture, cpu_cores, memory_gb, network_type, downlink, save_data, screen_w, screen_h, viewport_w, language, timezone, is_pwa, is_touch, referrer_host, visitor_key, path, ip, user_agent, created_at, employee_name, employee_unit";
+      const PAGE = 1000;
+      const MAX = 50000;
+      const since = range === "all" ? null : new Date(Date.now() - Number(range) * 86400000).toISOString();
+      const all: Visit[] = [];
+      // PostgREST giới hạn mỗi lần trả tối đa 1000 dòng nên phải lấy theo trang.
+      for (let from = 0; from < MAX; from += PAGE) {
+        let q = supabase
+          .from("device_visits")
+          .select(COLUMNS)
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (since) q = q.gte("created_at", since);
+        const { data, error } = await q;
+        if (error) throw error;
+        const page = (data ?? []) as Visit[];
+        all.push(...page);
+        if (page.length < PAGE) break;
       }
-      const { data, error } = await q;
-      if (error) throw error;
-      return (data ?? []) as Visit[];
+      return all;
     },
   });
+
 
   const rows = useMemo(() => query.data ?? [], [query.data]);
 
