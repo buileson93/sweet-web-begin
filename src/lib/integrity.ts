@@ -98,7 +98,12 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     // (`console_bait`) đều dễ oan do sidebar/tiện ích mở rộng -> chỉ ghi log.
     case "devtools_open": {
       const via = String((detail as { via?: string }).via ?? "");
-      const soft = via === "size_persist" || via === "size" || via === "console_bait";
+      // Các client cũ từng gửi `dw`/`dh` cùng console_bait. Dù `via` bị thiếu hoặc
+      // sai, tuyệt đối không phạt sự kiện có số đo cửa sổ vì đó không phải bằng
+      // chứng DevTools (thanh trình duyệt/sidebar cũng tạo khoảng trống tương tự).
+      const hasWindowGap = "dw" in detail || "dh" in detail;
+      const soft =
+        hasWindowGap || via === "size_persist" || via === "size" || via === "console_bait";
       return soft ? 0 : 4;
     }
 
@@ -219,10 +224,11 @@ export function describeExamEvent(kind: string, detail: ExamEventDetail = {}): s
   const cv = num(detail["cv"]);
   if (cv !== null) parts.push(`độ lệch nhịp ${(cv * 100).toFixed(1)}%`);
 
-  // Số liệu cửa sổ khi phát hiện DevTools: để admin rà soát có phải sidebar oan không.
-  const dw = num(detail["dw"]);
-  const dh = num(detail["dh"]);
-  if (dw !== null || dh !== null) parts.push(`khoảng trống ngang ${dw ?? 0}px, dọc ${dh ?? 0}px`);
+  // Không hiển thị `dw`/`dh` từ client cũ như một cáo buộc DevTools. Kích thước
+  // cửa sổ không phải bằng chứng và không còn được dùng để chấm điểm.
+  if (kind === "devtools_open" && ("dw" in detail || "dh" in detail)) {
+    parts.push("tín hiệu kích thước cũ — không tính điểm");
+  }
 
   const signals = detail["signals"];
   if (Array.isArray(signals) && signals.length) parts.push(`dấu hiệu: ${signals.join(", ")}`);
