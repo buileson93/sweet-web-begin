@@ -129,10 +129,12 @@ export function useExamAutosave({
       const prevHead = chainHeadRef.current ?? (await genesisHash(sessionId));
       const chainHash = await linkHash(prevHead, nextSeq, delta);
       const at = Date.now();
+      const proofs = inputProof.collect(Object.keys(delta));
       // Chữ ký bằng khoá liveness không xuất được: script gọi API ngoài trang không tạo nổi.
+      // Ký CẢ bằng chứng thao tác để không thể sửa cờ `trusted` trên đường truyền.
       const signature = await signWithLivenessKey(
         sessionId,
-        saveMessage({ sessionId, seq: nextSeq, chainPrev: prevHead, delta, at }),
+        saveMessage({ sessionId, seq: nextSeq, chainPrev: prevHead, delta, proofs, at }),
       );
       const res = await saveProgress({
         data: {
@@ -142,7 +144,7 @@ export function useExamAutosave({
           at,
           ...(signature ? { signature } : {}),
           // Bằng chứng thao tác thật cho từng câu — máy chủ từ chối đáp án do script sinh ra.
-          proofs: inputProof.collect(Object.keys(delta)),
+          proofs,
           clientSeq: nextSeq,
           chainPrev: prevHead,
           chainHash,
@@ -258,16 +260,17 @@ export function useExamAutosave({
       const prevHead = chainHeadRef.current ?? (await genesisHash(sessionId));
       const chainHash = await linkHash(prevHead, nextSeq, delta);
       const at = Date.now();
+      const proofs = inputProof.collect(Object.keys(delta));
       // Gói beacon phải mang ĐỦ bằng chứng như gói thường: chuỗi băm, chữ ký, bằng chứng thao tác.
       const signature = await signWithLivenessKey(
         sessionId,
-        saveMessage({ sessionId, seq: nextSeq, chainPrev: prevHead, delta, at }),
+        saveMessage({ sessionId, seq: nextSeq, chainPrev: prevHead, delta, proofs, at }),
       );
       const payload = JSON.stringify({
         sessionId,
         submitToken,
         answers: delta,
-        proofs: inputProof.collect(Object.keys(delta)),
+        proofs,
         clientSeq: nextSeq,
         chainPrev: prevHead,
         chainHash,

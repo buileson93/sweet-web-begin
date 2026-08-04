@@ -1930,6 +1930,39 @@ export type Database = {
           wait_seconds: number
         }[]
       }
+      exam_apply_answers: {
+        Args: {
+          p_answers: Json
+          p_helpers: Json
+          p_seq: number
+          p_session: string
+        }
+        Returns: undefined
+      }
+      exam_claim_save: {
+        Args: {
+          p_fingerprint: string
+          p_max_beacons: number
+          p_max_saves: number
+          p_min_gap: number
+          p_now_ms: number
+          p_seen_limit: number
+          p_session: string
+          p_source: string
+        }
+        Returns: {
+          ok: boolean
+          reason: string
+        }[]
+      }
+      exam_mark_checked: {
+        Args: { p_index: number; p_session: string }
+        Returns: undefined
+      }
+      exam_merge_helpers: {
+        Args: { p_patch: Json; p_session: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

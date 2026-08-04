@@ -10,8 +10,13 @@ import {
 } from "@/lib/exam/livenessVerify";
 import { reportExamEvent } from "@/lib/exam/helpers.server";
 
+/** Số lần được phép cấp lại khoá giữa giờ (tránh chặn oan khi trình duyệt xoá dữ liệu). */
+export const MAX_LIVENESS_REKEYS = 3;
+
 type LivenessState = {
   jwk?: JsonWebKey;
+  /** Số lần đã cấp lại khoá (mỗi lần đều được ghi vết). */
+  rekeys?: number;
   nonce?: string;
   issuedAt?: string;
   failures?: number;
@@ -23,9 +28,10 @@ function readLiveness(helpers: unknown): LivenessState {
   return raw && typeof raw === "object" ? raw : {};
 }
 
-function withLiveness(helpers: unknown, next: LivenessState): Record<string, unknown> {
-  const base = (helpers as Record<string, unknown> | null) ?? {};
-  return { ...base, liveness: next };
+/** Ghi nhánh liveness bằng phần vá NGUYÊN TỬ (không ghi đè các nhánh khác của helpers). */
+async function writeLiveness(sessionId: string, next: LivenessState): Promise<void> {
+  const { mergeHelpers } = await import("@/lib/exam/helpersWrite.server");
+  await mergeHelpers(sessionId, { liveness: next });
 }
 
 async function loadSession(sessionId: string, submitToken: string) {
@@ -38,27 +44,50 @@ async function loadSession(sessionId: string, submitToken: string) {
   return data;
 }
 
-/** Đăng ký khoá công khai của thiết bị đang thi (chỉ nhận LẦN ĐẦU, không cho thay giữa chừng). */
+/**
+ * Đăng ký khoá công khai của thiết bị đang thi.
+ *
+ * BẮT BUỘC đăng ký đầu giờ: gói đáp án không ký được bằng khoá này sẽ bị từ chối
+ * ở đề bật chế độ nghiêm ngặt — script "không đăng ký khoá" không còn thoát cửa.
+ * Vẫn CHO PHÉP cấp lại khoá (tối đa MAX_LIVENESS_REKEYS lần, mỗi lần ghi vết
+ * `liveness_rekey`) để không chặn oan người thật khi trình duyệt xoá dữ liệu giữa giờ.
+ */
 export async function registerLivenessKey(input: {
   sessionId: string;
   submitToken: string;
   publicJwk: unknown;
-}): Promise<{ ok: boolean; alreadyRegistered: boolean }> {
+}): Promise<{ ok: boolean; alreadyRegistered: boolean; rekeyed?: boolean }> {
   const session = await loadSession(input.sessionId, input.submitToken);
   if (!session) return { ok: false, alreadyRegistered: false };
-  const state = readLiveness(session.helpers);
-  if (state.jwk) return { ok: true, alreadyRegistered: true };
   if (!isValidPublicJwk(input.publicJwk)) return { ok: false, alreadyRegistered: false };
 
-  await supabaseAdmin
-    .from("exam_sessions")
-    .update({
-      helpers: withLiveness(session.helpers, {
-        ...state,
-        jwk: input.publicJwk as JsonWebKey,
-      }) as never,
-    })
-    .eq("id", session.id);
+  const state = readLiveness(session.helpers);
+  const jwk = input.publicJwk as JsonWebKey;
+  const sameKey = Boolean(state.jwk && state.jwk.x === jwk.x && state.jwk.y === jwk.y);
+  if (sameKey) return { ok: true, alreadyRegistered: true };
+
+  const rekeys = Number(state.rekeys ?? 0);
+  if (state.jwk && rekeys >= MAX_LIVENESS_REKEYS) {
+    const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+    await flagScriptEvent(session.id, "script_suspect", { reason: "rekey_limit", rekeys });
+    return { ok: false, alreadyRegistered: true };
+  }
+
+  const next: LivenessState = { ...state, jwk };
+  delete next.nonce;
+  delete next.issuedAt;
+  if (state.jwk) next.rekeys = rekeys + 1;
+  await writeLiveness(session.id, next);
+
+  if (state.jwk) {
+    await reportExamEvent({
+      sessionId: input.sessionId,
+      submitToken: input.submitToken,
+      kind: "liveness_rekey",
+      detail: { rekeys: rekeys + 1, reason: "Thiết bị đăng ký lại khoá chống giả mạo giữa giờ" },
+    });
+    return { ok: true, alreadyRegistered: true, rekeyed: true };
+  }
   return { ok: true, alreadyRegistered: false };
 }
 
@@ -77,10 +106,7 @@ export async function issueLivenessChallenge(input: {
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
   const issuedAt = new Date().toISOString();
-  await supabaseAdmin
-    .from("exam_sessions")
-    .update({ helpers: withLiveness(session.helpers, { ...state, nonce, issuedAt }) as never })
-    .eq("id", session.id);
+  await writeLiveness(session.id, { ...state, nonce, issuedAt });
   return { nonce, registered: true };
 }
 
@@ -107,10 +133,7 @@ export async function answerLivenessChallenge(input: {
   if (valid) next.okAt = new Date().toISOString();
   else next.failures = (state.failures ?? 0) + 1;
 
-  await supabaseAdmin
-    .from("exam_sessions")
-    .update({ helpers: withLiveness(session.helpers, next) as never })
-    .eq("id", session.id);
+  await writeLiveness(session.id, next);
 
   if (!valid) {
     await reportExamEvent({
