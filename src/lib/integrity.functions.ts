@@ -7,7 +7,13 @@ export type ExamEventRow = {
   id: string;
   kind: string;
   weight: number;
-  detail: { hiddenMs?: number; documentVisible?: boolean; clientHint?: boolean; reason?: string };
+  detail: {
+    hiddenMs?: number;
+    documentVisible?: boolean;
+    clientHint?: boolean;
+    reason?: string;
+    [key: string]: unknown;
+  };
   createdAt: string;
 };
 

@@ -29,18 +29,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useServerFn } from "@tanstack/react-start";
 import { listExamEvents, restoreResult } from "@/lib/integrity.functions";
-
-const EVENT_LABEL: Record<string, string> = {
-  tab_hidden: "Rời màn hình thi",
-  window_blur: "Chuyển cửa sổ",
-  copy: "Sao chép",
-  paste: "Dán",
-  contextmenu: "Chuột phải",
-  fullscreen_exit: "Thoát toàn màn hình",
-  resize_suspect: "Đổi kích thước bất thường",
-  reconnect: "Kết nối lại",
-  multi_tab: "Mở nhiều tab",
-};
+import { describeExamEvent } from "@/lib/integrity";
+import { formatDateTime as fmtDateTime } from "@/lib/format";
 
 function IntegrityCell({ sessionId, score }: { sessionId: string | null; score: number | null }) {
   const [open, setOpen] = useState(false);
@@ -72,21 +62,19 @@ function IntegrityCell({ sessionId, score }: { sessionId: string | null; score: 
           {value}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 text-sm">
+      <PopoverContent className="w-80 text-sm">
         <p className="mb-2 font-semibold">Sự kiện liêm chính</p>
         {events.isLoading ? (
           <p className="type-meta">Đang tải...</p>
         ) : events.data && events.data.length ? (
           <ul className="max-h-60 space-y-1 overflow-y-auto">
             {events.data.map((e) => (
-              <li key={e.id} className="flex justify-between gap-2 border-b border-border/60 pb-1">
-                <span>
-                  {EVENT_LABEL[e.kind] ?? e.kind}
-                  {typeof e.detail?.hiddenMs === "number"
-                    ? ` (${Math.round(e.detail.hiddenMs / 1000)}s)`
-                    : ""}
-                </span>
-                <span className="font-mono text-muted-foreground">+{e.weight}</span>
+              <li key={e.id} className="border-b border-border/60 pb-1">
+                <div className="flex justify-between gap-2">
+                  <span>{describeExamEvent(e.kind, e.detail)}</span>
+                  <span className="font-mono text-muted-foreground">+{e.weight}</span>
+                </div>
+                <p className="type-meta text-muted-foreground">{fmtDateTime(e.createdAt)}</p>
               </li>
             ))}
           </ul>
