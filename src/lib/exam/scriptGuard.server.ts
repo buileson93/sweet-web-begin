@@ -8,7 +8,14 @@ import { scoreEvent, type ExamEventDetail } from "@/lib/integrity";
  */
 export async function flagScriptEvent(
   sessionId: string,
-  kind: "untrusted_input" | "script_suspect" | "automation_detected" | "honeypot_hit" | "captcha_failed",
+  kind:
+    | "untrusted_input"
+    | "script_suspect"
+    | "automation_detected"
+    | "honeypot_hit"
+    | "captcha_failed"
+    | "speed_anomaly",
+
   detail: ExamEventDetail = {},
 ): Promise<void> {
   try {
