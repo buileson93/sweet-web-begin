@@ -200,15 +200,14 @@ export function useIntegrityWatch(opts: {
         debuggerStreak.reset();
         return;
       }
-      // Mồi console có thể dính oan (tiện ích mở rộng ghi đè console)
-      // -> phải có bẫy `debugger` xác nhận LIÊN TIẾP nhiều lần mới phạt.
+      // Mồi console dính oan quá nhiều (tiện ích mở rộng, trình chặn quảng cáo,
+      // trình duyệt in log của riêng nó) -> KHÔNG báo cáo nếu đứng một mình.
       const baitHit = consoleBait.probe();
       if (debuggerStreak.push(probeDebugger())) {
         reportDevtools(baitHit ? "console_bait+debugger" : "debugger");
-        return;
       }
-      if (baitHit) reportDevtools("console_bait");
     };
+
 
 
     const devtoolsTimer = setInterval(checkDevtools, DEVTOOLS_CHECK_MS);
