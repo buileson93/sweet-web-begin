@@ -377,16 +377,53 @@ export async function submitExamSession(input: {
     });
   }
 
-  // Quyết định huỷ bài CHỈ dựa trên điểm liêm chính do MÁY CHỦ tích luỹ từ sự kiện hành vi.
-  // KHÔNG dùng luật tốc độ: thi nhanh thật không bị coi là gian lận.
-  // Chống script được xử lý bằng biện pháp kỹ thuật ở cửa nhận đáp án (answerIntake).
-  const integrityScore = Number(session.integrity_score ?? 0);
+  // Luật tốc độ: chỉ phạt khi NHANH TỚI MỨC BẤT KHẢ THI, hoặc nhanh bất thường
+  // đi kèm tín hiệu script (mở console, gọi API thô, lưu bài dồn dập...).
+  // Thi nhanh thật với ít câu hoặc điểm thấp vẫn KHÔNG bị phạt.
+  let speedWeight = 0;
+  if (!replay) {
+    const { data: pastEvents } = await supabaseAdmin
+      .from("exam_events")
+      .select("kind, detail")
+      .eq("session_id", session.id)
+      .limit(200);
+    const signals = collectScriptSignals(
+      (pastEvents ?? []) as { kind: string; detail?: unknown }[],
+    );
+    const answeredCount = review.filter((r) => r.answered).length;
+    const correctCount = review.filter((r) => r.correct).length;
+    const audit = auditSpeed({
+      answered: answeredCount,
+      correct: correctCount,
+      seconds: timeSeconds,
+      signals,
+    });
+    if (audit.reason) {
+      const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+      await flagScriptEvent(session.id, "speed_anomaly", {
+        reason: audit.reason,
+        weight: audit.weight,
+        secPerQuestion: Math.round(audit.secPerQuestion * 100) / 100,
+        accuracy: Math.round(audit.accuracy * 100) / 100,
+        answered: answeredCount,
+        correct: correctCount,
+        seconds: timeSeconds,
+        signals,
+      });
+      speedWeight = audit.weight;
+    }
+  }
+
+  // Quyết định huỷ bài dựa trên điểm liêm chính do MÁY CHỦ tích luỹ từ sự kiện hành vi
+  // (đã gồm mức phạt tốc độ vừa tính ở trên).
+  const integrityScore = Number(session.integrity_score ?? 0) + speedWeight;
   const strictMode = Boolean(quiz?.strict_mode);
   const threshold = Number(quiz?.disqualify_threshold ?? DISQUALIFY_THRESHOLD_DEFAULT);
   const disqualified =
     replay && existing
       ? existing.disqualified
       : shouldDisqualify(integrityScore, threshold, strictMode);
+
 
   /** Cờ cảnh báo cho quản trị khi không bật chế độ nghiêm ngặt nhưng điểm liêm chính đã chạm ngưỡng. */
   const integrityFlagged = !disqualified && integrityScore >= threshold;
