@@ -144,7 +144,9 @@ export function EmployeeManager({ canEdit = true }: { canEdit?: boolean }) {
       }
       actions={
         canEdit ? (
-          <CsvImportDialog<ImportRow>
+          <div className="flex flex-wrap items-center gap-2">
+            <EmployeeFormDialog />
+            <CsvImportDialog<ImportRow>
             title="Nhập nhân viên từ CSV"
             description="Cột bắt buộc: “ho_ten” và “dien_thoai”. Cột tuỳ chọn: “chuc_vu”, “don_vi”, “ngay_sinh” (dd/mm/yyyy)."
             templateFileName="mau-nhan-vien.csv"
