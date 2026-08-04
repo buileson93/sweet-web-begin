@@ -164,15 +164,16 @@ export function useIntegrityWatch(opts: {
     let devtoolsReported = false;
     let sizeHintReported = false;
     const reportDevtools = (via: string, dims?: { dw: number; dh: number }) => {
-      const soft = via === "size_persist" || via === "size";
+      // "Mềm" = chỉ suy đoán (kích thước cửa sổ, mồi console chưa được xác nhận):
+      // ghi log để rà soát, KHÔNG trừ liêm chính, KHÔNG huỷ bài.
+      const soft = via === "size_persist" || via === "size" || via === "console_bait";
       if (soft ? sizeHintReported : devtoolsReported) return;
       if (soft) sizeHintReported = true;
       else devtoolsReported = true;
       report("devtools_open", { via, dw: dims?.dw, dh: dims?.dh });
-      // Chỉ dấu hiệu chắc chắn (debugger / mồi console) mới kích hoạt xử lý huỷ bài.
-      // Suy đoán theo kích thước cửa sổ dễ phạt oan -> chỉ ghi log để rà soát.
       if (!soft) devtoolsRef.current();
     };
+
     /** Bẫy `debugger`: khi DevTools mở, lệnh này bị treo lại vài trăm ms. */
     const probeDebugger = (): boolean => {
       const t0 = performance.now();
@@ -194,16 +195,19 @@ export function useIntegrityWatch(opts: {
         outerHeight: window.outerHeight,
         innerHeight: window.innerHeight,
       });
-      // Mồi console chỉ bị "nếm" khi bảng DevTools đang mở -> bằng chứng chắc chắn.
-      if (consoleBait.probe()) {
+      // Mồi console có thể dính oan (một số trình duyệt vẫn dựng chuỗi khi console
+      // bị ghi đè bởi tiện ích mở rộng) -> phải có bẫy `debugger` xác nhận mới phạt.
+      const baitHit = consoleBait.probe();
+      const debuggerHit = probeDebugger();
+      if (debuggerHit) {
+        reportDevtools(baitHit ? "console_bait+debugger" : "debugger", { dw, dh });
+        return;
+      }
+      if (baitHit) {
         reportDevtools("console_bait", { dw, dh });
         return;
       }
-      // Bẫy debugger: DevTools mở (kể cả tách rời cửa sổ) sẽ treo lại vài trăm ms.
-      if (probeDebugger()) {
-        reportDevtools("debugger", { dw, dh });
-        return;
-      }
+
       // Khoảng trống cửa sổ kéo dài liên tục: có thể là sidebar, nhưng nếu duy trì
       // suốt ~6 giây thì vẫn ghi nhận (kèm số liệu để ban tổ chức rà soát).
       sizeStreak = sizeGap ? sizeStreak + 1 : 0;
