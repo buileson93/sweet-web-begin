@@ -105,7 +105,8 @@ export async function answerLivenessChallenge(input: {
 
   const next: LivenessState = { ...state, nonce: undefined, issuedAt: undefined };
   if (valid) next.okAt = new Date().toISOString();
-  else next.failures = (state.failures ?? 0) + 1;
+  // Chỉ tính là "hỏng" khi thử thách còn hạn mà chữ ký sai (dấu hiệu thay người/script).
+  else if (fresh) next.failures = (state.failures ?? 0) + 1;
 
   await supabaseAdmin
     .from("exam_sessions")
@@ -113,13 +114,15 @@ export async function answerLivenessChallenge(input: {
     .eq("id", session.id);
 
   if (!valid) {
+    // Thử thách hết hạn hoặc đã bị nhịp sau thay thế: bỏ qua, nhịp sau sẽ thử lại.
+    if (!fresh) return { ok: false, reason: "stale" };
     await reportExamEvent({
       sessionId: input.sessionId,
       submitToken: input.submitToken,
       kind: "liveness_failed",
-      detail: { reason: fresh ? "bad-signature" : "stale" },
+      detail: { reason: "bad-signature" },
     });
-    return { ok: false, reason: fresh ? "bad-signature" : "stale" };
+    return { ok: false, reason: "bad-signature" };
   }
   return { ok: true };
 }
