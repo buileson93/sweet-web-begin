@@ -11,27 +11,27 @@ describe("auditSpeed", () => {
     expect(auditSpeed({ answered: 20, correct: 20, seconds: 300, signals: [] }).weight).toBe(0);
   });
 
-  it("phạt nặng khi nhanh tới mức bất khả thi", () => {
+  it("chỉ gắn nhãn, không phạt khi nhanh tới mức bất thường", () => {
     const r = auditSpeed({ answered: 20, correct: 12, seconds: 30, signals: [] });
-    expect(r.reason).toBe("impossible_speed");
-    expect(r.weight).toBe(8);
+    expect(r.reason).toBe("very_fast");
+    expect(r.weight).toBe(0);
   });
 
-  it("phạt trường hợp 20/20 trong 33 giây (ca Phan Thành An)", () => {
+  it("20/20 trong 33 giây: gắn nhãn nhưng KHÔNG trừ điểm liêm chính", () => {
     const r = auditSpeed({ answered: 20, correct: 20, seconds: 33, signals: ["console_bait"] });
-    expect(r.weight).toBeGreaterThanOrEqual(6);
+    expect(r.weight).toBe(0);
   });
 
-  it("nhanh + đúng gần tuyệt đối vẫn bị phạt dù không có tín hiệu script", () => {
+  it("nhanh + đúng gần tuyệt đối chỉ được gắn nhãn", () => {
     const r = auditSpeed({ answered: 20, correct: 19, seconds: 70, signals: [] });
     expect(r.reason).toBe("fast_perfect");
-    expect(r.weight).toBe(6);
+    expect(r.weight).toBe(0);
   });
 
-  it("nhanh + có tín hiệu script thì phạt đủ ngưỡng huỷ bài", () => {
+  it("nhanh + tín hiệu script cũng chỉ gắn nhãn để rà soát", () => {
     const r = auditSpeed({ answered: 20, correct: 12, seconds: 70, signals: ["unsigned"] });
     expect(r.reason).toBe("fast_with_script_signal");
-    expect(r.weight).toBe(6);
+    expect(r.weight).toBe(0);
   });
 
   it("chỉ nhanh, điểm thấp, không tín hiệu: chỉ ghi log", () => {
@@ -39,6 +39,7 @@ describe("auditSpeed", () => {
     expect(r.reason).toBe("fast_only");
     expect(r.weight).toBe(0);
   });
+
 });
 
 describe("collectScriptSignals", () => {
