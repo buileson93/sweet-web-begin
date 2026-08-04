@@ -162,11 +162,16 @@ export function useIntegrityWatch(opts: {
     // làm khung nhìn hẹp đi y hệt DevTools gắn cạnh. Phải bắt buộc bẫy `debugger`
     // (chỉ DevTools mới kích hoạt) xác nhận trước khi báo "size".
     let devtoolsReported = false;
+    let sizeHintReported = false;
     const reportDevtools = (via: string, dims?: { dw: number; dh: number }) => {
-      if (devtoolsReported) return;
-      devtoolsReported = true;
+      const soft = via === "size_persist" || via === "size";
+      if (soft ? sizeHintReported : devtoolsReported) return;
+      if (soft) sizeHintReported = true;
+      else devtoolsReported = true;
       report("devtools_open", { via, dw: dims?.dw, dh: dims?.dh });
-      devtoolsRef.current();
+      // Chỉ dấu hiệu chắc chắn (debugger / mồi console) mới kích hoạt xử lý huỷ bài.
+      // Suy đoán theo kích thước cửa sổ dễ phạt oan -> chỉ ghi log để rà soát.
+      if (!soft) devtoolsRef.current();
     };
     /** Bẫy `debugger`: khi DevTools mở, lệnh này bị treo lại vài trăm ms. */
     const probeDebugger = (): boolean => {
