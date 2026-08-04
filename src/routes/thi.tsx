@@ -20,6 +20,7 @@ import { AnswerFx } from "@/components/exam/AnswerFx";
 import { abandonExam, startExam, submitExam } from "@/lib/exam.functions";
 import type { SubmitExamResult } from "@/lib/exam.server";
 import { getDeviceId } from "@/lib/deviceId";
+import { getTurnstileToken } from "@/lib/turnstile";
 import { EXAM_CURRENT_KEY, examKey, readExamEntry } from "@/lib/examSession";
 import { useExamAnswers } from "@/hooks/useExamAnswers";
 import { useExamAutosave } from "@/hooks/useExamAutosave";
@@ -318,6 +319,7 @@ function ExamPage() {
           credential: entry.credential,
           extraCredential: entry.extraCredential,
           deviceId: getDeviceId(),
+          captchaToken: await getTurnstileToken("start-exam"),
         },
       });
       sessionStorage.setItem(examKey(next.sessionId), JSON.stringify(next));

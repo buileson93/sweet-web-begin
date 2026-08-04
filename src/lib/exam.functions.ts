@@ -12,6 +12,8 @@ const startSchema = credentialSchema.extend({
   roomPassword: z.string().max(60).optional(),
   /** Mã thiết bị (localStorage) dùng để chống thi hộ. */
   deviceId: z.string().max(80).optional(),
+  /** Token Turnstile (captcha vô hình) để chống script tạo phiên hàng loạt. */
+  captchaToken: z.string().max(4000).optional(),
 });
 
 /** Đáp án có thể là số, mảng số, chuỗi hoặc bảng ánh xạ (tuỳ loại câu hỏi). */

@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
 import { getDeviceId } from "@/lib/deviceId";
+import { getTurnstileToken } from "@/lib/turnstile";
 import { startExam } from "@/lib/exam.functions";
 import { saveExamEntry } from "@/lib/examSession";
 import { verifyEmployeeFn } from "@/lib/employees.functions";
@@ -266,6 +267,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
           credential: credential.trim(),
           extraCredential: extraCredential.trim() || undefined,
           deviceId: getDeviceId(),
+          captchaToken: await getTurnstileToken("start-exam"),
         },
       });
       saveExamEntry(sessionStorage, {

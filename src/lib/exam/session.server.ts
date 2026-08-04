@@ -37,7 +37,12 @@ export async function startExamSession(input: {
   extraCredential?: string;
   roomPassword?: string;
   deviceId?: string;
+  captchaToken?: string;
 }): Promise<StartExamResult> {
+  // Captcha vô hình Cloudflare Turnstile: chặn script tạo phiên thi hàng loạt.
+  const { verifyTurnstileToken } = await import("@/lib/turnstile.server");
+  const captcha = await verifyTurnstileToken(input.captchaToken, { action: "start-exam" });
+  if (!captcha.ok) throw new Error(captcha.reason);
   // Bắt buộc đối chiếu danh bạ nhân viên: sai thông tin thì không ghi nhận lượt thi.
   const employee = await verifyEmployee({
     name: input.name,
