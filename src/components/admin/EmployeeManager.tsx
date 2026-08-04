@@ -177,7 +177,8 @@ export function EmployeeManager({ canEdit = true }: { canEdit?: boolean }) {
               };
             }}
             onImport={importEmployees}
-          />
+            />
+          </div>
         ) : null
       }
     >
