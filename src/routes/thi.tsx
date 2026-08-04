@@ -26,6 +26,9 @@ import { useExamAutosave } from "@/hooks/useExamAutosave";
 import { useExamRestore } from "@/hooks/useExamRestore";
 import { useExamTimer } from "@/hooks/useExamTimer";
 import { useIntegrityWatch } from "@/hooks/useIntegrityWatch";
+import { attachInputProof, inputProof } from "@/lib/exam/inputProof";
+import { automationSignals, collectAutomationEnv } from "@/lib/exam/scriptDetect";
+import { reportEvent } from "@/lib/exam.functions";
 import { useLivenessWatch } from "@/hooks/useLivenessWatch";
 import { isMobileDevice, leaveAllowance, shouldForceRestart } from "@/lib/integrity";
 import { isAnswered } from "@/lib/questionKinds";
@@ -59,6 +62,7 @@ function ExamPage() {
   const runSubmit = useServerFn(submitExam);
   const runAbandon = useServerFn(abandonExam);
   const runStart = useServerFn(startExam);
+  const runReport = useServerFn(reportEvent);
 
   const [result, setResult] = useState<SubmitExamResult | null>(null);
   const { session, setSession, answers, setAnswers, serverSeq, autosaveAckRef, clearLocal } =
@@ -127,6 +131,7 @@ function ExamPage() {
         // Mã nộp bài dùng một lần do máy chủ cấp khi mở phiên thi.
         submitToken: session.submitToken,
         answers,
+        proofs: inputProof.collect(Object.keys(answers)),
         disqualified: opts?.disqualified,
         disqualifyReason: opts?.reason,
       };
@@ -176,6 +181,26 @@ function ExamPage() {
       void finish();
     },
   });
+
+  // Chống script: lắng nghe thao tác vật lý thật (isTrusted) để làm bằng chứng cho từng đáp án,
+  // đồng thời báo cáo ngay nếu trình duyệt đang bị điều khiển tự động (webdriver/headless).
+  useEffect(() => {
+    if (!session || result) return;
+    const detach = attachInputProof();
+    const signals = automationSignals(collectAutomationEnv());
+    if (signals.length > 0) {
+      void runReport({
+        data: {
+          sessionId: session.sessionId,
+          submitToken: session.submitToken,
+          kind: "automation_detected",
+          detail: { signals },
+        },
+      }).catch(() => undefined);
+      toast.error("Phát hiện trình duyệt tự động hoá. Bài thi của bạn sẽ bị huỷ theo quy chế.");
+    }
+    return detach;
+  }, [result, runReport, session]);
 
   useIntegrityWatch({
     sessionId: session?.sessionId,
