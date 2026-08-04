@@ -15,7 +15,7 @@ import {
   isQuotaExempt,
 } from "@/lib/integrity";
 
-/** Số sự kiện tối đa gửi lên máy chủ trong một phiên thi (không tính loại được miễn quota). */
+/** Số sự kiện tối đa gửi lên máy chủ cho MỖI LOẠI (loại được miễn quota không tính). */
 export const MAX_EVENTS = 20;
 
 
@@ -46,7 +46,7 @@ export function useIntegrityWatch(opts: {
 
   useEffect(() => {
     if (!active || !sessionId || !submitToken) return;
-    let sent = 0;
+    const sentByKind = new Map<string, number>();
     let sentExempt = 0;
     let hiddenAt = 0;
     let hiddenReported = false;
@@ -58,12 +58,14 @@ export function useIntegrityWatch(opts: {
       if (submittedRef.current()) return;
       const exempt = isQuotaExempt(kind);
       // Quota tách riêng: rời tab / mở nhiều tab luôn được ghi nhận, không bị "đốt" bởi copy/paste.
-      if (exempt ? sentExempt >= MAX_EXEMPT_EVENTS_PER_SESSION : sent >= MAX_EVENTS) return;
+      const sentOfKind = sentByKind.get(kind) ?? 0;
+      // Quota theo TỪNG LOẠI: copy/paste bấm nhiều không còn chặn được các loại khác.
+      if (exempt ? sentExempt >= MAX_EXEMPT_EVENTS_PER_SESSION : sentOfKind >= MAX_EVENTS) return;
       const now = Date.now();
       if (!exempt && now - lastSentAt < 800) return; // debounce (không áp cho loại nặng)
       lastSentAt = now;
       if (exempt) sentExempt += 1;
-      else sent += 1;
+      else sentByKind.set(kind, sentOfKind + 1);
       void runReportEvent({
         data: { sessionId, submitToken, kind, detail },
       }).catch(() => undefined);

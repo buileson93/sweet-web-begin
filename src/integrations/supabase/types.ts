@@ -1912,6 +1912,10 @@ export type Database = {
           xp: number
         }[]
       }
+      bump_integrity: {
+        Args: { p_session: string; p_weight: number }
+        Returns: number
+      }
       bump_question_stats: { Args: { p_items: Json }; Returns: undefined }
       claim_exam_device: {
         Args: {

@@ -28,15 +28,8 @@ export async function flagScriptEvent(
       detail: detail as never,
     });
     if (weight <= 0) return;
-    const { data: row } = await supabaseAdmin
-      .from("exam_sessions")
-      .select("integrity_score")
-      .eq("id", sessionId)
-      .maybeSingle();
-    await supabaseAdmin
-      .from("exam_sessions")
-      .update({ integrity_score: Number(row?.integrity_score ?? 0) + weight })
-      .eq("id", sessionId);
+    // Cộng dồn nguyên tử (một câu lệnh UPDATE) để không mất điểm khi có nhiều request song song.
+    await supabaseAdmin.rpc("bump_integrity", { p_session: sessionId, p_weight: weight });
   } catch {
     /* ghi nhận vi phạm không được phép làm hỏng luồng làm bài */
   }

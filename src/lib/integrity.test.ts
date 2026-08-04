@@ -7,7 +7,7 @@ import {
   leaveAllowance,
   shouldForceRestart,
   MAX_EXEMPT_EVENTS_PER_SESSION,
-  MAX_EVENTS_PER_SESSION,
+  MAX_EVENTS_PER_KIND,
   scoreEvent,
   shouldDisqualify,
 } from "./integrity";
@@ -84,15 +84,26 @@ describe("shouldDisqualify", () => {
 });
 
 describe("quota sự kiện", () => {
-  it("miễn quota cho hai loại nặng nhất để không bị đốt bởi copy/paste", () => {
+  it("miễn quota cho nhóm nặng và toàn bộ nhóm chống-script", () => {
     expect(isQuotaExempt("tab_hidden")).toBe(true);
     expect(isQuotaExempt("multi_tab")).toBe(true);
+    for (const kind of [
+      "devtools_open",
+      "liveness_failed",
+      "untrusted_input",
+      "automation_detected",
+      "script_suspect",
+      "captcha_failed",
+      "honeypot_hit",
+    ]) {
+      expect(isQuotaExempt(kind)).toBe(true);
+    }
     expect(isQuotaExempt("copy")).toBe(false);
     expect(isQuotaExempt("window_blur")).toBe(false);
   });
 
-  it("quota riêng của loại được miễn rộng hơn quota chung", () => {
-    expect(MAX_EXEMPT_EVENTS_PER_SESSION).toBeGreaterThan(MAX_EVENTS_PER_SESSION);
+  it("quota riêng của loại được miễn rộng hơn quota từng loại", () => {
+    expect(MAX_EXEMPT_EVENTS_PER_SESSION).toBeGreaterThan(MAX_EVENTS_PER_KIND);
   });
 });
 
