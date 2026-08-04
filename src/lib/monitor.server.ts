@@ -209,6 +209,32 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
     status: session.status,
     points: session.points ?? 0,
     bestStreak: session.best_streak ?? 0,
+    integrityScore: session.integrity_score ?? 0,
+    candidate: employee
+      ? {
+          fullName: employee.full_name ?? "",
+          position: employee.position ?? "",
+          unit: employee.unit_name ?? "",
+          birthDate: employee.birth_date ?? "",
+          phoneLast4: employee.phone_last4 ?? "",
+        }
+      : null,
+    device: visit
+      ? {
+          ip: visit.ip || "—",
+          browser: [visit.browser, visit.browser_version].filter(Boolean).join(" ") || "—",
+          os: [visit.os, visit.os_version].filter(Boolean).join(" ") || "—",
+          deviceType: visit.device_type || "—",
+          deviceModel: visit.device_model || "—",
+          screen: visit.screen_w && visit.screen_h ? `${visit.screen_w}×${visit.screen_h}` : "—",
+          network: visit.network_type || "—",
+          language: visit.language || "—",
+          timezone: visit.timezone || "—",
+          isPwa: Boolean(visit.is_pwa),
+          userAgent: visit.user_agent || "—",
+          seenAt: visit.created_at,
+        }
+      : null,
     answers,
   };
 }
