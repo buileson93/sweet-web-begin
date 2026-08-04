@@ -265,6 +265,17 @@ export async function startExamSession(input: {
   const session = created?.[0];
   if (!session) throw new Error("Không tạo được phiên thi. Vui lòng thử lại.");
 
+  // Lưu thẳng thông tin thiết bị/mạng vào phiên thi: phiên nào cũng tra được IP,
+  // trình duyệt, hệ điều hành… kể cả khi thí sinh chặn cookie hay xoá localStorage.
+  {
+    const snapshot = buildDeviceSnapshot(input.device, input.request);
+    const { error: deviceError } = await supabaseAdmin
+      .from("exam_sessions")
+      .update({ device_info: snapshot as unknown as Json })
+      .eq("id", session.session_id);
+    if (deviceError) console.error("save exam device_info failed:", deviceError.message);
+  }
+
   // Ghi nhật ký liêm chính (không chặn): captcha vô hình không qua.
   if (!captcha.ok && !captcha.skipped) {
     const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
