@@ -76,3 +76,42 @@ export function createConsoleBait(): { probe: () => boolean } {
     },
   };
 }
+
+/** Số lần liên tiếp bẫy `debugger` phải dính thì mới coi là DevTools thật sự mở. */
+export const DEVTOOLS_CONFIRM_HITS = 3;
+/** Hệ số so với độ trễ nền của máy: máy yếu/giật thì ngưỡng tự nới ra. */
+export const DEVTOOLS_LAG_FACTOR = 6;
+
+/**
+ * Quyết định một lần đo bẫy `debugger` có đáng tin không.
+ *
+ * `elapsed`  : thời gian lệnh `debugger` chiếm (ms)
+ * `control`  : thời gian đo một đoạn tương đương KHÔNG có `debugger` (ms) —
+ *              đại diện cho độ giật của máy (GC, CPU yếu, tab bị tiết chế).
+ *
+ * Máy yếu khiến cả hai phép đo cùng chậm -> không kết luận. Chỉ khi lệnh
+ * `debugger` chậm hơn hẳn nền mới coi là bị treo bởi DevTools.
+ */
+export function isDebuggerPause(elapsed: number, control: number): boolean {
+  if (!Number.isFinite(elapsed) || !Number.isFinite(control)) return false;
+  const floor = Math.max(DEVTOOLS_DEBUGGER_MS, control * DEVTOOLS_LAG_FACTOR);
+  return elapsed > floor;
+}
+
+/** Bộ đếm xác nhận: phải dính liên tiếp `DEVTOOLS_CONFIRM_HITS` lần mới báo. */
+export function createHitStreak(needed: number = DEVTOOLS_CONFIRM_HITS) {
+  let streak = 0;
+  return {
+    push(hit: boolean): boolean {
+      streak = hit ? streak + 1 : 0;
+      if (streak >= needed) {
+        streak = 0;
+        return true;
+      }
+      return false;
+    },
+    reset() {
+      streak = 0;
+    },
+  };
+}

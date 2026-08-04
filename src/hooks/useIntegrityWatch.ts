@@ -4,8 +4,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { reportEvent } from "@/lib/exam.functions";
 import {
   DEVTOOLS_CHECK_MS,
-  DEVTOOLS_DEBUGGER_MS,
   createConsoleBait,
+  createHitStreak,
+  isDebuggerPause,
   isInspectShortcut,
 } from "@/lib/antiInspect";
 import {
@@ -172,27 +173,42 @@ export function useIntegrityWatch(opts: {
       if (!soft) devtoolsRef.current();
     };
 
-    /** Bẫy `debugger`: khi DevTools mở, lệnh này bị treo lại vài trăm ms. */
+    /**
+     * Bẫy `debugger` có so chuẩn với độ giật của máy: đo một đoạn tương đương
+     * KHÔNG có `debugger` làm nền. Máy yếu/tab bị tiết chế thì cả hai cùng chậm
+     * -> không kết luận, tránh phạt oan.
+     */
     const probeDebugger = (): boolean => {
+      const c0 = performance.now();
+      // Đoạn "nền" tương đương: không có debugger.
+      for (let i = 0; i < 1; i += 1) void i;
+      const control = performance.now() - c0;
+
       const t0 = performance.now();
       // eslint-disable-next-line no-debugger
       debugger;
-      return performance.now() - t0 > DEVTOOLS_DEBUGGER_MS;
+      return isDebuggerPause(performance.now() - t0, control);
     };
     // Bẫy "mồi console": bắt được cả khi DevTools đã mở SẴN trước lúc vào phòng thi
     // và thí sinh đã tắt breakpoint (bẫy `debugger` khi đó im lặng).
     const consoleBait = createConsoleBait();
+    const debuggerStreak = createHitStreak();
     const checkDevtools = () => {
       if (submittedRef.current()) return;
-      // Mồi console có thể dính oan (tiện ích mở rộng ghi đè console)
-      // -> phải có bẫy `debugger` xác nhận mới phạt.
-      const baitHit = consoleBait.probe();
-      if (probeDebugger()) {
-        reportDevtools(baitHit ? "console_bait+debugger" : "debugger");
+      // Tab đang ẩn: trình duyệt tiết chế timer nên mọi phép đo đều vô nghĩa.
+      if (document.hidden) {
+        debuggerStreak.reset();
         return;
       }
-      if (baitHit) reportDevtools("console_bait");
+      // Mồi console dính oan quá nhiều (tiện ích mở rộng, trình chặn quảng cáo,
+      // trình duyệt in log của riêng nó) -> KHÔNG báo cáo nếu đứng một mình.
+      const baitHit = consoleBait.probe();
+      if (debuggerStreak.push(probeDebugger())) {
+        reportDevtools(baitHit ? "console_bait+debugger" : "debugger");
+      }
     };
+
+
 
     const devtoolsTimer = setInterval(checkDevtools, DEVTOOLS_CHECK_MS);
     checkDevtools();
