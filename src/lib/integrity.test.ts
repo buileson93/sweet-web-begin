@@ -111,4 +111,10 @@ describe("chống dò đáp án bằng Inspect", () => {
     expect(scoreEvent("devtools_open")).toBe(4);
     expect(isExamEventKind("devtools_open")).toBe(true);
   });
+
+  it("không phạt mọi tín hiệu dựa trên khoảng trống cửa sổ từ client cũ", () => {
+    expect(scoreEvent("devtools_open", { dw: 8, dh: 84 })).toBe(0);
+    expect(scoreEvent("devtools_open", { via: "console_bait", dw: 8, dh: 84 })).toBe(0);
+    expect(scoreEvent("devtools_open", { via: "size_persist", dw: 300, dh: 0 })).toBe(0);
+  });
 });
