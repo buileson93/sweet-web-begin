@@ -164,15 +164,16 @@ export function useIntegrityWatch(opts: {
     let devtoolsReported = false;
     let sizeHintReported = false;
     const reportDevtools = (via: string, dims?: { dw: number; dh: number }) => {
-      const soft = via === "size_persist" || via === "size";
+      // "Mềm" = chỉ suy đoán (kích thước cửa sổ, mồi console chưa được xác nhận):
+      // ghi log để rà soát, KHÔNG trừ liêm chính, KHÔNG huỷ bài.
+      const soft = via === "size_persist" || via === "size" || via === "console_bait";
       if (soft ? sizeHintReported : devtoolsReported) return;
       if (soft) sizeHintReported = true;
       else devtoolsReported = true;
       report("devtools_open", { via, dw: dims?.dw, dh: dims?.dh });
-      // Chỉ dấu hiệu chắc chắn (debugger / mồi console) mới kích hoạt xử lý huỷ bài.
-      // Suy đoán theo kích thước cửa sổ dễ phạt oan -> chỉ ghi log để rà soát.
       if (!soft) devtoolsRef.current();
     };
+
     /** Bẫy `debugger`: khi DevTools mở, lệnh này bị treo lại vài trăm ms. */
     const probeDebugger = (): boolean => {
       const t0 = performance.now();
