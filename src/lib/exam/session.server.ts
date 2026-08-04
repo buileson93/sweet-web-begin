@@ -22,6 +22,9 @@ import {
   type ExamQuestion,
   type StartExamResult,
 } from "@/lib/exam/types";
+import { buildDeviceSnapshot, type ExamDeviceSnapshot } from "@/lib/exam/deviceSnapshot";
+
+export type { ExamDeviceSnapshot };
 
 /**
  * Thời gian nguội khi ĐỔI NGƯỜI THI trên cùng một thiết bị (phút).
@@ -29,65 +32,6 @@ import {
  * bao nhiêu lượt cũng được, chỉ khi chuyền máy sang nhân viên khác mới phải chờ.
  */
 export const DEVICE_COOLDOWN_MINUTES = 120;
-
-/** Bản ghi thiết bị lưu kèm phiên thi (không phụ thuộc localStorage/cookie). */
-export type ExamDeviceSnapshot = {
-  ip: string;
-  ip_source: string;
-  user_agent: string;
-  browser: string;
-  browser_version: string;
-  os: string;
-  os_version: string;
-  device_type: string;
-  device_model: string;
-  screen: string;
-  viewport: string;
-  pixel_ratio: number;
-  language: string;
-  timezone: string;
-  network_type: string;
-  is_pwa: boolean;
-  is_touch: boolean;
-  captured_at: string;
-};
-
-const dstr = (v: unknown, max = 80) => String(v ?? "").slice(0, max);
-const dnum = (v: unknown) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
-};
-
-function buildDeviceSnapshot(
-  device: Record<string, unknown> | undefined,
-  request: { ip?: string; ipSource?: string; userAgent?: string } | undefined,
-): ExamDeviceSnapshot {
-  const d = device ?? {};
-  const w = dnum(d["screen_w"]);
-  const h = dnum(d["screen_h"]);
-  const vw = dnum(d["viewport_w"]);
-  const vh = dnum(d["viewport_h"]);
-  return {
-    ip: dstr(request?.ip, 60),
-    ip_source: dstr(request?.ipSource, 40),
-    user_agent: dstr(d["user_agent"] || request?.userAgent, 400),
-    browser: dstr(d["browser"], 40),
-    browser_version: dstr(d["browser_version"], 20),
-    os: dstr(d["os"], 40),
-    os_version: dstr(d["os_version"], 20),
-    device_type: dstr(d["device_type"], 20),
-    device_model: dstr(d["device_model"], 80),
-    screen: w && h ? `${w}×${h}` : "",
-    viewport: vw && vh ? `${vw}×${vh}` : "",
-    pixel_ratio: dnum(d["pixel_ratio"]),
-    language: dstr(d["language"], 20),
-    timezone: dstr(d["timezone"], 60),
-    network_type: dstr(d["network_type"], 20),
-    is_pwa: Boolean(d["is_pwa"]),
-    is_touch: Boolean(d["is_touch"]),
-    captured_at: new Date().toISOString(),
-  };
-}
 
 export async function startExamSession(input: {
   quizId: string;
