@@ -1984,44 +1984,25 @@ export type Database = {
         }
         Returns: undefined
       }
-      start_exam_session_tx:
-        | {
-            Args: {
-              p_birth_year: string
-              p_candidate_name: string
-              p_employee_id: string
-              p_expires_at: string
-              p_max_attempts: number
-              p_option_orders: Json
-              p_question_ids: string[]
-              p_quiz_id: string
-              p_unit: string
-            }
-            Returns: {
-              attempts: number
-              session_id: string
-              submit_token: string
-            }[]
-          }
-        | {
-            Args: {
-              p_birth_year: string
-              p_candidate_name: string
-              p_device_info?: Json
-              p_employee_id: string
-              p_expires_at: string
-              p_max_attempts: number
-              p_option_orders: Json
-              p_question_ids: string[]
-              p_quiz_id: string
-              p_unit: string
-            }
-            Returns: {
-              attempts: number
-              session_id: string
-              submit_token: string
-            }[]
-          }
+      start_exam_session_tx: {
+        Args: {
+          p_birth_year: string
+          p_candidate_name: string
+          p_device_info?: Json
+          p_employee_id: string
+          p_expires_at: string
+          p_max_attempts: number
+          p_option_orders: Json
+          p_question_ids: string[]
+          p_quiz_id: string
+          p_unit: string
+        }
+        Returns: {
+          attempts: number
+          session_id: string
+          submit_token: string
+        }[]
+      }
       tower_apply_reviews: {
         Args: { p_employee_id: string; p_items: Json }
         Returns: undefined
