@@ -4,6 +4,7 @@ import { IdCard, Loader2, Search, Trash2, UserRoundCheck, UserRoundX } from "luc
 import { toast } from "sonner";
 
 import { CsvImportDialog } from "@/components/admin/CsvImportDialog";
+import { EmployeeFormDialog } from "@/components/admin/EmployeeFormDialog";
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,7 +144,9 @@ export function EmployeeManager({ canEdit = true }: { canEdit?: boolean }) {
       }
       actions={
         canEdit ? (
-          <CsvImportDialog<ImportRow>
+          <div className="flex flex-wrap items-center gap-2">
+            <EmployeeFormDialog />
+            <CsvImportDialog<ImportRow>
             title="Nhập nhân viên từ CSV"
             description="Cột bắt buộc: “ho_ten” và “dien_thoai”. Cột tuỳ chọn: “chuc_vu”, “don_vi”, “ngay_sinh” (dd/mm/yyyy)."
             templateFileName="mau-nhan-vien.csv"
@@ -174,7 +177,8 @@ export function EmployeeManager({ canEdit = true }: { canEdit?: boolean }) {
               };
             }}
             onImport={importEmployees}
-          />
+            />
+          </div>
         ) : null
       }
     >
