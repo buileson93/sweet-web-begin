@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { checkVerdict } from "@/lib/exam/clientPayload";
 import { DISQUALIFY_THRESHOLD_DEFAULT, shouldDisqualify } from "@/lib/integrity";
 import {
   MAX_NEW_ANSWERS_ON_SUBMIT,

@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { sanitizeExamQuestion } from "@/lib/exam/clientPayload";
 import type { Json } from "@/integrations/supabase/types";
 import { mapStartExamError } from "@/lib/attempts";
 import { deviceCooldownMessage } from "@/lib/deviceLock";
