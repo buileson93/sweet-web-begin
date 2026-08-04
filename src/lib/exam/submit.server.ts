@@ -30,7 +30,6 @@ import {
   readCheckedIndexes,
   withCheckedIndex,
 } from "@/lib/exam/answerLock";
-import { revealForCheck } from "@/lib/exam/checkReveal";
 import { genesisHash, readChain, verifyChainLink, withChain } from "@/lib/exam/hashChain";
 import { isRoboticTiming, unprovenKeys, type ProofLike } from "@/lib/exam/scriptDetect";
 
@@ -115,12 +114,7 @@ export async function checkExamAnswer(input: {
   }
 
 
-  // Sai thì chỉ báo sai, không gửi kèm đáp án đúng — chặn kiểu thi nhiều lượt để "moi" đáp án.
-  return revealForCheck({
-    correct,
-    correctText: correctTextOf(row),
-    explanation: row.explanation ?? "",
-  });
+  return { correct, correctText: correctTextOf(row), explanation: row.explanation ?? "" };
 }
 
 

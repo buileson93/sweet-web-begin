@@ -132,9 +132,10 @@ export function QuestionCard({
               </>
             )}
           </p>
-          {feedback === "wrong" ? (
-            <p className="rounded-lg bg-secondary/70 px-2.5 py-1.5 text-muted-foreground">
-              Đáp án đúng sẽ hiển thị ở phần <span className="font-semibold text-foreground">Xem lại bài</span> sau khi nộp.
+          {feedback === "wrong" && feedbackInfo?.correctText ? (
+            <p className="rounded-lg bg-success/12 px-2.5 py-1.5 text-success">
+              <span className="font-semibold">Đáp án đúng: </span>
+              <RichText inline>{feedbackInfo.correctText}</RichText>
             </p>
           ) : null}
           {feedbackInfo?.explanation ? (
