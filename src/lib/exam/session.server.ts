@@ -161,9 +161,30 @@ export async function startExamSession(input: {
     );
   }
 
+  // Chống dò đáp án: câu nào đã bị "chấm ngay" ở phiên trước của chính thí sinh này
+  // thì không phát lại ở phiên mới (miễn là ngân hàng còn đủ câu chưa lộ).
+  // Nhờ vậy mở phiên nháp để soi đáp án rồi thoát ra sẽ không còn tác dụng.
+  const { data: priorRaw } = await supabaseAdmin
+    .from("exam_sessions")
+    .select("question_ids, helpers, submitted_at")
+    .eq("quiz_id", quiz.id)
+    .eq("employee_id", employee.id)
+    .order("started_at", { ascending: false })
+    .limit(50);
+
+  const revealed = revealedFromSessions(
+    (priorRaw ?? []).map((s) => ({
+      questionIds: (s.question_ids as string[]) ?? [],
+      helpers: s.helpers,
+      submitted: Boolean(s.submitted_at),
+    })),
+  );
+  const usablePool = excludeRevealed(pool, revealed, wanted);
+
   const blueprint = (quiz.blueprint ?? {}) as Blueprint;
   // Cờ "Xáo trộn câu hỏi" quyết định thứ tự câu trong đề; tắt thì giữ order_index.
-  const ordered = pickByBlueprint(pool, wanted, blueprint, quiz.shuffle_questions !== false);
+  const ordered = pickByBlueprint(usablePool, wanted, blueprint, quiz.shuffle_questions !== false);
+
 
   const optionOrders: number[][] = [];
   const questions: ExamQuestion[] = ordered.map((q) => {
