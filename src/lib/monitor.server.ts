@@ -172,6 +172,11 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
   ]);
 
   const visit = (visits ?? [])[0] ?? null;
+  // Ưu tiên bản ghi thiết bị lưu ngay trong phiên thi (luôn có, không phụ thuộc cookie).
+  const s = (v: unknown) => String(v ?? "").trim();
+  const rawSnap = (session.device_info ?? null) as Record<string, unknown> | null;
+  const snap = rawSnap && Object.keys(rawSnap).length ? rawSnap : null;
+
 
 
   const byId = new Map((questions ?? []).map((q) => [q.id, q]));
