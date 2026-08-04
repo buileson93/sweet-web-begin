@@ -5,6 +5,8 @@ import {
   MAX_NEW_ANSWERS_PER_SAVE,
   limitNewAnswers,
 } from "@/lib/exam/answerIntake";
+import { auditSpeed, collectScriptSignals } from "@/lib/exam/speedAudit";
+
 
 import {
   PASS_PERCENT_DEFAULT,
