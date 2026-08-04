@@ -14,6 +14,8 @@ const startSchema = credentialSchema.extend({
   deviceId: z.string().max(80).optional(),
   /** Token Turnstile (captcha vô hình) để chống script tạo phiên hàng loạt. */
   captchaToken: z.string().max(4000).optional(),
+  /** Thông tin thiết bị thu thập ở máy khách (độ phân giải, OS, mạng…) — lưu kèm phiên thi. */
+  device: z.record(z.string(), z.unknown()).optional(),
 });
 
 /** Đáp án có thể là số, mảng số, chuỗi hoặc bảng ánh xạ (tuỳ loại câu hỏi). */
