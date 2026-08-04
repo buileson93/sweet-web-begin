@@ -12,7 +12,7 @@ export type ExamEventRow = {
     documentVisible?: boolean;
     clientHint?: boolean;
     reason?: string;
-    [key: string]: unknown;
+    [key: string]: string | number | boolean | string[] | null | undefined;
   };
   createdAt: string;
 };
