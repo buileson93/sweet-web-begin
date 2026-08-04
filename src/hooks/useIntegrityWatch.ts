@@ -5,9 +5,7 @@ import { reportEvent } from "@/lib/exam.functions";
 import {
   DEVTOOLS_CHECK_MS,
   DEVTOOLS_DEBUGGER_MS,
-  DEVTOOLS_SIZE_CONFIRM,
   createConsoleBait,
-  isDevtoolsBySize,
   isInspectShortcut,
 } from "@/lib/antiInspect";
 import {
