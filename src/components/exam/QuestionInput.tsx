@@ -165,8 +165,8 @@ export function QuestionInput({
   return (
     <div
       className={cn(
-        "stagger mt-5 flex",
-        hasImages ? "grid grid-cols-2 gap-2.5 sm:grid-cols-2" : "flex-col gap-2.5",
+        "stagger relative mt-5",
+        hasImages ? "grid grid-cols-2 gap-2.5 sm:grid-cols-2" : "flex flex-col gap-2.5",
       )}
     >
       {multi ? (

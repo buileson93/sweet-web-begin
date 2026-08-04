@@ -202,6 +202,33 @@ function ExamPage() {
     return detach;
   }, [result, runReport, session]);
 
+  // Bấm trúng thẻ mồi ẩn: người thật không chạm tới được (1px, trong suốt, pointer-events: none)
+  // => chắc chắn là script quét DOM. Ghi log rõ nguyên nhân rồi huỷ bài ngay.
+  const onTrap = useCallback(
+    (info: { token: string }) => {
+      if (!session || submittedRef.current) return;
+      void runReport({
+        data: {
+          sessionId: session.sessionId,
+          submitToken: session.submitToken,
+          kind: "honeypot_hit",
+          detail: {
+            token: info.token,
+            questionIndex: currentRef.current,
+            source: "dom_trap",
+            reason: "Bấm vào phần tử mồi ẩn trong danh sách đáp án",
+          },
+        },
+      }).catch(() => undefined);
+      toast.error("Phát hiện thao tác tự động trên giao diện. Bài thi bị huỷ theo quy chế.");
+      void finish({
+        disqualified: true,
+        reason: "Phát hiện script: bấm vào phần tử mồi ẩn (honeypot) trong danh sách đáp án",
+      });
+    },
+    [finish, runReport, session],
+  );
+
   useIntegrityWatch({
     sessionId: session?.sessionId,
     submitToken: session?.submitToken,
@@ -415,6 +442,7 @@ function ExamPage() {
             x2Active={x2Index === current}
             onX2={() => void requestX2()}
             onFifty={() => void requestFifty()}
+            onTrap={onTrap}
             onAnswer={(value) => void handleAnswer(current, value)}
             onConfirm={() => {
               const value = answers[String(current)];
