@@ -468,6 +468,7 @@ export async function saveExamProgress(input: {
   sessionId: string;
   submitToken: string;
   answers: Record<string, AnswerValue>;
+  proofs?: Record<string, ProofLike>;
   clientSeq: number;
   chainPrev?: string;
   chainHash?: string;
