@@ -29,7 +29,9 @@ import { useExamTimer } from "@/hooks/useExamTimer";
 import { useIntegrityWatch } from "@/hooks/useIntegrityWatch";
 import { attachInputProof, inputProof } from "@/lib/exam/inputProof";
 import { automationSignals, collectAutomationEnv } from "@/lib/exam/scriptDetect";
-import { reportEvent } from "@/lib/exam.functions";
+import { CaptchaGuardDialog } from "@/components/exam/CaptchaGuardDialog";
+import { reportEvent, reverifyCaptcha } from "@/lib/exam.functions";
+
 import { useLivenessWatch } from "@/hooks/useLivenessWatch";
 import { isMobileDevice, leaveAllowance, shouldForceRestart } from "@/lib/integrity";
 import { isAnswered } from "@/lib/questionKinds";
@@ -187,6 +189,28 @@ function ExamPage() {
     },
   });
 
+  // Khoá thao tác khi phát hiện tự động hoá: chỉ mở lại sau khi xác minh Turnstile thành công.
+  const [captchaLocked, setCaptchaLocked] = useState(false);
+  const runReverify = useServerFn(reverifyCaptcha);
+  const onReverify = useCallback(
+    async (token: string | undefined) => {
+      if (!session) return false;
+      const res = await runReverify({
+        data: {
+          sessionId: session.sessionId,
+          submitToken: session.submitToken,
+          captchaToken: token,
+        },
+      });
+      if (res.ok) {
+        setCaptchaLocked(false);
+        toast.success("Đã xác minh, bạn có thể làm bài tiếp.");
+      }
+      return res.ok;
+    },
+    [runReverify, session],
+  );
+
   // Chống script: lắng nghe thao tác vật lý thật (isTrusted) để làm bằng chứng cho từng đáp án,
   // đồng thời báo cáo ngay nếu trình duyệt đang bị điều khiển tự động (webdriver/headless).
   useEffect(() => {
@@ -202,10 +226,12 @@ function ExamPage() {
           detail: { signals },
         },
       }).catch(() => undefined);
-      toast.error("Phát hiện trình duyệt tự động hoá. Bài thi của bạn sẽ bị huỷ theo quy chế.");
+      setCaptchaLocked(true);
+      toast.error("Phát hiện trình duyệt tự động hoá. Hãy xác minh lại để tiếp tục làm bài.");
     }
     return detach;
   }, [result, runReport, session]);
+
 
   // Bấm trúng thẻ mồi ẩn: người thật không chạm tới được (1px, trong suốt, pointer-events: none)
   // => chắc chắn là script quét DOM. Ghi log rõ nguyên nhân rồi huỷ bài ngay.
@@ -494,6 +520,9 @@ function ExamPage() {
         onSubmit={() => void finish()}
         onExit={() => void doExit()}
       />
+
+      <CaptchaGuardDialog open={captchaLocked && !result} onVerify={onReverify} />
     </div>
+
   );
 }

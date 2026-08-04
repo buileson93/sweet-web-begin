@@ -39,10 +39,11 @@ export async function startExamSession(input: {
   deviceId?: string;
   captchaToken?: string;
 }): Promise<StartExamResult> {
-  // Captcha vô hình Cloudflare Turnstile: KHÔNG chặn thí sinh thật, chỉ lấy tín hiệu
-  // rủi ro và ghi vào nhật ký liêm chính để quản trị rà soát sau.
+  // Captcha vô hình Cloudflare Turnstile. Đề thường: chỉ lấy tín hiệu rủi ro để ghi
+  // nhật ký liêm chính. Đề bật chế độ nghiêm ngặt: FAIL-CLOSED (kiểm tra ở dưới, sau
+  // khi biết cờ strict_mode của đề) — thiếu token hoặc xác minh hỏng thì KHÔNG tạo phiên.
   const { verifyTurnstileToken } = await import("@/lib/turnstile.server");
-  const captcha = await verifyTurnstileToken(input.captchaToken, { action: "start-exam" });
+
   // Bắt buộc đối chiếu danh bạ nhân viên: sai thông tin thì không ghi nhận lượt thi.
   const employee = await verifyEmployee({
     name: input.name,
@@ -93,6 +94,19 @@ export async function startExamSession(input: {
   if (quiz.room_password && quiz.room_password !== (input.roomPassword ?? "")) {
     throw new Error("Mật khẩu phòng thi không đúng.");
   }
+
+  // Đề nghiêm ngặt bắt buộc qua Turnstile mới được tạo phiên (không có đường "bỏ qua").
+  const strict = quiz.strict_mode === true;
+  const captcha = await verifyTurnstileToken(input.captchaToken, {
+    action: "start-exam",
+    required: strict,
+  });
+  if (strict && !captcha.ok) {
+    throw new Error(
+      "Không qua được xác minh chống script (" + captcha.reason + ") Vui lòng tải lại trang và thử lại.",
+    );
+  }
+
 
   // Đối tượng dự thi: để trống nghĩa là toàn công ty.
   const { data: audiences } = await supabaseAdmin

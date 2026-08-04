@@ -136,9 +136,26 @@ export const checkAnswer = createServerFn({ method: "POST" })
     return checkExamAnswer(data);
   });
 
+/** Xác minh lại Turnstile giữa giờ thi để mở khoá bài sau khi phát hiện tự động hoá. */
+export const reverifyCaptcha = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        sessionId: z.string().uuid(),
+        submitToken: z.string().uuid(),
+        captchaToken: z.string().max(4000).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { verifyExamCaptcha } = await import("@/lib/exam/captchaGuard.server");
+    return verifyExamCaptcha(data);
+  });
+
 export const getServerTime = createServerFn({ method: "GET" }).handler(async () => ({
   now: new Date().toISOString(),
 }));
+
 
 export const startExam = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => startSchema.parse(input))
