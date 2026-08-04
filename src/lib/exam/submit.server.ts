@@ -25,14 +25,16 @@ import {
 import { type AnswerValue } from "@/lib/questionKinds";
 import { computeXpGain, levelFromXp, levelProgress, levelTitle } from "@/lib/xp";
 import { QUESTION_COLUMNS, type ReviewItem, type SubmitExamResult, type XpAward } from "@/lib/exam/types";
+import { filterSavableAnswers, readCheckedIndexes } from "@/lib/exam/answerLock";
+import { genesisHash, readChain, verifyChainLink } from "@/lib/exam/hashChain";
+import { type SaveSource } from "@/lib/exam/saveRate";
 import {
-  filterSavableAnswers,
-  readCheckedIndexes,
-  withCheckedIndex,
-} from "@/lib/exam/answerLock";
-import { genesisHash, readChain, verifyChainLink, withChain } from "@/lib/exam/hashChain";
-import { advanceSaveRate, checkSaveRate, readSaveRate, withSaveRate, type SaveSource } from "@/lib/exam/saveRate";
-import { checkMessage, saveMessage, signatureEnforced } from "@/lib/exam/payloadSign";
+  checkMessage,
+  saveMessage,
+  signatureEnforced,
+  staleProofKeys,
+} from "@/lib/exam/payloadSign";
+
 import { verifyPayloadSignature } from "@/lib/exam/payloadSign.server";
 import { isRoboticTiming, unprovenKeys, type ProofLike } from "@/lib/exam/scriptDetect";
 
@@ -80,40 +82,50 @@ export async function checkExamAnswer(input: {
     throw new Error("Không ghi nhận được thao tác chọn đáp án. Vui lòng chọn lại trên màn hình.");
   }
 
+  // Chỉ cuộc thi bật "chấm ngay" mới được trả đáp án đúng, và mỗi câu chỉ chốt MỘT lần —
+  // nếu không, có thể gọi lặp nhiều phương án để dò toàn bộ đáp án rồi nộp bài trong vài giây.
+  const { data: quizFlags } = await supabaseAdmin
+    .from("quizzes")
+    .select("instant_feedback, strict_mode")
+    .eq("id", session.quiz_id)
+    .maybeSingle();
+  if (!quizFlags?.instant_feedback) throw new Error("Cuộc thi này không bật chấm ngay.");
+
+  // Bắt buộc chữ ký theo TỪNG ĐỀ: đề bật chế độ nghiêm ngặt thì fail-closed ngay.
+  const enforce = signatureEnforced(quizFlags?.strict_mode);
+
   // Chữ ký bằng khoá liveness (không xuất được) — script gọi API ngoài trang không tạo nổi.
+  // Chữ ký bao trùm cả bằng chứng thao tác, và bằng chứng phải sát thời điểm gửi gói.
   {
+    const stale = staleProofKeys(
+      input.proof ? { [String(input.index)]: input.proof } : undefined,
+      input.at,
+    );
     const verdict = await verifyPayloadSignature({
       helpers: session.helpers,
       message: checkMessage({
         sessionId: session.id,
         index: input.index,
         value: input.value as unknown,
+        proof: input.proof,
         at: Number(input.at ?? 0),
       }),
       signature: input.signature,
       at: input.at,
     });
-    if (!verdict.ok) {
+    const failed = !verdict.ok || stale.length > 0;
+    if (failed) {
       const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
       await flagScriptEvent(session.id, "script_suspect", {
-        reason: "unsigned_check:" + verdict.reason,
+        reason: verdict.ok ? "stale_proof_check" : "unsigned_check:" + verdict.reason,
         index: input.index,
-        enforced: signatureEnforced(),
+        enforced: enforce,
       });
-      if (signatureEnforced()) {
+      if (enforce) {
         throw new Error("Gói chấm điểm không hợp lệ. Vui lòng tải lại phòng thi.");
       }
     }
   }
-
-  // Chỉ cuộc thi bật "chấm ngay" mới được trả đáp án đúng, và mỗi câu chỉ chốt MỘT lần —
-  // nếu không, có thể gọi lặp nhiều phương án để dò toàn bộ đáp án rồi nộp bài trong vài giây.
-  const { data: quizFlags } = await supabaseAdmin
-    .from("quizzes")
-    .select("instant_feedback")
-    .eq("id", session.quiz_id)
-    .maybeSingle();
-  if (!quizFlags?.instant_feedback) throw new Error("Cuộc thi này không bật chấm ngay.");
 
   const savedSoFar = (session.answers as Record<string, AnswerValue>) ?? {};
   // Danh sách CHỐT nằm riêng trong helpers.checked: autosave không thể chạm vào,
@@ -138,14 +150,19 @@ export async function checkExamAnswer(input: {
   const correct = gradeOne(row, order, graded);
 
   if (!locked) {
-    await supabaseAdmin
-      .from("exam_sessions")
-      .update({
-        answers: { ...savedSoFar, [String(input.index)]: input.value } as never,
-        helpers: withCheckedIndex(session.helpers, input.index) as never,
-      })
-      .eq("id", session.id);
+    // Ghi NGUYÊN TỬ: không đọc-rồi-ghi cả cột nên request song song không ghi đè mất nhau.
+    const { applyAnswersAtomic, markCheckedIndex } = await import(
+      "@/lib/exam/helpersWrite.server"
+    );
+    await applyAnswersAtomic({
+      sessionId: session.id,
+      answers: { [String(input.index)]: input.value },
+      seq: 0,
+      helpersPatch: {},
+    });
+    await markCheckedIndex(session.id, input.index);
   }
+
 
 
   return { correct, correctText: correctTextOf(row), explanation: row.explanation ?? "" };
@@ -538,7 +555,9 @@ export async function saveExamProgress(input: {
 }> {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
-    .select("id, question_ids, status, submit_token, answers, helpers, answers_seq, expires_at")
+    .select(
+      "id, quiz_id, question_ids, status, submit_token, answers, helpers, answers_seq, expires_at",
+    )
     .eq("id", input.sessionId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -564,25 +583,39 @@ export async function saveExamProgress(input: {
     };
   }
 
+  // Bắt buộc chữ ký / bằng chứng theo TỪNG ĐỀ THI (đề bật chế độ nghiêm ngặt).
+  const { data: quizFlags } = await supabaseAdmin
+    .from("quizzes")
+    .select("strict_mode")
+    .eq("id", session.quiz_id)
+    .maybeSingle();
+  const enforceSignature = signatureEnforced(quizFlags?.strict_mode);
+
   // Trần tần suất phía máy chủ: chặn script bắn liên tục hàng chục gói mỗi giây,
   // đồng thời chặn phát lại đúng một gói đã ký (theo dấu vân tay chữ ký).
+  // Kiểm tra + cập nhật diễn ra NGUYÊN TỬ trong một hàm SQL có khoá hàng,
+  // nên nhiều request bắn song song không còn lách được giới hạn.
   const nowMs = Date.now();
   const source: SaveSource = input.source === "beacon" ? "beacon" : "rpc";
-  const rate = readSaveRate(session.helpers);
-  const rateVerdict = checkSaveRate({ state: rate, nowMs, source, signature: input.signature });
+  const { claimSaveSlot } = await import("@/lib/exam/helpersWrite.server");
+  const rateVerdict = await claimSaveSlot({
+    sessionId: session.id,
+    nowMs,
+    source,
+    signature: input.signature,
+  });
   if (!rateVerdict.ok) {
     const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
     await flagScriptEvent(session.id, "script_suspect", {
       reason: "autosave_rate:" + rateVerdict.reason,
       source,
-      count: rate.count ?? 0,
-      beacons: rate.beacons ?? 0,
     });
     return {
       savedAt: new Date().toISOString(),
       seq: currentSeq,
       accepted: [],
       chainHead: expectedHead,
+
       rejected: "rate",
     };
   }
@@ -610,7 +643,7 @@ export async function saveExamProgress(input: {
 
   // Chữ ký bằng khoá liveness: bằng chứng gói được tạo TRONG trang thi trên chính
   // thiết bị đã đăng ký khoá, không phải bởi curl/Postman/headless gọi thẳng API.
-  const enforceSignature = signatureEnforced(new Date(nowMs));
+  // Chữ ký bao trùm CẢ phần bằng chứng thao tác (proofs) nên không thể sửa cờ `trusted`.
   const sigVerdict = await verifyPayloadSignature({
     helpers: session.helpers,
     message: saveMessage({
@@ -618,6 +651,7 @@ export async function saveExamProgress(input: {
       seq: input.clientSeq,
       chainPrev: expectedHead,
       delta: input.answers ?? {},
+      proofs: input.proofs,
       at: Number(input.at ?? 0),
     }),
     signature: input.signature,
@@ -654,34 +688,48 @@ export async function saveExamProgress(input: {
   // ghi thử từng phương án rồi hỏi chấm-ngay để dò ra đáp án đúng của mọi câu.
   const savable = filterSavableAnswers(incoming, readCheckedIndexes(session.helpers));
 
+  // Bằng chứng thao tác phải SÁT thời điểm gói được gửi: bằng chứng cũ (bắt lại từ gói trước)
+  // bị hạ xuống "không có bằng chứng" thay vì được tính là thao tác thật.
+  const stale = staleProofKeys(input.proofs, input.at);
+  const proofs = input.proofs
+    ? Object.fromEntries(
+        Object.entries(input.proofs).map(([key, p]) =>
+          stale.includes(key) ? [key, { ...p, trusted: false, via: "none" as const }] : [key, p],
+        ),
+      )
+    : undefined;
+  if (stale.length > 0) {
+    const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+    await flagScriptEvent(session.id, "script_suspect", {
+      reason: "stale_proof",
+      indexes: stale.slice(0, 20),
+      source,
+    });
+  }
+
   // CHỐNG SCRIPT: mỗi câu MỚI phải kèm bằng chứng thao tác vật lý thật (sự kiện isTrusted).
   // Script gọi thẳng API hoặc bắn sự kiện giả không thể tạo ra bằng chứng này.
   const { kept, flags } = await guardProofs({
     sessionId: session.id,
     saved: savedAnswers,
     incoming: savable,
-    proofs: input.proofs,
+    ...(proofs ? { proofs } : {}),
     strict: enforceSignature,
   });
   void flags;
   // Trần số câu MỚI cho mỗi lần lưu: người thi thật lưu theo nhịp nên không bao giờ chạm,
   // còn script không thể nhồi cả bài trong một request. Sửa câu đã lưu vẫn tự do.
   const accepted = limitNewAnswers(savedAnswers, kept, MAX_NEW_ANSWERS_PER_SAVE);
-  const merged = { ...savedAnswers, ...accepted };
 
-  const { error: upErr } = await supabaseAdmin
-    .from("exam_sessions")
-    .update({
-      answers: merged as never,
-      answers_seq: input.clientSeq,
-      helpers: withSaveRate(
-        withChain(session.helpers, check.head, input.clientSeq),
-        advanceSaveRate({ state: rate, nowMs, source, signature: input.signature }),
-      ) as never,
-    })
-    .eq("id", session.id)
-    .eq("status", "active");
-  if (upErr) throw new Error(upErr.message);
+  // Ghi NGUYÊN TỬ: chỉ gửi phần vá (đáp án mới + mắt xích chuỗi băm), không ghi đè cả cột.
+  const { applyAnswersAtomic } = await import("@/lib/exam/helpersWrite.server");
+  await applyAnswersAtomic({
+    sessionId: session.id,
+    answers: accepted,
+    seq: input.clientSeq,
+    helpersPatch: { chain: { head: check.head, seq: input.clientSeq } },
+  });
+
 
   // Trả về danh sách câu THỰC SỰ được ghi để máy khách chỉ đánh dấu đã lưu phần đó
   // và tự gửi lại phần còn thừa ở lần lưu kế tiếp (không mất đáp án khi mất mạng lâu).

@@ -23,6 +23,8 @@ export const EXAM_EVENT_KINDS = [
   "captcha_failed",
   // Bấm vào phần tử mồi (honeypot) — người thật không thể chạm tới.
   "honeypot_hit",
+  // Cấp lại khoá chống giả mạo giữa giờ (trình duyệt xoá dữ liệu): chỉ ghi vết, không phạt.
+  "liveness_rekey",
 ] as const;
 
 export type ExamEventKind = (typeof EXAM_EVENT_KINDS)[number];
@@ -84,6 +86,9 @@ export function isExamEventKind(value: string): value is ExamEventKind {
  * (thông báo đẩy, cuộc gọi ngắn, xoay màn hình, bàn phím ảo bật lên).
  */
 export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail = {}): number {
+  // Cấp lại khoá là tình huống bình thường của người thi thật (trình duyệt xoá IndexedDB):
+  // chỉ lưu vết để rà soát, tuyệt đối không cộng điểm phạt.
+  if (kind === "liveness_rekey") return 0;
   switch (kind) {
     case "tab_hidden": {
       const ms = Number(detail.hiddenMs ?? 0);
