@@ -166,7 +166,9 @@ export function useIntegrityWatch(opts: {
       if (devtoolsReported) return;
       devtoolsReported = true;
       report("devtools_open", { via, dw: dims?.dw, dh: dims?.dh });
-      devtoolsRef.current();
+      // Chỉ dấu hiệu chắc chắn (debugger / mồi console) mới kích hoạt xử lý huỷ bài.
+      // Suy đoán theo kích thước cửa sổ dễ phạt oan -> chỉ ghi log để rà soát.
+      if (via !== "size_persist" && via !== "size") devtoolsRef.current();
     };
     /** Bẫy `debugger`: khi DevTools mở, lệnh này bị treo lại vài trăm ms. */
     const probeDebugger = (): boolean => {
