@@ -15,6 +15,10 @@ export const EXAM_EVENT_KINDS = [
   "multi_tab",
   "devtools_open",
   "liveness_failed",
+  // Chống script: đáp án không kèm bằng chứng thao tác thật / môi trường tự động hoá.
+  "untrusted_input",
+  "automation_detected",
+  "script_suspect",
 ] as const;
 
 export type ExamEventKind = (typeof EXAM_EVENT_KINDS)[number];
