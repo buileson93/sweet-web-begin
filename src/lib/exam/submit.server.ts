@@ -575,6 +575,13 @@ export async function saveExamProgress(input: {
   if (lateness(new Date().toISOString(), session.expires_at).expired) {
     throw new Error("Đã hết giờ làm bài.");
   }
+  {
+    const { isCaptchaLocked, CAPTCHA_LOCK_MESSAGE } = await import("@/lib/exam/captchaGuard.server");
+    if (isCaptchaLocked(session.helpers as Record<string, unknown>)) {
+      throw new Error(CAPTCHA_LOCK_MESSAGE);
+    }
+  }
+
 
   const currentSeq = Number(session.answers_seq ?? 0);
   const savedAnswers = (session.answers as Record<string, AnswerValue>) ?? {};
