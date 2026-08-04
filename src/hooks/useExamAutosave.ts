@@ -4,6 +4,8 @@ import type { AnswerValue } from "@/lib/questionKinds";
 import { saveProgress } from "@/lib/exam.functions";
 import { genesisHash, linkHash } from "@/lib/exam/hashChain";
 import { inputProof } from "@/lib/exam/inputProof";
+import { signWithLivenessKey } from "@/lib/exam/liveness";
+import { saveMessage } from "@/lib/exam/payloadSign";
 
 /** Nhịp lưu định kỳ và các mốc chống dồn request. */
 const HEARTBEAT_MS = 12_000;
@@ -126,11 +128,19 @@ export function useExamAutosave({
     try {
       const prevHead = chainHeadRef.current ?? (await genesisHash(sessionId));
       const chainHash = await linkHash(prevHead, nextSeq, delta);
+      const at = Date.now();
+      // Chữ ký bằng khoá liveness không xuất được: script gọi API ngoài trang không tạo nổi.
+      const signature = await signWithLivenessKey(
+        sessionId,
+        saveMessage({ sessionId, seq: nextSeq, chainPrev: prevHead, delta, at }),
+      );
       const res = await saveProgress({
         data: {
           sessionId,
           submitToken,
           answers: delta,
+          at,
+          ...(signature ? { signature } : {}),
           // Bằng chứng thao tác thật cho từng câu — máy chủ từ chối đáp án do script sinh ra.
           proofs: inputProof.collect(Object.keys(delta)),
           clientSeq: nextSeq,
@@ -139,6 +149,14 @@ export function useExamAutosave({
         },
       });
       if (res.chainHead) chainHeadRef.current = res.chainHead;
+      if (res.rejected === "rate" || res.rejected === "signature") {
+        // Máy chủ từ chối gói (quá nhanh / thiếu chữ ký hợp lệ): giữ hàng đợi, thử lại chậm hơn.
+        if (res.chainHead) chainHeadRef.current = res.chainHead;
+        setStatus("saving");
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => void flush(), MIN_INTERVAL_MS);
+        return;
+      }
       if (res.rejected === "chain") {
         // Máy chủ từ chối vì gãy chuỗi (gói cũ / gửi lại): đồng bộ lại mắt xích rồi gửi lại đúng thứ tự.
         seqRef.current = Math.max(seqRef.current, Number(res.seq ?? 0));
@@ -232,15 +250,30 @@ export function useExamAutosave({
   // Tab bị ẩn hoặc rời trang: gửi ngay bằng sendBeacon (request vẫn đi khi trang đã đóng).
   useEffect(() => {
     if (!enabled || !sessionId || !submitToken) return;
-    const beacon = () => {
+    const beacon = async () => {
       const delta = computeDelta();
       if (Object.keys(delta).length === 0) return;
       persistQueue(delta);
+      const nextSeq = (usedSeqRef.current = Math.max(seqRef.current, usedSeqRef.current) + 1);
+      const prevHead = chainHeadRef.current ?? (await genesisHash(sessionId));
+      const chainHash = await linkHash(prevHead, nextSeq, delta);
+      const at = Date.now();
+      // Gói beacon phải mang ĐỦ bằng chứng như gói thường: chuỗi băm, chữ ký, bằng chứng thao tác.
+      const signature = await signWithLivenessKey(
+        sessionId,
+        saveMessage({ sessionId, seq: nextSeq, chainPrev: prevHead, delta, at }),
+      );
       const payload = JSON.stringify({
         sessionId,
         submitToken,
         answers: delta,
-        clientSeq: (usedSeqRef.current = Math.max(seqRef.current, usedSeqRef.current) + 1),
+        proofs: inputProof.collect(Object.keys(delta)),
+        clientSeq: nextSeq,
+        chainPrev: prevHead,
+        chainHash,
+        at,
+        signature,
+        reason: "beacon",
       });
       const sent =
         typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function"
@@ -255,15 +288,16 @@ export function useExamAutosave({
       if (!sent) void flush();
     };
     const onVisibility = () => {
-      if (document.visibilityState === "hidden") beacon();
+      if (document.visibilityState === "hidden") void beacon();
       // Quay lại tab: đối chiếu ngay để chốt phần beacon có thể đã bị máy chủ từ chối.
       else void flush();
     };
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("pagehide", beacon);
+    const onPageHide = () => void beacon();
+    window.addEventListener("pagehide", onPageHide);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("pagehide", beacon);
+      window.removeEventListener("pagehide", onPageHide);
     };
   }, [computeDelta, enabled, flush, persistQueue, sessionId, submitToken]);
 

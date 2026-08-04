@@ -31,6 +31,9 @@ import {
   withCheckedIndex,
 } from "@/lib/exam/answerLock";
 import { genesisHash, readChain, verifyChainLink, withChain } from "@/lib/exam/hashChain";
+import { advanceSaveRate, checkSaveRate, readSaveRate, withSaveRate, type SaveSource } from "@/lib/exam/saveRate";
+import { checkMessage, saveMessage, signatureEnforced } from "@/lib/exam/payloadSign";
+import { verifyPayloadSignature } from "@/lib/exam/payloadSign.server";
 import { isRoboticTiming, unprovenKeys, type ProofLike } from "@/lib/exam/scriptDetect";
 
 
@@ -43,6 +46,10 @@ export async function checkExamAnswer(input: {
   index: number;
   value: AnswerValue;
   proof?: ProofLike;
+  /** Chữ ký gói bằng khoá liveness của thiết bị đang thi. */
+  signature?: string;
+  /** Mốc thời gian máy khách (ms) đã được ký kèm. */
+  at?: number;
 }) {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
@@ -63,13 +70,40 @@ export async function checkExamAnswer(input: {
   if (!qid) throw new Error("Câu hỏi không tồn tại.");
 
   // Chống dò đáp án bằng script: chấm-ngay chỉ phục vụ thao tác thật của thí sinh.
-  if (input.proof && input.proof.trusted !== true) {
+  // Fail-closed: thiếu bằng chứng cũng bị từ chối (trước đây bỏ trống là qua cửa).
+  if (input.proof?.trusted !== true) {
     const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
     await flagScriptEvent(session.id, "untrusted_input", {
       source: "check",
       index: input.index,
     });
     throw new Error("Không ghi nhận được thao tác chọn đáp án. Vui lòng chọn lại trên màn hình.");
+  }
+
+  // Chữ ký bằng khoá liveness (không xuất được) — script gọi API ngoài trang không tạo nổi.
+  {
+    const verdict = await verifyPayloadSignature({
+      helpers: session.helpers,
+      message: checkMessage({
+        sessionId: session.id,
+        index: input.index,
+        value: input.value as unknown,
+        at: Number(input.at ?? 0),
+      }),
+      signature: input.signature,
+      at: input.at,
+    });
+    if (!verdict.ok) {
+      const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+      await flagScriptEvent(session.id, "script_suspect", {
+        reason: "unsigned_check:" + verdict.reason,
+        index: input.index,
+        enforced: signatureEnforced(),
+      });
+      if (signatureEnforced()) {
+        throw new Error("Gói chấm điểm không hợp lệ. Vui lòng tải lại phòng thi.");
+      }
+    }
   }
 
   // Chỉ cuộc thi bật "chấm ngay" mới được trả đáp án đúng, và mỗi câu chỉ chốt MỘT lần —
@@ -489,12 +523,18 @@ export async function saveExamProgress(input: {
   clientSeq: number;
   chainPrev?: string;
   chainHash?: string;
+  /** Chữ ký gói bằng khoá liveness của thiết bị đang thi. */
+  signature?: string;
+  /** Mốc thời gian máy khách (ms) đã được ký kèm — chống phát lại. */
+  at?: number;
+  /** Nguồn gửi: RPC bình thường hay sendBeacon lúc tab bị ẩn. */
+  source?: SaveSource;
 }): Promise<{
   savedAt: string;
   seq: number;
   accepted: string[];
   chainHead: string;
-  rejected?: "chain";
+  rejected?: "chain" | "rate" | "signature";
 }> {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
@@ -524,6 +564,29 @@ export async function saveExamProgress(input: {
     };
   }
 
+  // Trần tần suất phía máy chủ: chặn script bắn liên tục hàng chục gói mỗi giây,
+  // đồng thời chặn phát lại đúng một gói đã ký (theo dấu vân tay chữ ký).
+  const nowMs = Date.now();
+  const source: SaveSource = input.source === "beacon" ? "beacon" : "rpc";
+  const rate = readSaveRate(session.helpers);
+  const rateVerdict = checkSaveRate({ state: rate, nowMs, source, signature: input.signature });
+  if (!rateVerdict.ok) {
+    const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+    await flagScriptEvent(session.id, "script_suspect", {
+      reason: "autosave_rate:" + rateVerdict.reason,
+      source,
+      count: rate.count ?? 0,
+      beacons: rate.beacons ?? 0,
+    });
+    return {
+      savedAt: new Date().toISOString(),
+      seq: currentSeq,
+      accepted: [],
+      chainHead: expectedHead,
+      rejected: "rate",
+    };
+  }
+
   // Chuỗi băm: gói này phải nối tiếp đúng mắt xích máy chủ đã xác nhận ở gói trước.
   // Gói gửi lại (replay) hoặc ghép từ nhiều gói bắt được sẽ gãy chuỗi và bị bỏ qua
   // (không ghi gì cả) — máy khách nhận lại chainHead thật để đồng bộ và gửi lại đúng thứ tự.
@@ -545,6 +608,40 @@ export async function saveExamProgress(input: {
     };
   }
 
+  // Chữ ký bằng khoá liveness: bằng chứng gói được tạo TRONG trang thi trên chính
+  // thiết bị đã đăng ký khoá, không phải bởi curl/Postman/headless gọi thẳng API.
+  const enforceSignature = signatureEnforced(new Date(nowMs));
+  const sigVerdict = await verifyPayloadSignature({
+    helpers: session.helpers,
+    message: saveMessage({
+      sessionId: session.id,
+      seq: input.clientSeq,
+      chainPrev: expectedHead,
+      delta: input.answers ?? {},
+      at: Number(input.at ?? 0),
+    }),
+    signature: input.signature,
+    at: input.at,
+    nowMs,
+  });
+  if (!sigVerdict.ok) {
+    const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+    await flagScriptEvent(session.id, "script_suspect", {
+      reason: "unsigned_payload:" + sigVerdict.reason,
+      source,
+      enforced: enforceSignature,
+    });
+    if (enforceSignature) {
+      return {
+        savedAt: new Date().toISOString(),
+        seq: currentSeq,
+        accepted: [],
+        chainHead: expectedHead,
+        rejected: "signature",
+      };
+    }
+  }
+
   const total = (session.question_ids as string[]).length;
   const incoming: Record<string, AnswerValue> = {};
   for (const [key, value] of Object.entries(input.answers ?? {})) {
@@ -564,6 +661,7 @@ export async function saveExamProgress(input: {
     saved: savedAnswers,
     incoming: savable,
     proofs: input.proofs,
+    strict: enforceSignature,
   });
   void flags;
   // Trần số câu MỚI cho mỗi lần lưu: người thi thật lưu theo nhịp nên không bao giờ chạm,
@@ -576,7 +674,10 @@ export async function saveExamProgress(input: {
     .update({
       answers: merged as never,
       answers_seq: input.clientSeq,
-      helpers: withChain(session.helpers, check.head, input.clientSeq) as never,
+      helpers: withSaveRate(
+        withChain(session.helpers, check.head, input.clientSeq),
+        advanceSaveRate({ state: rate, nowMs, source, signature: input.signature }),
+      ) as never,
     })
     .eq("id", session.id)
     .eq("status", "active");
@@ -626,6 +727,8 @@ async function guardProofs(args: {
   saved: Record<string, AnswerValue>;
   incoming: Record<string, AnswerValue>;
   proofs?: Record<string, ProofLike>;
+  /** Giai đoạn chặn thật: câu MỚI không có bằng chứng thì KHÔNG ghi. */
+  strict?: boolean;
 }): Promise<{ kept: Record<string, AnswerValue>; flags: string[] }> {
   const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
   const newKeys = Object.keys(args.incoming).filter(
@@ -640,7 +743,13 @@ async function guardProofs(args: {
       reason: "no_proof_payload",
       count: newKeys.length,
     });
-    return { kept: args.incoming, flags: ["no_proof_payload"] };
+    if (!args.strict) return { kept: args.incoming, flags: ["no_proof_payload"] };
+    // Fail-closed: bỏ hẳn các câu mới không kèm bằng chứng, giữ nguyên phần sửa câu cũ.
+    const keptOld: Record<string, AnswerValue> = {};
+    for (const [key, value] of Object.entries(args.incoming)) {
+      if (!newKeys.includes(key)) keptOld[key] = value;
+    }
+    return { kept: keptOld, flags: ["no_proof_payload"] };
   }
 
   const bad = unprovenKeys(newKeys, args.proofs);

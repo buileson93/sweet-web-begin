@@ -57,10 +57,13 @@ export async function ensureLivenessKey(
   }
 }
 
-/** Ký thử thách của máy chủ; trả về chữ ký base64 (null nếu không có khoá của phiên này). */
-export async function signLivenessChallenge(
+/**
+ * Ký một thông điệp bất kỳ bằng khoá riêng của phiên (thử thách liveness, gói autosave,
+ * gói chấm ngay...). Trả về chữ ký base64, hoặc null nếu máy này không có khoá của phiên.
+ */
+export async function signWithLivenessKey(
   sessionId: string,
-  nonce: string,
+  message: string,
 ): Promise<string | null> {
   try {
     const pair =
@@ -71,7 +74,7 @@ export async function signLivenessChallenge(
     const signature = await crypto.subtle.sign(
       { name: "ECDSA", hash: "SHA-256" },
       pair.privateKey,
-      new TextEncoder().encode(nonce) as unknown as BufferSource,
+      new TextEncoder().encode(message) as unknown as BufferSource,
     );
     return bytesToBase64(new Uint8Array(signature));
   } catch {
@@ -87,4 +90,9 @@ export async function clearLivenessKey(sessionId: string): Promise<void> {
   } catch {
     /* bỏ qua */
   }
+}
+
+/** Ký thử thách liveness (giữ tên cũ cho nơi đang dùng). */
+export function signLivenessChallenge(sessionId: string, nonce: string): Promise<string | null> {
+  return signWithLivenessKey(sessionId, nonce);
 }
