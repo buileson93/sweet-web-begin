@@ -536,6 +536,13 @@ function ExamPage() {
       />
 
       <CaptchaGuardDialog open={captchaLocked && !result} onVerify={onReverify} />
+
+      <FullscreenGuardDialog
+        open={needFullscreen && !captchaLocked}
+        onEnter={enterFullscreen}
+        onExitRoom={() => void doExit()}
+      />
+
     </div>
 
   );
