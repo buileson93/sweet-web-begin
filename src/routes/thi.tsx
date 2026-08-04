@@ -34,6 +34,8 @@ import { CaptchaGuardDialog } from "@/components/exam/CaptchaGuardDialog";
 import { reportEvent, reverifyCaptcha } from "@/lib/exam.functions";
 
 import { useLivenessWatch } from "@/hooks/useLivenessWatch";
+import { useExamFullscreen } from "@/hooks/useExamFullscreen";
+import { FullscreenGuardDialog } from "@/components/exam/FullscreenGuardDialog";
 import { isMobileDevice, leaveAllowance, shouldForceRestart } from "@/lib/integrity";
 import { isAnswered } from "@/lib/questionKinds";
 
@@ -112,6 +114,15 @@ function ExamPage() {
     submitToken: session?.submitToken ?? null,
     active: Boolean(session) && !result,
   });
+
+  // Phòng thi chạy toàn màn hình; chỉ trả lại bình thường khi nộp bài hoặc thoát phòng thi.
+  const {
+    enter: enterFullscreen,
+    exit: exitFullscreen,
+    needsPrompt: needFullscreen,
+  } = useExamFullscreen(Boolean(session) && !result);
+
+
 
   // Sau khi khôi phục xong, báo cho autosave biết máy chủ đã có sẵn những đáp án nào.
   useEffect(() => {
@@ -327,8 +338,9 @@ function ExamPage() {
       }
       clearLocal(session.sessionId);
     }
+    await exitFullscreen();
     navigate({ to: "/" });
-  }, [clearLocal, navigate, runAbandon, session]);
+  }, [clearLocal, exitFullscreen, navigate, runAbandon, session]);
 
   /** Thi lại ngay: mở phiên mới với đúng thông tin đã đăng ký, không phải nhập lại. */
   const retake = useCallback(async () => {
@@ -524,6 +536,13 @@ function ExamPage() {
       />
 
       <CaptchaGuardDialog open={captchaLocked && !result} onVerify={onReverify} />
+
+      <FullscreenGuardDialog
+        open={needFullscreen && !captchaLocked}
+        onEnter={enterFullscreen}
+        onExitRoom={() => void doExit()}
+      />
+
     </div>
 
   );
