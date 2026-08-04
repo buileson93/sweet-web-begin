@@ -65,29 +65,25 @@ export function auditSpeed(input: SpeedAuditInput): SpeedAuditResult {
 
   const hasSignal = (input.signals ?? []).length > 0;
 
-  // 1) Nhanh tới mức bất khả thi: phạt nặng, không cần tín hiệu nào khác.
+  // QUAN TRỌNG: tốc độ KHÔNG bao giờ bị trừ điểm liêm chính — nhiều thí sinh
+  // thuộc đề và làm rất nhanh một cách hợp lệ. Ở đây chỉ GẮN NHÃN để quản trị
+  // rà soát; việc chống dò đáp án được xử lý ở gốc (revealGuard + khoá chấm-ngay).
   if (secPerQuestion < IMPOSSIBLE_SEC_PER_QUESTION) {
-    return { weight: 8, reason: "impossible_speed", ...base };
+    return { weight: 0, reason: "very_fast", ...base };
   }
 
-  // 2) Nhanh bất thường + gần như đúng hết: dấu hiệu biết trước đáp án.
-  if (secPerQuestion < FAST_SEC_PER_QUESTION && accuracy >= NEAR_PERFECT_ACCURACY) {
+  if (secPerQuestion < FAST_SEC_PER_QUESTION) {
     return {
-      weight: hasSignal ? 8 : 6,
-      reason: hasSignal ? "fast_perfect_with_script_signal" : "fast_perfect",
+      weight: 0,
+      reason: hasSignal
+        ? "fast_with_script_signal"
+        : accuracy >= NEAR_PERFECT_ACCURACY
+          ? "fast_perfect"
+          : "fast_only",
       ...base,
     };
   }
 
-  // 3) Nhanh bất thường + có tín hiệu script: đủ để huỷ bài ở chế độ nghiêm ngặt.
-  if (secPerQuestion < FAST_SEC_PER_QUESTION && hasSignal) {
-    return { weight: 6, reason: "fast_with_script_signal", ...base };
-  }
-
-  // 4) Chỉ nhanh: ghi log để quản trị rà soát, không trừ điểm.
-  if (secPerQuestion < FAST_SEC_PER_QUESTION) {
-    return { weight: 0, reason: "fast_only", ...base };
-  }
 
   return { ...NONE, ...base };
 }
