@@ -279,6 +279,61 @@ export function LiveMonitor() {
                 ))}
               </div>
 
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border p-3">
+                  <p className="type-meta mb-1 font-semibold uppercase">Thông tin thí sinh</p>
+                  <dl className="space-y-1 text-sm">
+                    {[
+                      ["Họ tên", detailQuery.data.candidate?.fullName || detailQuery.data.candidateName],
+                      ["Chức danh", detailQuery.data.candidate?.position || "—"],
+                      ["Đơn vị", detailQuery.data.candidate?.unit || detailQuery.data.unit || "—"],
+                      ["Ngày sinh", detailQuery.data.candidate?.birthDate || "—"],
+                      ["SĐT (4 số cuối)", detailQuery.data.candidate?.phoneLast4 || "—"],
+                      ["Điểm liêm chính", String(detailQuery.data.integrityScore)],
+                    ].map(([k, v]) => (
+                      <div key={k} className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">{k}</dt>
+                        <dd className="text-right font-medium">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+
+                <div className="rounded-xl border p-3">
+                  <p className="type-meta mb-1 font-semibold uppercase">Thiết bị &amp; mạng</p>
+                  {detailQuery.data.device ? (
+                    <dl className="space-y-1 text-sm">
+                      {[
+                        ["Địa chỉ IP", detailQuery.data.device.ip],
+                        ["Trình duyệt", detailQuery.data.device.browser],
+                        ["Hệ điều hành", detailQuery.data.device.os],
+                        ["Loại thiết bị", detailQuery.data.device.deviceType],
+                        ["Kiểu máy", detailQuery.data.device.deviceModel],
+                        ["Màn hình", detailQuery.data.device.screen],
+                        ["Kết nối", detailQuery.data.device.network],
+                        ["Ngôn ngữ", detailQuery.data.device.language],
+                        ["Múi giờ", detailQuery.data.device.timezone],
+                        ["Chạy dạng ứng dụng", detailQuery.data.device.isPwa ? "Có" : "Không"],
+                        ["Ghi nhận lúc", formatDateTime(detailQuery.data.device.seenAt)],
+                      ].map(([k, v]) => (
+                        <div key={k} className="flex justify-between gap-3">
+                          <dt className="text-muted-foreground">{k}</dt>
+                          <dd className="text-right font-medium">{v}</dd>
+                        </div>
+                      ))}
+                      <p className="type-meta break-all pt-1 text-muted-foreground">
+                        {detailQuery.data.device.userAgent}
+                      </p>
+                    </dl>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Chưa ghi nhận được thiết bị của thí sinh này.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+
               <ol className="space-y-2">
                 {detailQuery.data.answers.map((a) => (
                   <li

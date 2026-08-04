@@ -139,20 +139,40 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
     .select(
-      "id, quiz_id, candidate_name, unit, started_at, expires_at, submitted_at, status, answers, question_ids, option_orders, points, best_streak",
+      "id, quiz_id, employee_id, candidate_name, unit, started_at, expires_at, submitted_at, status, answers, question_ids, option_orders, points, best_streak, integrity_score",
     )
     .eq("id", sessionId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!session) throw new Error("Không tìm thấy phiên thi.");
 
-  const [{ data: quiz }, { data: questions }] = await Promise.all([
+  const [{ data: quiz }, { data: questions }, { data: employee }, { data: visits }] = await Promise.all([
     supabaseAdmin.from("quizzes").select("title").eq("id", session.quiz_id).maybeSingle(),
     supabaseAdmin
       .from("questions")
       .select("id, question, options, correct_index")
       .in("id", session.question_ids ?? []),
+    session.employee_id
+      ? supabaseAdmin
+          .from("employees")
+          .select("full_name, position, unit_name, birth_date, phone_last4")
+          .eq("id", session.employee_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    session.employee_id
+      ? supabaseAdmin
+          .from("device_visits")
+          .select(
+            "ip, browser, browser_version, os, os_version, device_type, device_model, screen_w, screen_h, network_type, language, timezone, is_pwa, user_agent, created_at",
+          )
+          .eq("employee_id", session.employee_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+      : Promise.resolve({ data: null }),
   ]);
+
+  const visit = (visits ?? [])[0] ?? null;
+
 
   const byId = new Map((questions ?? []).map((q) => [q.id, q]));
   const rawAnswers = (session.answers ?? {}) as Record<string, number | number[] | string>;
@@ -189,6 +209,32 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
     status: session.status,
     points: session.points ?? 0,
     bestStreak: session.best_streak ?? 0,
+    integrityScore: session.integrity_score ?? 0,
+    candidate: employee
+      ? {
+          fullName: employee.full_name ?? "",
+          position: employee.position ?? "",
+          unit: employee.unit_name ?? "",
+          birthDate: employee.birth_date ?? "",
+          phoneLast4: employee.phone_last4 ?? "",
+        }
+      : null,
+    device: visit
+      ? {
+          ip: visit.ip || "—",
+          browser: [visit.browser, visit.browser_version].filter(Boolean).join(" ") || "—",
+          os: [visit.os, visit.os_version].filter(Boolean).join(" ") || "—",
+          deviceType: visit.device_type || "—",
+          deviceModel: visit.device_model || "—",
+          screen: visit.screen_w && visit.screen_h ? `${visit.screen_w}×${visit.screen_h}` : "—",
+          network: visit.network_type || "—",
+          language: visit.language || "—",
+          timezone: visit.timezone || "—",
+          isPwa: Boolean(visit.is_pwa),
+          userAgent: visit.user_agent || "—",
+          seenAt: visit.created_at,
+        }
+      : null,
     answers,
   };
 }
