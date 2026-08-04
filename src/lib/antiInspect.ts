@@ -43,3 +43,56 @@ export function isInspectShortcut(e: {
   if (key === "u") return true; // xem mã nguồn
   return false;
 }
+
+/** Số lần kiểm tra liên tiếp thấy khung nhìn hụt thì kết luận DevTools (≈ 6 giây). */
+export const DEVTOOLS_SIZE_CONFIRM = 4;
+
+/**
+ * Bẫy "mồi console": chỉ khi bảng DevTools đang MỞ, trình duyệt mới dựng bản xem
+ * trước của đối tượng in ra console và gọi vào getter/toString của mồi.
+ * Bắt được cả trường hợp mở DevTools TRƯỚC khi vào phòng thi và tắt breakpoint
+ * (bẫy `debugger` khi đó không kích hoạt).
+ */
+export function createConsoleBait(): { probe: () => boolean } {
+  let hit = false;
+  const markHit = () => {
+    hit = true;
+  };
+
+  const bait: Record<string, unknown> = {};
+  try {
+    Object.defineProperty(bait, "id", {
+      get() {
+        markHit();
+        return "";
+      },
+      configurable: true,
+    });
+  } catch {
+    /* bỏ qua */
+  }
+
+  const reBait = /vatm/;
+  try {
+    reBait.toString = () => {
+      markHit();
+      return "";
+    };
+  } catch {
+    /* bỏ qua */
+  }
+
+  return {
+    probe: () => {
+      hit = false;
+      try {
+        // In mồi rồi xoá ngay: không làm bẩn console của thí sinh.
+        console.log("%c", bait, reBait);
+        console.clear?.();
+      } catch {
+        /* bỏ qua */
+      }
+      return hit;
+    },
+  };
+}
