@@ -139,8 +139,19 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     case "automation_detected":
       return 6;
     // Nhịp trả lời đều như máy hoặc gói tin thiếu bằng chứng: cảnh báo mức vừa.
-    case "script_suspect":
+    case "script_suspect": {
+      const reason = String((detail as { reason?: string }).reason ?? "");
+      // Bị trần tần suất autosave chặn KHÔNG phải bằng chứng gian lận: mạng chập chờn,
+      // gửi lại sau lỗi, beacon lúc ẩn tab hay hai nhịp lưu trùng nhau đều tạo ra nó.
+      // Gói đã bị từ chối ghi rồi, nên chỉ lưu log để rà soát, không trừ liêm chính.
+      if (reason.startsWith("autosave_rate:")) return 0;
+      // Bằng chứng thao tác quá cũ: thí sinh chọn đáp án rồi mất mạng/gói bị dồn hàng đợi.
+      // Bằng chứng đã bị hạ cấp (đáp án không được ghi nếu là câu mới) nên chỉ ghi log.
+      if (reason === "stale_proof" || reason === "stale_proof_check") return 0;
       return 3;
+    }
+
+
     // Bấm trúng thẻ mồi ẩn: chỉ script quét DOM mới làm được -> phạt nặng nhất.
     case "honeypot_hit":
       return 8;

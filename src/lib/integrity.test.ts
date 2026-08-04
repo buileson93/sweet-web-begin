@@ -129,3 +129,21 @@ describe("chống dò đáp án bằng Inspect", () => {
     expect(scoreEvent("devtools_open", { via: "size_persist", dw: 300, dh: 0 })).toBe(0);
   });
 });
+
+describe("script_suspect do trần tần suất autosave", () => {
+  it("không trừ điểm khi bị chặn vì gửi quá nhanh", () => {
+    expect(scoreEvent("script_suspect", { reason: "autosave_rate:too_fast", source: "rpc" })).toBe(0);
+    expect(scoreEvent("script_suspect", { reason: "autosave_rate:replay" })).toBe(0);
+  });
+
+  it("vẫn phạt các nghi vấn script khác", () => {
+    expect(scoreEvent("script_suspect", { reason: "Nhịp trả lời đều bất thường" })).toBe(3);
+  });
+});
+
+describe("bằng chứng thao tác quá hạn", () => {
+  it("chỉ ghi log, không trừ liêm chính", () => {
+    expect(scoreEvent("script_suspect", { reason: "stale_proof" })).toBe(0);
+    expect(scoreEvent("script_suspect", { reason: "stale_proof_check" })).toBe(0);
+  });
+});
