@@ -115,6 +115,15 @@ function ExamPage() {
     active: Boolean(session) && !result,
   });
 
+  // Phòng thi chạy toàn màn hình; chỉ trả lại bình thường khi nộp bài hoặc thoát phòng thi.
+  const {
+    enter: enterFullscreen,
+    exit: exitFullscreen,
+    needsPrompt: needFullscreen,
+  } = useExamFullscreen(Boolean(session) && !result);
+
+
+
   // Sau khi khôi phục xong, báo cho autosave biết máy chủ đã có sẵn những đáp án nào.
   useEffect(() => {
     const ack = autosaveAckRef.current;
