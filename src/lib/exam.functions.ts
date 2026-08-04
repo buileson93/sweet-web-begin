@@ -22,10 +22,22 @@ const answerSchema = z.union([
   z.record(z.string(), z.number().int().min(0).max(50)),
 ]);
 
+/** Bằng chứng thao tác thật (isTrusted) kèm theo mỗi đáp án — chống gửi đáp án bằng script. */
+const proofSchema = z.record(
+  z.string(),
+  z.object({
+    trusted: z.boolean(),
+    via: z.enum(["pointer", "key", "none"]).optional(),
+    ageMs: z.number().optional(),
+    at: z.number().optional(),
+  }),
+);
+
 const submitSchema = z.object({
   sessionId: z.string().uuid(),
   submitToken: z.string().uuid(),
   answers: z.record(z.string(), answerSchema),
+  proofs: proofSchema.optional(),
   disqualified: z.boolean().optional(),
   disqualifyReason: z.string().max(300).optional(),
 });
@@ -35,6 +47,7 @@ const progressSchema = z.object({
   sessionId: z.string().uuid(),
   submitToken: z.string().uuid(),
   answers: z.record(z.string(), answerSchema),
+  proofs: proofSchema.optional(),
   clientSeq: z.number().int().min(0),
   /** Mắt xích chuỗi băm: mã băm máy chủ đã xác nhận ở gói trước. */
   chainPrev: z.string().length(64).optional(),
