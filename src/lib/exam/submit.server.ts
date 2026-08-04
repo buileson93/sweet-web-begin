@@ -174,8 +174,12 @@ export async function checkExamAnswer(input: {
 
 
 
-  return { correct, correctText: correctTextOf(row), explanation: row.explanation ?? "" };
+  // CHỈ trả về đúng/sai. Nội dung đáp án đúng và lời giải KHÔNG bao giờ đi xuống
+  // máy khách trong lúc đang thi — mọi việc chấm nằm ở máy chủ, nên dù mở console
+  // hay chặn gói tin cũng không đọc được đáp án. Xem lại đầy đủ ở phần kết quả sau khi nộp.
+  return { correct, correctText: "", explanation: "" };
 }
+
 
 
 export async function submitExamSession(input: {
