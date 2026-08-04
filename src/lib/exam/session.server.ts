@@ -190,6 +190,10 @@ export async function startExamSession(input: {
 
   const expiresAt = new Date(now.getTime() + quiz.duration_minutes * 60_000);
 
+  // Tạo snapshot trước khi mở phiên để database lưu cùng transaction. Như vậy
+  // phiên không thể tồn tại với device_info rỗng do lệnh cập nhật thứ hai lỗi.
+  const deviceSnapshot = buildDeviceSnapshot(input.device, input.request, now.toISOString());
+
   // Một transaction duy nhất: khoá theo (cuộc thi, nhân viên) → kiểm tra lượt thi
   // → huỷ phiên cũ → tạo phiên mới. Chạy song song cũng không tạo thừa lượt thi.
   const maxAttempts = quiz.max_attempts ?? 0;
@@ -203,22 +207,12 @@ export async function startExamSession(input: {
     p_candidate_name: name,
     p_birth_year: birthYear || "",
     p_unit: unit || "",
+    p_device_info: deviceSnapshot as unknown as Json,
   });
 
   if (sessionError) throw mapStartExamError(sessionError, maxAttempts);
   const session = created?.[0];
   if (!session) throw new Error("Không tạo được phiên thi. Vui lòng thử lại.");
-
-  // Lưu thẳng thông tin thiết bị/mạng vào phiên thi: phiên nào cũng tra được IP,
-  // trình duyệt, hệ điều hành… kể cả khi thí sinh chặn cookie hay xoá localStorage.
-  {
-    const snapshot = buildDeviceSnapshot(input.device, input.request);
-    const { error: deviceError } = await supabaseAdmin
-      .from("exam_sessions")
-      .update({ device_info: snapshot as unknown as Json })
-      .eq("id", session.session_id);
-    if (deviceError) console.error("save exam device_info failed:", deviceError.message);
-  }
 
   // Ghi nhật ký liêm chính (không chặn): captcha vô hình không qua.
   if (!captcha.ok && !captcha.skipped) {

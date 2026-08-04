@@ -288,7 +288,8 @@ CREATE OR REPLACE FUNCTION public.start_exam_session_tx(
   p_expires_at timestamptz,
   p_candidate_name text,
   p_birth_year text,
-  p_unit text
+  p_unit text,
+  p_device_info jsonb DEFAULT '{}'::jsonb
 )
 RETURNS TABLE (session_id uuid, submit_token uuid, attempts int)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -317,7 +318,7 @@ BEGIN
   RETURN QUERY
   INSERT INTO public.exam_sessions (
     quiz_id, candidate_name, birth_year, unit, employee_id,
-    question_ids, option_orders, expires_at
+    question_ids, option_orders, expires_at, device_info
   ) VALUES (
     p_quiz_id,
     p_candidate_name,
@@ -326,7 +327,8 @@ BEGIN
     p_employee_id,
     p_question_ids,
     p_option_orders,
-    p_expires_at
+    p_expires_at,
+    COALESCE(p_device_info, '{}'::jsonb)
   )
   RETURNING public.exam_sessions.id, public.exam_sessions.submit_token, v_attempts;
 END;
@@ -611,9 +613,9 @@ GRANT EXECUTE ON FUNCTION public.touch_updated_at() TO service_role;
 REVOKE ALL ON FUNCTION public.handle_new_user_role() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.handle_new_user_role() TO service_role;
 
-REVOKE ALL ON FUNCTION public.start_exam_session_tx(uuid, uuid, int, uuid[], jsonb, timestamptz, text, text, text)
+REVOKE ALL ON FUNCTION public.start_exam_session_tx(uuid, uuid, int, uuid[], jsonb, timestamptz, text, text, text, jsonb)
   FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.start_exam_session_tx(uuid, uuid, int, uuid[], jsonb, timestamptz, text, text, text)
+GRANT EXECUTE ON FUNCTION public.start_exam_session_tx(uuid, uuid, int, uuid[], jsonb, timestamptz, text, text, text, jsonb)
   TO service_role;
 
 -- -----------------------------------------------------------------------------

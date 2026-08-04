@@ -1988,6 +1988,7 @@ export type Database = {
         Args: {
           p_birth_year: string
           p_candidate_name: string
+          p_device_info?: Json
           p_employee_id: string
           p_expires_at: string
           p_max_attempts: number
