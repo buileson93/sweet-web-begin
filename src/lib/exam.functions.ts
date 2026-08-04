@@ -112,6 +112,14 @@ export const checkAnswer = createServerFn({ method: "POST" })
         submitToken: z.string().uuid(),
         index: z.number().int().min(0).max(500),
         value: answerSchema,
+        proof: z
+          .object({
+            trusted: z.boolean(),
+            via: z.enum(["pointer", "key", "none"]).optional(),
+            ageMs: z.number().optional(),
+            at: z.number().optional(),
+          })
+          .optional(),
       })
       .parse(input),
   )

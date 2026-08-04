@@ -98,6 +98,7 @@ export function useExamAnswers(opts: {
             submitToken: session.submitToken,
             index: idx,
             value,
+            proof: inputProof.collect([String(idx)])[String(idx)],
           },
         });
         // Phòng trường hợp máy chủ trả về dữ liệu rỗng: báo lỗi rõ ràng thay vì vỡ giao diện.

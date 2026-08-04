@@ -42,6 +42,7 @@ export async function checkExamAnswer(input: {
   submitToken: string;
   index: number;
   value: AnswerValue;
+  proof?: ProofLike;
 }) {
   const { data: session, error } = await supabaseAdmin
     .from("exam_sessions")
@@ -60,6 +61,16 @@ export async function checkExamAnswer(input: {
   }
   const qid = (session.question_ids as string[])[input.index];
   if (!qid) throw new Error("Câu hỏi không tồn tại.");
+
+  // Chống dò đáp án bằng script: chấm-ngay chỉ phục vụ thao tác thật của thí sinh.
+  if (input.proof && input.proof.trusted !== true) {
+    const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+    await flagScriptEvent(session.id, "untrusted_input", {
+      source: "check",
+      index: input.index,
+    });
+    throw new Error("Không ghi nhận được thao tác chọn đáp án. Vui lòng chọn lại trên màn hình.");
+  }
 
   // Chỉ cuộc thi bật "chấm ngay" mới được trả đáp án đúng, và mỗi câu chỉ chốt MỘT lần —
   // nếu không, có thể gọi lặp nhiều phương án để dò toàn bộ đáp án rồi nộp bài trong vài giây.
