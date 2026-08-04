@@ -162,8 +162,29 @@ export const getServerTime = createServerFn({ method: "GET" }).handler(async () 
 export const startExam = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => startSchema.parse(input))
   .handler(async ({ data }) => {
+    const { getRequestHeader } = await import("@tanstack/react-start/server");
+    // IP và User-Agent đọc thẳng từ request (không phụ thuộc cookie/localStorage).
+    const ipHeaders: [string, string | undefined][] = [
+      ["cf-connecting-ip", getRequestHeader("cf-connecting-ip")],
+      ["true-client-ip", getRequestHeader("true-client-ip")],
+      ["x-real-ip", getRequestHeader("x-real-ip")],
+      ["x-forwarded-for", getRequestHeader("x-forwarded-for")],
+    ];
+    let ip = "";
+    let ipSource = "";
+    for (const [source, raw] of ipHeaders) {
+      const value = (raw ?? "").split(",")[0]?.trim();
+      if (value) {
+        ip = value.slice(0, 60);
+        ipSource = source;
+        break;
+      }
+    }
     const { startExamSession } = await import("@/lib/exam.server");
-    return startExamSession(data);
+    return startExamSession({
+      ...data,
+      request: { ip, ipSource, userAgent: (getRequestHeader("user-agent") ?? "").slice(0, 400) },
+    });
   });
 
 export const submitExam = createServerFn({ method: "POST" })
