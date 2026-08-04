@@ -195,16 +195,19 @@ export function useIntegrityWatch(opts: {
         outerHeight: window.outerHeight,
         innerHeight: window.innerHeight,
       });
-      // Mồi console chỉ bị "nếm" khi bảng DevTools đang mở -> bằng chứng chắc chắn.
-      if (consoleBait.probe()) {
+      // Mồi console có thể dính oan (một số trình duyệt vẫn dựng chuỗi khi console
+      // bị ghi đè bởi tiện ích mở rộng) -> phải có bẫy `debugger` xác nhận mới phạt.
+      const baitHit = consoleBait.probe();
+      const debuggerHit = probeDebugger();
+      if (debuggerHit) {
+        reportDevtools(baitHit ? "console_bait+debugger" : "debugger", { dw, dh });
+        return;
+      }
+      if (baitHit) {
         reportDevtools("console_bait", { dw, dh });
         return;
       }
-      // Bẫy debugger: DevTools mở (kể cả tách rời cửa sổ) sẽ treo lại vài trăm ms.
-      if (probeDebugger()) {
-        reportDevtools("debugger", { dw, dh });
-        return;
-      }
+
       // Khoảng trống cửa sổ kéo dài liên tục: có thể là sidebar, nhưng nếu duy trì
       // suốt ~6 giây thì vẫn ghi nhận (kèm số liệu để ban tổ chức rà soát).
       sizeStreak = sizeGap ? sizeStreak + 1 : 0;
