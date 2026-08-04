@@ -69,6 +69,10 @@ function ExamPage() {
     useExamRestore(Boolean(result));
 
   const [current, setCurrent] = useState(0);
+  const currentIndexRef = useRef(0);
+  useEffect(() => {
+    currentIndexRef.current = current;
+  }, [current]);
   const [violations, setViolations] = useState(0);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [exitOpen, setExitOpen] = useState(false);
@@ -214,7 +218,7 @@ function ExamPage() {
           kind: "honeypot_hit",
           detail: {
             token: info.token,
-            questionIndex: currentRef.current,
+            questionIndex: currentIndexRef.current,
             source: "dom_trap",
             reason: "Bấm vào phần tử mồi ẩn trong danh sách đáp án",
           },
