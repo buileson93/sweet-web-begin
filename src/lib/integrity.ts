@@ -93,8 +93,13 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
       return 5;
     case "resize_suspect":
       return 1;
-    case "devtools_open":
-      return 4;
+    // Chỉ phạt khi có BẰNG CHỨNG CHẮC CHẮN là DevTools đang mở (bẫy `debugger`
+    // hoặc mồi console bị "nếm"). Riêng dấu hiệu suy đoán theo kích thước cửa sổ
+    // (`size_persist`) rất dễ oan do sidebar trình duyệt/thanh dịch/zoom -> chỉ ghi log.
+    case "devtools_open": {
+      const via = String((detail as { via?: string }).via ?? "");
+      return via === "size_persist" || via === "size" ? 0 : 4;
+    }
     // Không ký lại được thử thách liveness: dấu hiệu đổi thiết bị/thay người giữa chừng
     // hoặc gọi API bằng script (không có khoá riêng trong trình duyệt đang thi).
     case "liveness_failed":
