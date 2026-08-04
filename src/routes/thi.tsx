@@ -520,6 +520,9 @@ function ExamPage() {
         onSubmit={() => void finish()}
         onExit={() => void doExit()}
       />
+
+      <CaptchaGuardDialog open={captchaLocked && !result} onVerify={onReverify} />
     </div>
+
   );
 }
