@@ -21,8 +21,12 @@ declare global {
   }
 }
 
+/** Khoá công khai (site key) của widget Turnstile — không phải bí mật. */
+const DEFAULT_SITE_KEY = "0x4AAAAAAEF4VZi22tNPzGJj";
+
 export function turnstileSiteKey(): string {
-  return (import.meta.env["VITE_TURNSTILE_SITE_KEY"] as string | undefined)?.trim() ?? "";
+  const fromEnv = (import.meta.env["VITE_TURNSTILE_SITE_KEY"] as string | undefined)?.trim();
+  return fromEnv || DEFAULT_SITE_KEY;
 }
 
 let scriptPromise: Promise<TurnstileApi | null> | null = null;

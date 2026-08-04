@@ -8,7 +8,7 @@ import { scoreEvent, type ExamEventDetail } from "@/lib/integrity";
  */
 export async function flagScriptEvent(
   sessionId: string,
-  kind: "untrusted_input" | "script_suspect" | "automation_detected" | "honeypot_hit",
+  kind: "untrusted_input" | "script_suspect" | "automation_detected" | "honeypot_hit" | "captcha_failed",
   detail: ExamEventDetail = {},
 ): Promise<void> {
   try {
@@ -17,6 +17,7 @@ export async function flagScriptEvent(
       script_suspect: "Nhịp trả lời đều bất thường hoặc gói tin thiếu bằng chứng thao tác",
       automation_detected: "Môi trường trình duyệt bị điều khiển tự động",
       honeypot_hit: "Bấm vào phần tử mồi ẩn (honeypot)",
+      captcha_failed: "Captcha vô hình Cloudflare Turnstile không xác minh được",
     };
     detail = { reason: REASON[kind], detectedAt: new Date().toISOString(), ...detail };
     const weight = scoreEvent(kind, detail);

@@ -39,10 +39,10 @@ export async function startExamSession(input: {
   deviceId?: string;
   captchaToken?: string;
 }): Promise<StartExamResult> {
-  // Captcha vô hình Cloudflare Turnstile: chặn script tạo phiên thi hàng loạt.
+  // Captcha vô hình Cloudflare Turnstile: KHÔNG chặn thí sinh thật, chỉ lấy tín hiệu
+  // rủi ro và ghi vào nhật ký liêm chính để quản trị rà soát sau.
   const { verifyTurnstileToken } = await import("@/lib/turnstile.server");
   const captcha = await verifyTurnstileToken(input.captchaToken, { action: "start-exam" });
-  if (!captcha.ok) throw new Error(captcha.reason);
   // Bắt buộc đối chiếu danh bạ nhân viên: sai thông tin thì không ghi nhận lượt thi.
   const employee = await verifyEmployee({
     name: input.name,
@@ -187,6 +187,16 @@ export async function startExamSession(input: {
   if (sessionError) throw mapStartExamError(sessionError, maxAttempts);
   const session = created?.[0];
   if (!session) throw new Error("Không tạo được phiên thi. Vui lòng thử lại.");
+
+  // Ghi nhật ký liêm chính (không chặn): captcha vô hình không qua.
+  if (!captcha.ok && !captcha.skipped) {
+    const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+    void flagScriptEvent(session.session_id, "captcha_failed", {
+      source: "turnstile",
+      signals: captcha.codes,
+      note: captcha.reason,
+    });
+  }
 
   return {
     sessionId: session.session_id,

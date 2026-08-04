@@ -19,6 +19,8 @@ export const EXAM_EVENT_KINDS = [
   "untrusted_input",
   "automation_detected",
   "script_suspect",
+  // Captcha vô hình Cloudflare Turnstile không qua (chỉ ghi nhận, không chặn).
+  "captcha_failed",
   // Bấm vào phần tử mồi (honeypot) — người thật không thể chạm tới.
   "honeypot_hit",
 ] as const;
@@ -110,6 +112,10 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     // Bấm trúng thẻ mồi ẩn: chỉ script quét DOM mới làm được -> phạt nặng nhất.
     case "honeypot_hit":
       return 8;
+    // Captcha vô hình không qua: chỉ là TÍN HIỆU tham khảo (mạng yếu, trình duyệt cũ,
+    // chặn quảng cáo cũng có thể gây ra) nên phạt rất nhẹ, không đủ để tự huỷ bài.
+    case "captcha_failed":
+      return 1;
     case "reconnect":
       return 0;
     default:
@@ -181,6 +187,7 @@ export const EXAM_EVENT_LABEL: Record<string, string> = {
   automation_detected: "Trình duyệt tự động hoá",
   script_suspect: "Nghi vấn dùng script",
   honeypot_hit: "Bấm trúng thẻ mồi ẩn (honeypot)",
+  captcha_failed: "Captcha vô hình không qua (Turnstile)",
 };
 
 /**
