@@ -34,6 +34,8 @@ import { CaptchaGuardDialog } from "@/components/exam/CaptchaGuardDialog";
 import { reportEvent, reverifyCaptcha } from "@/lib/exam.functions";
 
 import { useLivenessWatch } from "@/hooks/useLivenessWatch";
+import { useExamFullscreen } from "@/hooks/useExamFullscreen";
+import { FullscreenGuardDialog } from "@/components/exam/FullscreenGuardDialog";
 import { isMobileDevice, leaveAllowance, shouldForceRestart } from "@/lib/integrity";
 import { isAnswered } from "@/lib/questionKinds";
 
