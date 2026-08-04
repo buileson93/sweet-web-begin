@@ -29,7 +29,9 @@ import { useExamTimer } from "@/hooks/useExamTimer";
 import { useIntegrityWatch } from "@/hooks/useIntegrityWatch";
 import { attachInputProof, inputProof } from "@/lib/exam/inputProof";
 import { automationSignals, collectAutomationEnv } from "@/lib/exam/scriptDetect";
-import { reportEvent } from "@/lib/exam.functions";
+import { CaptchaGuardDialog } from "@/components/exam/CaptchaGuardDialog";
+import { reportEvent, reverifyCaptcha } from "@/lib/exam.functions";
+
 import { useLivenessWatch } from "@/hooks/useLivenessWatch";
 import { isMobileDevice, leaveAllowance, shouldForceRestart } from "@/lib/integrity";
 import { isAnswered } from "@/lib/questionKinds";
