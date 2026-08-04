@@ -39,10 +39,11 @@ export async function startExamSession(input: {
   deviceId?: string;
   captchaToken?: string;
 }): Promise<StartExamResult> {
-  // Captcha vô hình Cloudflare Turnstile: KHÔNG chặn thí sinh thật, chỉ lấy tín hiệu
-  // rủi ro và ghi vào nhật ký liêm chính để quản trị rà soát sau.
+  // Captcha vô hình Cloudflare Turnstile. Đề thường: chỉ lấy tín hiệu rủi ro để ghi
+  // nhật ký liêm chính. Đề bật chế độ nghiêm ngặt: FAIL-CLOSED (kiểm tra ở dưới, sau
+  // khi biết cờ strict_mode của đề) — thiếu token hoặc xác minh hỏng thì KHÔNG tạo phiên.
   const { verifyTurnstileToken } = await import("@/lib/turnstile.server");
-  const captcha = await verifyTurnstileToken(input.captchaToken, { action: "start-exam" });
+
   // Bắt buộc đối chiếu danh bạ nhân viên: sai thông tin thì không ghi nhận lượt thi.
   const employee = await verifyEmployee({
     name: input.name,
