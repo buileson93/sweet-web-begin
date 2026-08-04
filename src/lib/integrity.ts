@@ -19,6 +19,8 @@ export const EXAM_EVENT_KINDS = [
   "untrusted_input",
   "automation_detected",
   "script_suspect",
+  // Bấm vào phần tử mồi (honeypot) — người thật không thể chạm tới.
+  "honeypot_hit",
 ] as const;
 
 export type ExamEventKind = (typeof EXAM_EVENT_KINDS)[number];
@@ -105,6 +107,9 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     // Nhịp trả lời đều như máy hoặc gói tin thiếu bằng chứng: cảnh báo mức vừa.
     case "script_suspect":
       return 3;
+    // Bấm trúng thẻ mồi ẩn: chỉ script quét DOM mới làm được -> phạt nặng nhất.
+    case "honeypot_hit":
+      return 8;
     case "reconnect":
       return 0;
     default:
@@ -157,3 +162,56 @@ export function isMobileDevice(): boolean {
  */
 
 
+
+
+/** Nhãn ngắn gọn cho từng loại sự kiện (hiển thị trong trang quản trị). */
+export const EXAM_EVENT_LABEL: Record<string, string> = {
+  tab_hidden: "Rời màn hình thi",
+  window_blur: "Chuyển cửa sổ",
+  copy: "Sao chép",
+  paste: "Dán",
+  contextmenu: "Chuột phải",
+  fullscreen_exit: "Thoát toàn màn hình",
+  resize_suspect: "Đổi kích thước bất thường",
+  reconnect: "Kết nối lại",
+  multi_tab: "Mở nhiều tab",
+  devtools_open: "Mở công cụ nhà phát triển",
+  liveness_failed: "Không xác thực được phiên (liveness)",
+  untrusted_input: "Đáp án không có thao tác thật",
+  automation_detected: "Trình duyệt tự động hoá",
+  script_suspect: "Nghi vấn dùng script",
+  honeypot_hit: "Bấm trúng thẻ mồi ẩn (honeypot)",
+};
+
+/**
+ * Diễn giải RÕ nguyên nhân một sự kiện liêm chính để sau này dễ rà soát:
+ * ghi kèm ngữ cảnh (thời lượng, câu số, tín hiệu phát hiện, nguồn phát hiện).
+ */
+export function describeExamEvent(kind: string, detail: ExamEventDetail = {}): string {
+  const label = EXAM_EVENT_LABEL[kind] ?? kind;
+  const parts: string[] = [];
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
+  const hidden = num(detail.hiddenMs);
+  if (hidden !== null) parts.push(`ẩn ${Math.round(hidden / 1000)} giây`);
+  const blurred = num(detail["blurredMs"]);
+  if (blurred !== null) parts.push(`mất focus ${Math.round(blurred / 1000)} giây`);
+  if (detail.documentVisible === false) parts.push("trang không hiển thị");
+
+  const qIndex = num(detail["questionIndex"]);
+  if (qIndex !== null) parts.push(`câu ${qIndex + 1}`);
+  const count = num(detail["count"]);
+  if (count !== null) parts.push(`${count} đáp án`);
+  const cv = num(detail["cv"]);
+  if (cv !== null) parts.push(`độ lệch nhịp ${(cv * 100).toFixed(1)}%`);
+
+  const signals = detail["signals"];
+  if (Array.isArray(signals) && signals.length) parts.push(`dấu hiệu: ${signals.join(", ")}`);
+  if (typeof detail.reason === "string" && detail.reason) parts.push(detail.reason);
+  const source = detail["source"];
+  if (typeof source === "string" && source) parts.push(`nguồn: ${source}`);
+  const token = detail["token"];
+  if (typeof token === "string" && token) parts.push(`token ${token}`);
+
+  return parts.length ? `${label} — ${parts.join("; ")}` : label;
+}

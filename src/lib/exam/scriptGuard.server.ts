@@ -8,10 +8,17 @@ import { scoreEvent, type ExamEventDetail } from "@/lib/integrity";
  */
 export async function flagScriptEvent(
   sessionId: string,
-  kind: "untrusted_input" | "script_suspect" | "automation_detected",
+  kind: "untrusted_input" | "script_suspect" | "automation_detected" | "honeypot_hit",
   detail: ExamEventDetail = {},
 ): Promise<void> {
   try {
+    const REASON: Record<string, string> = {
+      untrusted_input: "Đáp án gửi lên không kèm thao tác vật lý thật (isTrusted)",
+      script_suspect: "Nhịp trả lời đều bất thường hoặc gói tin thiếu bằng chứng thao tác",
+      automation_detected: "Môi trường trình duyệt bị điều khiển tự động",
+      honeypot_hit: "Bấm vào phần tử mồi ẩn (honeypot)",
+    };
+    detail = { reason: REASON[kind], detectedAt: new Date().toISOString(), ...detail };
     const weight = scoreEvent(kind, detail);
     await supabaseAdmin.from("exam_events").insert({
       session_id: sessionId,
