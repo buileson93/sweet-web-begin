@@ -38,6 +38,29 @@ export type SessionAnswer = {
   isCorrect: boolean;
 };
 
+export type SessionDevice = {
+  ip: string;
+  browser: string;
+  os: string;
+  deviceType: string;
+  deviceModel: string;
+  screen: string;
+  network: string;
+  language: string;
+  timezone: string;
+  isPwa: boolean;
+  userAgent: string;
+  seenAt: string;
+};
+
+export type SessionCandidate = {
+  fullName: string;
+  position: string;
+  unit: string;
+  birthDate: string;
+  phoneLast4: string;
+};
+
 export type SessionDetail = {
   id: string;
   candidateName: string;
@@ -49,5 +72,9 @@ export type SessionDetail = {
   status: string;
   points: number;
   bestStreak: number;
+  integrityScore: number;
+  candidate: SessionCandidate | null;
+  device: SessionDevice | null;
   answers: SessionAnswer[];
 };
+
