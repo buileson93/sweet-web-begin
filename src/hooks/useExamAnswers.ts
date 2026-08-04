@@ -95,9 +95,10 @@ export function useExamAnswers(opts: {
       if (needsConfirm && !opt?.confirm) return;
       try {
         const at = Date.now();
+        const proof = inputProof.collect([String(idx)])[String(idx)];
         const signature = await signWithLivenessKey(
           session.sessionId,
-          checkMessage({ sessionId: session.sessionId, index: idx, value, at }),
+          checkMessage({ sessionId: session.sessionId, index: idx, value, proof, at }),
         );
         const res = await runCheck({
           data: {
@@ -105,7 +106,7 @@ export function useExamAnswers(opts: {
             submitToken: session.submitToken,
             index: idx,
             value,
-            proof: inputProof.collect([String(idx)])[String(idx)],
+            ...(proof ? { proof } : {}),
             at,
             ...(signature ? { signature } : {}),
           },
