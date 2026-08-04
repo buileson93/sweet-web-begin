@@ -44,14 +44,28 @@ export function describeTurnstileCode(code: string): string {
   }
 }
 
+export type TurnstileExpect = {
+  /** Hành động mong đợi (chống dùng lại token của trang khác). */
+  action?: string | undefined;
+  /** Danh sách tên miền được phép (chống dùng token lấy từ site khác). */
+  hostnames?: string[] | undefined;
+  /** Token quá cũ thì từ chối (mặc định 5 phút). */
+  maxAgeMs?: number | undefined;
+  /** Mốc "bây giờ" (ms) — phục vụ kiểm thử. */
+  nowMs?: number | undefined;
+};
+
+const DEFAULT_MAX_AGE_MS = 5 * 60_000;
+
 /**
  * Kết luận từ phản hồi siteverify.
- * @param expectedAction hành động mong đợi (chống dùng lại token của trang khác)
+ * @param expect hành động / tên miền / tuổi token mong đợi (hoặc chỉ chuỗi action)
  */
 export function evaluateTurnstile(
   response: TurnstileVerifyResponse | null | undefined,
-  expectedAction?: string,
+  expect?: string | TurnstileExpect,
 ): TurnstileVerdict {
+  const opts: TurnstileExpect = typeof expect === "string" ? { action: expect } : (expect ?? {});
   const codes = response?.["error-codes"] ?? [];
   if (!response || response.success !== true) {
     const detail = codes.map(describeTurnstileCode).join(", ");
@@ -61,12 +75,40 @@ export function evaluateTurnstile(
       codes,
     };
   }
-  if (expectedAction && response.action && response.action !== expectedAction) {
+  if (opts.action && response.action !== opts.action) {
     return {
       ok: false,
-      reason: `Token xác minh không đúng hành động (nhận "${response.action}").`,
+      reason: `Token xác minh không đúng hành động (nhận "${response.action ?? "trống"}").`,
       codes: ["action-mismatch"],
     };
   }
+  const allowed = opts.hostnames?.filter(Boolean) ?? [];
+  if (allowed.length > 0) {
+    const host = (response.hostname ?? "").toLowerCase();
+    const okHost = allowed.some((h) => {
+      const want = h.toLowerCase().trim();
+      return host === want || host.endsWith("." + want);
+    });
+    if (!okHost) {
+      return {
+        ok: false,
+        reason: `Token xác minh phát hành từ tên miền lạ (nhận "${response.hostname ?? "trống"}").`,
+        codes: ["hostname-mismatch"],
+      };
+    }
+  }
+  const maxAge = opts.maxAgeMs ?? DEFAULT_MAX_AGE_MS;
+  if (response.challenge_ts) {
+    const issued = Date.parse(response.challenge_ts);
+    const now = opts.nowMs ?? Date.now();
+    if (Number.isFinite(issued) && now - issued > maxAge) {
+      return {
+        ok: false,
+        reason: "Token xác minh đã quá hạn, vui lòng thử lại.",
+        codes: ["token-expired"],
+      };
+    }
+  }
   return { ok: true, reason: "Xác minh chống script hợp lệ.", codes: [] };
 }
+
