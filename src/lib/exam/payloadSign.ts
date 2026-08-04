@@ -19,7 +19,7 @@ export const SIGN_MAX_SKEW_MS = 60_000;
 
 /**
  * Bằng chứng thao tác phải xảy ra không quá xa thời điểm gói được gửi.
- * Đặt rộng (5 phút) để không phạt oan khi mất mạng, gói bị dồn hàng đợi hoặc
+ * Đặt rộng (15 phút) để không phạt oan khi mất mạng, gói bị dồn hàng đợi hoặc
  * thí sinh chọn đáp án rồi mới bật lại mạng.
  */
 export const PROOF_MAX_LAG_MS = 900_000;
