@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnswerValue } from "@/lib/questionKinds";
 import { saveProgress } from "@/lib/exam.functions";
 import { genesisHash, linkHash } from "@/lib/exam/hashChain";
+import { inputProof } from "@/lib/exam/inputProof";
 
 /** Nhịp lưu định kỳ và các mốc chống dồn request. */
 const HEARTBEAT_MS = 12_000;
@@ -130,6 +131,8 @@ export function useExamAutosave({
           sessionId,
           submitToken,
           answers: delta,
+          // Bằng chứng thao tác thật cho từng câu — máy chủ từ chối đáp án do script sinh ra.
+          proofs: inputProof.collect(Object.keys(delta)),
           clientSeq: nextSeq,
           chainPrev: prevHead,
           chainHash,

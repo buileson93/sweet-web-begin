@@ -6,6 +6,7 @@ import { checkAnswer, requestDoublePoints, requestFiftyFifty } from "@/lib/exam.
 import type { StartExamResult } from "@/lib/exam.server";
 import { COMBO_MIN } from "@/lib/comboFx";
 import type { AnswerValue } from "@/lib/questionKinds";
+import { inputProof } from "@/lib/exam/inputProof";
 
 /**
  * Ghi nhận đáp án, trợ giúp 50:50 và phản hồi tức thì.
@@ -81,6 +82,8 @@ export function useExamAnswers(opts: {
   const handleAnswer = useCallback(
     async (idx: number, value: AnswerValue, opt?: { confirm?: boolean; kind?: string }) => {
       if (locked(idx)) return;
+      // Ghi bằng chứng: đáp án này có đi kèm thao tác vật lý thật hay không.
+      inputProof.mark(idx);
       setAnswers((a) => ({ ...a, [String(idx)]: value }));
       if (!instant || !session) return;
       // Câu nhiều lựa chọn / điền / nối / sắp xếp chỉ chấm khi thí sinh bấm "Chốt đáp án",
