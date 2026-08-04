@@ -95,6 +95,19 @@ export async function startExamSession(input: {
     throw new Error("Mật khẩu phòng thi không đúng.");
   }
 
+  // Đề nghiêm ngặt bắt buộc qua Turnstile mới được tạo phiên (không có đường "bỏ qua").
+  const strict = quiz.strict_mode === true;
+  const captcha = await verifyTurnstileToken(input.captchaToken, {
+    action: "start-exam",
+    required: strict,
+  });
+  if (strict && !captcha.ok) {
+    throw new Error(
+      "Không qua được xác minh chống script (" + captcha.reason + ") Vui lòng tải lại trang và thử lại.",
+    );
+  }
+
+
   // Đối tượng dự thi: để trống nghĩa là toàn công ty.
   const { data: audiences } = await supabaseAdmin
     .from("quiz_audiences")
