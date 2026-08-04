@@ -162,8 +162,14 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     // phạt nặng (đủ vượt ngưỡng ở chế độ nghiêm ngặt) và luôn ghi log chi tiết.
     case "captcha_failed":
       return 10;
+    // Tốc độ bất thường: mức phạt do `auditSpeed` tính sẵn (0 = chỉ ghi log).
+    case "speed_anomaly": {
+      const w = Number((detail as { weight?: number }).weight ?? 0);
+      return Number.isFinite(w) ? Math.max(0, Math.min(10, Math.round(w))) : 0;
+    }
     case "reconnect":
       return 0;
+
     default:
       return 0;
   }
