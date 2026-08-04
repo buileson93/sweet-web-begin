@@ -159,19 +159,35 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
           .eq("id", session.employee_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
-    session.employee_id
-      ? supabaseAdmin
-          .from("device_visits")
-          .select(
-            "ip, browser, browser_version, os, os_version, device_type, device_model, screen_w, screen_h, network_type, language, timezone, is_pwa, user_agent, created_at",
-          )
-          .eq("employee_id", session.employee_id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-      : Promise.resolve({ data: null }),
+    // Phiên cũ (trước khi lưu ảnh chụp thiết bị): tìm lượt truy cập gần giờ thi nhất,
+    // khớp theo mã nhân viên hoặc theo họ tên đã ghi kèm lượt truy cập.
+    supabaseAdmin
+      .from("device_visits")
+      .select(
+        "ip, browser, browser_version, os, os_version, device_type, device_model, screen_w, screen_h, network_type, language, timezone, is_pwa, user_agent, created_at",
+      )
+      .or(
+        [
+          session.employee_id ? `employee_id.eq.${session.employee_id}` : "",
+          `employee_name.eq.${(session.candidate_name ?? "").replace(/[(),"]/g, " ")}`,
+        ]
+          .filter(Boolean)
+          .join(","),
+      )
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
-  const visit = (visits ?? [])[0] ?? null;
+  const startedMs = new Date(session.started_at).getTime();
+  const visit =
+    (visits ?? [])
+      .slice()
+      .sort(
+        (a, b) =>
+          Math.abs(new Date(a.created_at).getTime() - startedMs) -
+          Math.abs(new Date(b.created_at).getTime() - startedMs),
+      )[0] ?? null;
+
   // Ưu tiên bản ghi thiết bị lưu ngay trong phiên thi (luôn có, không phụ thuộc cookie).
   const s = (v: unknown) => String(v ?? "").trim();
   const rawSnap = (session.device_info ?? null) as Record<string, unknown> | null;
