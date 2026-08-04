@@ -22,7 +22,7 @@ export const SIGN_MAX_SKEW_MS = 60_000;
  * Đặt rộng (5 phút) để không phạt oan khi mất mạng, gói bị dồn hàng đợi hoặc
  * thí sinh chọn đáp án rồi mới bật lại mạng.
  */
-export const PROOF_MAX_LAG_MS = 300_000;
+export const PROOF_MAX_LAG_MS = 900_000;
 
 /**
  * Bắt buộc chữ ký / bằng chứng theo TỪNG ĐỀ THI, không theo ngày:
