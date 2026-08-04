@@ -5,6 +5,8 @@ import { reportEvent } from "@/lib/exam.functions";
 import {
   DEVTOOLS_CHECK_MS,
   DEVTOOLS_DEBUGGER_MS,
+  DEVTOOLS_SIZE_CONFIRM,
+  createConsoleBait,
   isDevtoolsBySize,
   isInspectShortcut,
 } from "@/lib/antiInspect";
@@ -173,6 +175,10 @@ export function useIntegrityWatch(opts: {
       debugger;
       return performance.now() - t0 > DEVTOOLS_DEBUGGER_MS;
     };
+    // Bẫy "mồi console": bắt được cả khi DevTools đã mở SẴN trước lúc vào phòng thi
+    // và thí sinh đã tắt breakpoint (bẫy `debugger` khi đó im lặng).
+    const consoleBait = createConsoleBait();
+    let sizeStreak = 0;
     const checkDevtools = () => {
       if (submittedRef.current()) return;
       const dw = window.outerWidth - window.innerWidth;
@@ -183,15 +189,20 @@ export function useIntegrityWatch(opts: {
         outerHeight: window.outerHeight,
         innerHeight: window.innerHeight,
       });
-      // Có khoảng trống bất thường: có thể là DevTools HOẶC sidebar.
-      // Chỉ kết luận khi bẫy debugger xác nhận (sidebar không kích hoạt bẫy).
-      // Nếu debugger không xác nhận → bỏ qua, tránh phạt oan do sidebar.
-      if (sizeGap) {
-        if (probeDebugger()) reportDevtools("debugger", { dw, dh });
+      // Mồi console chỉ bị "nếm" khi bảng DevTools đang mở -> bằng chứng chắc chắn.
+      if (consoleBait.probe()) {
+        reportDevtools("console_bait", { dw, dh });
         return;
       }
-      // Không có khoảng trống: vẫn dò debugger (DevTools tách rời khỏi cửa sổ).
-      if (probeDebugger()) reportDevtools("debugger", { dw, dh });
+      // Bẫy debugger: DevTools mở (kể cả tách rời cửa sổ) sẽ treo lại vài trăm ms.
+      if (probeDebugger()) {
+        reportDevtools("debugger", { dw, dh });
+        return;
+      }
+      // Khoảng trống cửa sổ kéo dài liên tục: có thể là sidebar, nhưng nếu duy trì
+      // suốt ~6 giây thì vẫn ghi nhận (kèm số liệu để ban tổ chức rà soát).
+      sizeStreak = sizeGap ? sizeStreak + 1 : 0;
+      if (sizeStreak >= DEVTOOLS_SIZE_CONFIRM) reportDevtools("size_persist", { dw, dh });
     };
     const devtoolsTimer = setInterval(checkDevtools, DEVTOOLS_CHECK_MS);
     checkDevtools();

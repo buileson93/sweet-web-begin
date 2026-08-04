@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { DEVTOOLS_SIZE_GAP, isDevtoolsBySize, isInspectShortcut } from "./antiInspect";
+import {
+  DEVTOOLS_SIZE_GAP,
+  createConsoleBait,
+  isDevtoolsBySize,
+  isInspectShortcut,
+} from "./antiInspect";
 
 describe("isDevtoolsBySize", () => {
   it("cửa sổ bình thường không bị coi là mở DevTools", () => {
@@ -35,5 +40,12 @@ describe("isInspectShortcut", () => {
   it("không chặn phím thường", () => {
     expect(isInspectShortcut({ ...base, key: "a" })).toBe(false);
     expect(isInspectShortcut({ ...base, ctrlKey: true, key: "i" })).toBe(false);
+  });
+});
+
+describe("createConsoleBait", () => {
+  it("không báo khi console không dựng bản xem trước (DevTools đóng)", () => {
+    const bait = createConsoleBait();
+    expect(bait.probe()).toBe(false);
   });
 });
