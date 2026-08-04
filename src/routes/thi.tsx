@@ -338,8 +338,9 @@ function ExamPage() {
       }
       clearLocal(session.sessionId);
     }
+    await exitFullscreen();
     navigate({ to: "/" });
-  }, [clearLocal, navigate, runAbandon, session]);
+  }, [clearLocal, exitFullscreen, navigate, runAbandon, session]);
 
   /** Thi lại ngay: mở phiên mới với đúng thông tin đã đăng ký, không phải nhập lại. */
   const retake = useCallback(async () => {
