@@ -112,10 +112,10 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     // Bấm trúng thẻ mồi ẩn: chỉ script quét DOM mới làm được -> phạt nặng nhất.
     case "honeypot_hit":
       return 8;
-    // Captcha vô hình không qua: chỉ là TÍN HIỆU tham khảo (mạng yếu, trình duyệt cũ,
-    // chặn quảng cáo cũng có thể gây ra) nên phạt rất nhẹ, không đủ để tự huỷ bài.
+    // Captcha vô hình Cloudflare kết luận rủi ro: coi như dấu hiệu script rõ ràng,
+    // phạt nặng (đủ vượt ngưỡng ở chế độ nghiêm ngặt) và luôn ghi log chi tiết.
     case "captcha_failed":
-      return 1;
+      return 10;
     case "reconnect":
       return 0;
     default:
