@@ -25,7 +25,9 @@ export async function flagScriptEvent(
       automation_detected: "Môi trường trình duyệt bị điều khiển tự động",
       honeypot_hit: "Bấm vào phần tử mồi ẩn (honeypot)",
       captcha_failed: "Captcha vô hình Cloudflare Turnstile không xác minh được",
+      speed_anomaly: "Tốc độ trả lời bất thường so với người thi thật",
     };
+
     detail = { reason: REASON[kind], detectedAt: new Date().toISOString(), ...detail };
     const weight = scoreEvent(kind, detail);
     await supabaseAdmin.from("exam_events").insert({
