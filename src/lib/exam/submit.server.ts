@@ -114,7 +114,12 @@ export async function checkExamAnswer(input: {
   }
 
 
-  return { correct, correctText: correctTextOf(row), explanation: row.explanation ?? "" };
+  // Sai thì chỉ báo sai, không gửi kèm đáp án đúng — chặn kiểu thi nhiều lượt để "moi" đáp án.
+  return revealForCheck({
+    correct,
+    correctText: correctTextOf(row),
+    explanation: row.explanation ?? "",
+  });
 }
 
 
