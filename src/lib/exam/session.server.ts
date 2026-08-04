@@ -23,6 +23,8 @@ import {
   type StartExamResult,
 } from "@/lib/exam/types";
 import { buildDeviceSnapshot, type ExamDeviceSnapshot } from "@/lib/exam/deviceSnapshot";
+import { excludeRevealed, revealedFromSessions } from "@/lib/exam/revealGuard";
+
 
 export type { ExamDeviceSnapshot };
 
