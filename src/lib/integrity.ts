@@ -19,7 +19,7 @@ export const EXAM_EVENT_KINDS = [
   "untrusted_input",
   "automation_detected",
   "script_suspect",
-  // Captcha vô hình Cloudflare Turnstile không qua (chỉ ghi nhận, không chặn).
+  // Captcha vô hình Cloudflare Turnstile kết luận rủi ro: phạt nặng, ghi log chi tiết.
   "captcha_failed",
   // Bấm vào phần tử mồi (honeypot) — người thật không thể chạm tới.
   "honeypot_hit",
