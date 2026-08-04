@@ -155,31 +155,43 @@ export function useIntegrityWatch(opts: {
     };
 
     /* --- Chống dò đáp án bằng Inspect / DevTools --- */
+    // CHỖ NÀY DỄ PHẠT OAN: chỉ đo khoảng trống cửa sổ thì sidebar trình duyệt
+    // (Edge Collections, Firefox/Safari bookmarks, Chrome side panel...) cũng
+    // làm khung nhìn hẹp đi y hệt DevTools gắn cạnh. Phải bắt buộc bẫy `debugger`
+    // (chỉ DevTools mới kích hoạt) xác nhận trước khi báo "size".
     let devtoolsReported = false;
-    const reportDevtools = (via: string) => {
+    const reportDevtools = (via: string, dims?: { dw: number; dh: number }) => {
       if (devtoolsReported) return;
       devtoolsReported = true;
-      report("devtools_open", { via });
+      report("devtools_open", { via, dw: dims?.dw, dh: dims?.dh });
       devtoolsRef.current();
     };
-    const checkDevtools = () => {
-      if (submittedRef.current()) return;
-      if (
-        isDevtoolsBySize({
-          outerWidth: window.outerWidth,
-          innerWidth: window.innerWidth,
-          outerHeight: window.outerHeight,
-          innerHeight: window.innerHeight,
-        })
-      ) {
-        reportDevtools("size");
-        return;
-      }
-      // Bẫy `debugger`: khi DevTools mở, lệnh này bị treo lại vài trăm ms.
+    /** Bẫy `debugger`: khi DevTools mở, lệnh này bị treo lại vài trăm ms. */
+    const probeDebugger = (): boolean => {
       const t0 = performance.now();
       // eslint-disable-next-line no-debugger
       debugger;
-      if (performance.now() - t0 > DEVTOOLS_DEBUGGER_MS) reportDevtools("debugger");
+      return performance.now() - t0 > DEVTOOLS_DEBUGGER_MS;
+    };
+    const checkDevtools = () => {
+      if (submittedRef.current()) return;
+      const dw = window.outerWidth - window.innerWidth;
+      const dh = window.outerHeight - window.innerHeight;
+      const sizeGap = isDevtoolsBySize({
+        outerWidth: window.outerWidth,
+        innerWidth: window.innerWidth,
+        outerHeight: window.outerHeight,
+        innerHeight: window.innerHeight,
+      });
+      // Có khoảng trống bất thường: có thể là DevTools HOẶC sidebar.
+      // Chỉ kết luận khi bẫy debugger xác nhận (sidebar không kích hoạt bẫy).
+      // Nếu debugger không xác nhận → bỏ qua, tránh phạt oan do sidebar.
+      if (sizeGap) {
+        if (probeDebugger()) reportDevtools("debugger", { dw, dh });
+        return;
+      }
+      // Không có khoảng trống: vẫn dò debugger (DevTools tách rời khỏi cửa sổ).
+      if (probeDebugger()) reportDevtools("debugger", { dw, dh });
     };
     const devtoolsTimer = setInterval(checkDevtools, DEVTOOLS_CHECK_MS);
     checkDevtools();
