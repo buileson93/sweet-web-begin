@@ -25,7 +25,10 @@ export const EXAM_EVENT_KINDS = [
   "honeypot_hit",
   // Cấp lại khoá chống giả mạo giữa giờ (trình duyệt xoá dữ liệu): chỉ ghi vết, không phạt.
   "liveness_rekey",
+  // Tốc độ trả lời bất khả thi, hoặc nhanh bất thường đi kèm tín hiệu script.
+  "speed_anomaly",
 ] as const;
+
 
 export type ExamEventKind = (typeof EXAM_EVENT_KINDS)[number];
 
@@ -159,8 +162,14 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     // phạt nặng (đủ vượt ngưỡng ở chế độ nghiêm ngặt) và luôn ghi log chi tiết.
     case "captcha_failed":
       return 10;
+    // Tốc độ bất thường: mức phạt do `auditSpeed` tính sẵn (0 = chỉ ghi log).
+    case "speed_anomaly": {
+      const w = Number((detail as { weight?: number }).weight ?? 0);
+      return Number.isFinite(w) ? Math.max(0, Math.min(10, Math.round(w))) : 0;
+    }
     case "reconnect":
       return 0;
+
     default:
       return 0;
   }
@@ -231,7 +240,9 @@ export const EXAM_EVENT_LABEL: Record<string, string> = {
   script_suspect: "Nghi vấn dùng script",
   honeypot_hit: "Bấm trúng thẻ mồi ẩn (honeypot)",
   captcha_failed: "Captcha vô hình không qua (Turnstile)",
+  speed_anomaly: "Tốc độ trả lời bất thường",
 };
+
 
 /**
  * Diễn giải RÕ nguyên nhân một sự kiện liêm chính để sau này dễ rà soát:
