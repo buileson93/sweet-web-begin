@@ -25,7 +25,10 @@ export const EXAM_EVENT_KINDS = [
   "honeypot_hit",
   // Cấp lại khoá chống giả mạo giữa giờ (trình duyệt xoá dữ liệu): chỉ ghi vết, không phạt.
   "liveness_rekey",
+  // Tốc độ trả lời bất khả thi, hoặc nhanh bất thường đi kèm tín hiệu script.
+  "speed_anomaly",
 ] as const;
+
 
 export type ExamEventKind = (typeof EXAM_EVENT_KINDS)[number];
 
@@ -231,7 +234,9 @@ export const EXAM_EVENT_LABEL: Record<string, string> = {
   script_suspect: "Nghi vấn dùng script",
   honeypot_hit: "Bấm trúng thẻ mồi ẩn (honeypot)",
   captcha_failed: "Captcha vô hình không qua (Turnstile)",
+  speed_anomaly: "Tốc độ trả lời bất thường",
 };
+
 
 /**
  * Diễn giải RÕ nguyên nhân một sự kiện liêm chính để sau này dễ rà soát:
