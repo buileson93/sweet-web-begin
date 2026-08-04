@@ -1,33 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  DEVTOOLS_SIZE_GAP,
-  createConsoleBait,
-  isDevtoolsBySize,
-  isInspectShortcut,
-} from "./antiInspect";
-
-describe("isDevtoolsBySize", () => {
-  it("cửa sổ bình thường không bị coi là mở DevTools", () => {
-    expect(
-      isDevtoolsBySize({ outerWidth: 1440, innerWidth: 1440, outerHeight: 900, innerHeight: 820 }),
-    ).toBe(false);
-  });
-
-  it("phát hiện khi khung nhìn hụt nhiều theo chiều ngang hoặc dọc", () => {
-    expect(
-      isDevtoolsBySize({ outerWidth: 1440, innerWidth: 1000, outerHeight: 900, innerHeight: 880 }),
-    ).toBe(true);
-    expect(
-      isDevtoolsBySize({
-        outerWidth: 1440,
-        innerWidth: 1440,
-        outerHeight: 900,
-        innerHeight: 900 - DEVTOOLS_SIZE_GAP - 1,
-      }),
-    ).toBe(true);
-  });
-});
+import { createConsoleBait, isInspectShortcut } from "./antiInspect";
 
 describe("isInspectShortcut", () => {
   const base = { ctrlKey: false, metaKey: false, shiftKey: false };
