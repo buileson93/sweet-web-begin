@@ -195,7 +195,8 @@ export async function startExamSession(input: {
     const mustShuffle = q.kind === "ordering" || q.kind === "matching";
     const order = quiz.shuffle_options || mustShuffle ? shuffle(indexes) : indexes;
     optionOrders.push(order);
-    return {
+    // sanitizeExamQuestion là chốt chặn cuối: chỉ các trường an toàn mới rời máy chủ.
+    return sanitizeExamQuestion({
       id: q.id,
       kind: q.kind,
       question: q.question,
@@ -208,7 +209,7 @@ export async function startExamSession(input: {
       points: q.points || 1,
       difficulty: q.difficulty,
       timeLimitSeconds: q.time_limit_seconds ?? null,
-    };
+    });
   });
 
   const expiresAt = new Date(now.getTime() + quiz.duration_minutes * 60_000);
