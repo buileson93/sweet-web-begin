@@ -122,6 +122,7 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
       bp_medium: Number(editing.blueprint?.medium ?? 0),
       bp_hard: Number(editing.blueprint?.hard ?? 0),
       bp_tags: (editing.blueprint?.tags ?? {}) as Record<string, number>,
+      is_featured: editing.is_featured ?? false,
     });
   }, [open, editing]);
 
