@@ -30,10 +30,15 @@ export const getRankableResults = createServerFn({ method: "POST" })
 
     // 2. Lấy TỔNG số lượt thi (bao gồm cả các phiên đang thi hoặc bỏ dở)
     // Đếm trực tiếp bằng SQL Aggregation để tránh fetch hàng vạn dòng gây lag hoặc sai lệch
-    const { data: counts, error: countError } = await supabaseAdmin
+    let attemptQuery = supabaseAdmin
       .from('exam_sessions')
-      .select('employee_id, candidate_name, unit')
-      .eq('quiz_id', quizId === 'all' ? undefined : quizId);
+      .select('employee_id, candidate_name, unit');
+
+    if (quizId !== 'all') {
+      attemptQuery = attemptQuery.eq('quiz_id', quizId);
+    }
+
+    const { data: counts, error: countError } = await attemptQuery;
 
     if (countError) throw countError;
 
