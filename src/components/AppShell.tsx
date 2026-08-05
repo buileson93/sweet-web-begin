@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { BookOpenCheck, Home, Settings2, Swords, Trophy, UserRoundCog } from "lucide-react";
 
 import { BetaBadge } from "@/components/BetaBadge";
@@ -32,7 +33,8 @@ const mobileNavItems = navItems.filter(
 export function AppShell({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
   const { identity } = usePlayerIdentity();
   return (
-    <div className="min-h-screen bg-background lg:p-5">
+    <TooltipProvider>
+      <div className="min-h-screen bg-background lg:p-5">
       <div className="mx-auto flex w-full max-w-[100rem] flex-col overflow-hidden bg-card lg:min-h-[calc(100vh-2.5rem)] lg:flex-row lg:rounded-[2.5rem] lg:shadow-[var(--shadow-lift)]">
         {/* Thanh điều hướng biểu tượng — desktop */}
         <aside className="hidden shrink-0 flex-col items-center justify-between bg-sidebar py-6 lg:flex lg:w-16">
@@ -128,7 +130,8 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
             {aside}
           </aside>
         )}
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

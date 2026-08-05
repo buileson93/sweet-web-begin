@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, BookOpen, CalendarPlus, Plane, Timer, Trophy } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarPlus, Info, Plane, Timer, Trophy } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { CountdownBadge } from "@/components/CountdownBadge";
@@ -13,6 +13,7 @@ import { RegisterCard } from "@/components/RegisterCard";
 import { EmptyState, ListSkeleton, QueryState, SectionHeading, StatusPill } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -128,7 +129,8 @@ function HomePage() {
     submittedCount: 0,
     notSubmittedCount: 0,
     totalAttempts: 0,
-    totalEmployees: 0
+    totalEmployees: 0,
+    lastUpdatedAt: null as string | null
   };
 
   const countQuery = useQuery({
@@ -252,14 +254,21 @@ function HomePage() {
             <StatTile 
               label="Lượt thi" 
               value={statsSummaryQuery.isLoading ? "…" : String(participationSummary.totalAttempts)} 
+              tooltip="Tổng số lần nhấn nút 'Bắt đầu thi', bao gồm cả những lần bỏ dở hoặc chưa nộp bài."
             />
             <StatTile
               label="Người tham gia"
               value={statsSummaryQuery.isLoading ? "…" : String(participationSummary.submittedCount)}
               tone="accent"
               icon={<Trophy className="size-4" />}
+              tooltip="Số lượng nhân viên đã nộp bài ít nhất một lần thành công (đã nộp bài, đang chấm hoặc bị hủy)."
             />
           </div>
+          {participationSummary.lastUpdatedAt && (
+             <p className="mt-1 hidden text-[10px] font-bold text-muted-foreground uppercase lg:block">
+               Dữ liệu cập nhật lúc: {formatDateTime(participationSummary.lastUpdatedAt)}
+             </p>
+          )}
         </div>
 
         <div data-tour="leaderboard" className="flex min-w-0 flex-col gap-3 sm:gap-4 lg:col-span-5">
@@ -375,14 +384,21 @@ function HomePage() {
             <StatTile 
               label="Lượt thi" 
               value={statsSummaryQuery.isLoading ? "…" : String(participationSummary.totalAttempts)} 
+              tooltip="Tổng số lần nhấn nút 'Bắt đầu thi', bao gồm cả những lần bỏ dở hoặc chưa nộp bài."
             />
             <StatTile
               label="Người tham gia"
               value={statsSummaryQuery.isLoading ? "…" : String(participationSummary.submittedCount)}
               tone="accent"
               icon={<Trophy className="size-4" />}
+              tooltip="Số lượng nhân viên đã nộp bài ít nhất một lần thành công (đã nộp bài, đang chấm hoặc bị hủy)."
             />
           </div>
+          {participationSummary.lastUpdatedAt && (
+             <p className="mt-1 text-center text-[9px] font-bold text-muted-foreground uppercase lg:hidden">
+               Dữ liệu cập nhật lúc: {formatDateTime(participationSummary.lastUpdatedAt)}
+             </p>
+          )}
         </div>
 
       </section>
@@ -598,16 +614,19 @@ function StatTile({
   value,
   tone,
   icon,
+  tooltip,
 }: {
   label: string;
   value: string;
   tone?: "accent";
   icon?: React.ReactNode;
+  tooltip?: string;
 }) {
-  return (
+  const content = (
     <div className="card-elevated p-3 sm:p-4">
       <span className="type-eyebrow flex items-center gap-1.5 text-muted-foreground">
         {icon} {label}
+        {tooltip && <Info className="size-3 opacity-50" />}
       </span>
       <span
         className={cn(
@@ -618,6 +637,20 @@ function StatTile({
         {value}
       </span>
     </div>
+  );
 
+  if (!tooltip) return content;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button type="button" className="block w-full text-left transition-transform active:scale-95">
+          {content}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[200px] text-center">
+        {tooltip}
+      </TooltipContent>
+    </Tooltip>
   );
 }
