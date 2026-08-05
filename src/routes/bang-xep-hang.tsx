@@ -155,9 +155,9 @@ function LeaderboardPage() {
           </span>
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
-            <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none">
-              Chỉ xếp hạng bài đạt từ 50% trở lên. Mỗi thí sinh lấy bài tốt nhất: nhiều câu đúng nhất, sau đó tới thời
-              gian làm bài ngắn hơn. Nếu vẫn bằng nhau, ai thi ÍT lượt hơn được xếp trên.
+            <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none whitespace-pre-line">
+              áp dụng cho toàn bộ thí sinh chứ không riêng châu quang huy, Nguyễn Thị Ngọc Mai
+              Đài KSKL Chu Lai có vẻ 25 lượt thi là không đúng
             </p>
           </div>
         </div>

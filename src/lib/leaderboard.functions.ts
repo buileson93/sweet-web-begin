@@ -32,8 +32,8 @@ export const getRankableResults = createServerFn({ method: "POST" })
     // Chúng ta đếm theo employee_id hoặc theo tên+đơn vị nếu không có employee_id
     let sessionsQuery = supabaseAdmin
       .from("exam_sessions")
-      .select("employee_id, candidate_name, unit")
-      .limit(10000); // Lấy đủ nhiều để đếm
+      .select("employee_id, candidate_name, unit, status")
+      .limit(20000); // Tăng giới hạn để quét nhiều hơn nữa
 
     if (quizId !== "all") {
       sessionsQuery = sessionsQuery.eq("quiz_id", quizId);
