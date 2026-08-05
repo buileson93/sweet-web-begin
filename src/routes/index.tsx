@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, BookOpen, CalendarPlus, Plane, Timer, Trophy } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
@@ -78,9 +78,7 @@ function HomePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quizzes")
-        // Phải lấy cả `status`: thiếu cột này thì quizStatus() tưởng cuộc thi
-        // đã đóng vẫn "Đang mở", dẫn tới bấm vào thi mới báo "Cuộc thi đã đóng".
-        .select("id, title, description, start_time, end_time, is_active, status, question_count, duration_minutes, intro_markdown, cover_url, cover_fit, peek_rewards, pass_percent")
+        .select("id, title, description, start_time, end_time, is_active, status, question_count, duration_minutes, intro_markdown, cover_url, cover_fit, peek_rewards, pass_percent, is_featured")
         .neq("status", "draft")
         .order("start_time", { ascending: true });
       if (error) throw error;
@@ -89,11 +87,21 @@ function HomePage() {
   });
 
   // Bảng xếp hạng lọc theo từng kỳ thi ("all" = tổng hợp mọi kỳ thi)
-  const [boardQuiz, setBoardQuiz] = useState<string>("all");
+  const [boardQuiz, setBoardQuiz] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (boardQuiz === null && quizzesQuery.data) {
+      const featured = quizzesQuery.data.find(q => q.is_featured);
+      setBoardQuiz(featured ? featured.id : "all");
+    }
+  }, [quizzesQuery.data, boardQuiz]);
+
+  const activeBoardQuiz = boardQuiz || "all";
 
   const topQuery = useQuery({
-    queryKey: ["results", "top3", boardQuiz],
-    queryFn: () => fetchRankable({ data: { quizId: boardQuiz as any, limit: 3000 } }),
+    queryKey: ["results", "top3", activeBoardQuiz],
+    queryFn: () => fetchRankable({ data: { quizId: activeBoardQuiz as any, limit: 3000 } }),
+    enabled: boardQuiz !== null,
   });
 
   // Mỗi thí sinh chỉ giữ bài tốt nhất, lấy top 3 sau khi gộp.
@@ -109,8 +117,8 @@ function HomePage() {
 
   // Thống kê chính xác từ Server (Không bị giới hạn limit client)
   const statsSummaryQuery = useQuery({
-    queryKey: ["admin-stats-summary", boardQuiz],
-    queryFn: () => getQuizStatsSummary({ data: { quizId: boardQuiz as any } }),
+    queryKey: ["admin-stats-summary", activeBoardQuiz],
+    queryFn: () => getQuizStatsSummary({ data: { quizId: activeBoardQuiz as any } }),
     staleTime: 30_000,
   });
 
@@ -124,7 +132,7 @@ function HomePage() {
   };
 
   const countQuery = useQuery({
-    queryKey: ["results-count-sync", boardQuiz],
+    queryKey: ["results-count-sync", activeBoardQuiz],
     queryFn: () => statsSummaryQuery.data?.totalAttempts ?? 0,
     enabled: !!statsSummaryQuery.data,
   });
@@ -175,6 +183,10 @@ function HomePage() {
   // Ưu tiên cuộc thi sắp diễn ra lên đầu, rồi đang mở, tạm dừng, đã kết thúc
   const STATUS_RANK: Record<string, number> = { upcoming: 0, open: 1, paused: 2, closed: 3 };
   const quizzes = [...(quizzesQuery.data ?? [])].sort((a, b) => {
+    // Luôn ưu tiên cuộc thi nổi bật lên đầu
+    if (a.is_featured) return -1;
+    if (b.is_featured) return 1;
+
     const ra = STATUS_RANK[quizStatus(a)] ?? 9;
     const rb = STATUS_RANK[quizStatus(b)] ?? 9;
     if (ra !== rb) return ra - rb;
@@ -275,7 +287,7 @@ function HomePage() {
 
             {/* Lọc bảng xếp hạng theo từng kỳ thi */}
             <div className="relative mt-3">
-              <Select value={boardQuiz} onValueChange={setBoardQuiz}>
+              <Select value={activeBoardQuiz} onValueChange={setBoardQuiz}>
                 <SelectTrigger className="h-9 w-full rounded-full border-border bg-card/80 text-xs font-bold">
                   <SelectValue placeholder="Chọn kỳ thi" />
                 </SelectTrigger>

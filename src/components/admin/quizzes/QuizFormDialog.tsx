@@ -64,6 +64,7 @@ const emptyForm = {
   bp_medium: 0,
   bp_hard: 0,
   bp_tags: {} as Record<string, number>,
+  is_featured: false,
 };
 
 type Props = {
@@ -121,6 +122,7 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
       bp_medium: Number(editing.blueprint?.medium ?? 0),
       bp_hard: Number(editing.blueprint?.hard ?? 0),
       bp_tags: (editing.blueprint?.tags ?? {}) as Record<string, number>,
+      is_featured: editing.is_featured ?? false,
     });
   }, [open, editing]);
 
@@ -216,6 +218,7 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
         negative_marking: Number(form.negative_marking) || 0,
         strict_mode: form.strict_mode,
         disqualify_threshold: Math.max(1, Number(form.disqualify_threshold) || 1),
+        is_featured: form.is_featured,
         blueprint,
       };
 
@@ -437,6 +440,14 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
                 <p className="text-xs text-muted-foreground">Cho phép thí sinh vào thi trong khung giờ.</p>
               </div>
               <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl bg-primary/5 p-3 ring-1 ring-primary/20">
+              <div>
+                <p className="text-sm font-semibold text-primary">Cuộc thi nổi bật</p>
+                <p className="text-xs text-muted-foreground">Ưu tiên hiển thị tại trang chủ và bảng xếp hạng.</p>
+              </div>
+              <Switch checked={form.is_featured} onCheckedChange={(v) => setForm({ ...form, is_featured: v })} />
             </div>
           </TabsContent>
 

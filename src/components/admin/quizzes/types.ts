@@ -30,6 +30,7 @@ export type QuizRow = {
   blueprint: { easy?: number; medium?: number; hard?: number; tags?: Record<string, number> } | null;
   strict_mode: boolean;
   disqualify_threshold: number;
+  is_featured: boolean;
 };
 
 export const QUIZ_STATUS_LABEL: Record<string, string> = {

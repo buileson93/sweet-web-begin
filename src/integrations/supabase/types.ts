@@ -1350,6 +1350,7 @@ export type Database = {
           instant_feedback: boolean
           intro_markdown: string
           is_active: boolean
+          is_featured: boolean
           legacy_id: string | null
           max_attempts: number | null
           negative_marking: number
@@ -1386,6 +1387,7 @@ export type Database = {
           instant_feedback?: boolean
           intro_markdown?: string
           is_active?: boolean
+          is_featured?: boolean
           legacy_id?: string | null
           max_attempts?: number | null
           negative_marking?: number
@@ -1422,6 +1424,7 @@ export type Database = {
           instant_feedback?: boolean
           intro_markdown?: string
           is_active?: boolean
+          is_featured?: boolean
           legacy_id?: string | null
           max_attempts?: number | null
           negative_marking?: number
