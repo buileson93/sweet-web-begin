@@ -398,6 +398,7 @@ function LeaderboardPage() {
                   </li>
                   );
                 })}
+                </TooltipProvider>
               </ol>
               {pageCount > 1 ? (
                 <nav className="mt-6 flex items-center justify-center gap-2" aria-label="Phân trang bảng xếp hạng">
