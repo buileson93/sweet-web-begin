@@ -67,8 +67,10 @@ export function shuffled<T>(items: readonly T[], rng: () => number = defaultRng)
   return arr;
 }
 
-/** Nội dung mồi: lấy từ một phương án thật rồi biến đổi nhẹ để trông "hợp lý". */
+/** Nội dung mồi: lấy từ một phương án thật rồi biến đổi ngẫu nhiên hoặc dùng đáp án "mồi" kinh điển. */
 function decoyText(options: readonly string[], rng: () => number): string {
+  const decoys = ["Không có đáp án đúng", "Tất cả các phương án trên", "Đáp án khác", "Chưa xác định"];
+  if (rng() > 0.6) return decoys[Math.floor(rng() * decoys.length)]!;
   const base = options[Math.floor(rng() * options.length)] ?? "";
   return base.length > 4 ? base.slice(0, Math.max(4, base.length - 1)) : `${base} `;
 }

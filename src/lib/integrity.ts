@@ -19,10 +19,10 @@ export const EXAM_EVENT_KINDS = [
   "untrusted_input",
   "automation_detected",
   "script_suspect",
-  // Captcha vô hình Cloudflare Turnstile kết luận rủi ro: phạt nặng, ghi log chi tiết.
-  "captcha_failed",
-  // Bấm vào phần tử mồi (honeypot) — người thật không thể chạm tới.
+  // Bẫy nâng cao: "Câu hỏi giả" hoặc "Phần tử mồi động" (Dynamic Honeypots).
   "honeypot_hit",
+  // Captcha vô hình Cloudflare Turnstile kết luận rủi ro.
+  "captcha_failed",
   // Cấp lại khoá chống giả mạo giữa giờ (trình duyệt xoá dữ liệu): chỉ ghi vết, không phạt.
   "liveness_rekey",
   // Tốc độ trả lời bất khả thi, hoặc nhanh bất thường đi kèm tín hiệu script.
@@ -144,10 +144,10 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     // Nhịp trả lời đều như máy hoặc gói tin thiếu bằng chứng: cảnh báo mức vừa.
     case "script_suspect": {
       const reason = String((detail as { reason?: string }).reason ?? "");
-      // RÀ SOÁT: autosave_rate:too_fast có thể là do mạng chập chờn nhưng có khi nào có người lợi dụng điểm này để can thiệp tốc độ làm bài không?
-      // PHÂN TÍCH: Máy chủ đã từ chối ghi dữ liệu nếu nhịp gửi dưới 1.2 giây (MIN_GAP_RPC_MS),
-      // nên việc "dội bom" request không giúp gian lận được đáp án hay rút ngắn thời gian thực tế.
-      // Sự kiện này chỉ lưu log để rà soát hành vi bất thường, không trừ điểm để tránh phạt oan do mạng.
+      // RÀ SOÁT KỸ THUẬT: autosave_rate:too_fast có thể do mạng, nhưng nếu đi kèm tốc độ cao (1.2s/câu) 
+      // và điểm tuyệt đối thì cần đối soát chữ ký payload & bằng chứng thao tác (isTrusted).
+      // Bản thân tốc độ 1.2s/câu KHÔNG PHẢI là bằng chứng gian lận nếu người thi thuộc đề.
+      // Việc chặn script dựa trên: Chữ ký số P-256, Bẫy Honeypot, và cờ isTrusted từ trình duyệt.
       if (reason.startsWith("autosave_rate:")) return 0;
       // Bằng chứng thao tác quá cũ: thí sinh chọn đáp án rồi mất mạng/gói bị dồn hàng đợi.
       // Bằng chứng đã bị hạ cấp (đáp án không được ghi nếu là câu mới) nên chỉ ghi log.
@@ -239,7 +239,7 @@ export const EXAM_EVENT_LABEL: Record<string, string> = {
   untrusted_input: "Đáp án không có thao tác thật",
   automation_detected: "Trình duyệt tự động hoá",
   script_suspect: "Nghi vấn dùng script",
-  honeypot_hit: "Bấm trúng thẻ mồi ẩn (honeypot)",
+  honeypot_hit: "Kích hoạt bẫy Script (Honeypot)",
   captcha_failed: "Captcha vô hình không qua (Turnstile)",
   speed_anomaly: "Tốc độ trả lời bất thường",
 };
