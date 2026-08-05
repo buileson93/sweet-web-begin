@@ -20,10 +20,8 @@ Nâng cấp thêm các lớp bảo mật "vô hình" nhưng cực kỳ hiệu qu
 - **Mouse Path Analysis**: Script thường di chuyển chuột theo đường thẳng tuyệt đối hoặc nhảy vọt (instant jump). Người thật luôn di chuyển theo đường cong, có độ rung (jitter) và vận tốc thay đổi (acceleration/deceleration).
 - **Phát hiện**: Ghi lại thống kê sơ bộ về độ cong (curvature) và biến thiên vận tốc của 3-5 thao tác chuột cuối cùng trước khi bấm chọn. Nếu độ lệch chuẩn gần bằng 0 -> Nghi vấn script.
 
-### 2. Chuỗi tương tác Logic (Interaction Sequencing)
-- **Quy trình tự nhiên**: Một người thi bình thường sẽ có chuỗi: `Hover vào phương án` -> `Nhìn (Focus)` -> `Bấm (Click)`.
-- **Script**: Thường gọi trực tiếp sự kiện `Click` hoặc `Change` mà bỏ qua các bước tiền đề (Hover).
-- **Triển khai**: Bắt buộc mỗi câu trả lời phải có bằng chứng "đã từng Hover" trong vòng 2 giây trước đó.
+### 2. (Đã loại bỏ: Chuỗi tương tác Logic)
+- **Lưu ý:** Đã loại bỏ yêu cầu "Bắt buộc Hover trước khi Click" để tránh gây khó khăn cho người thi thật khi họ làm bài ở tốc độ cao (đua top) và click trực tiếp vào mục tiêu mà không cần rê chuột lâu.
 
 ### 3. Mã hoá Payload mức ứng dụng (Application-Level Encryption)
 - Ngoài HTTPS và Chữ ký số, nội dung đáp án sẽ được mã hoá bằng một khoá tạm thời (Session Key) được thiết lập lúc bắt đầu thi. 
@@ -36,10 +34,10 @@ Nâng cấp thêm các lớp bảo mật "vô hình" nhưng cực kỳ hiệu qu
 
 1. **Behavioral Tracking (`src/lib/exam/behavior.ts`)**:
    - Tạo module theo dõi tọa độ chuột/touch và tính toán chỉ số "độ thật" (Human Score) dựa trên quỹ đạo.
-2. **Interaction Gate (`src/components/exam/QuestionInput.tsx`)**:
-   - Thêm lắng nghe `onMouseEnter` để ghi nhận "Ý định chọn" (Intent). Chỉ cho phép ghi nhận đáp án nếu có Intent hợp lệ.
+2. **Phân tích hành vi nâng cao (`src/lib/exam/behavior.ts`)**:
+   - Thay vì bắt Hover, chúng ta sẽ tập trung vào phân tích tọa độ click và sự biến thiên của touch/pointer event.
 3. **Advanced Integrity Logic (`src/lib/integrity.ts`)**:
-   - Thêm các loại vi phạm mới: `robotic_movement` (di chuyển chuột như máy), `invalid_interaction_sequence` (bấm mà không hover).
+   - Thêm các loại vi phạm mới: `robotic_movement` (di chuyển chuột như máy), `unnatural_click` (tọa độ click luôn vào chính giữa tuyệt đối của nút).
 4. **UI Feedback cho Admin**:
    - Hiển thị thêm chỉ số "Human Probability" (Xác suất người thật) trong trang theo dõi trực tiếp.
 
