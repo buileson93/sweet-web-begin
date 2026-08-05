@@ -78,9 +78,7 @@ function HomePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quizzes")
-        // Phải lấy cả `status`: thiếu cột này thì quizStatus() tưởng cuộc thi
-        // đã đóng vẫn "Đang mở", dẫn tới bấm vào thi mới báo "Cuộc thi đã đóng".
-        .select("id, title, description, start_time, end_time, is_active, status, question_count, duration_minutes, intro_markdown, cover_url, cover_fit, peek_rewards, pass_percent")
+        .select("id, title, description, start_time, end_time, is_active, status, question_count, duration_minutes, intro_markdown, cover_url, cover_fit, peek_rewards, pass_percent, is_featured")
         .neq("status", "draft")
         .order("start_time", { ascending: true });
       if (error) throw error;
@@ -89,11 +87,21 @@ function HomePage() {
   });
 
   // Bảng xếp hạng lọc theo từng kỳ thi ("all" = tổng hợp mọi kỳ thi)
-  const [boardQuiz, setBoardQuiz] = useState<string>("all");
+  const [boardQuiz, setBoardQuiz] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (boardQuiz === null && quizzesQuery.data) {
+      const featured = quizzesQuery.data.find(q => q.is_featured);
+      setBoardQuiz(featured ? featured.id : "all");
+    }
+  }, [quizzesQuery.data, boardQuiz]);
+
+  const activeBoardQuiz = boardQuiz || "all";
 
   const topQuery = useQuery({
-    queryKey: ["results", "top3", boardQuiz],
-    queryFn: () => fetchRankable({ data: { quizId: boardQuiz as any, limit: 3000 } }),
+    queryKey: ["results", "top3", activeBoardQuiz],
+    queryFn: () => fetchRankable({ data: { quizId: activeBoardQuiz as any, limit: 3000 } }),
+    enabled: boardQuiz !== null,
   });
 
   // Mỗi thí sinh chỉ giữ bài tốt nhất, lấy top 3 sau khi gộp.
