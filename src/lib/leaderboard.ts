@@ -112,10 +112,9 @@ export function rankUniqueResults<
   const attemptsByKey = new Map<string, number>();
   for (const r of rows) {
     const k = candidateKeyOf(r);
-    // Cộng dồn số lượt thi nếu record đã có (thường là từ bảng results có cột attempts)
-    // Nếu chưa có (ví dụ test data cũ), mặc định là 1.
-    const count = r.attempts ?? 1;
-    attemptsByKey.set(k, (attemptsByKey.get(k) ?? 0) + count);
+    // Trong bảng results hiện chưa có cột attempts, ta đang gộp bài tốt nhất của mỗi thí sinh.
+    // Tạm thời đếm số record kết quả thành công để phá hoà.
+    attemptsByKey.set(k, (attemptsByKey.get(k) ?? 0) + 1);
   }
 
   const withAttempts = rows

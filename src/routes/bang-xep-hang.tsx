@@ -59,7 +59,7 @@ function LeaderboardPage() {
       let query = supabase
         .from("results")
         .select(
-          "id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, max_points, best_streak, attempts",
+          "id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, max_points, best_streak, employee_id",
         )
         .eq("disqualified", false)
         // Lấy thô rồi xếp hạng ở rankResults (theo TỈ LỆ ĐÚNG) vì điểm thưởng combo
@@ -83,7 +83,7 @@ function LeaderboardPage() {
   const rows = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
     // rankUniqueResults: loại bài dưới 50%, sắp xếp công bằng, mỗi thí sinh chỉ giữ bài tốt nhất.
-    return rankUniqueResults(all).filter(
+    return rankUniqueResults(all as any).filter(
       (r) => !kw || r.candidate_name.toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
     );
   }, [all, keyword]);
