@@ -45,8 +45,8 @@ const roster = [
 describe("splitParticipation", () => {
   it("chia đúng nhóm đã thi và chưa thi", () => {
     const r = splitParticipation(roster, [
-      { employee_id: "a", score: 8, total: 10, submitted_at: "2026-01-02T00:00:00Z" },
-      { employee_id: "a", score: 5, total: 10, submitted_at: "2026-01-03T00:00:00Z" },
+      { employee_id: "a", points: 8, question_ids: new Array(10).fill(""), submitted_at: "2026-01-02T00:00:00Z" },
+      { employee_id: "a", points: 5, question_ids: new Array(10).fill(""), submitted_at: "2026-01-03T00:00:00Z" },
     ]);
     expect(r.doneCount).toBe(1);
     expect(r.pendingCount).toBe(2);
@@ -56,7 +56,7 @@ describe("splitParticipation", () => {
 
   it("bỏ qua lượt thi không gắn nhân viên", () => {
     const r = splitParticipation(roster, [
-      { employee_id: null, score: 9, total: 10, submitted_at: "2026-01-02T00:00:00Z" },
+      { employee_id: null, points: 9, question_ids: new Array(10).fill(""), submitted_at: "2026-01-02T00:00:00Z" },
     ]);
     expect(r.doneCount).toBe(0);
   });

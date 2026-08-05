@@ -8,8 +8,8 @@ export type RosterEmployee = {
 
 export type AttemptRow = {
   employee_id: string | null;
-  final_score: number | null;
-  total_questions: number | null;
+  points: number | null;
+  question_ids: string[] | null;
   submitted_at: string | null;
 };
 
@@ -61,15 +61,15 @@ export function splitParticipation(roster: RosterEmployee[], attempts: AttemptRo
       pending.push({ id: e.id, name: e.full_name, unit });
       continue;
     }
-    const best = rows.reduce((m, r) => ((r.final_score ?? 0) > (m.final_score ?? 0) ? r : m), rows[0]);
+    const best = rows.reduce((m, r) => ((r.points ?? 0) > (m.points ?? 0) ? r : m), rows[0]);
     const lastAt = rows.reduce((m, r) => ((r.submitted_at ?? "") > (m ?? "") ? r.submitted_at : m), rows[0].submitted_at);
     done.push({
       id: e.id,
       name: e.full_name,
       unit,
       attempts: rows.length,
-      bestScore: best.final_score ?? 0,
-      total: best.total_questions ?? 0,
+      bestScore: best.points ?? 0,
+      total: best.question_ids?.length ?? 0,
       lastAt: lastAt ?? new Date().toISOString(),
     });
   }
