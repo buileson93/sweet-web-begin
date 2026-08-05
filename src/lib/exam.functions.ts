@@ -61,6 +61,8 @@ const progressSchema = z.object({
   signature: z.string().min(16).max(500).optional(),
   /** Mốc thời gian máy khách (ms) đã được ký kèm — chống phát lại. */
   at: z.number().int().positive().optional(),
+  /** Bản vá helpers (ví dụ: thông tin sinh trắc học hành vi). */
+  helpersPatch: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const saveProgress = createServerFn({ method: "POST" })
