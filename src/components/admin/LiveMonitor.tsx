@@ -311,7 +311,7 @@ export function LiveMonitor() {
                         ["Kiểu máy", detailQuery.data.device.deviceModel],
                         ["Màn hình", detailQuery.data.device.screen],
                         ["Kết nối", detailQuery.data.device.network],
-                        ["Ngôn ngữ", detailQuery.data.device.language],
+                        ["lên kế hoạch để chống gian lận tôi thấy autosave_rate:too_fast hơi nhiều có vể tiêu chí này phát hiện script hơi sai", detailQuery.data.device.language],
                         ["Múi giờ", detailQuery.data.device.timezone],
                         ["Chạy dạng ứng dụng", detailQuery.data.device.isPwa ? "Có" : "Không"],
                         ["Ghi nhận lúc", formatDateTime(detailQuery.data.device.seenAt)],
