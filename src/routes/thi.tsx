@@ -116,11 +116,25 @@ function ExamPage() {
   });
 
   // Phòng thi chạy toàn màn hình; chỉ trả lại bình thường khi nộp bài hoặc thoát phòng thi.
+  const onFullscreenExit = useCallback(() => {
+    const s = sessionRef.current;
+    if (!s || submittedRef.current) return;
+    void runReport({
+      data: {
+        sessionId: s.sessionId,
+        submitToken: s.submitToken,
+        kind: "fullscreen_exit",
+        detail: { reason: "Thí sinh thoát toàn màn hình giữa giờ thi" },
+      },
+    }).catch(() => undefined);
+    toast.warning("Bạn đã thoát toàn màn hình. Hành vi này đã được ghi nhận.");
+  }, [runReport]);
+
   const {
     enter: enterFullscreen,
     exit: exitFullscreen,
     needsPrompt: needFullscreen,
-  } = useExamFullscreen(Boolean(session) && !result);
+  } = useExamFullscreen(Boolean(session) && !result, onFullscreenExit);
 
 
 
