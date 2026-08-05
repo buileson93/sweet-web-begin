@@ -140,7 +140,7 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
       return 4;
     // Trình duyệt đang bị điều khiển tự động (webdriver / headless / Selenium / Playwright).
     case "automation_detected":
-      return 6;
+      return 4; // Giảm từ 6 xuống 4 để tránh huỷ bài ngay lập tức khi chỉ có 1 tín hiệu nghi ngờ
     // Nhịp trả lời đều như máy hoặc gói tin thiếu bằng chứng: cảnh báo mức vừa.
     case "script_suspect": {
       const reason = String((detail as { reason?: string }).reason ?? "");
@@ -161,7 +161,7 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     // Captcha vô hình Cloudflare kết luận rủi ro: coi như dấu hiệu script rõ ràng,
     // phạt nặng (đủ vượt ngưỡng ở chế độ nghiêm ngặt) và luôn ghi log chi tiết.
     case "captcha_failed":
-      return 10;
+      return 8; // Giảm từ 10 xuống 8 để kết hợp với các vi phạm khác mới huỷ bài
     // Tốc độ bất thường: mức phạt do `auditSpeed` tính sẵn (0 = chỉ ghi log).
     case "speed_anomaly": {
       const w = Number((detail as { weight?: number }).weight ?? 0);
