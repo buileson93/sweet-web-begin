@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { Download, FileSpreadsheet, Medal, Radio, RotateCcw, Search, SearchX, Trophy } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ import { useRealtimeResults } from "@/hooks/useRealtimeResults";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
 import { formatDateTime, formatSeconds } from "@/lib/format";
 import { rankUniqueResults } from "@/lib/leaderboard";
+import { getRankableResults } from "@/lib/leaderboard.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/bang-xep-hang")({
@@ -43,6 +45,7 @@ function LeaderboardPage() {
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 25;
+  const fetchResults = useServerFn(getRankableResults);
 
   const quizzesQuery = useQuery({
     queryKey: ["quizzes", "titles"],
@@ -55,23 +58,7 @@ function LeaderboardPage() {
 
   const resultsQuery = useQuery({
     queryKey: ["results", quizId],
-    queryFn: async () => {
-      let query = supabase
-        .from("results")
-        .select(
-          "id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, max_points, best_streak, employee_id",
-        )
-        .eq("disqualified", false)
-        // Lấy thô rồi xếp hạng ở rankResults (theo TỈ LỆ ĐÚNG) vì điểm thưởng combo
-        // giữa các cấu hình cuộc thi không so sánh trực tiếp được với nhau.
-        .order("score", { ascending: false })
-        .order("time_seconds", { ascending: true })
-        .limit(3000); // Tăng giới hạn vượt quá tổng số bản ghi hiện tại (2305) để tránh mất dữ liệu khi gộp bài tốt nhất
-      if (quizId !== "all") query = query.eq("quiz_id", quizId);
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => fetchResults({ data: { quizId: quizId as any, limit: 5000 } }),
   });
 
   const { live, pendingUpdates } = useRealtimeResults({
@@ -86,7 +73,7 @@ function LeaderboardPage() {
     const ranked = rankUniqueResults(all as any[]) as any[];
     if (!kw) return ranked;
     return ranked.filter(
-      (r) => (r.candidate_name || "").toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
+      (r: any) => (r.candidate_name || "").toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
     );
   }, [all, keyword]);
 
@@ -264,10 +251,10 @@ function LeaderboardPage() {
             {!resultsQuery.isLoading && !resultsQuery.isError && rows.length > 0 ? (
               <div className="flex flex-col gap-1">
                 <p className="type-meta">
-                  Trang {page}/{pageCount} · {rows.length} người đạt điểm (từ {all.length} bản ghi gần nhất).
+                   Trang {page}/{pageCount} · {rows.length} người đạt điểm (từ {all.length} bản ghi gần nhất).
                 </p>
                 <p className="text-[11px] font-bold text-muted-foreground uppercase">
-                   Ghi nhận: {rows.length} người thi đạt (≥50%) • {Math.max(0, new Set(all.map(r => r.employee_id)).size - rows.length)} người thi nhưng chưa đạt
+                   Ghi nhận: {rows.length} người thi đạt (≥50%) • {Math.max(0, new Set(all.map((r: any) => r.employee_id)).size - rows.length)} người thi nhưng chưa đạt
                 </p>
               </div>
             ) : null}
