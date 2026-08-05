@@ -183,6 +183,10 @@ function HomePage() {
   // Ưu tiên cuộc thi sắp diễn ra lên đầu, rồi đang mở, tạm dừng, đã kết thúc
   const STATUS_RANK: Record<string, number> = { upcoming: 0, open: 1, paused: 2, closed: 3 };
   const quizzes = [...(quizzesQuery.data ?? [])].sort((a, b) => {
+    // Luôn ưu tiên cuộc thi nổi bật lên đầu
+    if (a.is_featured) return -1;
+    if (b.is_featured) return 1;
+
     const ra = STATUS_RANK[quizStatus(a)] ?? 9;
     const rb = STATUS_RANK[quizStatus(b)] ?? 9;
     if (ra !== rb) return ra - rb;
