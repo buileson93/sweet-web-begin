@@ -384,6 +384,26 @@ export async function submitExamSession(input: {
     });
   }
 
+  // Phân tích hành vi nâng cao: pixel-perfect click và robotic trajectory
+  if (!replay) {
+    const helpers = session.helpers as Record<string, any>;
+    const behaviorSignals = (helpers?.behavior?.signals as string[]) || [];
+    if (behaviorSignals.includes("pixel_perfect_clicks")) {
+      const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+      await flagScriptEvent(session.id, "unnatural_click", {
+        reason: "pixel_perfect_clicks",
+        source: "submit",
+      });
+    }
+    if (behaviorSignals.includes("robotic_trajectory")) {
+      const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+      await flagScriptEvent(session.id, "robotic_movement", {
+        reason: "robotic_trajectory",
+        source: "submit",
+      });
+    }
+  }
+
   // Luật tốc độ: chỉ phạt khi NHANH TỚI MỨC BẤT KHẢ THI, hoặc nhanh bất thường
   // đi kèm tín hiệu script (mở console, gọi API thô, lưu bài dồn dập...).
   // Thi nhanh thật với ít câu hoặc điểm thấp vẫn KHÔNG bị phạt.
@@ -597,6 +617,8 @@ export async function saveExamProgress(input: {
   at?: number;
   /** Nguồn gửi: RPC bình thường hay sendBeacon lúc tab bị ẩn. */
   source?: SaveSource;
+  /** Bản vá helpers (ví dụ: thông tin sinh trắc học hành vi). */
+  helpersPatch?: Record<string, unknown>;
 }): Promise<{
   savedAt: string;
   seq: number;
@@ -785,7 +807,10 @@ export async function saveExamProgress(input: {
     sessionId: session.id,
     answers: accepted,
     seq: input.clientSeq,
-    helpersPatch: { chain: { head: check.head, seq: input.clientSeq } },
+    helpersPatch: { 
+      chain: { head: check.head, seq: input.clientSeq },
+      ...(input.helpersPatch ?? {}),
+    },
   });
 
 

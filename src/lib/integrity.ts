@@ -27,6 +27,8 @@ export const EXAM_EVENT_KINDS = [
   "liveness_rekey",
   // Tốc độ trả lời bất khả thi, hoặc nhanh bất thường đi kèm tín hiệu script.
   "speed_anomaly",
+  "robotic_movement",
+  "unnatural_click",
 ] as const;
 
 
@@ -168,6 +170,10 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
       const w = Number((detail as { weight?: number }).weight ?? 0);
       return Number.isFinite(w) ? Math.max(0, Math.min(10, Math.round(w))) : 0;
     }
+    case "robotic_movement":
+      return 5;
+    case "unnatural_click":
+      return 4;
     case "reconnect":
       return 0;
 
@@ -242,6 +248,8 @@ export const EXAM_EVENT_LABEL: Record<string, string> = {
   honeypot_hit: "Kích hoạt bẫy Script (Honeypot)",
   captcha_failed: "Captcha vô hình không qua (Turnstile)",
   speed_anomaly: "Tốc độ trả lời bất thường",
+  robotic_movement: "Di chuyển chuột/touch như máy",
+  unnatural_click: "Tọa độ click bất thường (pixel-perfect)",
 };
 
 

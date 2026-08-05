@@ -6,6 +6,7 @@ import { genesisHash, linkHash } from "@/lib/exam/hashChain";
 import { inputProof } from "@/lib/exam/inputProof";
 import { signWithLivenessKey } from "@/lib/exam/liveness";
 import { saveMessage } from "@/lib/exam/payloadSign";
+import { behaviorTracker } from "@/lib/exam/behavior";
 
 /** Nhịp lưu định kỳ và các mốc chống dồn request. */
 const HEARTBEAT_MS = 12_000;
@@ -132,6 +133,8 @@ export function useExamAutosave({
       const proofs = inputProof.collect(Object.keys(delta));
       // Chữ ký bằng khoá liveness không xuất được: script gọi API ngoài trang không tạo nổi.
       // Ký CẢ bằng chứng thao tác để không thể sửa cờ `trusted` trên đường truyền.
+      // Gửi kèm phân tích hành vi (robotic/pixel-perfect) để máy chủ lưu vết.
+      const behavior = behaviorTracker.analyze();
       const signature = await signWithLivenessKey(
         sessionId,
         saveMessage({ sessionId, seq: nextSeq, chainPrev: prevHead, delta, proofs, at }),
@@ -148,6 +151,7 @@ export function useExamAutosave({
           clientSeq: nextSeq,
           chainPrev: prevHead,
           chainHash,
+          helpersPatch: behavior.robotic ? { behavior } : undefined,
         },
       });
       if (res.chainHead) chainHeadRef.current = res.chainHead;

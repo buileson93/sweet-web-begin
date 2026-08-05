@@ -30,6 +30,7 @@ import { useExamTimer } from "@/hooks/useExamTimer";
 import { useIntegrityWatch } from "@/hooks/useIntegrityWatch";
 import { attachInputProof, inputProof } from "@/lib/exam/inputProof";
 import { automationSignals, collectAutomationEnv } from "@/lib/exam/scriptDetect";
+import { behaviorTracker } from "@/lib/exam/behavior";
 import { CaptchaGuardDialog } from "@/components/exam/CaptchaGuardDialog";
 import { reportEvent, reverifyCaptcha } from "@/lib/exam.functions";
 
@@ -242,19 +243,33 @@ function ExamPage() {
   useEffect(() => {
     if (!session || result) return;
     const detach = attachInputProof();
+    
+    // Thu thập dấu hiệu tự động hóa
     const signals = automationSignals(collectAutomationEnv());
+    
+    // Phân tích hành vi (sinh trắc học)
+    const behavior = behaviorTracker.analyze();
+    if (behavior.robotic) {
+      signals.push(...behavior.signals);
+    }
+
     if (signals.length > 0) {
       void runReport({
         data: {
           sessionId: session.sessionId,
           submitToken: session.submitToken,
           kind: "automation_detected",
-          detail: { signals },
+          detail: { signals, behavior },
         },
       }).catch(() => undefined);
-      setCaptchaLocked(true);
-      toast.error("Phát hiện trình duyệt tự động hoá. Hãy xác minh lại để tiếp tục làm bài.");
+      
+      // Nếu có dấu hiệu robotic rõ rệt hoặc pixel-perfect click, khóa ngay
+      if (signals.includes("pixel_perfect_clicks") || signals.includes("robotic_trajectory")) {
+        setCaptchaLocked(true);
+        toast.error("Phát hiện thao tác bất thường. Hãy xác minh lại để tiếp tục làm bài.");
+      }
     }
+    
     return detach;
   }, [result, runReport, session]);
 
