@@ -117,7 +117,7 @@ function ExamPage() {
 
   // Phòng thi chạy toàn màn hình; chỉ trả lại bình thường khi nộp bài hoặc thoát phòng thi.
   const onFullscreenExit = useCallback(() => {
-    const s = sessionRef.current;
+    const s = session;
     if (!s || submittedRef.current) return;
     void runReport({
       data: {
