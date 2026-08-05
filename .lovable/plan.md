@@ -1,0 +1,47 @@
+---
+name: Nâng cấp phòng thủ chống gian lận chuyên nghiệp (VATM Anti-Cheat v3)
+description: Áp dụng các kỹ thuật cao cấp từ các nền tảng thi trắc nghiệm lớn (ProctorU, Pearson VUE) như Phân tích sinh trắc học hành vi và Chuỗi tương tác logic.
+type: feature
+---
+
+## Bối cảnh
+Hệ thống hiện tại đã có:
+- Chữ ký số P-256 (Payload Signing).
+- Bẫy mồi (Honeypots).
+- Kiểm tra `isTrusted` (thao tác vật lý).
+- Chống tráo đổi đáp án (DOM Cloaking).
+
+## Mục tiêu
+Nâng cấp thêm các lớp bảo mật "vô hình" nhưng cực kỳ hiệu quả mà các nền tảng lớn hay dùng để phân biệt người và máy.
+
+## Các kỹ thuật đề xuất
+
+### 1. Phân tích Sinh trắc học Hành vi (Behavioral Biometrics)
+- **Mouse Path Analysis**: Script thường di chuyển chuột theo đường thẳng tuyệt đối hoặc nhảy vọt (instant jump). Người thật luôn di chuyển theo đường cong, có độ rung (jitter) và vận tốc thay đổi (acceleration/deceleration).
+- **Phát hiện**: Ghi lại thống kê sơ bộ về độ cong (curvature) và biến thiên vận tốc của 3-5 thao tác chuột cuối cùng trước khi bấm chọn. Nếu độ lệch chuẩn gần bằng 0 -> Nghi vấn script.
+
+### 2. Chuỗi tương tác Logic (Interaction Sequencing)
+- **Quy trình tự nhiên**: Một người thi bình thường sẽ có chuỗi: `Hover vào phương án` -> `Nhìn (Focus)` -> `Bấm (Click)`.
+- **Script**: Thường gọi trực tiếp sự kiện `Click` hoặc `Change` mà bỏ qua các bước tiền đề (Hover).
+- **Triển khai**: Bắt buộc mỗi câu trả lời phải có bằng chứng "đã từng Hover" trong vòng 2 giây trước đó.
+
+### 3. Mã hoá Payload mức ứng dụng (Application-Level Encryption)
+- Ngoài HTTPS và Chữ ký số, nội dung đáp án sẽ được mã hoá bằng một khoá tạm thời (Session Key) được thiết lập lúc bắt đầu thi. 
+- Điều này khiến việc mở "Network Tab" để xem nội dung gửi đi trở nên vô nghĩa vì dữ liệu là một chuỗi vô định.
+
+### 4. Canvas Text Fragment (Chống Copy/Cào dữ liệu)
+- Hiển thị một phần nội dung quan trọng của câu hỏi hoặc phương án dưới dạng hình ảnh hoặc vẽ lên Canvas để các script cào text đơn giản (innerText/textContent) không lấy được nội dung trọn vẹn.
+
+## Kế hoạch triển khai
+
+1. **Behavioral Tracking (`src/lib/exam/behavior.ts`)**:
+   - Tạo module theo dõi tọa độ chuột/touch và tính toán chỉ số "độ thật" (Human Score) dựa trên quỹ đạo.
+2. **Interaction Gate (`src/components/exam/QuestionInput.tsx`)**:
+   - Thêm lắng nghe `onMouseEnter` để ghi nhận "Ý định chọn" (Intent). Chỉ cho phép ghi nhận đáp án nếu có Intent hợp lệ.
+3. **Advanced Integrity Logic (`src/lib/integrity.ts`)**:
+   - Thêm các loại vi phạm mới: `robotic_movement` (di chuyển chuột như máy), `invalid_interaction_sequence` (bấm mà không hover).
+4. **UI Feedback cho Admin**:
+   - Hiển thị thêm chỉ số "Human Probability" (Xác suất người thật) trong trang theo dõi trực tiếp.
+
+## Ghi chú
+Các biện pháp này hoàn toàn "vô hình" với người dùng thật, không gây phiền hà hay yêu cầu nhập Captcha, nhưng cực kỳ khó để Script có thể vượt qua vì phải mô phỏng cả hành vi vật lý phức tạp của con người.
