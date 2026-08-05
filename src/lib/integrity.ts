@@ -144,9 +144,10 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
     // Nhịp trả lời đều như máy hoặc gói tin thiếu bằng chứng: cảnh báo mức vừa.
     case "script_suspect": {
       const reason = String((detail as { reason?: string }).reason ?? "");
-      // Bị trần tần suất autosave chặn KHÔNG phải bằng chứng gian lận: mạng chập chờn,
-      // gửi lại sau lỗi, beacon lúc ẩn tab hay hai nhịp lưu trùng nhau đều tạo ra nó.
-      // Gói đã bị từ chối ghi rồi, nên chỉ lưu log để rà soát, không trừ liêm chính.
+      // RÀ SOÁT: autosave_rate:too_fast có thể là do mạng chập chờn nhưng có khi nào có người lợi dụng điểm này để can thiệp tốc độ làm bài không?
+      // PHÂN TÍCH: Máy chủ đã từ chối ghi dữ liệu nếu nhịp gửi dưới 1.2 giây (MIN_GAP_RPC_MS),
+      // nên việc "dội bom" request không giúp gian lận được đáp án hay rút ngắn thời gian thực tế.
+      // Sự kiện này chỉ lưu log để rà soát hành vi bất thường, không trừ điểm để tránh phạt oan do mạng.
       if (reason.startsWith("autosave_rate:")) return 0;
       // Bằng chứng thao tác quá cũ: thí sinh chọn đáp án rồi mất mạng/gói bị dồn hàng đợi.
       // Bằng chứng đã bị hạ cấp (đáp án không được ghi nếu là câu mới) nên chỉ ghi log.
