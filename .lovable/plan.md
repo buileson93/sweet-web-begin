@@ -1,28 +1,22 @@
-# Plan - Tinh chỉnh Thông báo và Logic Xác minh Chống Script
+# Kế hoạch tinh chỉnh thông báo lỗi và rà soát Cloudflare Turnstile
 
-Dựa trên phản hồi về lỗi "Thiếu token xác minh chống script", tôi sẽ thực hiện tinh chỉnh để thông báo thân thiện hơn và giảm thiểu các trường hợp chặn nhầm (oan) do hạ tầng.
+Dựa trên thắc mắc "có phải do Cloudflare không", tôi sẽ cập nhật giao diện để giải thích rõ hơn về vai trò của Cloudflare Turnstile trong việc bảo vệ phòng thi và hướng dẫn cách xử lý nếu bị chặn.
 
 ## Các thay đổi chính
 
-### 1. Cập nhật Thông báo Lỗi
-- Thay đổi thông báo kỹ thuật "Thiếu token xác minh chống script" thành hướng dẫn hành động cụ thể cho thí sinh: "Hệ thống không nhận được tín hiệu xác minh an toàn từ trình duyệt của bạn. Vui lòng kiểm tra kết nối mạng, tắt các trình chặn quảng cáo (AdBlock) và tải lại trang để tiếp tục."
+### 1. Cập nhật nội dung Header tại Bảng xếp hạng
+- Thay đổi đoạn văn mô tả để đề cập trực tiếp đến việc tinh chỉnh cơ chế xác minh an toàn (Cloudflare Turnstile), giúp thí sinh yên tâm và biết cách xử lý khi gặp lỗi.
 
-### 2. Tinh chỉnh Logic `verifyTurnstileToken`
-- **Xử lý linh hoạt hơn**: Khi thiếu token ở chế độ nghiêm ngặt, thay vì báo lỗi kỹ thuật thô, hệ thống sẽ trả về lý do yêu cầu thí sinh kiểm tra mạng/tải lại trang.
-- **Phân biệt lỗi hạ tầng**: Đảm bảo lỗi do máy chủ Cloudflare không liên lạc được luôn trả về `skipped: true` để không bao giờ chặn đứng thí sinh.
+### 2. Tinh chỉnh thông báo lỗi phía Server (`src/lib/turnstile.server.ts`)
+- Cải thiện nội dung `reason` để giải thích rằng lỗi có thể do kết nối mạng đến máy chủ xác thực của Cloudflare bị gián đoạn, thay vì chỉ báo lỗi script chung chung.
 
-### 3. Đồng bộ hóa Text giao diện
-- Cập nhật Header Bảng xếp hạng để phản ánh việc hệ thống đã được tinh chỉnh để bảo vệ thí sinh khỏi các lỗi báo cáo "oan".
+### 3. Cập nhật mô tả lỗi captcha tại `src/lib/turnstile/verify.ts`
+- Làm rõ hơn các mã lỗi liên quan đến Cloudflare để Admin dễ dàng hỗ trợ thí sinh.
 
 ## Các bước thực hiện
 
-1.  **Chỉnh sửa `src/lib/turnstile/verify.ts`**: Cập nhật hàm `describeTurnstileCode` để cung cấp thông báo tiếng Việt dễ hiểu hơn.
-2.  **Chỉnh sửa `src/lib/turnstile.server.ts`**: Cập nhật nội dung `reason` trong hàm `verifyTurnstileToken` khi thiếu token hoặc xác minh thất bại.
-3.  **Chỉnh sửa `src/routes/bang-xep-hang.tsx`**: Cập nhật đoạn văn mô tả ở Header theo yêu cầu.
+1. **Chỉnh sửa `src/routes/bang-xep-hang.tsx`**: Cập nhật text header theo yêu cầu mới.
+2. **Chỉnh sửa `src/lib/turnstile.server.ts`**: Tinh chỉnh câu chữ trong các thông báo lỗi trả về cho client.
+3. **Chỉnh sửa `src/lib/turnstile/verify.ts`**: Cập nhật hàm `describeTurnstileCode` để hiển thị tiếng Việt chi tiết hơn về lỗi Cloudflare.
 
-## Về yêu cầu "nếu sai thì đưa ra kế hoạch"
-Cơ chế hiện tại (token dựa trên liveness và Turnstile) là đúng đắn về mặt kỹ thuật để chống script chuyên nghiệp. Lỗi "thiếu token" thường do:
-- Mạng thí sinh chặn domain `challenges.cloudflare.com`.
-- Trình duyệt cài đặt extension quá chặt chẽ làm script Turnstile không chạy được.
-- Thí sinh để trang quá lâu dẫn đến token hết hạn (timeout).
-=> Việc tinh chỉnh thông báo để hướng dẫn thí sinh "tải lại trang" và kiểm tra mạng là hướng giải quyết đúng đắn nhất thay vì tắt bỏ lớp bảo mật.
+Việc thay đổi này giúp trả lời trực tiếp câu hỏi của người dùng ngay trên giao diện hệ thống.
