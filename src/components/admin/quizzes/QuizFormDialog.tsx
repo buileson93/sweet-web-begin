@@ -64,6 +64,7 @@ const emptyForm = {
   bp_medium: 0,
   bp_hard: 0,
   bp_tags: {} as Record<string, number>,
+  is_featured: false,
 };
 
 type Props = {
