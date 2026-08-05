@@ -317,44 +317,73 @@ function LeaderboardPage() {
               }
             >
               <ol className="space-y-3">
-                {pageRows.map((r, offset) => {
-                  const i = (page - 1) * pageSize + offset;
-                  return (
-                  <li
-                    key={(r as any).id}
-                    className={cn(
-                      "game-card animate-pop grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 sm:gap-4 sm:p-5",
-                      i < 3 && "ring-1 ring-gold/40",
-                    )}
-                    style={{ animationDelay: `${Math.min(i, 10) * 0.04}s` }}
-                  >
-                    <span
-                      className={cn(
-                        "grid size-10 shrink-0 place-items-center rounded-2xl text-sm font-extrabold sm:size-12",
-                        i === 0 && "surface-gold shadow-[var(--shadow-gold)]",
-                        i === 1 && "bg-secondary text-secondary-foreground",
-                        i === 2 && "bg-accent/25 text-accent-foreground",
-                        i > 2 && "bg-secondary text-muted-foreground",
-                      )}
-                    >
-                      {i < 3 ? <Medal className="size-5" /> : i + 1}
-                    </span>
+                <TooltipProvider>
+                  {pageRows.map((r, offset) => {
+                    const i = (page - 1) * pageSize + offset;
+                    const attempts = (r as any).attempts ?? 1;
+                    const submitted = (r as any).submitted ?? 1;
+                    const abandoned = Math.max(0, attempts - submitted);
 
-                    <div className="min-w-0">
-                      <p className="truncate font-heading font-bold">{r.candidate_name}</p>
-                      <p className="type-meta truncate">{r.unit}</p>
-                      <span
-                        className="type-meta mt-0.5 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 font-medium"
-                        title={`Thí sinh đã thi ${r.attempts ?? 1} lượt. Khi bằng điểm và bằng thời gian, ai thi ít lượt hơn xếp trên.`}
+                    return (
+                      <li
+                        key={(r as any).id}
+                        className={cn(
+                          "game-card animate-pop grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 sm:gap-4 sm:p-5",
+                          i < 3 && "ring-1 ring-gold/40",
+                        )}
+                        style={{ animationDelay: `${Math.min(i, 10) * 0.04}s` }}
                       >
-                        <RotateCcw aria-hidden className="size-3" />
-                        {r.attempts ?? 1} lượt thi
-                      </span>
-                      <p className="type-meta mt-0.5 truncate">
-                        {(r as any).quiz_title}
-                        <span className="hidden sm:inline"> • {formatDateTime((r as any).submitted_at)}</span>
-                      </p>
-                    </div>
+                        <span
+                          className={cn(
+                            "grid size-10 shrink-0 place-items-center rounded-2xl text-sm font-extrabold sm:size-12",
+                            i === 0 && "surface-gold shadow-[var(--shadow-gold)]",
+                            i === 1 && "bg-secondary text-secondary-foreground",
+                            i === 2 && "bg-accent/25 text-accent-foreground",
+                            i > 2 && "bg-secondary text-muted-foreground",
+                          )}
+                        >
+                          {i < 3 ? <Medal className="size-5" /> : i + 1}
+                        </span>
+
+                        <div className="min-w-0">
+                          <p className="truncate font-heading font-bold">{r.candidate_name}</p>
+                          <p className="type-meta truncate">{r.unit}</p>
+                          
+                          <div className="flex flex-wrap items-center gap-x-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="type-meta mt-0.5 inline-flex cursor-help items-center gap-1 rounded-full bg-secondary px-2 py-0.5 font-medium transition-colors hover:bg-secondary/80"
+                                >
+                                  <RotateCcw aria-hidden className="size-3" />
+                                  {attempts} lượt thi
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="flex flex-col gap-1 p-2.5">
+                                <p className="font-bold">Chi tiết lượt thi</p>
+                                <div className="space-y-1 text-[11px]">
+                                  <p className="flex justify-between gap-4 text-success">
+                                    <span>Hoàn thành & nộp bài:</span>
+                                    <span className="font-bold">{submitted}</span>
+                                  </p>
+                                  <p className="flex justify-between gap-4 text-destructive">
+                                    <span>Bỏ giữa chừng:</span>
+                                    <span className="font-bold">{abandoned}</span>
+                                  </p>
+                                  <div className="mt-1 border-t border-primary-foreground/10 pt-1 opacity-70">
+                                    Khi bằng điểm và thời gian, ai thi ít lượt hơn xếp trên.
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <p className="type-meta mt-0.5 truncate">
+                              {(r as any).quiz_title}
+                              <span className="hidden sm:inline"> • {formatDateTime((r as any).submitted_at)}</span>
+                            </p>
+                          </div>
+                        </div>
 
                     <div className="shrink-0 text-right">
                       <p className="font-mono text-lg font-extrabold text-primary">
