@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useServerFn } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { Download, FileSpreadsheet, Medal, Radio, RotateCcw, Search, SearchX, Trophy } from "lucide-react";
 import { toast } from "sonner";
@@ -72,7 +73,7 @@ function LeaderboardPage() {
     const ranked = rankUniqueResults(all as any[]) as any[];
     if (!kw) return ranked;
     return ranked.filter(
-      (r) => (r.candidate_name || "").toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
+      (r: any) => (r.candidate_name || "").toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
     );
   }, [all, keyword]);
 
@@ -250,10 +251,10 @@ function LeaderboardPage() {
             {!resultsQuery.isLoading && !resultsQuery.isError && rows.length > 0 ? (
               <div className="flex flex-col gap-1">
                 <p className="type-meta">
-                  Trang {page}/{pageCount} · {rows.length} người đạt điểm (từ {all.length} bản ghi gần nhất).
+                   Trang {page}/{pageCount} · {rows.length} người đạt điểm (từ {all.length} bản ghi gần nhất).
                 </p>
                 <p className="text-[11px] font-bold text-muted-foreground uppercase">
-                   Ghi nhận: {rows.length} người thi đạt (≥50%) • {Math.max(0, new Set(all.map(r => r.employee_id)).size - rows.length)} người thi nhưng chưa đạt
+                   Ghi nhận: {rows.length} người thi đạt (≥50%) • {Math.max(0, new Set(all.map((r: any) => r.employee_id)).size - rows.length)} người thi nhưng chưa đạt
                 </p>
               </div>
             ) : null}
