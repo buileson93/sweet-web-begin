@@ -59,7 +59,7 @@ function LeaderboardPage() {
       let query = supabase
         .from("results")
         .select(
-          "id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, max_points, best_streak",
+          "id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, max_points, best_streak, attempts",
         )
         .eq("disqualified", false)
         // Lấy thô rồi xếp hạng ở rankResults (theo TỈ LỆ ĐÚNG) vì điểm thưởng combo

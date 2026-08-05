@@ -112,16 +112,18 @@ export function rankUniqueResults<
   const attemptsByKey = new Map<string, number>();
   for (const r of rows) {
     const k = candidateKeyOf(r);
-    // Nếu dữ liệu rows truyền vào đã là các record nộp bài, attempts nên được truyền kèm từ database.
-    // Ở đây ta cộng dồn: nếu record đã có số attempts (đã đếm từ sessions) thì lấy, nếu không thì đếm số record.
+    // Cộng dồn số lượt thi nếu record đã có (thường là từ bảng results có cột attempts)
+    // Nếu chưa có (ví dụ test data cũ), mặc định là 1.
     const count = r.attempts ?? 1;
-    attemptsByKey.set(k, (attemptsByKey.get(k) ?? 0) + (r.attempts !== undefined ? 1 : 1));
-    // Lưu ý: r.attempts thường được select count(*) từ exam_sessions join vào.
+    attemptsByKey.set(k, (attemptsByKey.get(k) ?? 0) + count);
   }
 
   const withAttempts = rows
     .filter(isRankable)
-    .map((r) => ({ ...r, attempts: r.attempts ?? attemptsByKey.get(candidateKeyOf(r)) ?? 1 }));
+    .map((r) => {
+      const k = candidateKeyOf(r);
+      return { ...r, attempts: attemptsByKey.get(k) ?? 1 };
+    });
 
   return rankResults(dedupeByCandidate(withAttempts));
 }
