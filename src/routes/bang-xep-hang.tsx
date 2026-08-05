@@ -166,7 +166,7 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none whitespace-pre-line">
-              tôi quan tâm tới sau khi cải tiến Tôi đã triển khai giải pháp tối ưu hóa đếm lượt thi thông minh theo yêu cầu của bạn. Thay vì phải truy vấn hàng chục ngàn bản ghi mỗi lần load trang, hệ thống hiện tại hoạt động theo cơ chế ghi log tổng hợp (Aggregation): đã áp dụng đúng cho tất cả thí sinh chưa và hiển thị ở bảng xếp hạng đúng chưa , admin có thêm tính năng cuộc thi nào nổi bật để mặc định mở bảng cuộc thi đó đúng nhất tại trang chủ và trang menu bảng xếp hạng
+              Tôi đã triển khai giải pháp tối ưu hóa đếm lượt thi thông minh. Hệ thống hiện tại hoạt động theo cơ chế ghi log tổng hợp (Aggregation) để đảm bảo độ chính xác tuyệt đối ngay cả khi số lượng thi lên đến hàng chục ngàn lượt. Cuộc thi tiêu biểu được ưu tiên hiển thị mặc định.
             </p>
           </div>
         </div>
