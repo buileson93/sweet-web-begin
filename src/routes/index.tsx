@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useServerFn } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ArrowRight, BookOpen, CalendarPlus, Plane, Timer, Trophy } from "lucide-react";
 
@@ -19,6 +19,7 @@ import { formatDateTime, quizStatus } from "@/lib/format";
 import { rankUniqueResults } from "@/lib/leaderboard";
 import { getPublicParticipationRates } from "@/lib/participationRate.functions";
 import { getQuizStatsSummary } from "@/lib/adminStats.functions";
+import { getRankableResults } from "@/lib/leaderboard.functions";
 
 import { resolveQuizCover } from "@/lib/quizCover";
 import { PlayerHeroCard } from "@/components/player/PlayerHeroCard";
@@ -69,6 +70,7 @@ function HomePage() {
   const [heroOpen, setHeroOpen] = useState(false);
   // Danh sách cuộc thi tải dần để trang chủ không phải cuộn quá dài
   const [visibleQuizzes, setVisibleQuizzes] = useState(4);
+  const fetchRankable = useServerFn(getRankableResults);
 
   const quizzesQuery = useQuery({
     queryKey: ["quizzes", "public"],
@@ -90,31 +92,7 @@ function HomePage() {
 
   const topQuery = useQuery({
     queryKey: ["results", "top3", boardQuiz],
-    queryFn: async () => {
-      let q = supabase
-        .from("results")
-        .select("id, candidate_name, unit, employee_id, score, total, points, max_points, time_seconds")
-        .eq("disqualified", false);
-      if (boardQuiz !== "all") q = q.eq("quiz_id", boardQuiz);
-      // Lấy nhiều dòng rồi gộp theo thí sinh phía client để mỗi người chỉ hiện
-      // bài tốt nhất — dữ liệu CSDL vẫn giữ nguyên toàn bộ lượt thi.
-      const { data, error } = await q
-        .order("score", { ascending: false })
-        .order("time_seconds", { ascending: true })
-        .limit(3000); // Tăng giới hạn để không bị thiếu thí sinh khi gộp bài tốt nhất (đã có 2300+ lượt thi)
-      if (error) throw error;
-      return (data ?? []) as Array<{
-        id: string;
-        candidate_name: string | null;
-        unit: string | null;
-        employee_id: string | null;
-        score: number;
-        total: number;
-        points: number | null;
-        max_points: number | null;
-        time_seconds: number;
-      }>;
-    },
+    queryFn: () => fetchRankable({ data: { quizId: boardQuiz as any, limit: 3000 } }),
   });
 
   // Mỗi thí sinh chỉ giữ bài tốt nhất, lấy top 3 sau khi gộp.
