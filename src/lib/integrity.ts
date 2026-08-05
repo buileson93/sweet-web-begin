@@ -147,6 +147,8 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
       // Bị trần tần suất autosave chặn KHÔNG phải bằng chứng gian lận: mạng chập chờn,
       // gửi lại sau lỗi, beacon lúc ẩn tab hay hai nhịp lưu trùng nhau đều tạo ra nó.
       // Gói đã bị từ chối ghi rồi, nên chỉ lưu log để rà soát, không trừ liêm chính.
+      // Bị trần tần suất autosave chặn KHÔNG phải bằng chứng gian lận.
+      // Tiêu chí autosave_rate:too_fast này hiện đang có trọng số 0 (chỉ ghi log) để tránh phạt oan.
       if (reason.startsWith("autosave_rate:")) return 0;
       // Bằng chứng thao tác quá cũ: thí sinh chọn đáp án rồi mất mạng/gói bị dồn hàng đợi.
       // Bằng chứng đã bị hạ cấp (đáp án không được ghi nếu là câu mới) nên chỉ ghi log.
@@ -237,7 +239,7 @@ export const EXAM_EVENT_LABEL: Record<string, string> = {
   liveness_failed: "Không xác thực được phiên (liveness)",
   untrusted_input: "Đáp án không có thao tác thật",
   automation_detected: "Trình duyệt tự động hoá",
-  script_suspect: "Nghi vấn dùng script",
+  script_suspect: "lên kế hoạch để chống gian lận tôi thấy autosave_rate:too_fast hơi nhiều có vể tiêu chí này phát hiện script hơi sai",
   honeypot_hit: "Bấm trúng thẻ mồi ẩn (honeypot)",
   captcha_failed: "Captcha vô hình không qua (Turnstile)",
   speed_anomaly: "Tốc độ trả lời bất thường",

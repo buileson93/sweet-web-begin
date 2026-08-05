@@ -15,7 +15,7 @@ export function PaletteSwitcher({ className }: { className?: string }) {
   return (
     <div className={cn("rounded-3xl border border-border bg-card p-5", className)}>
       <h3 className="type-h3 flex items-center gap-2">
-        <Palette className="size-4 text-accent" /> Bảng màu giao diện
+        <Palette className="size-4 text-accent" /> lên kế hoạch để chống gian lận tôi thấy autosave_rate:too_fast hơi nhiều có vể tiêu chí này phát hiện script hơi sai
       </h3>
       <p className="type-meta mt-1">Áp dụng ngay cho toàn bộ giao diện trên thiết bị này.</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
