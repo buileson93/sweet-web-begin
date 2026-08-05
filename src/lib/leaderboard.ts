@@ -107,27 +107,32 @@ export function rankUniqueResults<
   T extends RankableResult & { employee_id?: string | null; candidate_name?: string | null; unit?: string | null },
 >(rows: T[]): Array<T & { attempts: number }> {
   if (!rows || !Array.isArray(rows)) return [];
-  // LƯU Ý: Phải đếm TỔNG số lần MỞ PHÒNG THI (sessions) thay vì chỉ đếm số bài đã nộp (results).
-  // Thí sinh mở đề rồi thoát mà không nộp vẫn được coi là một "lượt thi" để tính độ chuyên cần/gian lận.
-  // Tiêu chí: người thi lại nhiều lần thì sẽ xếp hạng thấp hơn nếu cùng điểm và thời gian.
-  const attemptsByKey = new Map<string, number>();
+
+  // Group by candidate to count attempts and find best result
+  const candidates = new Map<string, { attempts: number; best: T }>();
+
   for (const r of rows) {
     const k = candidateKeyOf(r);
-    // Trong bảng results hiện chưa có cột attempts, ta đang gộp bài tốt nhất của mỗi thí sinh.
-    // Tạm thời đếm số record kết quả thành công để phá hoà.
-    // LƯU Ý: Nếu r.attempts đã có giá trị (từ database), ta nên sử dụng nó hoặc cộng dồn.
-    // Hiện tại do query results chưa có cột này, ta đếm số lượng record.
-    const currentCount = attemptsByKey.get(k) ?? 0;
-    attemptsByKey.set(k, currentCount + 1);
+    const existing = candidates.get(k);
+
+    if (!existing) {
+      candidates.set(k, { attempts: 1, best: r });
+    } else {
+      existing.attempts++;
+      if (compareBestAttempt(r, existing.best) < 0) {
+        existing.best = r;
+      }
+    }
   }
 
-  const withAttempts = rows
-    .filter(isRankable)
-    .map((r) => {
-      const k = candidateKeyOf(r);
-      return { ...r, attempts: attemptsByKey.get(k) ?? 1 };
-    });
+  // Convert to array, filter by rankable (>= 50%), and sort
+  const result: Array<T & { attempts: number }> = [];
+  for (const entry of candidates.values()) {
+    if (isRankable(entry.best)) {
+      result.push({ ...entry.best, attempts: entry.attempts });
+    }
+  }
 
-  return rankResults(dedupeByCandidate(withAttempts));
+  return result.sort(compareResults);
 }
 
