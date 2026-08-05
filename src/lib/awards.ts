@@ -104,14 +104,9 @@ export function computeAwards(rows: AwardRow[]): AwardWinner[] {
   }
 
   // Thi nhiều lần nhất tính trên TẤT CẢ lượt thi (kể cả chưa đạt) — ghi nhận sự chăm chỉ.
-  const attempts = new Map<string, { row: AwardRow; count: number }>();
-  for (const r of rows) {
-    const k = key(r);
-    const cur = attempts.get(k);
-    if (cur) cur.count += 1;
-    else attempts.set(k, { row: r, count: 1 });
-  }
-  const diligent = best([...attempts.values()], (a) => a.count);
+  // Hệ thống hiện tại truyền số attempts thực tế từ database vào các hàng kết quả.
+  const diligent = best(rows, (r) => (r as any).attempts || 1);
+  const diligentCount = diligent ? ((diligent as any).attempts || 1) : 0;
   if (diligent && diligent.count > 1) {
     awards.push({
       key: "diligent",
