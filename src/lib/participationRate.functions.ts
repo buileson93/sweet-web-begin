@@ -18,18 +18,18 @@ export const getPublicParticipationRates = createServerFn({ method: "POST" })
       await Promise.all([
         supabaseAdmin.from("quiz_audiences").select("quiz_id, unit_id").in("quiz_id", data.quizIds),
         supabaseAdmin.from("units").select("id, name"),
-        supabaseAdmin.from("employees").select("id, unit_name").eq("is_active", true).limit(5000),
+        supabaseAdmin.from("employees").select("id, unit_name").eq("is_active", true).limit(10000),
       ]);
     if (audErr) throw new Error(audErr.message);
     if (unitErr) throw new Error(unitErr.message);
     if (rosterErr) throw new Error(rosterErr.message);
 
     const { data: attempts, error: attemptErr } = await supabaseAdmin
-      .from("results")
+      .from("exam_sessions")
       .select("quiz_id, employee_id")
       .in("quiz_id", data.quizIds)
-      .eq("disqualified", false)
-      .limit(50000);
+      .in("status", ["submitted", "grading"])
+      .limit(100000);
     if (attemptErr) throw new Error(attemptErr.message);
 
     const unitName = new Map((units ?? []).map((u) => [u.id, u.name]));

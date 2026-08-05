@@ -129,10 +129,11 @@ function HomePage() {
   const countQuery = useQuery({
     queryKey: ["results", "count"],
     queryFn: async () => {
+      // Đếm tổng số lượt thi thực tế (phiên đã nộp bài hoặc đang chấm) thay vì số record kết quả thành công
       const { count, error } = await supabase
-        .from("results")
+        .from("exam_sessions")
         .select("id", { count: "exact", head: true })
-        .eq("disqualified", false);
+        .in("status", ["submitted", "grading"]);
       if (error) throw error;
       return count ?? 0;
     },
@@ -149,10 +150,10 @@ function HomePage() {
         quizIds.map(async (id) => {
           const [all, passed] = await Promise.all([
             supabase
-              .from("results")
+              .from("exam_sessions")
               .select("id", { count: "exact", head: true })
               .eq("quiz_id", id)
-              .eq("disqualified", false),
+              .in("status", ["submitted", "grading"]),
             supabase
               .from("results")
               .select("id", { count: "exact", head: true })
