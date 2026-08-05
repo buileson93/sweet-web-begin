@@ -29,21 +29,21 @@ export const getRankableResults = createServerFn({ method: "POST" })
     if (error) throw error;
 
     // 2. Lấy TỔNG số lượt thi (bao gồm cả các phiên đang thi hoặc bỏ dở) để đếm số lượt thi chính xác
-    // Chúng ta đếm theo employee_id hoặc theo tên+đơn vị nếu không có employee_id
+    // Sử dụng truy vấn gộp (aggregation) để đếm trực tiếp từ database
     let sessionsQuery = supabaseAdmin
       .from("exam_sessions")
-      .select("employee_id, candidate_name, unit, status")
-      .limit(50000); // Tăng giới hạn tối đa để không bỏ sót bất kỳ lượt thi nào
+      .select("employee_id, candidate_name, unit");
 
     if (quizId !== "all") {
       sessionsQuery = sessionsQuery.eq("quiz_id", quizId);
     }
 
-    const { data: sessions } = await sessionsQuery;
+    const { data: allSessions, error: sessionsError } = await sessionsQuery;
+    if (sessionsError) throw sessionsError;
     
     // Tạo map đếm lượt thi thực tế từ exam_sessions
     const attemptMap = new Map<string, number>();
-    for (const s of sessions || []) {
+    for (const s of allSessions || []) {
       const key = s.employee_id || `${(s.candidate_name || "").trim().toLowerCase()}|${(s.unit || "").trim().toLowerCase()}`;
       attemptMap.set(key, (attemptMap.get(key) || 0) + 1);
     }
