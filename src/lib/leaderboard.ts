@@ -116,9 +116,13 @@ export function rankUniqueResults<
     const existing = candidates.get(k);
 
     if (!existing) {
-      candidates.set(k, { attempts: 1, best: r });
+      // Nếu dữ liệu đã có attempts (từ server), dùng giá trị đó, nếu không thì đếm 1
+      candidates.set(k, { attempts: (r as any).attempts || 1, best: r });
     } else {
-      existing.attempts++;
+      // Nếu server không trả về attempts, ta mới cộng dồn ở client
+      if (!(r as any).attempts) {
+        existing.attempts++;
+      }
       if (compareBestAttempt(r, existing.best) < 0) {
         existing.best = r;
       }

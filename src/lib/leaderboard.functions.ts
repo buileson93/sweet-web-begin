@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const schema = z.object({
   quizId: z.string().uuid().or(z.literal("all")),
-  limit: z.number().optional().default(3000)
+  limit: z.number().optional().default(5000)
 });
 
 export const getRankableResults = createServerFn({ method: "POST" })
@@ -12,6 +12,7 @@ export const getRankableResults = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { quizId, limit } = data;
 
+    // 1. Lấy kết quả đã nộp
     let query = supabaseAdmin
       .from("results")
       .select("id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, max_points, best_streak, employee_id")
@@ -27,5 +28,34 @@ export const getRankableResults = createServerFn({ method: "POST" })
     const { data: results, error } = await query;
     if (error) throw error;
 
-    return results;
+    // 2. Lấy TỔNG số lượt thi (bao gồm cả các phiên đang thi hoặc bỏ dở) để đếm số lượt thi chính xác
+    // Chúng ta đếm theo employee_id hoặc theo tên+đơn vị nếu không có employee_id
+    let sessionsQuery = supabaseAdmin
+      .from("exam_sessions")
+      .select("employee_id, candidate_name, unit")
+      .limit(10000); // Lấy đủ nhiều để đếm
+
+    if (quizId !== "all") {
+      sessionsQuery = sessionsQuery.eq("quiz_id", quizId);
+    }
+
+    const { data: sessions } = await sessionsQuery;
+    
+    // Tạo map đếm lượt thi thực tế từ exam_sessions
+    const attemptMap = new Map<string, number>();
+    for (const s of sessions || []) {
+      const key = s.employee_id || `${(s.candidate_name || "").trim().toLowerCase()}|${(s.unit || "").trim().toLowerCase()}`;
+      attemptMap.set(key, (attemptMap.get(key) || 0) + 1);
+    }
+
+    // Gắn số lượt thi thực tế vào kết quả trả về
+    const resultsWithRealAttempts = (results || []).map(r => {
+      const key = r.employee_id || `${(r.candidate_name || "").trim().toLowerCase()}|${(r.unit || "").trim().toLowerCase()}`;
+      return {
+        ...r,
+        attempts: attemptMap.get(key) || 1
+      };
+    });
+
+    return resultsWithRealAttempts;
   });
