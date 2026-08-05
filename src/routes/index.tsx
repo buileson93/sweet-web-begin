@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, quizStatus } from "@/lib/format";
 import { rankUniqueResults } from "@/lib/leaderboard";
 import { getPublicParticipationRates } from "@/lib/participationRate.functions";
+import { getQuizStatsSummary } from "@/lib/adminStats.functions";
 
 import { resolveQuizCover } from "@/lib/quizCover";
 import { PlayerHeroCard } from "@/components/player/PlayerHeroCard";
@@ -125,36 +126,26 @@ function HomePage() {
     [topQuery.data],
   );
 
-  // Thống kê những người chưa tham gia hoặc chưa đạt
-  const participationSummary = useMemo(() => {
-    if (!topQuery.data) return { participants: 0, nonParticipants: 0, failedCount: 0 };
-    // Số người đã đạt (có trong rankUniqueResults)
-    const passedUnique = rankUniqueResults(topQuery.data as any).length;
-    // Tổng số lượt thi (submitted/grading) của kỳ thi này
-    const totalAttempts = topQuery.data.length;
-    
-    return { 
-      participants: passedUnique,
-      // Tạm tính những người có trong data nhưng không lọt vào rankUnique (điểm < 50%)
-      failedCount: Math.max(0, new Set(topQuery.data.map(r => r.employee_id)).size - passedUnique)
-    };
-  }, [topQuery.data]);
+  // Thống kê chính xác từ Server (Không bị giới hạn limit client)
+  const statsSummaryQuery = useQuery({
+    queryKey: ["admin-stats-summary", boardQuiz],
+    queryFn: () => getQuizStatsSummary({ data: { quizId: boardQuiz as any } }),
+    staleTime: 30_000,
+  });
 
+  const participationSummary = statsSummaryQuery.data || { 
+    passedCount: 0, 
+    failedCount: 0,
+    submittedCount: 0,
+    notSubmittedCount: 0,
+    totalAttempts: 0,
+    totalEmployees: 0
+  };
 
   const countQuery = useQuery({
-    queryKey: ["results", "count", boardQuiz],
-    queryFn: async () => {
-      let q = supabase
-        .from("exam_sessions")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["submitted", "grading"]);
-      
-      if (boardQuiz !== "all") q = q.eq("quiz_id", boardQuiz);
-
-      const { count, error } = await q;
-      if (error) throw error;
-      return count ?? 0;
-    },
+    queryKey: ["results-count-sync", boardQuiz],
+    queryFn: () => statsSummaryQuery.data?.totalAttempts ?? 0,
+    enabled: !!statsSummaryQuery.data,
   });
 
   // Vài số liệu ngắn cho thẻ cuộc thi ở màn hình rộng: lượt thi và tỉ lệ đạt.
@@ -215,7 +206,7 @@ function HomePage() {
   return (
     <AppShell>
       <ProductTour steps={TOUR_STEPS} />
-      <div className="sr-only">tối ưu hơn lỡ có thi nhiều hơn cũng không bị sai sót</div>
+      <div className="sr-only">Thêm bộ lọc để tôi có thể chọn cuộc thi và xem ngay số người đã nộp, chưa nộp và đạt/ngưỡng theo thời gian thực. các thông tin thống kê của admin có bị giới hạn 200 hay 1000 bản ghi ko có cách nào tối ưu luôn hiển thị đúng số liệu thực tế database</div>
 
       {/* Bố cục chia đôi: trái = vào phòng thi, phải = bảng xếp hạng trực tiếp */}
       <section className="grid gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-8 xl:gap-10">
@@ -286,10 +277,17 @@ function HomePage() {
                 <span className="type-meta inline-flex items-center gap-1.5 font-bold text-primary">
                   <span className="size-1.5 animate-pulse rounded-full bg-primary" /> Trực tiếp
                 </span>
-                {!topQuery.isLoading && (
-                   <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                     {participationSummary.participants} đạt • {participationSummary.failedCount} chưa đạt
-                   </span>
+                {!statsSummaryQuery.isLoading && (
+                   <div className="flex flex-col items-end gap-0.5 text-[9px] font-bold text-muted-foreground uppercase leading-none">
+                     <div className="flex gap-1.5">
+                        <span className="text-success">{participationSummary.passedCount} đạt</span>
+                        <span className="text-destructive">{participationSummary.failedCount} chưa đạt</span>
+                     </div>
+                     <div className="flex gap-1.5">
+                        <span>{participationSummary.submittedCount} đã nộp</span>
+                        <span>{participationSummary.notSubmittedCount} chưa nộp</span>
+                     </div>
+                   </div>
                 )}
               </div>
             </div>
