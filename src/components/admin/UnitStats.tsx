@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { downloadXlsx } from "@/lib/xlsxIo";
 import { useMemo, useState } from "react";
 import { Building2, Download, Inbox } from "lucide-react";
@@ -18,18 +19,11 @@ import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-
-type Row = {
-  unit: string;
-  attempts: number;
-  candidates: number;
-  avgPercent: number;
-  passRate: number;
-  best: number;
-};
+import { getUnitStats, type UnitStatRow } from "@/lib/unitStats.functions";
 
 export function UnitStats() {
   const [quizId, setQuizId] = useState("all");
+  const fetchUnitStats = useServerFn(getUnitStats);
 
   const { data: quizzes = [] } = useQuery({
     queryKey: ["admin-quizzes-lite"],
@@ -42,45 +36,29 @@ export function UnitStats() {
 
   const query = useQuery({
     queryKey: ["admin-unit-stats", quizId],
+    queryFn: () => fetchUnitStats({ data: { quizId: quizId as any } }),
+  });
+
+  const rows = query.data || [];
+
+  const distributionQuery = useQuery({
+    queryKey: ["admin-distribution", quizId],
     queryFn: async () => {
       let q = supabase
         .from("results")
-        .select("unit, candidate_name, score, total, passed, disqualified")
-        .limit(5000);
+        .select("score, total, disqualified")
+        .eq("disqualified", false);
       if (quizId !== "all") q = q.eq("quiz_id", quizId);
-      const { data, error } = await q;
+      const { data, error } = await q.limit(50000);
       if (error) throw error;
       return data;
     },
   });
 
-  const rows = useMemo<Row[]>(() => {
-    const map = new Map<string, { scores: number[]; names: Set<string>; passed: number }>();
-    for (const r of query.data ?? []) {
-      if (r.disqualified) continue;
-      const unit = r.unit?.trim() || "(Chưa rõ đơn vị)";
-      const entry = map.get(unit) ?? { scores: [], names: new Set<string>(), passed: 0 };
-      entry.scores.push(r.total ? (r.score / r.total) * 100 : 0);
-      entry.names.add(r.candidate_name);
-      if (r.passed) entry.passed += 1;
-      map.set(unit, entry);
-    }
-    return [...map.entries()]
-      .map(([unit, e]) => ({
-        unit,
-        attempts: e.scores.length,
-        candidates: e.names.size,
-        avgPercent: Math.round(e.scores.reduce((a, b) => a + b, 0) / e.scores.length),
-        passRate: Math.round((e.passed / e.scores.length) * 100),
-        best: Math.round(Math.max(...e.scores)),
-      }))
-      .sort((a, b) => b.avgPercent - a.avgPercent);
-  }, [query.data]);
-
   const distribution = useMemo(() => {
     const buckets = [0, 0, 0, 0, 0];
-    for (const r of query.data ?? []) {
-      if (r.disqualified || !r.total) continue;
+    for (const r of distributionQuery.data ?? []) {
+      if (!r.total) continue;
       const pct = (r.score / r.total) * 100;
       const i = pct < 50 ? 0 : pct < 65 ? 1 : pct < 80 ? 2 : pct < 90 ? 3 : 4;
       buckets[i] += 1;
@@ -92,7 +70,8 @@ export function UnitStats() {
       { range: "80–89%", count: buckets[3], fail: false },
       { range: "90–100%", count: buckets[4], fail: false },
     ];
-  }, [query.data]);
+  }, [distributionQuery.data]);
+
 
   const chartRows = useMemo(() => rows.slice(0, 12), [rows]);
 

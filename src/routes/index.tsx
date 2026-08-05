@@ -248,10 +248,13 @@ function HomePage() {
 
           {/* Trên desktop hai ô thống kê nằm ở cột trái để lấp khoảng trắng và cân chiều cao hai cột */}
           <div className="stagger mt-auto hidden gap-4 lg:grid lg:grid-cols-2">
-            <StatTile label="Lượt thi" value={countQuery.isLoading ? "…" : String(countQuery.data ?? 0)} />
+            <StatTile 
+              label="Lượt thi" 
+              value={statsSummaryQuery.isLoading ? "…" : String(participationSummary.totalAttempts)} 
+            />
             <StatTile
-              label="Đang mở"
-              value={`${openCount}/${quizzes.length}`}
+              label="Người tham gia"
+              value={statsSummaryQuery.isLoading ? "…" : String(participationSummary.submittedCount)}
               tone="accent"
               icon={<Trophy className="size-4" />}
             />
@@ -368,10 +371,13 @@ function HomePage() {
           </div>
 
           <div className="stagger grid grid-cols-2 gap-3 sm:gap-4 lg:hidden">
-            <StatTile label="Lượt thi" value={countQuery.isLoading ? "…" : String(countQuery.data ?? 0)} />
+            <StatTile 
+              label="Lượt thi" 
+              value={statsSummaryQuery.isLoading ? "…" : String(participationSummary.totalAttempts)} 
+            />
             <StatTile
-              label="Đang mở"
-              value={`${openCount}/${quizzes.length}`}
+              label="Người tham gia"
+              value={statsSummaryQuery.isLoading ? "…" : String(participationSummary.submittedCount)}
               tone="accent"
               icon={<Trophy className="size-4" />}
             />
@@ -383,14 +389,7 @@ function HomePage() {
       {/* Danh sách cuộc thi */}
       <section id="cuoc-thi" data-tour="quizzes" className="mt-7 scroll-mt-24 sm:mt-10">
         <SectionHeading
-          title={
-            <div className="flex flex-col gap-1">
-              <span>Danh sách cuộc thi</span>
-              <span className="text-xs font-medium normal-case text-destructive/80">
-                chỗ này hiển thị ko đúng số người tham gia và số không người đạt
-              </span>
-            </div>
-          }
+          title="Danh sách cuộc thi"
           action={
             <Button asChild variant="ghost" className="rounded-full font-semibold text-primary hover:bg-secondary">
               <Link to="/huong-dan">Luật chơi</Link>
