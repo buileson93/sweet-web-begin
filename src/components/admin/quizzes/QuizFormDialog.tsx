@@ -218,6 +218,7 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
         negative_marking: Number(form.negative_marking) || 0,
         strict_mode: form.strict_mode,
         disqualify_threshold: Math.max(1, Number(form.disqualify_threshold) || 1),
+        is_featured: form.is_featured,
         blueprint,
       };
 
