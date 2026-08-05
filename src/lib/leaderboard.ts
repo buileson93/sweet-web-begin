@@ -106,6 +106,7 @@ export function dedupeByCandidate<
 export function rankUniqueResults<
   T extends RankableResult & { employee_id?: string | null; candidate_name?: string | null; unit?: string | null },
 >(rows: T[]): Array<T & { attempts: number }> {
+  if (!rows || !Array.isArray(rows)) return [];
   // LƯU Ý: Phải đếm TỔNG số lần MỞ PHÒNG THI (sessions) thay vì chỉ đếm số bài đã nộp (results).
   // Thí sinh mở đề rồi thoát mà không nộp vẫn được coi là một "lượt thi" để tính độ chuyên cần/gian lận.
   // Tiêu chí: người thi lại nhiều lần thì sẽ xếp hạng thấp hơn nếu cùng điểm và thời gian.
