@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { getQuizStatsSummary } from "@/lib/adminStats.functions";
-import { Download, FileSpreadsheet, Medal, Radio, RotateCcw, Search, SearchX, Trophy } from "lucide-react";
+import { Download, FileSpreadsheet, Info, Medal, Radio, RotateCcw, Search, SearchX, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
@@ -271,9 +271,42 @@ function LeaderboardPage() {
                    Trang {page}/{pageCount} · {rows.length} người đạt điểm (từ {all.length} bản ghi nộp bài).
                 </p>
                 {statsSummaryQuery.data && (
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase">
-                    Thống kê tham gia: {statsSummaryQuery.data.passedCount} người đạt (≥50%) • {statsSummaryQuery.data.failedCount} người chưa đạt • Tổng {statsSummaryQuery.data.submittedCount} người đã nộp bài.
-                  </p>
+                  <div className="flex flex-col gap-1">
+                    <p className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase">
+                      Thống kê tham gia: 
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help border-b border-dotted border-muted-foreground/50">
+                            {statsSummaryQuery.data.passedCount} đạt (≥50%)
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Số người nộp bài có điểm số đạt ngưỡng 50% trở lên.</TooltipContent>
+                      </Tooltip>
+                      • 
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help border-b border-dotted border-muted-foreground/50">
+                            {statsSummaryQuery.data.failedCount} chưa đạt
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Số người nộp bài nhưng điểm số dưới 50%.</TooltipContent>
+                      </Tooltip>
+                      • 
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help border-b border-dotted border-muted-foreground/50">
+                            Tổng {statsSummaryQuery.data.submittedCount} người đã nộp bài
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Tổng số nhân viên định danh đã thực hiện nộp bài thành công ít nhất 1 lần.</TooltipContent>
+                      </Tooltip>
+                    </p>
+                    {statsSummaryQuery.data.lastUpdatedAt && (
+                      <p className="text-[10px] text-muted-foreground italic uppercase">
+                        Dữ liệu cập nhật lúc: {formatDateTime(statsSummaryQuery.data.lastUpdatedAt)}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             ) : null}

@@ -129,7 +129,8 @@ function HomePage() {
     submittedCount: 0,
     notSubmittedCount: 0,
     totalAttempts: 0,
-    totalEmployees: 0
+    totalEmployees: 0,
+    lastUpdatedAt: null as string | null
   };
 
   const countQuery = useQuery({
