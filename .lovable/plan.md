@@ -1,32 +1,26 @@
-# Plan: Deepening Security Audit for `autosave_rate:too_fast`
+# Kế hoạch: Điều tra và tăng cường giám sát `autosave_rate:too_fast`
 
-The user points out that individuals with the `autosave_rate:too_fast` error often have very high scores and fast completion times, raising concerns that this specific signal might be a byproduct of a cheating tool or a way to probe/manipulate the API.
+Người dùng đặt câu hỏi liệu một người chơi bấm câu trả lời thật (người thật) quá nhanh có bị kích hoạt lỗi `autosave_rate:too_fast` hay không, và bày tỏ nghi ngờ vì những người mắc lỗi này thường có kết quả rất nhanh và điểm cao.
 
-## Current Analysis
-- `autosave_rate:too_fast` occurs when requests hit the server faster than 1.2 seconds apart.
-- Currently, it has a penalty of **0** to avoid penalizing users with poor network connectivity (where browsers might retry/burst requests).
-- The user is suspicious that this is being used as a "smoke screen" or that cheating tools naturally trigger this while trying to inject answers.
+## Phân tích hiện tại
+- **Ngưỡng hiện tại**: 1.2 giây (`MIN_GAP_RPC_MS`) giữa 2 lần lưu.
+- **Khả năng người thật**: Một người cực kỳ giỏi và thuộc đề có thể đọc câu hỏi ngắn và bấm chọn trong < 1.2 giây, đặc biệt là với các câu hỏi trắc nghiệm đơn giản. Tuy nhiên, việc duy trì tốc độ này liên tục qua nhiều câu là dấu hiệu bất thường.
+- **Nghi vấn**: `autosave_rate:too_fast` có thể là hệ quả của việc script cố gắng "nhồi" đáp án nhanh nhất có thể hoặc thăm dò API.
 
-## Proposed Actions
+## Các bước thực hiện
 
-### 1. Update Internal Documentation with User's Observation
-- Update the comment in `src/lib/integrity.ts` to reflect this new observation: that while it *could* be network-related, it is frequently correlated with suspicious high-speed/high-score performance.
+### 1. Cập nhật tài liệu nội bộ (src/lib/integrity.ts)
+- Ghi chú rõ nghi vấn của người dùng: "Người thật bấm quá nhanh có bị lỗi này không? Thực tế cho thấy các trường hợp bị lỗi này thường có tốc độ và điểm số rất cao, cần giám sát chặt chẽ."
+- Giải thích rõ cơ chế: Nếu bấm thật trong < 1.2s liên tục, lỗi này sẽ hiện ra.
 
-### 2. Strengthen Speed Auditing Connection
-- In `src/lib/exam/speedAudit.ts`, we currently include `autosave_rate` as a `ScriptSignal`.
-- I will ensure that when `auditSpeed` sees `autosave_rate`, it triggers a more aggressive "reason" classification (e.g., `fast_with_script_signal`).
+### 2. Tinh chỉnh logic giám sát tốc độ (src/lib/exam/speedAudit.ts)
+- Đảm bảo tín hiệu `autosave_rate` được kết hợp chặt chẽ với logic `auditSpeed`.
+- Nếu một phiên có cả `autosave_rate` và tốc độ trung bình `< 3s/câu`, hệ thống sẽ gắn nhãn rủi ro cao hơn trong trang Admin để người quản trị dễ dàng phát hiện.
 
-### 3. Adjust Penalty Strategy (Optional/Incremental)
-- Since the user is "very suspicious", we could consider giving `autosave_rate:too_fast` a **small, non-zero weight (e.g., 1)** instead of 0, but only if it happens repeatedly (e.g., > 3 times in a session). This would contribute to the integrity score without disqualifying someone for a single network glitch.
-- *Decision*: I will keep it at 0 for now to avoid breaking the "no false positives" rule, but I will improve the **logging** and **correlation** in the speed audit so that the admin sees it as a stronger red flag when combined with speed.
+### 3. Đánh giá lại trọng số phạt
+- Giữ trọng số là **0** để tránh phạt oan tuyệt đối cho người dùng mạng lag (khiến request bị dồn toa).
+- Thay vào đó, tăng cường hiển thị cảnh báo cho Admin trong mục "Theo dõi trực tiếp" khi thấy sự kết hợp giữa: `too_fast` + `Điểm cao` + `Thời gian ngắn`.
 
-## Implementation Steps
-
-### 1. Documentation Update
-- Modify `src/lib/integrity.ts` to incorporate the user's specific suspicion about high-speed correlation.
-
-### 2. Enhancing Speed Audit Logic
-- Verify `src/lib/exam/speedAudit.ts` properly weights the presence of `autosave_rate` when evaluating overall exam speed.
-
-## Verification
-- Run existing integrity and speed audit tests.
+## Kế hoạch kiểm tra
+- Chạy thử nghiệm giả lập người thật bấm nhanh (< 1.2s) để xác nhận lỗi `too_fast` xuất hiện.
+- Chạy các test case hiện có để đảm bảo không phá vỡ logic cũ.
