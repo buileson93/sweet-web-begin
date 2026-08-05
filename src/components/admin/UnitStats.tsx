@@ -72,22 +72,6 @@ export function UnitStats() {
     ];
   }, [distributionQuery.data]);
 
-  const distribution = useMemo(() => {
-    const buckets = [0, 0, 0, 0, 0];
-    for (const r of query.data ?? []) {
-      if (r.disqualified || !r.total) continue;
-      const pct = (r.score / r.total) * 100;
-      const i = pct < 50 ? 0 : pct < 65 ? 1 : pct < 80 ? 2 : pct < 90 ? 3 : 4;
-      buckets[i] += 1;
-    }
-    return [
-      { range: "Dưới 50%", count: buckets[0], fail: true },
-      { range: "50–64%", count: buckets[1], fail: false },
-      { range: "65–79%", count: buckets[2], fail: false },
-      { range: "80–89%", count: buckets[3], fail: false },
-      { range: "90–100%", count: buckets[4], fail: false },
-    ];
-  }, [query.data]);
 
   const chartRows = useMemo(() => rows.slice(0, 12), [rows]);
 
