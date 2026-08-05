@@ -239,7 +239,7 @@ export const EXAM_EVENT_LABEL: Record<string, string> = {
   liveness_failed: "Không xác thực được phiên (liveness)",
   untrusted_input: "Đáp án không có thao tác thật",
   automation_detected: "Trình duyệt tự động hoá",
-  script_suspect: "lên kế hoạch để chống gian lận tôi thấy autosave_rate:too_fast hơi nhiều có vể tiêu chí này phát hiện script hơi sai",
+  script_suspect: "xem Phan Thành An có gian lận ko",
   honeypot_hit: "Bấm trúng thẻ mồi ẩn (honeypot)",
   captcha_failed: "Captcha vô hình không qua (Turnstile)",
   speed_anomaly: "Tốc độ trả lời bất thường",
