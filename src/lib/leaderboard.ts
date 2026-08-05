@@ -115,7 +115,10 @@ export function rankUniqueResults<
     const k = candidateKeyOf(r);
     // Trong bảng results hiện chưa có cột attempts, ta đang gộp bài tốt nhất của mỗi thí sinh.
     // Tạm thời đếm số record kết quả thành công để phá hoà.
-    attemptsByKey.set(k, (attemptsByKey.get(k) ?? 0) + 1);
+    // LƯU Ý: Nếu r.attempts đã có giá trị (từ database), ta nên sử dụng nó hoặc cộng dồn.
+    // Hiện tại do query results chưa có cột này, ta đếm số lượng record.
+    const currentCount = attemptsByKey.get(k) ?? 0;
+    attemptsByKey.set(k, currentCount + 1);
   }
 
   const withAttempts = rows
