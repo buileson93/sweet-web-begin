@@ -61,10 +61,10 @@ export const getQuizParticipation = createServerFn({ method: "POST" })
     const [{ data: roster, error: rosterError }, { data: attempts, error: attemptError }] = await Promise.all([
       rosterQuery,
       supabaseAdmin
-        .from("results")
+        .from("exam_sessions")
         .select("employee_id, score, total, submitted_at")
+        .in("status", ["submitted", "grading", "disqualified"])
         .eq("quiz_id", data.quizId)
-        .eq("disqualified", false)
         .limit(20000),
     ]);
     if (rosterError) throw new Error(rosterError.message);
