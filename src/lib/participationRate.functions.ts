@@ -28,7 +28,7 @@ export const getPublicParticipationRates = createServerFn({ method: "POST" })
       .from("exam_sessions")
       .select("quiz_id, employee_id")
       .in("quiz_id", data.quizIds)
-      .in("status", ["submitted", "grading"])
+      .in("status", ["submitted", "grading", "disqualified"])
       .limit(100000);
     if (attemptErr) throw new Error(attemptErr.message);
 
