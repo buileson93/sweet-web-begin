@@ -614,16 +614,19 @@ function StatTile({
   value,
   tone,
   icon,
+  tooltip,
 }: {
   label: string;
   value: string;
   tone?: "accent";
   icon?: React.ReactNode;
+  tooltip?: string;
 }) {
-  return (
+  const content = (
     <div className="card-elevated p-3 sm:p-4">
       <span className="type-eyebrow flex items-center gap-1.5 text-muted-foreground">
         {icon} {label}
+        {tooltip && <Info className="size-3 opacity-50" />}
       </span>
       <span
         className={cn(
@@ -634,6 +637,20 @@ function StatTile({
         {value}
       </span>
     </div>
+  );
 
+  if (!tooltip) return content;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button type="button" className="block w-full text-left transition-transform active:scale-95">
+          {content}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[200px] text-center">
+        {tooltip}
+      </TooltipContent>
+    </Tooltip>
   );
 }
