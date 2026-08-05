@@ -272,13 +272,13 @@ function HomePage() {
                 </span>
                 {!statsSummaryQuery.isLoading && (
                    <div className="flex flex-col items-end gap-0.5 text-[9px] font-bold text-muted-foreground uppercase leading-none">
-                     <div className="flex gap-1.5">
+                     <div className="flex gap-1.5" title="Tổng hợp từ tất cả thí sinh đã dự thi">
                         <span className="text-success">{participationSummary.passedCount} đạt</span>
                         <span className="text-destructive">{participationSummary.failedCount} chưa đạt</span>
                      </div>
                      <div className="flex gap-1.5">
-                        <span>{participationSummary.submittedCount} đã nộp</span>
-                        <span>{participationSummary.notSubmittedCount} chưa nộp</span>
+                        <span>{participationSummary.submittedCount} đã nộp bài</span>
+                        <span>{participationSummary.notSubmittedCount} chưa hoàn thành</span>
                      </div>
                    </div>
                 )}

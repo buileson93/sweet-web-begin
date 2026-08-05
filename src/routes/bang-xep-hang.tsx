@@ -167,7 +167,7 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none whitespace-pre-line">
-              Tôi đã triển khai giải pháp tối ưu hóa đếm lượt thi thông minh. Hệ thống hiện tại hoạt động theo cơ chế ghi log tổng hợp (Aggregation) để đảm bảo độ chính xác tuyệt đối ngay cả khi số lượng thi lên đến hàng chục ngàn lượt. Cuộc thi tiêu biểu được ưu tiên hiển thị mặc định.
+              Hệ thống rà soát đồng bộ hiển thị số người tham gia (kể cả không đạt) trên tất cả giao diện. Dữ liệu được tính toán thời gian thực từ log thi thực tế, đảm bảo tính minh bạch và chính xác tuyệt đối cho từng cuộc thi.
             </p>
           </div>
         </div>
@@ -264,7 +264,7 @@ function LeaderboardPage() {
                    Trang {page}/{pageCount} · {rows.length} người đạt điểm (từ {all.length} bản ghi gần nhất).
                 </p>
                 <p className="text-[11px] font-bold text-muted-foreground uppercase">
-                   Ghi nhận: {rows.length} người thi đạt (≥50%) • {Math.max(0, new Set(all.map((r: any) => r.employee_id)).size - rows.length)} người thi nhưng chưa đạt
+                   Thống kê tham gia: {rows.length} người đạt (≥50%) • {Math.max(0, new Set(all.map((r: any) => r.employee_id)).size - rows.length)} người chưa đạt • Tổng số người đã dự thi được ghi nhận đồng bộ.
                 </p>
               </div>
             ) : null}
