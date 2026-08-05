@@ -2549,3 +2549,13 @@ html.twr-calm *::after {
 .animate-foe-orbit { animation: foe-orbit 2.2s ease-in-out infinite; }
 .animate-foe-shockwave { animation: foe-shockwave 1.4s ease-out infinite; }
 .animate-damage-float { animation: damage-float 1.1s ease-out forwards; }
+
+/* Chế độ "đắm chìm" cho thiết bị không hỗ trợ toàn màn hình (iOS Safari):
+   khoá cuộn nền và ẩn thanh điều hướng phụ để hạn chế thao tác ngoài bài thi. */
+body.exam-immersive {
+  overscroll-behavior: none;
+  touch-action: pan-y;
+}
+body.exam-immersive [data-app-chrome] {
+  display: none !important;
+}
