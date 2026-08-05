@@ -215,7 +215,7 @@ function HomePage() {
   return (
     <AppShell>
       <ProductTour steps={TOUR_STEPS} />
-      <div className="sr-only">hiển thị rõ ra những người tham gia và những người đã tham gia nhưng không đạt để biết đồng bộ các chỗ hiển thị ở giao diện để tránh bị sai sót, trong bảng xếp hạng ví dụ châu quang huy thi 38 lượt thi là có đúng chưa tôi nghỉ là nhiều hơn tìm nguyên nhân</div>
+      <div className="sr-only">tối ưu hơn lỡ có thi nhiều hơn cũng không bị sai sót</div>
 
       {/* Bố cục chia đôi: trái = vào phòng thi, phải = bảng xếp hạng trực tiếp */}
       <section className="grid gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-8 xl:gap-10">
