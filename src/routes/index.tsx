@@ -100,7 +100,7 @@ function HomePage() {
       const { data, error } = await q
         .order("score", { ascending: false })
         .order("time_seconds", { ascending: true })
-        .limit(200);
+        .limit(1000); // Tăng giới hạn để không bị thiếu thí sinh khi gộp bài tốt nhất (339+ người)
       if (error) throw error;
       return (data ?? []) as Array<{
         id: string;
