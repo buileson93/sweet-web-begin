@@ -59,7 +59,7 @@ function LeaderboardPage() {
       let query = supabase
         .from("results")
         .select(
-          "id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, max_points, best_streak",
+          "id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, max_points, best_streak, employee_id",
         )
         .eq("disqualified", false)
         // Lấy thô rồi xếp hạng ở rankResults (theo TỈ LỆ ĐÚNG) vì điểm thưởng combo
@@ -83,8 +83,8 @@ function LeaderboardPage() {
   const rows = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
     // rankUniqueResults: loại bài dưới 50%, sắp xếp công bằng, mỗi thí sinh chỉ giữ bài tốt nhất.
-    return rankUniqueResults(all).filter(
-      (r) => !kw || r.candidate_name.toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
+    return (rankUniqueResults(all as any) as any[]).filter(
+      (r) => !kw || (r.candidate_name || "").toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
     );
   }, [all, keyword]);
 
@@ -120,9 +120,9 @@ function LeaderboardPage() {
     quizId === "all" ? "tat-ca" : ((quizzesQuery.data ?? []).find((q) => q.id === quizId)?.title ?? "cuoc-thi");
 
   function exportRows(): ExportRow[] {
-    return rows.map((r, i) => ({
+    return rows.map((r: any, i) => ({
       "Xếp hạng": i + 1,
-      "Họ và tên": r.candidate_name,
+      "Họ và tên": r.candidate_name || "Không rõ",
       "Đơn vị": r.unit ?? "",
       "Cuộc thi": r.quiz_title ?? "",
       "Điểm số": r.points ?? 0,
@@ -316,7 +316,7 @@ function LeaderboardPage() {
                   const i = (page - 1) * pageSize + offset;
                   return (
                   <li
-                    key={r.id}
+                    key={(r as any).id}
                     className={cn(
                       "game-card animate-pop grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 sm:gap-4 sm:p-5",
                       i < 3 && "ring-1 ring-gold/40",
@@ -346,8 +346,8 @@ function LeaderboardPage() {
                         {r.attempts ?? 1} lượt thi
                       </span>
                       <p className="type-meta mt-0.5 truncate">
-                        {r.quiz_title}
-                        <span className="hidden sm:inline"> • {formatDateTime(r.submitted_at)}</span>
+                        {(r as any).quiz_title}
+                        <span className="hidden sm:inline"> • {formatDateTime((r as any).submitted_at)}</span>
                       </p>
                     </div>
 

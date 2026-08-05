@@ -119,9 +119,9 @@ function HomePage() {
   // Mỗi thí sinh chỉ giữ bài tốt nhất, lấy top 3 sau khi gộp.
   const top3 = useMemo(
     () =>
-      rankUniqueResults(topQuery.data ?? [])
+      (rankUniqueResults(topQuery.data as any) as any[])
         .slice(0, 3)
-        .map((r) => ({ ...r, candidate_name: r.candidate_name ?? "Không rõ" })),
+        .map((r) => ({ ...r, candidate_name: r.candidate_name ?? "Không rõ", id: r.id || String(Math.random()) })),
     [topQuery.data],
   );
 
