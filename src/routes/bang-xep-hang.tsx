@@ -66,7 +66,7 @@ function LeaderboardPage() {
         // giữa các cấu hình cuộc thi không so sánh trực tiếp được với nhau.
         .order("score", { ascending: false })
         .order("time_seconds", { ascending: true })
-        .limit(1000); // Tăng giới hạn để bao phủ toàn bộ 339+ thí sinh thực tế
+        .limit(3000); // Tăng giới hạn vượt quá tổng số bản ghi hiện tại (2305) để tránh mất dữ liệu khi gộp bài tốt nhất
       if (quizId !== "all") query = query.eq("quiz_id", quizId);
       const { data, error } = await query;
       if (error) throw error;
