@@ -175,6 +175,44 @@ export type Database = {
           },
         ]
       }
+      candidate_quiz_stats: {
+        Row: {
+          attempt_count: number | null
+          candidate_name: string | null
+          employee_id: string
+          last_updated_at: string | null
+          quiz_id: string
+          submitted_count: number | null
+          unit: string | null
+        }
+        Insert: {
+          attempt_count?: number | null
+          candidate_name?: string | null
+          employee_id: string
+          last_updated_at?: string | null
+          quiz_id: string
+          submitted_count?: number | null
+          unit?: string | null
+        }
+        Update: {
+          attempt_count?: number | null
+          candidate_name?: string | null
+          employee_id?: string
+          last_updated_at?: string | null
+          quiz_id?: string
+          submitted_count?: number | null
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_quiz_stats_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carousel_events: {
         Row: {
           card_labels: string[]
