@@ -617,6 +617,8 @@ export async function saveExamProgress(input: {
   at?: number;
   /** Nguồn gửi: RPC bình thường hay sendBeacon lúc tab bị ẩn. */
   source?: SaveSource;
+  /** Bản vá helpers (ví dụ: thông tin sinh trắc học hành vi). */
+  helpersPatch?: Record<string, unknown>;
 }): Promise<{
   savedAt: string;
   seq: number;
@@ -805,7 +807,10 @@ export async function saveExamProgress(input: {
     sessionId: session.id,
     answers: accepted,
     seq: input.clientSeq,
-    helpersPatch: { chain: { head: check.head, seq: input.clientSeq } },
+    helpersPatch: { 
+      chain: { head: check.head, seq: input.clientSeq },
+      ...(input.helpersPatch ?? {}),
+    },
   });
 
 
