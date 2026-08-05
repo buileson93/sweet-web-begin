@@ -15,26 +15,36 @@ export const getQuizStatsSummary = createServerFn({ method: "POST" })
       .select("*", { count: "exact", head: true })
       .eq("is_active", true);
 
-    // 2. Lấy dữ liệu tổng hợp từ bảng candidate_quiz_stats (Optimization)
+    // 2. Lấy dữ liệu tổng hợp từ bảng candidate_quiz_stats
     let statsQuery = supabaseAdmin
       .from("candidate_quiz_stats")
-      .select("employee_id, attempt_count, submitted_count");
+      .select("employee_id, candidate_name, unit, attempt_count, submitted_count");
     
     if (quizId !== "all") {
       statsQuery = statsQuery.eq("quiz_id", quizId);
     }
     
-    const { data: statsData } = await statsQuery.limit(10000);
-    
-    // Tổng số lượt thi (không deduplicate)
-    const totalAttempts = (statsData || []).reduce((sum, s) => sum + (s.attempt_count || 0), 0);
-    // Số người đã nộp ít nhất 1 lần
-    const submittedUniqueCount = (statsData || []).filter(s => (s.submitted_count || 0) > 0).length;
+    const { data: statsData } = await statsQuery.limit(50000);
+    const stats = statsData || [];
+
+    // Tính toán dựa trên employee_id hoặc name|unit để deduplicate
+    const uniqueParticipants = new Set();
+    let totalAttempts = 0;
+    let submittedUniqueCount = 0;
+
+    for (const s of stats) {
+      const key = s.employee_id || `${(s.candidate_name || "").trim().toLowerCase()}|${(s.unit || "").trim().toLowerCase()}`;
+      uniqueParticipants.add(key);
+      totalAttempts += (s.attempt_count || 0);
+      if ((s.submitted_count || 0) > 0) {
+        submittedUniqueCount++;
+      }
+    }
 
     // 3. Đếm số người ĐẠT (Deduplicated)
     let passedQuery = supabaseAdmin
       .from("results")
-      .select("employee_id")
+      .select("employee_id, candidate_name, unit")
       .eq("disqualified", false)
       .eq("passed", true);
     
@@ -42,14 +52,17 @@ export const getQuizStatsSummary = createServerFn({ method: "POST" })
       passedQuery = passedQuery.eq("quiz_id", quizId);
     }
     
-    const { data: passedData } = await passedQuery.limit(10000);
-    const passedUniqueCount = new Set(passedData?.map(d => d.employee_id).filter(Boolean)).size;
+    const { data: passedData } = await passedQuery.limit(50000);
+    const passedKeys = new Set((passedData || []).map(d => 
+      d.employee_id || `${(d.candidate_name || "").trim().toLowerCase()}|${(d.unit || "").trim().toLowerCase()}`
+    ));
+    const passedUniqueCount = passedKeys.size;
 
     const total = totalEmployees ?? 0;
     
     return {
       totalEmployees: total,
-      submittedCount: submittedUniqueCount,
+      submittedCount: submittedUniqueCount, // Số người đã nộp ít nhất 1 lần
       notSubmittedCount: Math.max(0, total - submittedUniqueCount),
       passedCount: passedUniqueCount,
       failedCount: Math.max(0, submittedUniqueCount - passedUniqueCount),
