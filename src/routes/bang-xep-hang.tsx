@@ -167,7 +167,7 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none whitespace-pre-line">
-              Hệ thống đã lên kế hoạch và tinh chỉnh cơ chế chống script để bảo vệ thí sinh, tránh các trường hợp báo cáo lỗi script "bị oan" do kết nối mạng hoặc thiết bị. Dữ liệu tham gia được đồng bộ minh bạch trên toàn hệ thống.
+              Hệ thống đã được tinh chỉnh cơ chế Cloudflare Turnstile để bảo vệ thí sinh khỏi lỗi mạng "bị oan", đồng thời thắt chặt các biện pháp kỹ thuật ngầm (Liveness, Honeypot) để đảm bảo không một kẽ hở nào dành cho gian lận.
             </p>
           </div>
         </div>
