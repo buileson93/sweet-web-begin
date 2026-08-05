@@ -33,7 +33,7 @@ export const getRankableResults = createServerFn({ method: "POST" })
     let sessionsQuery = supabaseAdmin
       .from("exam_sessions")
       .select("employee_id, candidate_name, unit, status")
-      .limit(20000); // Tăng giới hạn để quét nhiều hơn nữa
+      .limit(50000); // Tăng giới hạn tối đa để không bỏ sót bất kỳ lượt thi nào
 
     if (quizId !== "all") {
       sessionsQuery = sessionsQuery.eq("quiz_id", quizId);

@@ -156,8 +156,7 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none whitespace-pre-line">
-              áp dụng cho toàn bộ thí sinh chứ không riêng châu quang huy, Nguyễn Thị Ngọc Mai
-              Đài KSKL Chu Lai có vẻ 25 lượt thi là không đúng
+              tính lại lượt thi phải đúng và hiển thị tại leaderboard cho chuẩn
             </p>
           </div>
         </div>
