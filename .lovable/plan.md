@@ -1,42 +1,38 @@
-# Kế hoạch: Phân tích và báo cáo cơ chế chống Script (Thay thế luật tốc độ)
+# Kế hoạch: Nâng cấp cơ chế chống Script chuyên nghiệp
 
-Người dùng khẳng định việc trả lời 1.2s/câu là bình thường đối với người thuộc đề và yêu cầu tập trung vào các biện pháp kỹ thuật phát hiện script thay vì dựa vào tốc độ.
+Người dùng đặt câu hỏi về việc thêm bẫy giả (honeypots) và các biện pháp chuyên nghiệp hơn để chặn script, thay vì chỉ dựa vào các biện pháp cơ bản hay tốc độ.
 
-## Phân tích kỹ thuật hiện tại (Anti-Script)
+## Các biện pháp chống Script chuyên nghiệp đề xuất
 
-Hệ thống hiện tại **không chỉ** dựa vào tốc độ mà sử dụng các lớp phòng thủ kỹ thuật sâu hơn để phân biệt người thật và máy:
+Hệ thống sẽ được nâng cấp với các kỹ thuật "ẩn mình" và "xác thực sâu" sau:
 
-1.  **Chữ ký số Payload (ECDSA P-256)**:
-    - Mỗi gói đáp án gửi lên máy chủ phải được ký bằng một khoá riêng (Private Key) được tạo ra ngay trong trình duyệt khi bắt đầu thi.
-    - Khoá này được lưu trong bộ nhớ an toàn (không thể xuất ra, không thể sao chép bằng script thông thường).
-    - Script bên ngoài (Python, curl, Postman) không có khoá này sẽ không thể tạo được chữ ký hợp lệ để gửi đáp án.
+### 1. Đa dạng hóa bẫy giả (Dynamic Honeypots)
+- Không chỉ là các thẻ ẩn đơn giản. Chúng ta sẽ tạo ra các **"câu hỏi giả"** trong cấu trúc dữ liệu gửi xuống. Nếu script cố tình trả lời các câu hỏi không tồn tại này, đó là bằng chứng gian lận tuyệt đối.
+- Sử dụng các thuộc tính CSS ngẫu nhiên để ẩn bẫy (ví dụ: `opacity: 0.0001`, `z-index: -9999`, hoặc nằm ngoài vùng nhìn thấy) để tránh các script lọc `display: none`.
 
-2.  **Bằng chứng thao tác vật lý (isTrusted proofs)**:
-    - Mỗi khi người dùng bấm chọn đáp án, hệ thống ghi lại cờ `isTrusted` từ trình duyệt (chỉ `true` khi có tác động vật lý thật từ chuột/bàn phím).
-    - Các script tự động (gọi `.click()` hoặc sửa DOM) sẽ có cờ `isTrusted = false`.
-    - Máy chủ kiểm tra cờ này kèm theo chữ ký số để đảm bảo bằng chứng không bị giả mạo.
+### 2. Xác thực chuỗi hành vi (Interaction Sequence Validation)
+- Người thật thường có các hành vi "thừa" như: di chuyển chuột, cuộn trang, hoặc thời gian giữa các lần di chuyển chuột không đều.
+- Script thường chỉ "nhảy" trực tiếp đến phần tử và click.
+- Chúng ta sẽ ghi nhận một "hash hành vi" tóm tắt các sự kiện này và gửi kèm gói đáp án.
 
-3.  **Giới hạn số câu mới mỗi lần lưu (MAX_NEW_ANSWERS_PER_SAVE)**:
-    - Ngay cả khi một script lách được các bước trên, máy chủ cũng chỉ chấp nhận tối đa **5 câu mới** trong mỗi 1.2 giây.
-    - Điều này ngăn chặn việc "nhồi" toàn bộ 50-100 câu hỏi vào cơ sở dữ liệu chỉ trong một giây.
+### 3. Canvas/Webgl Fingerprinting (Nhận diện thiết bị sâu)
+- Sử dụng kỹ thuật vẽ ẩn trên Canvas để tạo ra một vân tay thiết bị duy nhất. Nếu nhiều phiên thi khác nhau có cùng một vân tay thiết bị lạ hoặc vân tay từ các môi trường ảo (Headless Chrome), hệ thống sẽ cảnh báo.
 
-4.  **Honeypot (Bẫy ẩn)**:
-    - Các phần tử mồi ẩn mà người thật không thể thấy nhưng script quét mã nguồn sẽ thấy và tương tác. Nếu "bấm" trúng bẫy này, hệ thống sẽ đánh dấu gian lận tuyệt đối.
+### 4. Obfuscation (Làm rối mã nguồn)
+- Làm rối các tên hàm và biến liên quan đến việc gửi đáp án (như `saveExamProgress`, `signature`) để khiến việc dịch ngược mã nguồn (reverse engineering) trở nên khó khăn hơn đối với các script tùy chỉnh.
 
-## Các bước thực hiện
+## Các bước thực hiện trong Plan
 
-### 1. Cập nhật tài liệu và giải thích (src/lib/integrity.ts)
-- Thay đổi các ghi chú để làm rõ: **Hệ thống không dùng tốc độ làm tiêu chí phạt**.
-- Khẳng định tốc độ 1.2s/câu là hợp lệ đối với người thuộc đề.
-- Chỉnh sửa logic `describeExamEvent` để cung cấp thông tin kỹ thuật (chữ ký, cờ `isTrusted`) thay vì chỉ nói về "nhanh".
+### 1. Nâng cấp Honeypot (src/lib/integrity.ts & UI)
+- Triển khai logic tạo bẫy ngẫu nhiên trong mỗi phiên thi.
+- Cập nhật `scoreEvent` để xử lý các loại bẫy mới này.
 
-### 2. Rà soát lỗ hổng (Investigation)
-- Kiểm tra lại luồng `src/lib/exam/answerIntake.ts` để đảm bảo không có cách nào gửi đáp án mà không qua bước xác thực chữ ký.
-- Xác minh `src/lib/exam/payloadSign.ts` đang hoạt động đúng ở chế độ "Nghiêm ngặt" (Strict Mode).
+### 2. Tăng cường xác thực phía máy chủ (src/lib/exam/answerIntake.ts)
+- Kiểm tra sự hiện diện của "chuỗi hành vi" tối thiểu trước khi chấp nhận đáp án.
 
-### 3. Điều chỉnh nhãn hiển thị cho Admin
-- Thay đổi nhãn "Tốc độ bất thường" thành "Nghi vấn Script" nếu có sự kết hợp của nhiều tín hiệu kỹ thuật, không chỉ dựa vào thời gian.
+### 3. Cập nhật tài liệu (Tiếng Việt)
+- Giải thích các biện pháp mới này trong mã nguồn để người quản trị hiểu được các lớp phòng thủ chuyên nghiệp đang hoạt động.
 
 ## Kế hoạch kiểm tra
-- Chạy thử nghiệm gửi đáp án bằng script (không có chữ ký) để xác nhận máy chủ từ chối.
-- Chạy thử nghiệm "người thật thi nhanh" (1.2s/câu) để đảm bảo điểm liêm chính vẫn là 100.
+- Thử nghiệm với các công cụ tự động hóa phổ biến (Selenium, Puppeteer) xem có bị phát hiện bởi các lớp bảo mật mới không.
+- Đảm bảo người dùng thật (ngay cả khi thi rất nhanh) không bị kích hoạt các bẫy này.
