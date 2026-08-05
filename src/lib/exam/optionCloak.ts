@@ -77,14 +77,14 @@ function decoyText(options: readonly string[], rng: () => number): string {
 
 /**
  * Dựng lớp nguỵ trang cho danh sách phương án của MỘT lần hiển thị câu hỏi.
- * @param trapCount số thẻ mồi chèn thêm (mặc định 2, tối đa 4).
+ * @param trapCount số thẻ mồi chèn thêm (mặc định 3, tối đa 6).
  */
 export function buildCloak(
   options: readonly string[],
   opts: { trapCount?: number; rng?: () => number } = {},
 ): Cloak {
   const rng = opts.rng ?? defaultRng;
-  const trapCount = Math.max(0, Math.min(4, opts.trapCount ?? 2));
+  const trapCount = Math.max(0, Math.min(6, opts.trapCount ?? 3));
 
   const tokens = options.map(() => randomToken(rng));
   const real: CloakSlot[] = options.map((text, i) => ({
