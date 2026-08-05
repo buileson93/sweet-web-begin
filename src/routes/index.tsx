@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, quizStatus } from "@/lib/format";
 import { rankUniqueResults } from "@/lib/leaderboard";
 import { getPublicParticipationRates } from "@/lib/participationRate.functions";
+import { getQuizStatsSummary } from "@/lib/adminStats.functions";
 
 import { resolveQuizCover } from "@/lib/quizCover";
 import { PlayerHeroCard } from "@/components/player/PlayerHeroCard";
@@ -215,7 +216,7 @@ function HomePage() {
   return (
     <AppShell>
       <ProductTour steps={TOUR_STEPS} />
-      <div className="sr-only">tối ưu hơn lỡ có thi nhiều hơn cũng không bị sai sót</div>
+      <div className="sr-only">Thêm bộ lọc để tôi có thể chọn cuộc thi và xem ngay số người đã nộp, chưa nộp và đạt/ngưỡng theo thời gian thực. các thông tin thống kê của admin có bị giới hạn 200 hay 1000 bản ghi ko có cách nào tối ưu luôn hiển thị đúng số liệu thực tế database</div>
 
       {/* Bố cục chia đôi: trái = vào phòng thi, phải = bảng xếp hạng trực tiếp */}
       <section className="grid gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-8 xl:gap-10">
@@ -286,10 +287,17 @@ function HomePage() {
                 <span className="type-meta inline-flex items-center gap-1.5 font-bold text-primary">
                   <span className="size-1.5 animate-pulse rounded-full bg-primary" /> Trực tiếp
                 </span>
-                {!topQuery.isLoading && (
-                   <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                     {participationSummary.participants} đạt • {participationSummary.failedCount} chưa đạt
-                   </span>
+                {!statsSummaryQuery.isLoading && (
+                   <div className="flex flex-col items-end gap-0.5 text-[9px] font-bold text-muted-foreground uppercase leading-none">
+                     <div className="flex gap-1.5">
+                        <span className="text-success">{participationSummary.passedCount} đạt</span>
+                        <span className="text-destructive">{participationSummary.failedCount} chưa đạt</span>
+                     </div>
+                     <div className="flex gap-1.5">
+                        <span>{participationSummary.submittedCount} đã nộp</span>
+                        <span>{participationSummary.notSubmittedCount} chưa nộp</span>
+                     </div>
+                   </div>
                 )}
               </div>
             </div>
