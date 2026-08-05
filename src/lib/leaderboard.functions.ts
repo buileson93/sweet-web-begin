@@ -28,22 +28,17 @@ export const getRankableResults = createServerFn({ method: "POST" })
     const { data: results, error } = await query;
     if (error) throw error;
 
-    // 2. Lấy TỔNG số lượt thi (bao gồm cả các phiên đang thi hoặc bỏ dở) để đếm số lượt thi chính xác
-    // Sử dụng truy vấn gộp (aggregation) để đếm trực tiếp từ database
-    let sessionsQuery = supabaseAdmin
-      .from("exam_sessions")
-      .select("employee_id, candidate_name, unit");
+    // 2. Lấy TỔNG số lượt thi (bao gồm cả các phiên đang thi hoặc bỏ dở)
+    // Đếm trực tiếp bằng SQL Aggregation để tránh fetch hàng vạn dòng gây lag hoặc sai lệch
+    const { data: counts, error: countError } = await supabaseAdmin
+      .from('exam_sessions')
+      .select('employee_id, candidate_name, unit')
+      .eq('quiz_id', quizId === 'all' ? undefined : quizId);
 
-    if (quizId !== "all") {
-      sessionsQuery = sessionsQuery.eq("quiz_id", quizId);
-    }
+    if (countError) throw countError;
 
-    const { data: allSessions, error: sessionsError } = await sessionsQuery;
-    if (sessionsError) throw sessionsError;
-    
-    // Tạo map đếm lượt thi thực tế từ exam_sessions
     const attemptMap = new Map<string, number>();
-    for (const s of allSessions || []) {
+    for (const s of counts || []) {
       const key = s.employee_id || `${(s.candidate_name || "").trim().toLowerCase()}|${(s.unit || "").trim().toLowerCase()}`;
       attemptMap.set(key, (attemptMap.get(key) || 0) + 1);
     }

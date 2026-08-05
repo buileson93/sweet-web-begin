@@ -156,7 +156,7 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none whitespace-pre-line">
-              Chỉ xếp hạng bài đạt từ 50% trở lên. Mỗi thí sinh lấy bài tốt nhất: nhiều câu đúng nhất, sau đó tới thời gian làm bài ngắn hơn. Nếu vẫn bằng nhau, ai thi ÍT lượt hơn được xếp trên.
+              Lượt thi được tính dựa trên toàn bộ các phiên (kể cả chưa nộp). Xếp hạng ưu tiên: Câu đúng nhiều nhất &gt; Thời gian ngắn nhất &gt; Số lượt thi ít nhất.
             </p>
           </div>
         </div>
