@@ -118,13 +118,15 @@ function HomePage() {
   });
 
   // Mỗi thí sinh chỉ giữ bài tốt nhất, lấy top 3 sau khi gộp.
-  const top3 = useMemo(
-    () =>
-      (rankUniqueResults((topQuery.data || []) as any) as any[])
-        .slice(0, 3)
-        .map((r) => ({ ...r, candidate_name: r.candidate_name ?? "Không rõ", id: r.id || String(Math.random()) })),
-    [topQuery.data],
-  );
+  const top3 = useMemo(() => {
+    const rawData = (topQuery.data || []) as any[];
+    const ranked = rankUniqueResults(rawData) as any[];
+    return ranked.slice(0, 3).map((r) => ({
+      ...r,
+      candidate_name: r.candidate_name ?? "Không rõ",
+      id: r.id || String(Math.random()),
+    }));
+  }, [topQuery.data]);
 
   // Thống kê chính xác từ Server (Không bị giới hạn limit client)
   const statsSummaryQuery = useQuery({
