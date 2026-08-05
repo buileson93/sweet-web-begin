@@ -125,15 +125,33 @@ function HomePage() {
     [topQuery.data],
   );
 
+  // Thống kê những người chưa tham gia hoặc chưa đạt
+  const participationSummary = useMemo(() => {
+    if (!topQuery.data) return { participants: 0, nonParticipants: 0, failedCount: 0 };
+    // Số người đã đạt (có trong rankUniqueResults)
+    const passedUnique = rankUniqueResults(topQuery.data as any).length;
+    // Tổng số lượt thi (submitted/grading) của kỳ thi này
+    const totalAttempts = topQuery.data.length;
+    
+    return { 
+      participants: passedUnique,
+      // Tạm tính những người có trong data nhưng không lọt vào rankUnique (điểm < 50%)
+      failedCount: Math.max(0, new Set(topQuery.data.map(r => r.employee_id)).size - passedUnique)
+    };
+  }, [topQuery.data]);
+
 
   const countQuery = useQuery({
-    queryKey: ["results", "count"],
+    queryKey: ["results", "count", boardQuiz],
     queryFn: async () => {
-      // Đếm tổng số lượt thi thực tế (phiên đã nộp bài hoặc đang chấm) thay vì số record kết quả thành công
-      const { count, error } = await supabase
+      let q = supabase
         .from("exam_sessions")
         .select("id", { count: "exact", head: true })
         .in("status", ["submitted", "grading"]);
+      
+      if (boardQuiz !== "all") q = q.eq("quiz_id", boardQuiz);
+
+      const { count, error } = await q;
       if (error) throw error;
       return count ?? 0;
     },
@@ -197,6 +215,7 @@ function HomePage() {
   return (
     <AppShell>
       <ProductTour steps={TOUR_STEPS} />
+      <div className="sr-only">hiển thị rõ ra những người tham gia và những người đã tham gia nhưng không đạt để biết đồng bộ các chỗ hiển thị ở giao diện để tránh bị sai sót, trong bảng xếp hạng ví dụ châu quang huy thi 38 lượt thi là có đúng chưa tôi nghỉ là nhiều hơn tìm nguyên nhân</div>
 
       {/* Bố cục chia đôi: trái = vào phòng thi, phải = bảng xếp hạng trực tiếp */}
       <section className="grid gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-8 xl:gap-10">
@@ -263,9 +282,16 @@ function HomePage() {
 
             <div className="relative flex items-end justify-between gap-3">
               <h2 className="font-heading text-lg font-extrabold uppercase tracking-tight">Bảng xếp hạng</h2>
-              <span className="type-meta inline-flex items-center gap-1.5 font-bold text-primary">
-                <span className="size-1.5 animate-pulse rounded-full bg-primary" /> Trực tiếp
-              </span>
+              <div className="flex flex-col items-end gap-0.5">
+                <span className="type-meta inline-flex items-center gap-1.5 font-bold text-primary">
+                  <span className="size-1.5 animate-pulse rounded-full bg-primary" /> Trực tiếp
+                </span>
+                {!topQuery.isLoading && (
+                   <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                     {participationSummary.participants} đạt • {participationSummary.failedCount} chưa đạt
+                   </span>
+                )}
+              </div>
             </div>
 
             {/* Lọc bảng xếp hạng theo từng kỳ thi */}

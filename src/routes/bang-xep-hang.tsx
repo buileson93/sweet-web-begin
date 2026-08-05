@@ -260,9 +260,14 @@ function LeaderboardPage() {
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
             {!resultsQuery.isLoading && !resultsQuery.isError && rows.length > 0 ? (
-              <p className="type-meta">
-                Trang {page}/{pageCount} · {rows.length} kết quả (tải {all.length} bản ghi gần nhất).
-              </p>
+              <div className="flex flex-col gap-1">
+                <p className="type-meta">
+                  Trang {page}/{pageCount} · {rows.length} người đạt điểm (từ {all.length} bản ghi gần nhất).
+                </p>
+                <p className="text-[11px] font-bold text-muted-foreground uppercase">
+                   Ghi nhận: {rows.length} người thi đạt (≥50%) • {Math.max(0, new Set(all.map(r => r.employee_id)).size - rows.length)} người thi nhưng chưa đạt
+                </p>
+              </div>
             ) : null}
             {live ? (
               <p className="type-meta inline-flex items-center gap-1.5 text-success" aria-live="polite">
