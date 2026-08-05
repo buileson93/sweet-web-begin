@@ -311,7 +311,7 @@ export function LiveMonitor() {
                         ["Kiểu máy", detailQuery.data.device.deviceModel],
                         ["Màn hình", detailQuery.data.device.screen],
                         ["Kết nối", detailQuery.data.device.network],
-                        ["xem Phan Thành An có gian lận ko", detailQuery.data.device.language],
+                        ["Ngôn ngữ", detailQuery.data.device.language],
                         ["Múi giờ", detailQuery.data.device.timezone],
                         ["Chạy dạng ứng dụng", detailQuery.data.device.isPwa ? "Có" : "Không"],
                         ["Ghi nhận lúc", formatDateTime(detailQuery.data.device.seenAt)],
