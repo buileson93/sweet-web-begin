@@ -130,6 +130,7 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
             {aside}
           </aside>
         )}
+        </div>
       </div>
     </TooltipProvider>
   );
