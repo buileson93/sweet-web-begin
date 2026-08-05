@@ -167,7 +167,7 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none whitespace-pre-line">
-              Hệ thống rà soát đồng bộ hiển thị số người tham gia (kể cả không đạt) trên tất cả giao diện. Dữ liệu được tính toán thời gian thực từ log thi thực tế, đảm bảo tính minh bạch và chính xác tuyệt đối cho từng cuộc thi.
+              Hệ thống đã lên kế hoạch và tinh chỉnh cơ chế chống script để bảo vệ thí sinh, tránh các trường hợp báo cáo lỗi script "bị oan" do kết nối mạng hoặc thiết bị. Dữ liệu tham gia được đồng bộ minh bạch trên toàn hệ thống.
             </p>
           </div>
         </div>

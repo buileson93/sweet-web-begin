@@ -57,7 +57,7 @@ export function preloadTurnstile(): void {
  * Lấy token xác minh vô hình.
  * @returns token, hoặc undefined khi chưa bật/không lấy được (không chặn thí sinh).
  */
-export async function getTurnstileToken(action = "start-exam", timeoutMs = 6000): Promise<string | undefined> {
+export async function getTurnstileToken(action = "start-exam", timeoutMs = 10000): Promise<string | undefined> {
   const sitekey = turnstileSiteKey();
   if (!sitekey) return undefined;
   const api = await loadScript();
