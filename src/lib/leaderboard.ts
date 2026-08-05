@@ -114,15 +114,19 @@ export function rankUniqueResults<
   for (const r of rows) {
     const k = candidateKeyOf(r);
     const existing = candidates.get(k);
+    const incomingAttempts = (r as any).attempts;
 
     if (!existing) {
-      // Nếu dữ liệu đã có attempts (từ server), dùng giá trị đó, nếu không thì đếm 1
-      candidates.set(k, { attempts: (r as any).attempts || 1, best: r });
+      candidates.set(k, { attempts: incomingAttempts || 1, best: r });
     } else {
-      // Nếu server không trả về attempts, ta mới cộng dồn ở client
-      if (!(r as any).attempts) {
+      // Prioritize the highest attempt count seen for this candidate
+      if (incomingAttempts && incomingAttempts > existing.attempts) {
+        existing.attempts = incomingAttempts;
+      } else if (!incomingAttempts) {
+        // Fallback to client-side increment if server didn't provide it
         existing.attempts++;
       }
+      
       if (compareBestAttempt(r, existing.best) < 0) {
         existing.best = r;
       }

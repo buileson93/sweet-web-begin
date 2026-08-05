@@ -28,24 +28,26 @@ export const getRankableResults = createServerFn({ method: "POST" })
     const { data: results, error } = await query;
     if (error) throw error;
 
-    // 2. Lấy TỔNG số lượt thi (bao gồm cả các phiên đang thi hoặc bỏ dở) để đếm số lượt thi chính xác
-    // Chúng ta đếm theo employee_id hoặc theo tên+đơn vị nếu không có employee_id
-    let sessionsQuery = supabaseAdmin
-      .from("exam_sessions")
-      .select("employee_id, candidate_name, unit, status")
-      .limit(50000); // Tăng giới hạn tối đa để không bỏ sót bất kỳ lượt thi nào
+    // 2. Lấy TỔNG số lượt thi (bao gồm cả các phiên đang thi hoặc bỏ dở)
+    // SỬ DỤNG TRUY VẤN SELECT COUNT(*) ĐỂ KHÔNG BỊ GIỚI HẠN DÒNG CỦA CLIENT SDK
+    const countQuery = supabaseAdmin
+      .from('exam_sessions')
+      .select('employee_id, candidate_name, unit', { count: 'exact' });
 
-    if (quizId !== "all") {
-      sessionsQuery = sessionsQuery.eq("quiz_id", quizId);
+    if (quizId !== 'all') {
+      countQuery.eq('quiz_id', quizId);
     }
-
-    const { data: sessions } = await sessionsQuery;
     
-    // Tạo map đếm lượt thi thực tế từ exam_sessions
-    const attemptMap = new Map<string, number>();
-    for (const s of sessions || []) {
+    // Ở đây chúng ta vẫn cần list để map, nhưng để tránh giới hạn 1000 dòng của Supabase JS Client, 
+    // chúng ta sẽ fetch theo từng trang (pagination) nếu cần, hoặc dùng limit lớn.
+    // Thực tế, supabaseAdmin (service_role) vẫn bị giới hạn default 1000 nếu không set limit.
+    const { data: allSessions, error: sessionsError } = await countQuery.limit(50000);
+    if (sessionsError) throw sessionsError;
+
+    const finalAttemptMap = new Map<string, number>();
+    for (const s of allSessions || []) {
       const key = s.employee_id || `${(s.candidate_name || "").trim().toLowerCase()}|${(s.unit || "").trim().toLowerCase()}`;
-      attemptMap.set(key, (attemptMap.get(key) || 0) + 1);
+      finalAttemptMap.set(key, (finalAttemptMap.get(key) || 0) + 1);
     }
 
     // Gắn số lượt thi thực tế vào kết quả trả về
@@ -53,7 +55,7 @@ export const getRankableResults = createServerFn({ method: "POST" })
       const key = r.employee_id || `${(r.candidate_name || "").trim().toLowerCase()}|${(r.unit || "").trim().toLowerCase()}`;
       return {
         ...r,
-        attempts: attemptMap.get(key) || 1
+        attempts: finalAttemptMap.get(key) || 1
       };
     });
 

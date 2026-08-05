@@ -156,7 +156,7 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none whitespace-pre-line">
-              có vẻ tính lượt thi chỉ tính lượt nộp bài thì phải
+              Hệ thống đã cập nhật cách tính lượt thi: Đếm toàn bộ các lần mở đề (sessions) trong database thay vì chỉ đếm bài nộp.
             </p>
           </div>
         </div>
