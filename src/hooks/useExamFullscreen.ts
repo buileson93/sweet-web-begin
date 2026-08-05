@@ -25,12 +25,23 @@ export function fullscreenSupported(): boolean {
  * Khoá phòng thi ở chế độ toàn màn hình: chỉ thoát khi nộp bài hoặc rời phòng thi.
  * Chỉ dùng cho trang thi trắc nghiệm (không áp dụng cho đấu trường).
  */
-export function useExamFullscreen(active: boolean) {
+export function useExamFullscreen(active: boolean, onExitDetected?: () => void) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const supported = typeof document !== "undefined" && fullscreenSupported();
+  const exitCbRef = useRef(onExitDetected);
+  exitCbRef.current = onExitDetected;
+  const activeRef = useRef(active);
+  activeRef.current = active;
 
   useEffect(() => {
-    const sync = () => setIsFullscreen(Boolean(currentFsElement()));
+    const sync = () => {
+      const now = Boolean(currentFsElement());
+      setIsFullscreen((prev) => {
+        // Thoát toàn màn hình giữa chừng => ghi nhận vi phạm.
+        if (prev && !now && activeRef.current) exitCbRef.current?.();
+        return now;
+      });
+    };
     sync();
     document.addEventListener("fullscreenchange", sync);
     document.addEventListener("webkitfullscreenchange", sync);
@@ -60,6 +71,20 @@ export function useExamFullscreen(active: boolean) {
       /* bỏ qua */
     }
   }, []);
+
+  // Vào phòng thi thì thử bật toàn màn hình ngay (nếu trình duyệt còn giữ "user gesture").
+  useEffect(() => {
+    if (!active || !supported) return;
+    void enter();
+  }, [active, enter, supported]);
+
+  // Thiết bị không hỗ trợ toàn màn hình (iOS Safari): chạy chế độ đắm chìm bằng CSS.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const on = active && !supported;
+    document.body.classList.toggle("exam-immersive", on);
+    return () => document.body.classList.remove("exam-immersive");
+  }, [active, supported]);
 
   // Rời trang thi thì luôn trả màn hình về bình thường.
   useEffect(() => {
