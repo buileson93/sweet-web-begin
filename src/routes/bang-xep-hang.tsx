@@ -83,7 +83,7 @@ function LeaderboardPage() {
   const rows = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
     // rankUniqueResults: loại bài dưới 50%, sắp xếp công bằng, mỗi thí sinh chỉ giữ bài tốt nhất.
-    return (rankUniqueResults(all as any) as any[]).filter(
+    return (rankUniqueResults((all || []) as any) as any[]).filter(
       (r) => !kw || (r.candidate_name || "").toLowerCase().includes(kw) || (r.unit ?? "").toLowerCase().includes(kw),
     );
   }, [all, keyword]);
