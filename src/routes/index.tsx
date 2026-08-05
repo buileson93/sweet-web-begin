@@ -126,36 +126,26 @@ function HomePage() {
     [topQuery.data],
   );
 
-  // Thống kê những người chưa tham gia hoặc chưa đạt
-  const participationSummary = useMemo(() => {
-    if (!topQuery.data) return { participants: 0, nonParticipants: 0, failedCount: 0 };
-    // Số người đã đạt (có trong rankUniqueResults)
-    const passedUnique = rankUniqueResults(topQuery.data as any).length;
-    // Tổng số lượt thi (submitted/grading) của kỳ thi này
-    const totalAttempts = topQuery.data.length;
-    
-    return { 
-      participants: passedUnique,
-      // Tạm tính những người có trong data nhưng không lọt vào rankUnique (điểm < 50%)
-      failedCount: Math.max(0, new Set(topQuery.data.map(r => r.employee_id)).size - passedUnique)
-    };
-  }, [topQuery.data]);
+  // Thống kê chính xác từ Server (Không bị giới hạn limit client)
+  const statsSummaryQuery = useQuery({
+    queryKey: ["admin-stats-summary", boardQuiz],
+    queryFn: () => getQuizStatsSummary({ data: { quizId: boardQuiz as any } }),
+    staleTime: 30_000,
+  });
 
+  const participationSummary = statsSummaryQuery.data || { 
+    passedCount: 0, 
+    failedCount: 0,
+    submittedCount: 0,
+    notSubmittedCount: 0,
+    totalAttempts: 0,
+    totalEmployees: 0
+  };
 
   const countQuery = useQuery({
-    queryKey: ["results", "count", boardQuiz],
-    queryFn: async () => {
-      let q = supabase
-        .from("exam_sessions")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["submitted", "grading"]);
-      
-      if (boardQuiz !== "all") q = q.eq("quiz_id", boardQuiz);
-
-      const { count, error } = await q;
-      if (error) throw error;
-      return count ?? 0;
-    },
+    queryKey: ["results-count-sync", boardQuiz],
+    queryFn: () => statsSummaryQuery.data?.totalAttempts ?? 0,
+    enabled: !!statsSummaryQuery.data,
   });
 
   // Vài số liệu ngắn cho thẻ cuộc thi ở màn hình rộng: lượt thi và tỉ lệ đạt.
