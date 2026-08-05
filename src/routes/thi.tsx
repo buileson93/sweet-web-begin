@@ -128,7 +128,7 @@ function ExamPage() {
       },
     }).catch(() => undefined);
     toast.warning("Bạn đã thoát toàn màn hình. Hành vi này đã được ghi nhận.");
-  }, [runReport]);
+  }, [runReport, session]);
 
   const {
     enter: enterFullscreen,
