@@ -156,7 +156,10 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none whitespace-pre-line">
-              tính lại lượt thi phải đúng và hiển thị tại leaderboard cho chuẩn
+              Nguyễn Thị Ngọc Mai
+              Đài KSKL Chu Lai
+              25 lượt thi
+              Tìm hiểu về Luật Hàng không dân dụng Việt Nam, các văn bản pháp luật về công tác Bảo đảm hoạt động bay • 10:01 05/08/2026 tôi thấy hơi vô lý
             </p>
           </div>
         </div>
