@@ -14,7 +14,9 @@ export async function flagScriptEvent(
     | "automation_detected"
     | "honeypot_hit"
     | "captcha_failed"
-    | "speed_anomaly",
+    | "speed_anomaly"
+    | "robotic_movement"
+    | "unnatural_click",
 
   detail: ExamEventDetail = {},
 ): Promise<void> {
@@ -26,6 +28,8 @@ export async function flagScriptEvent(
       honeypot_hit: "Bấm vào phần tử mồi ẩn (honeypot)",
       captcha_failed: "Captcha vô hình Cloudflare Turnstile không xác minh được",
       speed_anomaly: "Tốc độ trả lời bất thường so với người thi thật",
+      robotic_movement: "Di chuyển chuột/touch như máy",
+      unnatural_click: "Tọa độ click bất thường (pixel-perfect)",
     };
 
     detail = { reason: REASON[kind], detectedAt: new Date().toISOString(), ...detail };
