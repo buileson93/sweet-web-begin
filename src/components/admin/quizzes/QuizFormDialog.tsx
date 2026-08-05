@@ -441,6 +441,14 @@ export function QuizFormDialog({ open, onOpenChange, editing }: Props) {
               </div>
               <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
             </div>
+
+            <div className="flex items-center justify-between rounded-xl bg-primary/5 p-3 ring-1 ring-primary/20">
+              <div>
+                <p className="text-sm font-semibold text-primary">Cuộc thi nổi bật</p>
+                <p className="text-xs text-muted-foreground">Ưu tiên hiển thị tại trang chủ và bảng xếp hạng.</p>
+              </div>
+              <Switch checked={form.is_featured} onCheckedChange={(v) => setForm({ ...form, is_featured: v })} />
+            </div>
           </TabsContent>
 
           {/* ---------- Đề thi ---------- */}

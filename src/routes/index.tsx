@@ -109,8 +109,8 @@ function HomePage() {
 
   // Thống kê chính xác từ Server (Không bị giới hạn limit client)
   const statsSummaryQuery = useQuery({
-    queryKey: ["admin-stats-summary", boardQuiz],
-    queryFn: () => getQuizStatsSummary({ data: { quizId: boardQuiz as any } }),
+    queryKey: ["admin-stats-summary", activeBoardQuiz],
+    queryFn: () => getQuizStatsSummary({ data: { quizId: activeBoardQuiz as any } }),
     staleTime: 30_000,
   });
 
@@ -124,7 +124,7 @@ function HomePage() {
   };
 
   const countQuery = useQuery({
-    queryKey: ["results-count-sync", boardQuiz],
+    queryKey: ["results-count-sync", activeBoardQuiz],
     queryFn: () => statsSummaryQuery.data?.totalAttempts ?? 0,
     enabled: !!statsSummaryQuery.data,
   });
@@ -275,7 +275,7 @@ function HomePage() {
 
             {/* Lọc bảng xếp hạng theo từng kỳ thi */}
             <div className="relative mt-3">
-              <Select value={boardQuiz} onValueChange={setBoardQuiz}>
+              <Select value={activeBoardQuiz} onValueChange={setBoardQuiz}>
                 <SelectTrigger className="h-9 w-full rounded-full border-border bg-card/80 text-xs font-bold">
                   <SelectValue placeholder="Chọn kỳ thi" />
                 </SelectTrigger>
