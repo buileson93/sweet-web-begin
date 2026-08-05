@@ -17,6 +17,7 @@ import { EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeResults } from "@/hooks/useRealtimeResults";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
