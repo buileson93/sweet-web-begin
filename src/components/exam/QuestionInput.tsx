@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Check, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import type { AnswerValue, QuestionKind } from "@/lib/questionKinds";
 import { buildCloak } from "@/lib/exam/optionCloak";
 import { cn } from "@/lib/utils";
 import { RichText } from "@/components/RichText";
+import { behaviorTracker } from "@/lib/exam/behavior";
 
 export type QuestionInputProps = {
   kind: QuestionKind;
@@ -148,7 +149,13 @@ export function QuestionInput({
     ? new Set(Array.isArray(value) ? (value as number[]) : [])
     : new Set(typeof value === "number" ? [value] : []);
 
-  const toggle = (i: number) => {
+  const toggle = (i: number, event?: React.MouseEvent | React.TouchEvent) => {
+    if (event) {
+      behaviorTracker.click(
+        "clientX" in event ? event : (event as React.TouchEvent).touches[0]!,
+        event.currentTarget as HTMLElement
+      );
+    }
     if (!multi) return onChange(i);
     const next = new Set(selected);
     if (next.has(i)) next.delete(i);
@@ -161,6 +168,19 @@ export function QuestionInput({
   // Biến đổi ngẫu nhiên: token dùng một lần + tráo thứ tự DOM + chèn thẻ mồi.
   // Thứ tự NHÌN THẤY vẫn giữ nguyên nhờ CSS `order`.
   const cloak = useMemo(() => buildCloak(options), [options]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      const p = "clientX" in e ? e : (e as TouchEvent).touches[0]!;
+      behaviorTracker.move(p.clientX, p.clientY);
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("touchmove", onMove);
+    };
+  }, []);
 
   return (
     <div
@@ -203,7 +223,7 @@ export function QuestionInput({
             data-opt={slot.token}
             style={{ order: slot.visual }}
             disabled={disabled || isRemoved}
-            onClick={() => toggle(i)}
+            onClick={(e) => toggle(i, e)}
             className={cn(
               "group relative flex w-full overflow-hidden rounded-2xl border-2 p-3.5 text-left transition-all duration-200 sm:p-4",
               hasImages ? "flex-col items-start gap-2" : "items-center gap-3",
