@@ -157,7 +157,7 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
 
     // Bấm trúng thẻ mồi ẩn: chỉ script quét DOM mới làm được -> phạt nặng nhất.
     case "honeypot_hit":
-      return 8;
+      return 10; // Giữ nguyên trọng số cao nhất vì đây là bằng chứng gian lận tuyệt đối
     // Captcha vô hình Cloudflare kết luận rủi ro: coi như dấu hiệu script rõ ràng,
     // phạt nặng (đủ vượt ngưỡng ở chế độ nghiêm ngặt) và luôn ghi log chi tiết.
     case "captcha_failed":
