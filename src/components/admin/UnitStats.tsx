@@ -189,7 +189,7 @@ export function UnitStats() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <p className="type-meta mt-2">Dưới 50% được xem là chưa đạt và không vào bảng xếp hạng.</p>
+            <p className="type-meta mt-2">Dữ liệu rà soát đồng bộ: bao gồm tất cả thí sinh dự thi (đạt & chưa đạt). Điểm dưới 50% không vào bảng xếp hạng công khai.</p>
           </div>
         </div>
 
