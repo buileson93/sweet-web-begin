@@ -156,7 +156,7 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none whitespace-pre-line">
-              Hệ thống đã tối ưu hóa: Sử dụng cơ chế ghi log lượt thi thời gian thực để đảm bảo độ chính xác mà không làm chậm hệ thống.
+              nhưng theo cách mới châu quang huy lại còn 3 lượt vì sao lại như vậy
             </p>
           </div>
         </div>
