@@ -18,7 +18,7 @@ export const getQuizStatsSummary = createServerFn({ method: "POST" })
     // 2. Lấy dữ liệu tổng hợp từ bảng candidate_quiz_stats
     let statsQuery = supabaseAdmin
       .from("candidate_quiz_stats")
-      .select("employee_id, candidate_name, unit, attempt_count, submitted_count");
+      .select("employee_id, candidate_name, unit, attempt_count, submitted_count, last_updated_at");
     
     if (quizId !== "all") {
       statsQuery = statsQuery.eq("quiz_id", quizId);
@@ -31,6 +31,7 @@ export const getQuizStatsSummary = createServerFn({ method: "POST" })
     const uniqueParticipants = new Set();
     let totalAttempts = 0;
     let submittedUniqueCount = 0;
+    let latestUpdate: string | null = null;
 
     for (const s of stats) {
       const key = s.employee_id || `${(s.candidate_name || "").trim().toLowerCase()}|${(s.unit || "").trim().toLowerCase()}`;
@@ -38,6 +39,9 @@ export const getQuizStatsSummary = createServerFn({ method: "POST" })
       totalAttempts += (s.attempt_count || 0);
       if ((s.submitted_count || 0) > 0) {
         submittedUniqueCount++;
+      }
+      if (s.last_updated_at && (!latestUpdate || s.last_updated_at > latestUpdate)) {
+        latestUpdate = s.last_updated_at;
       }
     }
 
@@ -66,6 +70,7 @@ export const getQuizStatsSummary = createServerFn({ method: "POST" })
       notSubmittedCount: Math.max(0, total - submittedUniqueCount),
       passedCount: passedUniqueCount,
       failedCount: Math.max(0, submittedUniqueCount - passedUniqueCount),
-      totalAttempts: totalAttempts
+      totalAttempts: totalAttempts,
+      lastUpdatedAt: latestUpdate
     };
   });
