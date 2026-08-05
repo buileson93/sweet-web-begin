@@ -156,7 +156,7 @@ function LeaderboardPage() {
           <div className="min-w-0">
             <h1 className="type-h2 text-primary-foreground">Bảng xếp hạng</h1>
             <p className="type-meta line-clamp-2 text-primary-foreground/75 sm:line-clamp-none whitespace-pre-line">
-              tôi bạn muốn tìm nguyên nhân gốc rễ để áp dụng cho toàn bộ thí sinh ở bảng xếp hạng
+              có vẻ tính lượt thi chỉ tính lượt nộp bài thì phải
             </p>
           </div>
         </div>
