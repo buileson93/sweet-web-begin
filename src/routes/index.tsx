@@ -389,14 +389,7 @@ function HomePage() {
       {/* Danh sách cuộc thi */}
       <section id="cuoc-thi" data-tour="quizzes" className="mt-7 scroll-mt-24 sm:mt-10">
         <SectionHeading
-          title={
-            <div className="flex flex-col gap-1">
-              <span>Danh sách cuộc thi</span>
-              <span className="text-xs font-medium normal-case text-destructive/80">
-                chỗ này hiển thị ko đúng số người tham gia và số không người đạt
-              </span>
-            </div>
-          }
+          title="Danh sách cuộc thi"
           action={
             <Button asChild variant="ghost" className="rounded-full font-semibold text-primary hover:bg-secondary">
               <Link to="/huong-dan">Luật chơi</Link>
