@@ -204,7 +204,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
         key: "quiz",
         Icon: quizTone === "ok" ? Trophy : quizTone === "error" ? Clock : CircleDashed,
         tone: quizTone,
-        value: selected ? selected.title : "Chọn cuộc thi",
+        value: selected ? selected.title : "xin chào",
         tip: quizTip,
       },
       {
@@ -371,7 +371,7 @@ export function RegisterCard({ quizzes, loading, lockedQuizId, value, onValueCha
                     quizPulse > 0 && "animate-tap-shake",
                   )}
                 >
-                  <SelectValue placeholder="Chọn cuộc thi" />
+                  <SelectValue placeholder="xin chào" />
                   {quizPulse > 0 ? <span className="tap-flash rounded-xl" aria-hidden /> : null}
                 </SelectTrigger>
                 <SelectContent
