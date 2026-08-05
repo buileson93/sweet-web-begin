@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
+import { getQuizStatsSummary } from "@/lib/adminStats.functions";
 import { Download, FileSpreadsheet, Medal, Radio, RotateCcw, Search, SearchX, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
@@ -68,7 +69,13 @@ function LeaderboardPage() {
 
   const resultsQuery = useQuery({
     queryKey: ["results", activeQuizId],
-    queryFn: () => fetchResults({ data: { quizId: activeQuizId as any, limit: 5000 } }),
+    queryFn: () => fetchResults({ data: { quizId: activeQuizId as any, limit: 50000 } }),
+    enabled: quizId !== null,
+  });
+
+  const statsSummaryQuery = useQuery({
+    queryKey: ["admin-stats-summary", activeQuizId],
+    queryFn: () => getQuizStatsSummary({ data: { quizId: activeQuizId as any } }),
     enabled: quizId !== null,
   });
 
@@ -261,11 +268,13 @@ function LeaderboardPage() {
             {!resultsQuery.isLoading && !resultsQuery.isError && rows.length > 0 ? (
               <div className="flex flex-col gap-1">
                 <p className="type-meta">
-                   Trang {page}/{pageCount} · {rows.length} người đạt điểm (từ {all.length} bản ghi gần nhất).
+                   Trang {page}/{pageCount} · {rows.length} người đạt điểm (từ {all.length} bản ghi nộp bài).
                 </p>
-                <p className="text-[11px] font-bold text-muted-foreground uppercase">
-                   Thống kê tham gia: {rows.length} người đạt (≥50%) • {Math.max(0, new Set(all.map((r: any) => r.employee_id)).size - rows.length)} người chưa đạt • Tổng số người đã dự thi được ghi nhận đồng bộ.
-                </p>
+                {statsSummaryQuery.data && (
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase">
+                    Thống kê tham gia: {statsSummaryQuery.data.passedCount} người đạt (≥50%) • {statsSummaryQuery.data.failedCount} người chưa đạt • Tổng {statsSummaryQuery.data.submittedCount} người đã nộp bài.
+                  </p>
+                )}
               </div>
             ) : null}
             {live ? (
