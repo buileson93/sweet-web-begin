@@ -16,9 +16,12 @@ Nâng cấp thêm các lớp bảo mật "vô hình" nhưng cực kỳ hiệu qu
 
 ## Các kỹ thuật đề xuất
 
-### 1. Phân tích Sinh trắc học Hành vi (Behavioral Biometrics)
-- **Mouse Path Analysis**: Script thường di chuyển chuột theo đường thẳng tuyệt đối hoặc nhảy vọt (instant jump). Người thật luôn di chuyển theo đường cong, có độ rung (jitter) và vận tốc thay đổi (acceleration/deceleration).
-- **Phát hiện**: Ghi lại thống kê sơ bộ về độ cong (curvature) và biến thiên vận tốc của 3-5 thao tác chuột cuối cùng trước khi bấm chọn. Nếu độ lệch chuẩn gần bằng 0 -> Nghi vấn script.
+### 1. Phân tích Sinh trắc học Hành vi (Behavioral Biometrics) - Đa nền tảng
+- **Mouse/Touch Analysis**: Trên máy tính, script thường di chuyển chuột theo đường thẳng tuyệt đối hoặc nhảy vọt. Trên điện thoại, người thật thường có diện tích tiếp xúc (touch area/pressure) biến thiên và tọa độ chạm không bao giờ trùng khít 100% giữa các lần bấm.
+- **Phát hiện**: 
+    - **Máy tính**: Theo dõi quỹ đạo chuột (jitter/curvature). 
+    - **Điện thoại**: Theo dõi sự biến thiên của tọa độ (x, y) trong vùng bấm. Script thường click vào tâm tuyệt đối (ví dụ: chính giữa nút), người thật sẽ bấm lệch ngẫu nhiên.
+    - **Chỉ số**: Nếu 10 câu liên tiếp có tọa độ click vào đúng 1 điểm duy nhất (pixel-perfect) -> Chắc chắn là Script.
 
 ### 2. (Đã loại bỏ: Chuỗi tương tác Logic)
 - **Lưu ý:** Đã loại bỏ yêu cầu "Bắt buộc Hover trước khi Click" để tránh gây khó khăn cho người thi thật khi họ làm bài ở tốc độ cao (đua top) và click trực tiếp vào mục tiêu mà không cần rê chuột lâu.
