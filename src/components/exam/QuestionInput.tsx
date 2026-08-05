@@ -183,8 +183,8 @@ export function QuestionInput({
               tabIndex={-1}
               aria-hidden="true"
               data-opt={slot.token}
-              style={{ order: slot.visual }}
-              className="pointer-events-none absolute size-px overflow-hidden opacity-0"
+              style={{ order: slot.visual, opacity: 0.0001, zIndex: -10 }}
+              className="pointer-events-none absolute size-px overflow-hidden"
               onClick={() => onTrap?.({ token: slot.token })}
             >
               {slot.text}
