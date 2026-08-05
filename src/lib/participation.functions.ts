@@ -62,7 +62,7 @@ export const getQuizParticipation = createServerFn({ method: "POST" })
       rosterQuery,
       supabaseAdmin
         .from("exam_sessions")
-        .select("employee_id, score, total, submitted_at")
+        .select("employee_id, final_score, total_questions, submitted_at")
         .in("status", ["submitted", "grading", "disqualified"])
         .eq("quiz_id", data.quizId)
         .limit(20000),
