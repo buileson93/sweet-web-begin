@@ -9,29 +9,29 @@ export const getQuizStatsSummary = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { quizId } = data;
 
-    // 1. Lấy danh sách nhân viên để biết tổng số người cần thi
-    // Nếu có quizId cụ thể, ta có thể lọc theo quiz_audiences nếu muốn chính xác hơn
-    // Ở đây ta lấy tổng nhân viên đang hoạt động làm mốc tham chiếu "Tổng số người"
+    // 1. Lấy tổng số nhân viên đang hoạt động
     const { count: totalEmployees } = await supabaseAdmin
       .from("employees")
       .select("*", { count: "exact", head: true })
       .eq("is_active", true);
 
-    // 2. Đếm số người ĐÃ NỘP bài (Deduplicated by employee_id)
-    let submittedQuery = supabaseAdmin
-      .from("exam_sessions")
-      .select("employee_id", { count: "exact", head: false })
-      .in("status", ["submitted", "grading"]);
+    // 2. Lấy dữ liệu tổng hợp từ bảng candidate_quiz_stats (Optimization)
+    let statsQuery = supabaseAdmin
+      .from("candidate_quiz_stats")
+      .select("employee_id, attempt_count, submitted_count");
     
     if (quizId !== "all") {
-      submittedQuery = submittedQuery.eq("quiz_id", quizId);
+      statsQuery = statsQuery.eq("quiz_id", quizId);
     }
     
-    const { data: submittedData } = await submittedQuery;
-    const submittedUniqueCount = new Set(submittedData?.map(d => d.employee_id).filter(Boolean)).size;
+    const { data: statsData } = await statsQuery.limit(10000);
+    
+    // Tổng số lượt thi (không deduplicate)
+    const totalAttempts = (statsData || []).reduce((sum, s) => sum + (s.attempt_count || 0), 0);
+    // Số người đã nộp ít nhất 1 lần
+    const submittedUniqueCount = (statsData || []).filter(s => (s.submitted_count || 0) > 0).length;
 
-    // 3. Đếm số người ĐẠT (score >= 50%) - Deduplicated by employee_id
-    // Lấy bài tốt nhất của mỗi người
+    // 3. Đếm số người ĐẠT (Deduplicated)
     let passedQuery = supabaseAdmin
       .from("results")
       .select("employee_id")
@@ -42,19 +42,8 @@ export const getQuizStatsSummary = createServerFn({ method: "POST" })
       passedQuery = passedQuery.eq("quiz_id", quizId);
     }
     
-    const { data: passedData } = await passedQuery;
+    const { data: passedData } = await passedQuery.limit(10000);
     const passedUniqueCount = new Set(passedData?.map(d => d.employee_id).filter(Boolean)).size;
-
-    // 4. Tổng số lượt thi (không deduplicate)
-    let totalAttemptsQuery = supabaseAdmin
-      .from("exam_sessions")
-      .select("*", { count: "exact", head: true })
-      .in("status", ["submitted", "grading"]);
-    
-    if (quizId !== "all") {
-      totalAttemptsQuery = totalAttemptsQuery.eq("quiz_id", quizId);
-    }
-    const { count: totalAttempts } = await totalAttemptsQuery;
 
     const total = totalEmployees ?? 0;
     
@@ -64,6 +53,6 @@ export const getQuizStatsSummary = createServerFn({ method: "POST" })
       notSubmittedCount: Math.max(0, total - submittedUniqueCount),
       passedCount: passedUniqueCount,
       failedCount: Math.max(0, submittedUniqueCount - passedUniqueCount),
-      totalAttempts: totalAttempts ?? 0
+      totalAttempts: totalAttempts
     };
   });
