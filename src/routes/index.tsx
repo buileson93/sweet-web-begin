@@ -144,27 +144,28 @@ function HomePage() {
     enabled: quizIds.length > 0,
     staleTime: 60_000,
     queryFn: async () => {
-      const pairs = await Promise.all(
-        quizIds.map(async (id) => {
-          const [all, passed] = await Promise.all([
-            supabase
-              .from("exam_sessions")
-              .select("id", { count: "exact", head: true })
-              .eq("quiz_id", id)
-              .in("status", ["submitted", "grading"]),
-            supabase
-              .from("results")
-              .select("id", { count: "exact", head: true })
-              .eq("quiz_id", id)
-              .eq("disqualified", false)
-              .eq("passed", true),
-          ]);
-          if (all.error) throw all.error;
-          if (passed.error) throw passed.error;
-          return [id, { attempts: all.count ?? 0, passed: passed.count ?? 0 }] as const;
-        }),
-      );
-      return Object.fromEntries(pairs) as Record<string, { attempts: number; passed: number }>;
+      const { data: stats, error } = await supabase
+        .from("candidate_quiz_stats")
+        .select("quiz_id, attempt_count, submitted_count")
+        .in("quiz_id", quizIds);
+      if (error) throw error;
+      
+      const { data: results, error: resErr } = await supabase
+        .from("results")
+        .select("quiz_id, id")
+        .eq("passed", true)
+        .eq("disqualified", false)
+        .in("quiz_id", quizIds);
+      if (resErr) throw resErr;
+
+      const statsMap: Record<string, { attempts: number; passed: number }> = {};
+      quizIds.forEach(id => {
+        const quizStats = stats?.filter(s => s.quiz_id === id) || [];
+        const attempts = quizStats.reduce((sum, s) => sum + (s.attempt_count || 0), 0);
+        const passed = results?.filter(r => r.quiz_id === id).length || 0;
+        statsMap[id] = { attempts, passed };
+      });
+      return statsMap;
     },
   });
   const quizStats = quizStatsQuery.data ?? {};
