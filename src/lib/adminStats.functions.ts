@@ -123,6 +123,35 @@ export const getQuizStatsSummary = createServerFn({ method: "POST" })
     };
   });
 
+/** Thống kê nhanh cho nhiều cuộc thi (dùng cho trang chủ) */
+export const getMultiQuizBasicStats = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ quizIds: z.array(z.string().uuid()) }).parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { quizIds } = data;
+
+    const { data: stats } = await supabaseAdmin
+      .from("candidate_quiz_stats")
+      .select("quiz_id, attempt_count, submitted_count")
+      .in("quiz_id", quizIds);
+
+    const { data: passedData } = await supabaseAdmin
+      .from("results")
+      .select("quiz_id, id")
+      .eq("passed", true)
+      .eq("disqualified", false)
+      .in("quiz_id", quizIds);
+
+    const out: Record<string, { attempts: number; passed: number }> = {};
+    quizIds.forEach((id) => {
+      const quizStats = stats?.filter((s) => s.quiz_id === id) || [];
+      const attempts = quizStats.reduce((sum, s) => sum + (s.attempt_count || 0), 0);
+      const passed = passedData?.filter((r) => r.quiz_id === id).length || 0;
+      out[id] = { attempts, passed };
+    });
+    return out;
+  });
+
 /** Thống kê chi tiết nhắc nhở tham gia cho một cuộc thi */
 export const getDetailedParticipation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, quizStatus } from "@/lib/format";
 import { rankUniqueResults } from "@/lib/leaderboard";
 import { getPublicParticipationRates } from "@/lib/participationRate.functions";
-import { getQuizStatsSummary } from "@/lib/adminStats.functions";
+import { getQuizStatsSummary, getMultiQuizBasicStats } from "@/lib/adminStats.functions";
 import { getRankableResults } from "@/lib/leaderboard.functions";
 
 import { resolveQuizCover } from "@/lib/quizCover";
@@ -141,34 +141,12 @@ function HomePage() {
 
   // Vài số liệu ngắn cho thẻ cuộc thi ở màn hình rộng: lượt thi và tỉ lệ đạt.
   const quizIds = (quizzesQuery.data ?? []).map((q) => q.id);
+  const fetchMultiStats = useServerFn(getMultiQuizBasicStats);
   const quizStatsQuery = useQuery({
     queryKey: ["results", "per-quiz", quizIds.join(",")],
     enabled: quizIds.length > 0,
     staleTime: 60_000,
-    queryFn: async () => {
-      const { data: stats, error } = await supabase
-        .from("candidate_quiz_stats")
-        .select("quiz_id, attempt_count, submitted_count")
-        .in("quiz_id", quizIds);
-      if (error) throw error;
-      
-      const { data: results, error: resErr } = await supabase
-        .from("results")
-        .select("quiz_id, id")
-        .eq("passed", true)
-        .eq("disqualified", false)
-        .in("quiz_id", quizIds);
-      if (resErr) throw resErr;
-
-      const statsMap: Record<string, { attempts: number; passed: number }> = {};
-      quizIds.forEach(id => {
-        const quizStats = stats?.filter(s => s.quiz_id === id) || [];
-        const attempts = quizStats.reduce((sum, s) => sum + (s.attempt_count || 0), 0);
-        const passed = results?.filter(r => r.quiz_id === id).length || 0;
-        statsMap[id] = { attempts, passed };
-      });
-      return statsMap;
-    },
+    queryFn: () => fetchMultiStats({ data: { quizIds } }),
   });
   const quizStats = quizStatsQuery.data ?? {};
 

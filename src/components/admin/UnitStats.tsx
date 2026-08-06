@@ -47,13 +47,17 @@ export function UnitStats() {
     queryFn: () => fetchDistribution({ data: { quizId: quizId as any } }),
   });
 
-  const distribution = (distributionQuery.data || [
-    { range: "Dưới 50%", count: 0, fail: true },
-    { range: "50–64%", count: 0, fail: false },
-    { range: "65–79%", count: 0, fail: false },
-    { range: "80–89%", count: 0, fail: false },
-    { range: "90–100%", count: 0, fail: false },
-  ]) as DistributionBucket[];
+  const distribution = useMemo(() => {
+    const raw = distributionQuery.data;
+    if (raw && raw.length > 0) return raw as DistributionBucket[];
+    return [
+      { range: "Dưới 50%", count: 0, fail: true },
+      { range: "50–64%", count: 0, fail: false },
+      { range: "65–79%", count: 0, fail: false },
+      { range: "80–89%", count: 0, fail: false },
+      { range: "90–100%", count: 0, fail: false },
+    ] as DistributionBucket[];
+  }, [distributionQuery.data]);
 
 
   const chartRows = useMemo(() => rows.slice(0, 12), [rows]);
