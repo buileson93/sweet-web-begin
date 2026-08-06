@@ -2007,6 +2007,25 @@ export type Database = {
         Args: { p_patch: Json; p_session: string }
         Returns: Json
       }
+      get_score_distribution_stats: {
+        Args: { _quiz_id?: string }
+        Returns: {
+          count: number
+          fail: boolean
+          range: string
+        }[]
+      }
+      get_unit_statistics: {
+        Args: { _quiz_id?: string }
+        Returns: {
+          attempts: number
+          avg_percent: number
+          best: number
+          candidates: number
+          pass_rate: number
+          unit: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
