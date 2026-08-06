@@ -209,7 +209,7 @@ export function ReminderManager() {
                 )}
                 {e.status === "failed" && (
                   <span className="status-pill bg-destructive/15 text-destructive-foreground inline-flex items-center gap-1">
-                    <AlertCircle className="size-3" /> <50%
+                    <AlertCircle className="size-3" /> {"<50%"}
                   </span>
                 )}
                 {e.status === "pending" && (
