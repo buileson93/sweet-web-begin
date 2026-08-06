@@ -18,6 +18,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/palette";
 import { useDeviceTracking } from "@/hooks/useDeviceTracking";
 import { registerOfflineWorker } from "@/lib/pwa/register";
+import { initDeviceIdentity } from "@/lib/deviceId";
+
 
 
 function NotFoundComponent() {
@@ -143,7 +145,9 @@ function RootComponent() {
 
   useEffect(() => {
     registerOfflineWorker();
+    initDeviceIdentity();
   }, []);
+
 
 
   useEffect(() => {
