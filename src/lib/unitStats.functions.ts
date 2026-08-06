@@ -43,9 +43,9 @@ export const getUnitStats = createServerFn({ method: "POST" })
     if (!isAdmin && !isStaff) throw new Error("Unauthorized");
 
     // Sử dụng RPC get_unit_statistics để lấy dữ liệu đã được tổng hợp từ database
-    // Dùng as any để tránh lỗi type strict của Supabase client với null value trong params
+    // Dùng undefined thay cho null để Supabase client hiểu là không truyền tham số
     const { data: rows, error } = await supabaseAdmin.rpc("get_unit_statistics", {
-      _quiz_id: (quizId === "all" ? undefined : quizId) as any,
+      _quiz_id: quizId === "all" ? undefined : quizId,
     });
 
     if (error) throw error;
@@ -72,7 +72,7 @@ export const getScoreDistribution = createServerFn({ method: "POST" })
     const { quizId } = data;
 
     const { data: distribution, error } = await supabaseAdmin.rpc("get_score_distribution_stats", {
-      _quiz_id: (quizId === "all" ? undefined : quizId) as any,
+      _quiz_id: quizId === "all" ? undefined : quizId,
     });
 
     if (error) throw error;
