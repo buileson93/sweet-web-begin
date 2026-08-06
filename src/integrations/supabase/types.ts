@@ -290,6 +290,7 @@ export type Database = {
           created_at: string
           device_id: string
           employee_id: string
+          fingerprint: string | null
           last_used_at: string
           updated_at: string
         }
@@ -298,6 +299,7 @@ export type Database = {
           created_at?: string
           device_id: string
           employee_id: string
+          fingerprint?: string | null
           last_used_at?: string
           updated_at?: string
         }
@@ -306,6 +308,7 @@ export type Database = {
           created_at?: string
           device_id?: string
           employee_id?: string
+          fingerprint?: string | null
           last_used_at?: string
           updated_at?: string
         }
