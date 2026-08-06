@@ -385,7 +385,7 @@ function HomePage() {
       <section id="cuoc-thi" data-tour="quizzes" className="mt-7 scroll-mt-24 sm:mt-10">
         <SectionHeading
           title="Danh sách cuộc thi"
-          description="Tham gia: Đồng bộ đúng số người nộp bài thực tế từ tất cả đơn vị"
+          description="Tham gia: Đồng bộ đúng số người nộp bài thực tế dựa trên danh sách nhân viên"
           action={
             <Button asChild variant="ghost" className="rounded-full font-semibold text-primary hover:bg-secondary">
               <Link to="/huong-dan">Luật chơi</Link>
