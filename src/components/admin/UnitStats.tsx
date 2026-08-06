@@ -19,7 +19,7 @@ import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { getScoreDistribution, getUnitStats, type UnitStatRow } from "@/lib/unitStats.functions";
+import { getScoreDistribution, getUnitStats, type UnitStatRow, type DistributionBucket } from "@/lib/unitStats.functions";
 
 export function UnitStats() {
   const [quizId, setQuizId] = useState("all");
@@ -47,13 +47,13 @@ export function UnitStats() {
     queryFn: () => fetchDistribution({ data: { quizId: quizId as any } }),
   });
 
-  const distribution = distributionQuery.data || [
+  const distribution = (distributionQuery.data || [
     { range: "Dưới 50%", count: 0, fail: true },
     { range: "50–64%", count: 0, fail: false },
     { range: "65–79%", count: 0, fail: false },
     { range: "80–89%", count: 0, fail: false },
     { range: "90–100%", count: 0, fail: false },
-  ];
+  ]) as DistributionBucket[];
 
 
   const chartRows = useMemo(() => rows.slice(0, 12), [rows]);
@@ -61,7 +61,7 @@ export function UnitStats() {
   async function exportExcel() {
     const data = [
       ["Đơn vị", "Lượt thi", "Số thí sinh", "Điểm TB (%)", "Tỉ lệ đạt (%)", "Cao nhất (%)"],
-      ...rows.map((r) => [r.unit, r.attempts, r.candidates, r.avgPercent, r.passRate, r.best]),
+      ...rows.map((r: UnitStatRow) => [r.unit, r.attempts, r.candidates, r.avgPercent, r.passRate, r.best]),
     ];
     await downloadXlsx([{ name: "ThongKeDonVi", data }], "thong-ke-don-vi.xlsx");
   }
@@ -144,7 +144,7 @@ export function UnitStats() {
                     contentStyle={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--card)" }}
                   />
                   <Bar dataKey="count" name="Số lượt" radius={[6, 6, 0, 0]}>
-                    {distribution.map((d) => (
+                    {distribution.map((d: DistributionBucket) => (
                       <Cell key={d.range} fill={d.fail ? "var(--destructive)" : "var(--primary)"} />
                     ))}
                   </Bar>
@@ -168,7 +168,7 @@ export function UnitStats() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {rows.map((r: UnitStatRow) => (
                 <tr key={r.unit} className="border-t border-border transition-colors hover:bg-secondary/40">
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-2 font-semibold">
