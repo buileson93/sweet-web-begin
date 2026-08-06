@@ -192,7 +192,9 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
       .from("results")
       .select("employee_id, candidate_name, unit, passed, score, total")
       .eq("quiz_id", data.quizId)
-      .eq("disqualified", false);
+      .eq("disqualified", false)
+      .limit(100000); // Tăng limit để lấy toàn bộ kết quả nộp bài thành công
+
 
     if (resError) throw new Error(resError.message);
 
