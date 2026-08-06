@@ -23,7 +23,7 @@ export async function fetchFraudReport(
 ): Promise<FraudAttempt[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const { data, error } = await supabaseAdmin.rpc("get_fraud_report", {
+  const { data, error } = await (supabaseAdmin.rpc as any)("get_fraud_report", {
     _quiz_id: quizId,
     _min_integrity: minIntegrity,
     _limit: limit
@@ -31,7 +31,9 @@ export async function fetchFraudReport(
 
   if (error) throw new Error(error.message);
 
-  return (data || []).map((row: any) => ({
+  const rows = (data || []) as any[];
+  return rows.map((row: any) => ({
+
     sessionId: row.session_id,
     candidateName: row.candidate_name,
     unit: row.unit || "",
