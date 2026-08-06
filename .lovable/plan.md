@@ -1,25 +1,34 @@
-# Plan: Hiển thị Điểm liêm chính và Truy vết các hành vi chống Script cho Admin
+# Plan: Khắc phục thống kê Admin (Kết quả dự thi & Nhắc nhở tham gia) và Hiển thị liêm chính
 
-Người dùng yêu cầu đưa các nâng cấp chống script mới (như behavior tracker, click coordinates, robotic movement...) vào hiển thị điểm liêm chính để quản trị viên có thể xem và truy vết các hành vi gian lận một cách trực quan. Yêu cầu nhấn mạnh không sửa UI không liên quan và tập trung vào việc giúp admin biết rõ vi phạm gì đã xảy ra.
-
-## Các thành phần hiện có
-1.  **Hệ thống liêm chính (`src/lib/integrity.ts`)**: Đã có logic tính điểm, nhãn vi phạm (`EXAM_EVENT_LABEL`) và mô tả chi tiết (`describeExamEvent`).
-2.  **Theo dõi trực tiếp (`src/components/admin/LiveMonitor.tsx`)**:
-    *   Đã hiển thị "Điểm liêm chính" trong modal chi tiết phiên thi (dòng 292).
-    *   Tuy nhiên, chưa hiển thị danh sách các sự kiện vi phạm cụ thể (`exam_events`) để quản trị viên biết *vì sao* có số điểm đó.
-3.  **Quản lý kết quả (`src/components/admin/ResultManager.tsx`)**: Đã có cột "Liêm chính" trong bảng kết quả.
-4.  **Server Functions (`src/lib/integrity.functions.ts`)**: Đã có `listExamEvents` để lấy danh sách vi phạm của một phiên.
+Người dùng phản hồi rằng các trang admin hiện tại ("Kết quả dự thi" và "Nhắc nhở tham gia") không hiển thị dữ liệu chính xác trên toàn bộ database (bị giới hạn 1000 bản ghi, không tìm kiếm được toàn bộ). Cần giải pháp đảm bảo hiệu năng nhưng phải phản ánh đúng thực tế:
+1. Thống kê được danh sách người đã làm bài, người tham gia nhưng chưa đạt chuẩn (dưới 50%) trong từng cuộc thi cụ thể.
+2. Tích hợp các chỉ số liêm chính (chống script) vào giao diện admin để truy vết.
 
 ## Các bước thực hiện
 
-### 1. Hiển thị chi tiết vi phạm (Behavioral Traces) trong Modal Chi tiết
-*   Tích hợp danh sách từ `listExamEvents` vào modal chi tiết của `LiveMonitor`.
-*   Hiển thị rõ các loại vi phạm mới: `pixel_perfect_clicks` (click trùng tọa độ), `robotic_trajectory` (đường di chuyển thẳng tắp), `unnatural_click` (click quá xa tâm nút).
-*   Sử dụng hàm `describeExamEvent` (từ `src/lib/integrity.ts`) để giải thích bằng tiếng Việt dễ hiểu cho admin.
+### 1. Tối ưu hóa "Kết quả dự thi" (Admin Results)
+*   Chuyển từ fetch client-side giới hạn 1000 sang **Server-side Pagination & Search** sử dụng `createServerFn`.
+*   Thay vì tải toàn bộ, sẽ thực hiện query `count` tổng số bản ghi và chỉ fetch trang hiện tại (ví dụ 50 bản ghi/trang).
+*   Thực hiện tìm kiếm (tên, đơn vị) trực tiếp trên Postgres để đảm bảo tìm thấy mọi thí sinh dù database có hàng chục ngàn dòng.
+*   Hiển thị cột **Điểm liêm chính** và cho phép click/hover xem chi tiết các vi phạm kỹ thuật (Script violation logs).
 
-### 2. Cập nhật LiveMonitor (Danh sách tổng quát)
-*   Hiển thị điểm liêm chính ngay tại bảng danh sách (ngoài modal) để admin nhận diện nhanh các phiên thi nghi vấn (ví dụ: đổi màu đỏ nếu điểm cao).
+### 2. Sửa đổi "Nhắc nhở tham gia" (Participation Reminder)
+*   Sử dụng bảng `candidate_quiz_stats` làm nguồn dữ liệu chính để đối soát với danh sách `employees`.
+*   Phân loại rõ ràng:
+    *   **Đã đạt**: Có kết quả >= 50%.
+    *   **Chưa đạt**: Đã thi nhưng điểm cao nhất < 50%.
+    *   **Chưa tham gia**: Chưa có bản ghi nào trong `exam_sessions` cho cuộc thi đó.
+*   Đảm bảo bộ lọc theo "Cuộc thi" (Quiz ID) hoạt động chính xác trên toàn bộ danh sách nhân sự.
 
-### 3. Đảm bảo dữ liệu truy vết (Audit Trail)
-*   Kiểm tra việc ghi log từ `src/lib/exam/scriptGuard.server.ts` vào bảng `exam_events` đã đầy đủ các thông số kỹ thuật (tọa độ, khoảng cách thời gian) chưa.
-*   Đảm bảo `integrity_score` tổng hợp đúng các vi phạm kỹ thuật này để admin có cái nhìn tổng quan nhanh nhất.
+### 3. Hiển thị dữ liệu liêm chính & Truy vết Script
+*   Tích hợp `listExamEvents` vào modal chi tiết của từng phiên thi.
+*   Hiển thị rõ các bằng chứng hành vi: `pixel_perfect_clicks` (tọa độ click trùng khít), `robotic_trajectory` (di chuyển robot), `unnatural_click`.
+*   Sử dụng `describeExamEvent` để admin dễ dàng đọc hiểu lý do bị trừ điểm liêm chính.
+
+### 4. Đảm bảo Hiệu năng (Performance)
+*   Sử dụng Index trên các cột `quiz_id`, `employee_id`, `status` và `score`.
+*   Sử dụng `useSuspenseQuery` kết hợp với `placeholderData` để UI mượt mà khi chuyển trang.
+
+## Câu hỏi làm rõ
+1. Bạn muốn xuất Excel cho toàn bộ danh sách "Nhắc nhở tham gia" (gồm cả người chưa thi) hay chỉ cần hiển thị trên web?
+2. Trong phần "Kết quả dự thi", bạn có muốn lọc nhanh theo "Mức độ liêm chính thấp" (Nghi vấn script) không?
