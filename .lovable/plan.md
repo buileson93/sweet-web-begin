@@ -1,49 +1,31 @@
-# Plan - Fix Unit Statistics Sync & UI Text
+# Plan: Optimize Unit and Participant Statistics using SQL Aggregation
 
-The user reported that unit statistics are still incorrect (some participants are missing from the admin unit stats) and requested a specific text change to a UI element.
+The user wants a smarter way to display statistics without just increasing the query limits (currently set to 50k-100k rows in server functions), which could lead to performance issues as data grows. The best approach is to move the aggregation logic to the database using SQL queries (`GROUP BY`) or Remote Procedure Calls (RPCs).
 
 ## Proposed Changes
 
-### 1. Fix Database Synchronization
-The `candidate_quiz_stats` table relies on triggers to aggregate data. Some historical data or edge cases (e.g., missing `employee_id` in some records) might cause discrepancies.
--   Create a comprehensive migration to re-sync `candidate_quiz_stats` from both `exam_sessions` (for attempts) and `results` (for submissions/units).
--   Ensure the trigger handles both `employee_id` and fallback identification (name + unit) if `employee_id` is missing.
--   Update `getUnitStats` server function to handle `employee_id` presence more robustly.
+### 1. Database Layer (Supabase/PostgreSQL)
+- Create a PostgreSQL function `get_unit_statistics(quiz_uuid uuid)` to aggregate data server-side.
+- This function will:
+  - Join `candidate_quiz_stats` and `results` (if needed, or just aggregate one source if possible).
+  - Use `GROUP BY unit` to calculate `attempts`, `unique_candidates`, `avg_score`, and `pass_rate`.
+  - Return a set of rows matching the `UnitStatRow` structure.
 
-### 2. UI Text Update
--   Locate the "language selector" text and replace it with "thống kê theo đơn vị vẫn không đúng nhiều người đã thi nhưng trong admin thống kê trong đơn vị vẫn ko tính".
-    -   *Note*: A codebase search for "language selector" returned no direct matches. I will search for labels like "Ngôn ngữ" or standard selector components to find the relevant text.
+### 2. Server Functions (TanStack Start)
+- Refactor `src/lib/unitStats.functions.ts`:
+  - Replace manual loops and high-limit queries with a single call to the new `get_unit_statistics` RPC.
+- Refactor `src/lib/adminStats.functions.ts`:
+  - Optimize `getDetailedParticipation` to handle pagination properly if the list is extremely long, rather than just bumping the limit.
+  - Or, if summary stats are needed, use a dedicated aggregation RPC for the "Reminder Manager" overview.
 
-### 3. Server-side Logic Refinement
--   Refactor `getUnitStats` in `src/lib/unitStats.functions.ts` to ensure it doesn't just count records with `employee_id` but aggregates correctly by `unit` regardless of the identification method.
+### 3. Benefits
+- **Performance**: Significant reduction in data transferred from DB to Server (only aggregated rows, e.g., ~50-100 units instead of 100,000 results).
+- **Scalability**: Works efficiently even with millions of records.
+- **Accuracy**: Database-level aggregation is the most reliable "source of truth".
 
-## Technical Details
+## Implementation Steps
 
--   **Database Migration**:
-    ```sql
-    -- Re-sync stats for all candidates
-    INSERT INTO public.candidate_quiz_stats (quiz_id, employee_id, candidate_name, unit, attempt_count, submitted_count, last_updated_at)
-    SELECT 
-        quiz_id, 
-        employee_id, 
-        MAX(candidate_name), 
-        MAX(unit), 
-        COUNT(*), 
-        COUNT(*) FILTER (WHERE status IN ('submitted', 'disqualified')), 
-        now()
-    FROM public.exam_sessions
-    WHERE employee_id IS NOT NULL
-    GROUP BY quiz_id, employee_id
-    ON CONFLICT (quiz_id, employee_id) DO UPDATE SET
-        attempt_count = EXCLUDED.attempt_count,
-        submitted_count = EXCLUDED.submitted_count,
-        last_updated_at = now();
-    ```
--   **Frontend Update**:
-    -   Search `src/components/SiteHeader.tsx` or `src/components/AppShell.tsx` for the selector to be renamed.
-
-## Verification Plan
-1.  Run the migration to sync stats.
-2.  Check `candidate_quiz_stats` count vs `results` and `exam_sessions` unique participants.
-3.  Verify the "Thống kê đơn vị" page in Admin reflects the updated counts.
-4.  Confirm the UI text change is visible.
+1. **SQL Migration**: Write the `get_unit_statistics` function.
+2. **Refactor `unitStats.functions.ts`**: Update `getUnitStats` to use `.rpc('get_unit_statistics', { quiz_uuid: ... })`.
+3. **Refactor `adminStats.functions.ts`**: Implement similar logic for participant summary if applicable, or keep pagination for the detailed list.
+4. **Verification**: Confirm the UI in Admin Panel shows correct, fast-loading data.
