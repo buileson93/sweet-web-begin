@@ -181,7 +181,9 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
     const { data: stats, error: statsError } = await supabaseAdmin
       .from("candidate_quiz_stats")
       .select("employee_id, candidate_name, unit, attempt_count, submitted_count")
-      .eq("quiz_id", data.quizId);
+      .eq("quiz_id", data.quizId)
+      .limit(50000); // Tăng limit để lấy toàn bộ danh sách thí sinh đã tham gia
+
     
     if (statsError) throw new Error(statsError.message);
 
