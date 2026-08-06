@@ -274,10 +274,11 @@ export function FraudMonitor() {
                         </div>
                         <div className="flex-1">
                           <span className="font-bold capitalize">{log.kind.replace(/_/g, ' ')}</span>
-                          {log.details?.reason && (
-                            <p className="mt-0.5 text-xs text-muted-foreground">{log.details.reason}</p>
+                          {log.detail?.reason && (
+                            <p className="mt-0.5 text-xs text-muted-foreground">{log.detail.reason}</p>
                           )}
                         </div>
+
                       </div>
                     ))
                   ) : (
