@@ -294,11 +294,20 @@ function LeaderboardPage() {
                       • 
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="cursor-help border-b border-dotted border-muted-foreground/50">
+                        <span className="cursor-help border-b border-dotted border-muted-foreground/50">
                             Tổng {statsSummaryQuery.data.submittedCount} người đã nộp bài
                           </span>
                         </TooltipTrigger>
-                        <TooltipContent>Tổng số nhân viên định danh đã thực hiện nộp bài thành công ít nhất 1 lần.</TooltipContent>
+                        <TooltipContent>Tổng số nhân viên đã thực hiện nộp bài thành công ít nhất 1 lần (đã nộp/bị hủy).</TooltipContent>
+                      </Tooltip>
+                      • 
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help border-b border-dotted border-muted-foreground/50">
+                            {statsSummaryQuery.data.totalAttempts} lượt thi
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Tổng số lần tất cả thí sinh đã nhấn nút 'Bắt đầu thi' (bao gồm nộp bài, bỏ dở, đang thi).</TooltipContent>
                       </Tooltip>
                     </p>
                     {statsSummaryQuery.data.lastUpdatedAt && (

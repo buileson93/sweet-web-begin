@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BellRing, ClipboardCopy, Download, MailPlus, PartyPopper } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { AlertCircle, BellRing, CheckCircle2, ClipboardCopy, Download, MailPlus, PartyPopper, Timer } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
@@ -12,12 +13,14 @@ import { logAudit } from "@/lib/audit";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
 import { normalizeKey } from "@/lib/csv";
 import { buildContactList, buildReminderMessage, formatDeadline } from "@/lib/reminder";
+import { getDetailedParticipation } from "@/lib/adminStats.functions";
 
 
 /** Danh sách nhân viên chưa tham gia một cuộc thi, dùng để nhắc nhở. */
 export function ReminderManager() {
   const [quizId, setQuizId] = useState("");
   const [keyword, setKeyword] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "passed" | "failed" | "pending" | "none">("none");
 
   const quizzesQuery = useQuery({
     queryKey: ["admin-quiz-titles"],
@@ -31,39 +34,32 @@ export function ReminderManager() {
     },
   });
 
-  const pendingQuery = useQuery({
-    queryKey: ["admin-pending-employees", quizId],
-    enabled: Boolean(quizId),
-    queryFn: async () => {
-      const [{ data: employees, error: empError }, { data: results, error: resError }] = await Promise.all([
-        supabase
-          .from("employees")
-          .select("id, full_name, position, unit_name, phone")
-          .eq("is_active", true)
-          .order("full_name")
-          .limit(2000),
-        supabase.from("results").select("employee_id, score, total").eq("quiz_id", quizId).limit(5000),
-      ]);
+  const runGetDetailed = useServerFn(getDetailedParticipation);
 
-      if (empError) throw empError;
-      if (resError) throw resError;
-      const joined = new Set((results ?? []).map((r) => r.employee_id).filter(Boolean) as string[]);
-      return {
-        total: employees?.length ?? 0,
-        joined: joined.size,
-        pending: (employees ?? []).filter((e) => !joined.has(e.id)),
-      };
-    },
+  const pendingQuery = useQuery({
+    queryKey: ["admin-detailed-participation", quizId],
+    enabled: Boolean(quizId),
+    queryFn: () => runGetDetailed({ data: { quizId } }),
   });
 
-  const pending = pendingQuery.data?.pending ?? [];
+  const allEmployees = pendingQuery.data ?? [];
+  
+  const stats = useMemo(() => {
+    const counts = { total: allEmployees.length, passed: 0, failed: 0, pending: 0, none: 0 };
+    allEmployees.forEach(e => {
+      counts[e.status]++;
+    });
+    return counts;
+  }, [allEmployees]);
+
   const rows = useMemo(() => {
     const key = normalizeKey(keyword);
-    if (!key) return pending;
-    return pending.filter(
-      (e) => normalizeKey(e.full_name).includes(key) || normalizeKey(e.unit_name ?? "").includes(key),
-    );
-  }, [pending, keyword]);
+    return allEmployees.filter(e => {
+      const matchKeyword = !key || normalizeKey(e.fullName).includes(key) || normalizeKey(e.unit ?? "").includes(key);
+      const matchStatus = filterStatus === "all" || e.status === filterStatus;
+      return matchKeyword && matchStatus;
+    });
+  }, [allEmployees, keyword, filterStatus]);
 
   const quiz = (quizzesQuery.data ?? []).find((q) => q.id === quizId);
   const quizTitle = quiz?.title ?? "";
@@ -72,14 +68,16 @@ export function ReminderManager() {
   function exportRows(): ExportRow[] {
     return rows.map((e, i) => ({
       STT: i + 1,
-      "Họ và tên": e.full_name,
+      "Họ và tên": e.fullName,
       "Chức vụ": e.position ?? "",
-      "Đơn vị": e.unit_name ?? "",
+      "Đơn vị": e.unit ?? "",
       "Điện thoại": e.phone ?? "",
       "Cuộc thi": quizTitle,
       "Hạn chót": deadline,
-      "Nội dung nhắc": buildReminderMessage(e, quizTitle, deadline),
-      "Trạng thái": "Chưa tham gia",
+      "Nội dung nhắc": buildReminderMessage({ full_name: e.fullName }, quizTitle, deadline),
+      "Trạng thái": e.status === "passed" ? "Đã đạt" : e.status === "failed" ? "Không đạt" : e.status === "pending" ? "Đang thi" : "Chưa tham gia",
+      "Lượt nộp": e.submitted,
+      "Điểm cao nhất": e.bestScore ?? ""
     }));
   }
 
@@ -100,7 +98,7 @@ export function ReminderManager() {
   /** Sao chép danh sách liên hệ để dán thẳng vào Zalo nhóm hoặc Outlook. */
   async function handleCopy() {
     if (rows.length === 0) return toast.error("Không có dữ liệu để sao chép.");
-    const text = buildContactList(rows);
+    const text = buildContactList(rows.map(r => ({ full_name: r.fullName, phone: r.phone })));
     try {
       await navigator.clipboard.writeText(text);
       toast.success(`Đã sao chép ${rows.length} liên hệ vào bộ nhớ tạm.`);
@@ -115,13 +113,13 @@ export function ReminderManager() {
       title="Nhắc nhở tham gia"
       description={
         quizId && pendingQuery.data
-          ? `${pendingQuery.data.joined}/${pendingQuery.data.total} nhân viên đã dự thi · còn ${pendingQuery.data.pending.length} người chưa tham gia`
-          : "Chọn một cuộc thi để đối chiếu danh sách nhân viên với kết quả đã nộp."
+          ? `Đã đạt: ${stats.passed} · Không đạt (<50%): ${stats.failed} · Đang thi/Chưa nộp: ${stats.pending} · Chưa tham gia: ${stats.none}`
+          : "Chọn một cuộc thi để xem chi tiết tiến độ dự thi của toàn bộ nhân viên."
       }
       toolbar={
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-col gap-2 lg:flex-row">
           <Select value={quizId} onValueChange={setQuizId}>
-            <SelectTrigger className="rounded-full sm:w-72">
+            <SelectTrigger className="rounded-full lg:w-72">
               <SelectValue placeholder="Chọn cuộc thi" />
             </SelectTrigger>
             <SelectContent>
@@ -132,12 +130,26 @@ export function ReminderManager() {
               ))}
             </SelectContent>
           </Select>
-          <Input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="Lọc theo tên hoặc đơn vị..."
-            className="rounded-full sm:w-64"
-          />
+          <div className="flex gap-2">
+            <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
+              <SelectTrigger className="rounded-full w-40">
+                <SelectValue placeholder="Trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả ({stats.total})</SelectItem>
+                <SelectItem value="none">Chưa thi ({stats.none})</SelectItem>
+                <SelectItem value="failed">Không đạt ({stats.failed})</SelectItem>
+                <SelectItem value="passed">Đã đạt ({stats.passed})</SelectItem>
+                <SelectItem value="pending">Đang thi ({stats.pending})</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="Lọc tên, đơn vị..."
+              className="rounded-full w-48"
+            />
+          </div>
         </div>
       }
       actions={
@@ -179,16 +191,35 @@ export function ReminderManager() {
         >
           <div className="card-elevated divide-y divide-border overflow-hidden">
             {rows.map((e, i) => (
-              <div key={e.id} className="flex items-center gap-3 px-4 py-3">
+              <div key={e.id} className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/20 transition-colors">
                 <span className="w-8 shrink-0 font-mono text-xs text-muted-foreground">{i + 1}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{e.full_name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-semibold">{e.fullName}</p>
+                    {e.bestScore && <span className="text-xs font-mono text-muted-foreground">({e.bestScore})</span>}
+                  </div>
                   <p className="type-meta truncate">
-                    {[e.position, e.unit_name, e.phone].filter(Boolean).join(" · ") || "Chưa cập nhật đơn vị"}
+                    {[e.position, e.unit, e.phone].filter(Boolean).join(" · ") || "Chưa cập nhật đơn vị"}
                   </p>
-
                 </div>
-                <span className="status-pill bg-warning/15 text-warning-foreground">Chưa thi</span>
+                {e.status === "passed" && (
+                  <span className="status-pill bg-success/15 text-success-foreground inline-flex items-center gap-1">
+                    <CheckCircle2 className="size-3" /> Đạt
+                  </span>
+                )}
+                {e.status === "failed" && (
+                  <span className="status-pill bg-destructive/15 text-destructive-foreground inline-flex items-center gap-1">
+                    <AlertCircle className="size-3" /> {"<50%"}
+                  </span>
+                )}
+                {e.status === "pending" && (
+                  <span className="status-pill bg-info/15 text-info-foreground inline-flex items-center gap-1">
+                    <Timer className="size-3" /> Đang thi
+                  </span>
+                )}
+                {e.status === "none" && (
+                  <span className="status-pill bg-warning/15 text-warning-foreground">Chưa thi</span>
+                )}
               </div>
             ))}
           </div>
