@@ -152,7 +152,7 @@ export const getMultiQuizBasicStats = createServerFn({ method: "POST" })
     return out;
   });
 
-/** Thống kê chi tiết nhắc nhở tham gia cho một cuộc thi */
+/** Thống kê chi tiết nhắc nhở tham gia cho một cuộc thi sử dụng SQL Aggregation RPC để tối ưu */
 export const getDetailedParticipation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ quizId: z.string().uuid() }).parse(input))
@@ -168,106 +168,23 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
     });
     if (!isAdmin && !isStaff) throw new Error("Unauthorized");
 
-    // 1. Lấy danh sách toàn bộ nhân viên hoạt động
-    const { data: employees, error: empError } = await supabaseAdmin
-      .from("employees")
-      .select("id, full_name, unit_name, phone, position")
-      .eq("is_active", true)
-      .limit(10000)
-      .order("full_name");
-    
-    if (empError) throw new Error(empError.message);
-
-
-    // 2. Lấy chỉ số thi của cuộc thi này từ candidate_quiz_stats (chứa attempt_count, submitted_count)
-    const { data: stats, error: statsError } = await supabaseAdmin
-      .from("candidate_quiz_stats")
-      .select("employee_id, candidate_name, unit, attempt_count, submitted_count")
-      .eq("quiz_id", data.quizId)
-      .limit(50000); // Tăng limit để lấy toàn bộ danh sách thí sinh đã tham gia
-
-    
-    if (statsError) throw new Error(statsError.message);
-
-    // 3. Lấy kết quả tốt nhất của mỗi người để check xem đạt hay chưa
-    const { data: results, error: resError } = await supabaseAdmin
-      .from("results")
-      .select("employee_id, candidate_name, unit, passed, score, total")
-      .eq("quiz_id", data.quizId)
-      .eq("disqualified", false)
-      .limit(100000); // Tăng limit để lấy toàn bộ kết quả nộp bài thành công
-
-
-    if (resError) throw new Error(resError.message);
-
-    // Map dữ liệu
-    const statsMap = new Map();
-    stats?.forEach(s => {
-      const key = s.employee_id || `${s.candidate_name}|${s.unit}`;
-      statsMap.set(key, s);
+    // Sử dụng RPC get_detailed_participation_summary để lấy dữ liệu đã được tổng hợp từ database
+    const { data: rows, error } = await supabaseAdmin.rpc("get_detailed_participation_summary", {
+      _quiz_id: data.quizId,
     });
 
-    const resultsMap = new Map();
-    results?.forEach(r => {
-      const key = r.employee_id || `${r.candidate_name}|${r.unit}`;
-      const existing = resultsMap.get(key);
-      // Giữ kết quả cao nhất hoặc ưu tiên passed=true
-      if (!existing || (!existing.passed && r.passed) || (r.score / r.total > existing.score / existing.total)) {
-        resultsMap.set(key, r);
-      }
-    });
+    if (error) throw new Error(error.message);
 
-    // 4. Những người có trong kết quả hoặc stats nhưng không có trong danh sách employees (thí sinh vãng lai hoặc lỗi import)
-    const extraKeys = new Set([...statsMap.keys(), ...resultsMap.keys()]);
-    employees.forEach(e => extraKeys.delete(e.id));
-
-    const combined = employees.map(emp => {
-      const key = emp.id;
-      const stat = statsMap.get(key);
-      const res = resultsMap.get(key);
-
-      let status: "passed" | "failed" | "pending" | "none" = "none";
-      if (res?.passed) status = "passed";
-      else if (res) status = "failed"; // Đã nộp nhưng không đạt
-      else if (stat && stat.attempt_count > 0) status = "pending"; // Đang thi nhưng chưa nộp bản nào thành công
-
-      return {
-        id: emp.id,
-        fullName: emp.full_name,
-        unit: emp.unit_name,
-        phone: emp.phone,
-        position: emp.position,
-        status,
-        attempts: stat?.attempt_count || 0,
-        submitted: stat?.submitted_count || 0,
-        bestScore: res ? `${res.score}/${res.total}` : null
-      };
-    });
-
-    // 5. Thêm những người tham gia nhưng không nằm trong danh mục nhân viên chính thức
-    extraKeys.forEach(key => {
-      const stat = statsMap.get(key);
-      const res = resultsMap.get(key);
-      if (!stat && !res) return;
-
-      let status: "passed" | "failed" | "pending" | "none" = "none";
-      if (res?.passed) status = "passed";
-      else if (res) status = "failed";
-      else if (stat && stat.attempt_count > 0) status = "pending";
-
-      combined.push({
-        id: (key.includes('|') ? key : key) as string,
-        fullName: stat?.candidate_name || res?.candidate_name || "(Không rõ tên)",
-        unit: stat?.unit || res?.unit || "(Không rõ đơn vị)",
-        phone: "",
-        position: "(Vãng lai)",
-        status,
-        attempts: stat?.attempt_count || 0,
-        submitted: stat?.submitted_count || 0,
-        bestScore: res ? `${res.score}/${res.total}` : null
-      });
-    });
-
-
-    return combined;
+    // Map kết quả về đúng format client mong đợi
+    return (rows || []).map((r: any) => ({
+      id: r.id,
+      fullName: r.full_name,
+      unit: r.unit_name,
+      phone: r.phone,
+      position: r.position,
+      status: r.status as "passed" | "failed" | "pending" | "none",
+      attempts: Number(r.attempts),
+      submitted: Number(r.submitted),
+      bestScore: r.best_score || null
+    }));
   });
