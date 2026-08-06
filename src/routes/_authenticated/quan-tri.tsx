@@ -23,10 +23,11 @@ import {
   ScrollText,
   ShieldAlert,
   Bug,
-
   ShieldCheck,
   Trophy,
+  Fingerprint,
 } from "lucide-react";
+
 
 import { QuizManager } from "@/components/admin/QuizManager";
 import { QuestionManager } from "@/components/admin/QuestionManager";
@@ -47,6 +48,8 @@ import { DeviceStats } from "@/components/admin/DeviceStats";
 import { TopicReport } from "@/components/admin/TopicReport";
 import { BugReportManager } from "@/components/admin/BugReportManager";
 import { CarouselStats } from "@/components/admin/CarouselStats";
+import { FraudMonitor } from "@/components/admin/FraudMonitor";
+
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { EmptyState, ErrorState, PageContainer } from "@/components/ui-kit";
@@ -120,7 +123,9 @@ const GROUPS: { group: string; items: Section[] }[] = [
       { value: "devices", label: "Thiết bị & trình duyệt", hint: "Người dùng vào bằng máy gì", icon: MonitorSmartphone },
       { value: "carousel", label: "Hành vi vuốt thẻ", hint: "Tối ưu bố cục trang chủ", icon: MousePointerClick, adminOnly: true },
       { value: "history", label: "Thành tích", hint: "Lịch sử theo nhân viên", icon: Trophy },
+      { value: "fraud", label: "Bảo mật & Gian lận", hint: "Phát hiện hành vi bất thường", icon: Fingerprint, adminOnly: true },
       { value: "audit", label: "Lịch sử thao tác", hint: "Nhật ký quản trị", icon: ScrollText },
+
       { value: "bugs", label: "Báo lỗi & góp ý", hint: "Phản hồi từ người dùng", icon: Bug, adminOnly: true },
     ],
   },
@@ -405,6 +410,8 @@ function AdminPage() {
                 {current === "carousel" && canManageSystem && <CarouselStats />}
 
                 {current === "history" && <EmployeeHistoryManager />}
+                {current === "fraud" && canManageSystem && <FraudMonitor />}
+
                 {current === "reminders" && <ReminderManager />}
                 {current === "audit" && <AuditLogManager />}
                 {current === "bugs" && canManageSystem && <BugReportManager />}
