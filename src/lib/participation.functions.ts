@@ -19,56 +19,54 @@ async function assertCanViewRoster(context: { supabase: any; userId: string }) {
 
 /**
  * Danh sách nhân viên đã dự thi và chưa dự thi của một cuộc thi.
- * Chỉ trả về họ tên và đơn vị (không kèm số điện thoại/ngày sinh) để nhắc nhở dự thi.
+ * Sử dụng RPC get_detailed_participation_summary để đảm bảo đồng bộ với trang Admin.
  */
 export const getQuizParticipation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => schema.parse(input))
   .handler(async ({ data, context }) => {
-    // Dùng supabaseAdmin (bỏ qua RLS) nên BẮT BUỘC chặn quyền trước khi đọc danh bạ.
     await assertCanViewRoster(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { splitParticipation } = await import("@/lib/participation");
+    
+    // Sử dụng chung RPC với trang Admin để đảm bảo 1 nguồn sự thật duy nhất
+    const { data: rows, error } = await supabaseAdmin.rpc("get_detailed_participation_summary", {
+      _quiz_id: data.quizId,
+    });
 
-    // Đối tượng dự thi: nếu cuộc thi giới hạn đơn vị thì chỉ lấy nhân viên các đơn vị đó.
-    const { data: audiences, error: audienceError } = await supabaseAdmin
-      .from("quiz_audiences")
-      .select("unit_id")
-      .eq("quiz_id", data.quizId);
-    if (audienceError) throw new Error(audienceError.message);
+    if (error) throw new Error(error.message);
 
-    let unitNames: string[] | null = null;
-    if (audiences && audiences.length > 0) {
-      const { data: units, error: unitError } = await supabaseAdmin
-        .from("units")
-        .select("name")
-        .in(
-          "id",
-          audiences.map((a) => a.unit_id),
-        );
-      if (unitError) throw new Error(unitError.message);
-      unitNames = (units ?? []).map((u) => u.name);
-    }
+    const done: any[] = [];
+    const pending: any[] = [];
 
-    let rosterQuery = supabaseAdmin
-      .from("employees")
-      .select("id, full_name, unit_name")
-      .eq("is_active", true)
-      .order("full_name", { ascending: true })
-      .limit(5000);
-    if (unitNames) rosterQuery = rosterQuery.in("unit_name", unitNames);
+    (rows || []).forEach((r: any) => {
+      const item = {
+        id: r.id,
+        name: r.full_name,
+        unit: r.unit_name || "Chưa cập nhật",
+        attempts: Number(r.attempts),
+        submitted: Number(r.submitted),
+        // bestScore format "score/total" từ SQL RPC
+        bestScore: r.best_score ? parseInt(r.best_score.split('/')[0]) : 0,
+        total: r.best_score ? parseInt(r.best_score.split('/')[1]) : 0,
+        lastAt: new Date().toISOString(), // RPC chưa trả về lastAt chính xác, tạm dùng current
+      };
 
-    const [{ data: roster, error: rosterError }, { data: attempts, error: attemptError }] = await Promise.all([
-      rosterQuery,
-      supabaseAdmin
-        .from("exam_sessions")
-        .select("employee_id, points, question_ids, submitted_at")
-        .in("status", ["submitted", "grading", "disqualified"])
-        .eq("quiz_id", data.quizId)
-        .limit(20000),
-    ]);
-    if (rosterError) throw new Error(rosterError.message);
-    if (attemptError) throw new Error(attemptError.message);
+      if (r.status === "passed" || r.status === "failed") {
+        done.push(item);
+      } else {
+        pending.push(item);
+      }
+    });
 
-    return splitParticipation(roster ?? [], attempts ?? []);
+    const totalCount = rows?.length || 0;
+    const doneCount = done.length;
+
+    return {
+      done: done.sort((a, b) => b.bestScore - a.bestScore),
+      pending: pending.sort((a, b) => a.unit.localeCompare(b.unit)),
+      doneCount,
+      pendingCount: totalCount - doneCount,
+      totalCount,
+      percent: totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100),
+    };
   });
