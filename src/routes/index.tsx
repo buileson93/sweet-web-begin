@@ -254,14 +254,14 @@ function HomePage() {
             <StatTile 
               label="Lượt thi" 
               value={statsSummaryQuery.isLoading ? "…" : String(participationSummary.totalAttempts)} 
-              tooltip="Tổng số lần nhấn nút 'Bắt đầu thi', bao gồm cả những lần bỏ dở hoặc chưa nộp bài."
+              tooltip="Tổng số lần nhấn nút 'Bắt đầu thi', bao gồm cả những lần nộp bài, bỏ dở hoặc đang thi."
             />
             <StatTile
               label="Người tham gia"
               value={statsSummaryQuery.isLoading ? "…" : String(participationSummary.submittedCount)}
               tone="accent"
               icon={<Trophy className="size-4" />}
-              tooltip="Số lượng nhân viên đã nộp bài ít nhất một lần thành công (đã nộp bài, đang chấm hoặc bị hủy)."
+              tooltip="Số lượng nhân viên đã nộp bài ít nhất một lần thành công (tính cả bài đạt, chưa đạt hoặc bị hủy)."
             />
           </div>
           {participationSummary.lastUpdatedAt && (
