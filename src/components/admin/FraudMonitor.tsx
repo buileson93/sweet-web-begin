@@ -281,11 +281,11 @@ export function FraudMonitor() {
                       </div>
                     ))
                   ) : (
-                    <EmptyState
-                      icon={SearchX}
-                      title="Không có log chi tiết"
-                      compact
-                    />
+                  <EmptyState
+                    icon={SearchX}
+                    title="Không có log chi tiết"
+                  />
+
                   )}
                 </div>
               </div>
