@@ -173,11 +173,11 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
       .from("employees")
       .select("id, full_name, unit_name, phone, position")
       .eq("is_active", true)
-      .limit(10000); // Tăng giới hạn lấy danh sách nhân viên
-
+      .limit(10000)
       .order("full_name");
     
     if (empError) throw new Error(empError.message);
+
 
     // 2. Lấy chỉ số thi của cuộc thi này từ candidate_quiz_stats (chứa attempt_count, submitted_count)
     const { data: stats, error: statsError } = await supabaseAdmin
