@@ -16,8 +16,9 @@ export type FraudAttempt = {
 
 export type FingerprintLog = {
   id: string;
-  session_id: string;
+  session_id: string | null;
   kind: string;
-  details: any;
+  detail: any;
   created_at: string;
+  weight: number;
 };
