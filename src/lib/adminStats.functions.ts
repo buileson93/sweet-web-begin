@@ -173,15 +173,19 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
       .from("employees")
       .select("id, full_name, unit_name, phone, position")
       .eq("is_active", true)
+      .limit(10000)
       .order("full_name");
     
     if (empError) throw new Error(empError.message);
+
 
     // 2. Lấy chỉ số thi của cuộc thi này từ candidate_quiz_stats (chứa attempt_count, submitted_count)
     const { data: stats, error: statsError } = await supabaseAdmin
       .from("candidate_quiz_stats")
       .select("employee_id, candidate_name, unit, attempt_count, submitted_count")
-      .eq("quiz_id", data.quizId);
+      .eq("quiz_id", data.quizId)
+      .limit(50000); // Tăng limit để lấy toàn bộ danh sách thí sinh đã tham gia
+
     
     if (statsError) throw new Error(statsError.message);
 
@@ -190,7 +194,9 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
       .from("results")
       .select("employee_id, candidate_name, unit, passed, score, total")
       .eq("quiz_id", data.quizId)
-      .eq("disqualified", false);
+      .eq("disqualified", false)
+      .limit(100000); // Tăng limit để lấy toàn bộ kết quả nộp bài thành công
+
 
     if (resError) throw new Error(resError.message);
 
@@ -210,6 +216,10 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
         resultsMap.set(key, r);
       }
     });
+
+    // 4. Những người có trong kết quả hoặc stats nhưng không có trong danh sách employees (thí sinh vãng lai hoặc lỗi import)
+    const extraKeys = new Set([...statsMap.keys(), ...resultsMap.keys()]);
+    employees.forEach(e => extraKeys.delete(e.id));
 
     const combined = employees.map(emp => {
       const key = emp.id;
@@ -233,6 +243,31 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
         bestScore: res ? `${res.score}/${res.total}` : null
       };
     });
+
+    // 5. Thêm những người tham gia nhưng không nằm trong danh mục nhân viên chính thức
+    extraKeys.forEach(key => {
+      const stat = statsMap.get(key);
+      const res = resultsMap.get(key);
+      if (!stat && !res) return;
+
+      let status: "passed" | "failed" | "pending" | "none" = "none";
+      if (res?.passed) status = "passed";
+      else if (res) status = "failed";
+      else if (stat && stat.attempt_count > 0) status = "pending";
+
+      combined.push({
+        id: (key.includes('|') ? key : key) as string,
+        fullName: stat?.candidate_name || res?.candidate_name || "(Không rõ tên)",
+        unit: stat?.unit || res?.unit || "(Không rõ đơn vị)",
+        phone: "",
+        position: "(Vãng lai)",
+        status,
+        attempts: stat?.attempt_count || 0,
+        submitted: stat?.submitted_count || 0,
+        bestScore: res ? `${res.score}/${res.total}` : null
+      });
+    });
+
 
     return combined;
   });
