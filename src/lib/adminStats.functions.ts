@@ -185,6 +185,7 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
       status: r.status as "passed" | "failed" | "pending" | "none",
       attempts: Number(r.attempts),
       submitted: Number(r.submitted),
-      bestScore: r.best_score || null
+      bestScore: r.best_score || null,
+      lastAt: r.last_submitted_at || null
     }));
   });
