@@ -42,77 +42,46 @@ export const getUnitStats = createServerFn({ method: "POST" })
     });
     if (!isAdmin && !isStaff) throw new Error("Unauthorized");
 
-    // 1. Lấy thống kê cơ bản (lượt thi, số người) từ candidate_quiz_stats
-    // Chúng ta lấy TẤT CẢ bản ghi có attempt_count > 0
-    let statsQuery = supabaseAdmin
-      .from("candidate_quiz_stats")
-      .select("unit, attempt_count, submitted_count, employee_id")
-      .gt("attempt_count", 0);
+    // Sử dụng RPC get_unit_statistics để lấy dữ liệu đã được tổng hợp từ database
+    const { data: rows, error } = await supabaseAdmin.rpc("get_unit_statistics", {
+      _quiz_id: quizId === "all" ? null : quizId,
+    });
 
-    if (quizId !== "all") {
-      statsQuery = statsQuery.eq("quiz_id", quizId);
-    }
+    if (error) throw error;
 
-    // Tăng limit lên tối đa để không bỏ sót thí sinh nào
-    const { data: statsData, error: statsError } = await statsQuery.limit(50000);
-    if (statsError) throw statsError;
+    // Convert numeric results from RPC to the expected UnitStatRow types
+    return (rows || []).map((r: any) => ({
+      unit: r.unit,
+      attempts: Number(r.attempts),
+      candidates: Number(r.candidates),
+      avgPercent: Number(r.avg_percent),
+      passRate: Number(r.pass_rate),
+      best: Number(r.best),
+    })) as UnitStatRow[];
+  });
 
-    const unitBaseMap = new Map<string, { attempts: number; candidateIds: Set<string> }>();
-    for (const s of statsData || []) {
-      const unit = s.unit?.trim() || "(Chưa rõ đơn vị)";
-      const entry = unitBaseMap.get(unit) ?? { attempts: 0, candidateIds: new Set() };
-      entry.attempts += (s.attempt_count || 0);
-      if (s.employee_id) entry.candidateIds.add(s.employee_id);
-      unitBaseMap.set(unit, entry);
-    }
+/**
+ * Lấy phân bố điểm số cho biểu đồ bằng SQL Aggregation RPC.
+ */
+export const getScoreDistribution = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => schema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { quizId } = data;
 
-    // 2. Lấy thống kê điểm số từ results
-    let resultsQuery = supabaseAdmin
-      .from("results")
-      .select("unit, score, total, passed")
-      .eq("disqualified", false);
+    const { data: distribution, error } = await supabaseAdmin.rpc("get_score_distribution_stats", {
+      _quiz_id: quizId === "all" ? null : quizId,
+    });
 
-    if (quizId !== "all") {
-      resultsQuery = resultsQuery.eq("quiz_id", quizId);
-    }
+    if (error) throw error;
 
-    // Tăng limit để lấy toàn bộ kết quả nộp bài
-    const { data: results, error: resError } = await resultsQuery.limit(100000);
-    if (resError) throw resError;
+    return (distribution || []).map((d: any) => ({
+      range: d.range,
+      count: Number(d.count),
+      fail: d.fail,
+    })) as DistributionBucket[];
 
-    const unitMetricsMap = new Map<string, { totalPct: number; count: number; passed: number; best: number }>();
-    for (const r of results || []) {
-      const unit = r.unit?.trim() || "(Chưa rõ đơn vị)";
-      const entry = unitMetricsMap.get(unit) ?? { totalPct: 0, count: 0, passed: 0, best: 0 };
-      
-      const pct = r.total ? (r.score / r.total) * 100 : 0;
-      entry.totalPct += pct;
-      entry.count += 1;
-      if (r.passed) entry.passed += 1;
-      if (pct > entry.best) entry.best = pct;
-      
-      unitMetricsMap.set(unit, entry);
-    }
-
-    // Nếu quizId là 'all', chúng ta có thể có các đơn vị trong results mà không có trong candidate_quiz_stats (hiếm nhưng có thể)
-    // Hoặc ngược lại. Chúng ta ưu tiên gộp cả hai.
-    const allUnits = new Set([...unitBaseMap.keys(), ...unitMetricsMap.keys()]);
-
-    const rows: UnitStatRow[] = Array.from(allUnits).map((unit) => {
-      const base = unitBaseMap.get(unit) || { attempts: 0, candidateIds: new Set() };
-      const metrics = unitMetricsMap.get(unit) || { totalPct: 0, count: 0, passed: 0, best: 0 };
-      
-      return {
-        unit,
-        attempts: base.attempts,
-        candidates: base.candidateIds.size,
-        avgPercent: metrics.count > 0 ? Math.round(metrics.totalPct / metrics.count) : 0,
-        passRate: metrics.count > 0 ? Math.round((metrics.passed / metrics.count) * 100) : 0,
-        best: Math.round(metrics.best),
-      };
-    }).sort((a, b) => b.avgPercent - a.avgPercent);
-
-    return rows;
   });
 
 /**
