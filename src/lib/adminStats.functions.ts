@@ -217,6 +217,10 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
       }
     });
 
+    // 4. Những người có trong kết quả hoặc stats nhưng không có trong danh sách employees (thí sinh vãng lai hoặc lỗi import)
+    const extraKeys = new Set([...statsMap.keys(), ...resultsMap.keys()]);
+    employees.forEach(e => extraKeys.delete(e.id));
+
     const combined = employees.map(emp => {
       const key = emp.id;
       const stat = statsMap.get(key);
@@ -239,6 +243,31 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
         bestScore: res ? `${res.score}/${res.total}` : null
       };
     });
+
+    // 5. Thêm những người tham gia nhưng không nằm trong danh mục nhân viên chính thức
+    extraKeys.forEach(key => {
+      const stat = statsMap.get(key);
+      const res = resultsMap.get(key);
+      if (!stat && !res) return;
+
+      let status: "passed" | "failed" | "pending" | "none" = "none";
+      if (res?.passed) status = "passed";
+      else if (res) status = "failed";
+      else if (stat && stat.attempt_count > 0) status = "pending";
+
+      combined.push({
+        id: (key.includes('|') ? key : key) as string,
+        fullName: stat?.candidate_name || res?.candidate_name || "(Không rõ tên)",
+        unit: stat?.unit || res?.unit || "(Không rõ đơn vị)",
+        phone: "",
+        position: "(Vãng lai)",
+        status,
+        attempts: stat?.attempt_count || 0,
+        submitted: stat?.submitted_count || 0,
+        bestScore: res ? `${res.score}/${res.total}` : null
+      });
+    });
+
 
     return combined;
   });
