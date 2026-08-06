@@ -43,15 +43,18 @@ export const getUnitStats = createServerFn({ method: "POST" })
     if (!isAdmin && !isStaff) throw new Error("Unauthorized");
 
     // 1. Lấy thống kê cơ bản (lượt thi, số người) từ candidate_quiz_stats
+    // Chúng ta lấy TẤT CẢ bản ghi có attempt_count > 0
     let statsQuery = supabaseAdmin
       .from("candidate_quiz_stats")
-      .select("unit, attempt_count, submitted_count, employee_id");
+      .select("unit, attempt_count, submitted_count, employee_id")
+      .gt("attempt_count", 0);
 
     if (quizId !== "all") {
       statsQuery = statsQuery.eq("quiz_id", quizId);
     }
 
-    const { data: statsData, error: statsError } = await statsQuery.limit(10000);
+    // Tăng limit lên tối đa để không bỏ sót thí sinh nào
+    const { data: statsData, error: statsError } = await statsQuery.limit(50000);
     if (statsError) throw statsError;
 
     const unitBaseMap = new Map<string, { attempts: number; candidateIds: Set<string> }>();
@@ -63,11 +66,7 @@ export const getUnitStats = createServerFn({ method: "POST" })
       unitBaseMap.set(unit, entry);
     }
 
-    // 2. Lấy thống kê điểm số (AVG, MAX, PassRate) từ results sử dụng RPC hoặc query tập hợp
-    // Vì Supabase client không hỗ trợ GROUP BY phức tạp với AVG/MAX trực tiếp qua SDK một cách linh hoạt,
-    // ta sẽ dùng một query select các trường cần thiết nhưng không limit hoặc dùng RPC nếu cần.
-    // Tuy nhiên, để tối ưu và tránh limit 1000, ta sẽ query lấy aggregation.
-    
+    // 2. Lấy thống kê điểm số từ results
     let resultsQuery = supabaseAdmin
       .from("results")
       .select("unit, score, total, passed")
@@ -77,7 +76,7 @@ export const getUnitStats = createServerFn({ method: "POST" })
       resultsQuery = resultsQuery.eq("quiz_id", quizId);
     }
 
-    // Query lấy dữ liệu thô để aggregate (tối đa 100k bản ghi cho thống kê đơn vị là an toàn hơn 50k)
+    // Tăng limit để lấy toàn bộ kết quả nộp bài
     const { data: results, error: resError } = await resultsQuery.limit(100000);
     if (resError) throw resError;
 
@@ -95,8 +94,14 @@ export const getUnitStats = createServerFn({ method: "POST" })
       unitMetricsMap.set(unit, entry);
     }
 
-    const rows: UnitStatRow[] = [...unitBaseMap.entries()].map(([unit, base]) => {
+    // Nếu quizId là 'all', chúng ta có thể có các đơn vị trong results mà không có trong candidate_quiz_stats (hiếm nhưng có thể)
+    // Hoặc ngược lại. Chúng ta ưu tiên gộp cả hai.
+    const allUnits = new Set([...unitBaseMap.keys(), ...unitMetricsMap.keys()]);
+
+    const rows: UnitStatRow[] = Array.from(allUnits).map((unit) => {
+      const base = unitBaseMap.get(unit) || { attempts: 0, candidateIds: new Set() };
       const metrics = unitMetricsMap.get(unit) || { totalPct: 0, count: 0, passed: 0, best: 0 };
+      
       return {
         unit,
         attempts: base.attempts,
