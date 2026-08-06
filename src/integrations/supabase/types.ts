@@ -2007,6 +2007,20 @@ export type Database = {
         Args: { p_patch: Json; p_session: string }
         Returns: Json
       }
+      get_detailed_participation_summary: {
+        Args: { _quiz_id: string }
+        Returns: {
+          attempts: number
+          best_score: string
+          full_name: string
+          id: string
+          phone: string
+          position: string
+          status: string
+          submitted: number
+          unit_name: string
+        }[]
+      }
       get_score_distribution_stats: {
         Args: { _quiz_id?: string }
         Returns: {
