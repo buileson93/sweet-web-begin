@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { downloadXlsx } from "@/lib/xlsxIo";
 import { useMemo, useState } from "react";
-import { Download, Inbox, RotateCcw, Search, SearchX, ShieldAlert, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Inbox, RotateCcw, Search, SearchX, ShieldAlert, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components/ui-kit";
@@ -29,6 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useServerFn } from "@tanstack/react-start";
 import { listExamEvents, restoreResult } from "@/lib/integrity.functions";
+import { listPaginatedResults } from "@/lib/adminStats.functions";
 import { describeExamEvent } from "@/lib/integrity";
 import { formatDateTime as fmtDateTime } from "@/lib/format";
 
@@ -90,6 +91,8 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
   const qc = useQueryClient();
   const [quizId, setQuizId] = useState("all");
   const [keyword, setKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 50;
 
   const { data: quizzes = [] } = useQuery({
     queryKey: ["admin-quizzes-lite"],
@@ -103,31 +106,16 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
     },
   });
 
-  const resultsQuery = useQuery({
-    queryKey: ["admin-results", quizId],
-    queryFn: async () => {
-      let query = supabase
-        .from("results")
-        .select("*")
-        .order("submitted_at", { ascending: false })
-        .limit(1000);
-      if (quizId !== "all") query = query.eq("quiz_id", quizId);
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
-    },
-  });
-  const results = resultsQuery.data ?? [];
+  const listResults = useServerFn(listPaginatedResults);
 
-  const rows = useMemo(() => {
-    const kw = keyword.trim().toLowerCase();
-    return results.filter(
-      (r) =>
-        !kw ||
-        r.candidate_name.toLowerCase().includes(kw) ||
-        (r.unit ?? "").toLowerCase().includes(kw),
-    );
-  }, [results, keyword]);
+  const resultsQuery = useQuery({
+    queryKey: ["admin-results", quizId, keyword, page],
+    queryFn: () => listResults({ data: { quizId: quizId as any, keyword, page, pageSize } }),
+  });
+
+  const { items: rows = [], total = 0 } = resultsQuery.data ?? {};
+  const totalPages = Math.ceil(total / pageSize);
+
 
   const runRestore = useServerFn(restoreResult);
   const [restoreTarget, setRestoreTarget] = useState<{ id: string; name: string } | null>(null);
@@ -195,11 +183,11 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
     <AdminSection
       title="Kết quả dự thi"
       description={
-        resultsQuery.isLoading ? "Đang tải..." : `${rows.length} / ${results.length} lượt thi`
+        resultsQuery.isLoading ? "Đang tải..." : `${total} lượt thi trên toàn hệ thống`
       }
       toolbar={
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Select value={quizId} onValueChange={setQuizId}>
+          <Select value={quizId} onValueChange={(v) => { setQuizId(v); setPage(1); }}>
             <SelectTrigger className="rounded-full sm:w-56">
               <SelectValue placeholder="Tất cả cuộc thi" />
             </SelectTrigger>
@@ -218,7 +206,7 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
               className="rounded-full pl-10"
               placeholder="Tìm thí sinh, đơn vị..."
               value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
+              onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
             />
           </div>
         </div>
@@ -336,6 +324,34 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between px-4">
+            <p className="type-meta">
+              Trang {page} / {totalPages} (tổng {total} bản ghi)
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                disabled={page <= 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              >
+                <ChevronLeft className="mr-1 size-4" /> Trước
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              >
+                Sau <ChevronRight className="ml-1 size-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </QueryState>
 
       <Dialog open={Boolean(restoreTarget)} onOpenChange={(o) => !o && setRestoreTarget(null)}>
