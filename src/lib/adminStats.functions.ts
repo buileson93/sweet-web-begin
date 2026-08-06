@@ -121,6 +121,7 @@ export const getQuizStatsSummary = createServerFn({ method: "POST" })
       totalAttempts: totalAttempts,
       lastUpdatedAt: latestUpdate
     };
+  });
 
 /** Thống kê chi tiết nhắc nhở tham gia cho một cuộc thi */
 export const getDetailedParticipation = createServerFn({ method: "POST" })
