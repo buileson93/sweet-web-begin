@@ -2014,6 +2014,7 @@ export type Database = {
           best_score: string
           full_name: string
           id: string
+          last_submitted_at: string
           phone: string
           position: string
           status: string
