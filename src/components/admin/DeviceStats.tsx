@@ -106,7 +106,7 @@ export function DeviceStats() {
       const COLUMNS =
         "browser, browser_version, os, os_version, device_type, device_model, platform_version, architecture, cpu_cores, memory_gb, network_type, downlink, save_data, screen_w, screen_h, viewport_w, language, timezone, is_pwa, is_touch, referrer_host, visitor_key, path, ip, user_agent, created_at, employee_name, employee_unit";
       const PAGE = 1000;
-      const MAX = 50000;
+      const MAX = 10000; // Giới hạn 10k bản ghi thay vì 50k để đảm bảo hiệu năng trình duyệt
       const since = range === "all" ? null : new Date(Date.now() - Number(range) * 86400000).toISOString();
       const all: Visit[] = [];
       // PostgREST giới hạn mỗi lần trả tối đa 1000 dòng nên phải lấy theo trang.

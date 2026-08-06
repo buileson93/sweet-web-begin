@@ -6,14 +6,14 @@ const schema = z.object({ quizIds: z.array(z.string().uuid()).min(1).max(30) });
 export type ParticipationRate = { done: number; total: number; percent: number };
 
 /**
- * Tỉ lệ tham gia công khai cho từng cuộc thi (chỉ trả về con số tổng hợp,
- * không kèm bất kỳ thông tin cá nhân nào) để vẽ thanh tiến độ ở trang chủ.
+ * Tỉ lệ tham gia công khai cho từng cuộc thi sử dụng candidate_quiz_stats làm nguồn sự thật.
  */
 export const getPublicParticipationRates = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => schema.parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // 1. Lấy danh sách đối tượng và đơn vị
     const [{ data: audiences, error: audErr }, { data: units, error: unitErr }, { data: roster, error: rosterErr }] =
       await Promise.all([
         supabaseAdmin.from("quiz_audiences").select("quiz_id, unit_id").in("quiz_id", data.quizIds),
@@ -24,13 +24,13 @@ export const getPublicParticipationRates = createServerFn({ method: "POST" })
     if (unitErr) throw new Error(unitErr.message);
     if (rosterErr) throw new Error(rosterErr.message);
 
-    const { data: attempts, error: attemptErr } = await supabaseAdmin
-      .from("exam_sessions")
-      .select("quiz_id, employee_id")
+    // 2. Lấy thống kê đã nộp từ candidate_quiz_stats (chứa số người nộp thực tế)
+    const { data: stats, error: statsErr } = await supabaseAdmin
+      .from("candidate_quiz_stats")
+      .select("quiz_id, employee_id, submitted_count")
       .in("quiz_id", data.quizIds)
-      .in("status", ["submitted", "grading", "disqualified"])
-      .limit(100000);
-    if (attemptErr) throw new Error(attemptErr.message);
+      .gt("submitted_count", 0);
+    if (statsErr) throw new Error(statsErr.message);
 
     const unitName = new Map((units ?? []).map((u) => [u.id, u.name]));
     const audienceByQuiz = new Map<string, Set<string>>();
@@ -43,21 +43,32 @@ export const getPublicParticipationRates = createServerFn({ method: "POST" })
     }
 
     const doneByQuiz = new Map<string, Set<string>>();
-    for (const r of attempts ?? []) {
-      if (!r.quiz_id || !r.employee_id) continue;
-      const set = doneByQuiz.get(r.quiz_id) ?? new Set<string>();
-      set.add(r.employee_id);
-      doneByQuiz.set(r.quiz_id, set);
+    for (const s of stats ?? []) {
+      if (!s.quiz_id || !s.employee_id) continue;
+      const set = doneByQuiz.get(s.quiz_id) ?? new Set<string>();
+      set.add(s.employee_id);
+      doneByQuiz.set(s.quiz_id, set);
     }
 
     const out: Record<string, ParticipationRate> = {};
     for (const quizId of data.quizIds) {
-      const units = audienceByQuiz.get(quizId);
-      const eligible = units ? (roster ?? []).filter((e) => e.unit_name && units.has(e.unit_name)) : (roster ?? []);
+      const targetUnits = audienceByQuiz.get(quizId);
+      // Lọc danh sách nhân viên thuộc diện tham gia
+      const eligible = targetUnits 
+        ? (roster ?? []).filter((e) => e.unit_name && targetUnits.has(e.unit_name)) 
+        : (roster ?? []);
+      
       const total = eligible.length;
       const eligibleIds = new Set(eligible.map((e) => e.id));
+      
+      // Chỉ đếm những nhân viên thuộc diện tham gia và đã có bản nộp
       const done = [...(doneByQuiz.get(quizId) ?? [])].filter((id) => eligibleIds.has(id)).length;
-      out[quizId] = { done, total, percent: total === 0 ? 0 : Math.round((done / total) * 100) };
+      
+      out[quizId] = { 
+        done, 
+        total, 
+        percent: total === 0 ? 0 : Math.round((done / total) * 100) 
+      };
     }
     return out;
   });
