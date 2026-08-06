@@ -173,6 +173,8 @@ export const getDetailedParticipation = createServerFn({ method: "POST" })
       .from("employees")
       .select("id, full_name, unit_name, phone, position")
       .eq("is_active", true)
+      .limit(10000); // Tăng giới hạn lấy danh sách nhân viên
+
       .order("full_name");
     
     if (empError) throw new Error(empError.message);
