@@ -19,7 +19,7 @@ import { AdminSection, EmptyState, ListSkeleton, QueryState } from "@/components
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { getUnitStats, type UnitStatRow } from "@/lib/unitStats.functions";
+import { getScoreDistribution, getUnitStats, type UnitStatRow } from "@/lib/unitStats.functions";
 
 export function UnitStats() {
   const [quizId, setQuizId] = useState("all");
@@ -41,36 +41,19 @@ export function UnitStats() {
 
   const rows = query.data || [];
 
+  const fetchDistribution = useServerFn(getScoreDistribution);
   const distributionQuery = useQuery({
     queryKey: ["admin-distribution", quizId],
-    queryFn: async () => {
-      let q = supabase
-        .from("results")
-        .select("score, total, disqualified")
-        .eq("disqualified", false);
-      if (quizId !== "all") q = q.eq("quiz_id", quizId);
-      const { data, error } = await q.limit(50000);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => fetchDistribution({ data: { quizId: quizId as any } }),
   });
 
-  const distribution = useMemo(() => {
-    const buckets = [0, 0, 0, 0, 0];
-    for (const r of distributionQuery.data ?? []) {
-      if (!r.total) continue;
-      const pct = (r.score / r.total) * 100;
-      const i = pct < 50 ? 0 : pct < 65 ? 1 : pct < 80 ? 2 : pct < 90 ? 3 : 4;
-      buckets[i] += 1;
-    }
-    return [
-      { range: "Dưới 50%", count: buckets[0], fail: true },
-      { range: "50–64%", count: buckets[1], fail: false },
-      { range: "65–79%", count: buckets[2], fail: false },
-      { range: "80–89%", count: buckets[3], fail: false },
-      { range: "90–100%", count: buckets[4], fail: false },
-    ];
-  }, [distributionQuery.data]);
+  const distribution = distributionQuery.data || [
+    { range: "Dưới 50%", count: 0, fail: true },
+    { range: "50–64%", count: 0, fail: false },
+    { range: "65–79%", count: 0, fail: false },
+    { range: "80–89%", count: 0, fail: false },
+    { range: "90–100%", count: 0, fail: false },
+  ];
 
 
   const chartRows = useMemo(() => rows.slice(0, 12), [rows]);
