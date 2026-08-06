@@ -48,7 +48,7 @@ export const getQuizParticipation = createServerFn({ method: "POST" })
         // bestScore format "score/total" từ SQL RPC
         bestScore: r.best_score ? parseInt(r.best_score.split('/')[0]) : 0,
         total: r.best_score ? parseInt(r.best_score.split('/')[1]) : 0,
-        lastAt: new Date().toISOString(), // RPC chưa trả về lastAt chính xác, tạm dùng current
+        lastAt: r.last_submitted_at || new Date().toISOString(),
       };
 
       if (r.status === "passed" || r.status === "failed") {
