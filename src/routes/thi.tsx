@@ -263,8 +263,12 @@ function ExamPage() {
         },
       }).catch(() => undefined);
       
-      // Nếu có dấu hiệu robotic rõ rệt hoặc pixel-perfect click, khóa ngay
-      if (signals.includes("pixel_perfect_clicks") || signals.includes("robotic_trajectory")) {
+      // Nếu có dấu hiệu robotic rõ rệt hoặc pixel-perfect click, hoặc entropy bất thường, khóa ngay
+      if (
+        signals.includes("pixel_perfect_clicks") || 
+        signals.includes("robotic_trajectory") ||
+        signals.includes("unnatural_click_entropy")
+      ) {
         setCaptchaLocked(true);
         toast.error("Phát hiện thao tác bất thường. Hãy xác minh lại để tiếp tục làm bài.");
       }
