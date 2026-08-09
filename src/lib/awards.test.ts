@@ -88,6 +88,6 @@ describe("computeAwards", () => {
       row({ id: "a", score: 15, total: 20, time_seconds: 900 }),
       row({ id: "b", score: 15, total: 20, time_seconds: 240, candidate_name: "Võ E" }),
     ]);
-    expect(winners.find((w) => w.key === "speed")).toMatchObject({ name: "Võ E", value: "04:00" });
+    expect(winners.find((w) => w.key === "speed")).toMatchObject({ name: "Võ E", value: "04:00.000" });
   });
 });
