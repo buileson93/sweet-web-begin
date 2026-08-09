@@ -122,7 +122,7 @@ export function QuestionInput({
               {pos + 1}
             </span>
             <span className="min-w-0 flex-1 text-sm">
-              <RichText inline>{options[optIndex]}</RichText>
+              <RichText inline secureMode={secureMode}>{options[optIndex]}</RichText>
             </span>
             <Button
               variant="ghost"
