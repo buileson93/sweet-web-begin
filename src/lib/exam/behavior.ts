@@ -62,13 +62,22 @@ export function createBehaviorTracker() {
         }
 
         // 2. Kiểm tra center-perfect click: Script thường click vào đúng tâm (0,0)
+        // Cần Entropy: Con người thật hiếm khi bấm vào đúng tâm điểm 100% trong 5 lần liên tiếp.
         const avgOffset = clicks.reduce((sum, c) => sum + c.offsetFromCenter, 0) / clicks.length;
-        if (avgOffset < 0.01) {
+        if (avgOffset < 0.005) { // Tăng độ nhạy (0.5% tâm)
           signals.push("center_perfect_clicks");
+        }
+        
+        // 3. Click Entropy (Độ lệch chuẩn cực thấp -> script)
+        const offsets = clicks.map(c => c.offsetFromCenter);
+        const mean = offsets.reduce((a, b) => a + b, 0) / offsets.length;
+        const variance = offsets.reduce((a, b) => a + (b - mean) ** 2, 0) / offsets.length;
+        if (variance < 0.0001 && clicks.length >= 8) {
+          signals.push("unnatural_click_entropy");
         }
       }
 
-      // 3. Phân tích quỹ đạo (chỉ áp dụng nếu có di chuyển chuột)
+      // 4. Phân tích quỹ đạo (chỉ áp dụng nếu có di chuyển chuột)
       if (points.length >= 10) {
         const movementType = analyzeTrajectory(points);
         if (movementType === "too_straight") {
