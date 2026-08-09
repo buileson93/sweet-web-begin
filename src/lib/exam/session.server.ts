@@ -270,7 +270,9 @@ export async function startExamSession(input: {
       comboFx: quiz.combo_fx ?? true,
       showQuestionMap: quiz.show_question_map,
       passPercent: quiz.pass_percent || PASS_PERCENT_DEFAULT,
+      strictMode: strict,
     },
+
     questions,
   };
 }
