@@ -46,8 +46,8 @@ export function QuestionInput({
   feedback = null,
   onTrap,
   secureMode = false,
-  secureMode,
 }: QuestionInputProps) {
+
 
 
   const [zoom, setZoom] = useState<string | null>(null);

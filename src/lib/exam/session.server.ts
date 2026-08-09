@@ -199,6 +199,7 @@ export async function startExamSession(input: {
 
 
 
+
   const optionOrders: number[][] = [];
   const questions: ExamQuestion[] = ordered.map((q) => {
     const display = baseOptions(q);
@@ -265,7 +266,6 @@ export async function startExamSession(input: {
     sessionId: session.session_id,
     submitToken: session.submit_token,
     attempt: session.attempts + 1,
-
     bestPercent,
     candidateName: name,
     unit: unit || "Chưa cập nhật",
@@ -274,19 +274,10 @@ export async function startExamSession(input: {
     expiresAt: expiresAt.toISOString(),
     serverNow: now.toISOString(),
     maxPoints: questions.reduce((sum, q) => sum + q.points, 0),
-    settings: {
-      instantFeedback: quiz.instant_feedback,
-      allowFiftyFifty: quiz.allow_fifty_fifty,
-      allowSkip: quiz.allow_skip,
-      streakBonus: quiz.streak_bonus,
-      comboFx: quiz.combo_fx ?? true,
-      showQuestionMap: quiz.show_question_map,
-      passPercent: quiz.pass_percent || PASS_PERCENT_DEFAULT,
-      strictMode: strict,
-    },
-
+    settings,
     questions,
   };
+
 }
 
 /** Người thi chủ động thoát khỏi phòng thi (không tính điểm, không ghi bảng xếp hạng). */
