@@ -723,13 +723,6 @@ export async function saveExamProgress(input: {
       source,
     });
   }
-      seq: currentSeq,
-      accepted: [],
-      chainHead: expectedHead,
-
-      rejected: "rate",
-    };
-  }
 
   // Chuỗi băm: gói này phải nối tiếp đúng mắt xích máy chủ đã xác nhận ở gói trước.
   // Gói gửi lại (replay) hoặc ghép từ nhiều gói bắt được sẽ gãy chuỗi và bị bỏ qua
