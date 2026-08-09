@@ -13,9 +13,18 @@ export type RankableResult = {
   points?: number | null;
   max_points?: number | null;
   time_seconds: number;
+  /** Thời gian làm bài tính bằng mili-giây (chính xác hơn `time_seconds`). */
+  time_ms?: number | null;
   /** Số lần thí sinh đã thi cuộc thi này (dùng để phá hoà: thi ít lần hơn xếp trên). */
   attempts?: number | null;
 };
+
+/** Thời gian làm bài (mili-giây); dữ liệu cũ chỉ có giây thì quy đổi. */
+export function timeMsOf(r: RankableResult): number {
+  const ms = r.time_ms;
+  if (ms !== null && ms !== undefined) return Math.max(0, ms);
+  return Math.max(0, r.time_seconds) * 1000;
+}
 
 /** Tỉ lệ đúng 0–1. */
 export function accuracyOf(r: RankableResult): number {
