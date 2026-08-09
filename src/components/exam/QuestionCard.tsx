@@ -108,11 +108,10 @@ export function QuestionCard({
           removed={removed}
           disabled={disabled}
           feedback={feedback}
-          onChange={onAnswer}
+          onChange={(val) => onAnswer(index, val, { clientSecret: cloak.clientSecret })}
           onTrap={onTrap}
           secureMode={settings.strictMode}
         />
-
       </div>
 
       {instant && feedback ? (

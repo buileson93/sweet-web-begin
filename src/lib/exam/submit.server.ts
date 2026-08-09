@@ -711,6 +711,21 @@ export async function saveExamProgress(input: {
       seq: currentSeq,
       accepted: [],
       chainHead: expectedHead,
+      rejected: "rate",
+    };
+  }
+
+  // Nếu nhịp độ đáng ngờ (Rolling Window), ghi log nhưng không chặn (Adaptive Monitoring)
+  if (rateVerdict.suspicious) {
+    const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+    await flagScriptEvent(session.id, "script_suspect", {
+      reason: "robotic_timing_rolling",
+      source,
+    });
+  }
+      seq: currentSeq,
+      accepted: [],
+      chainHead: expectedHead,
 
       rejected: "rate",
     };
