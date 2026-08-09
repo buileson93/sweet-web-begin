@@ -40,6 +40,7 @@ import {
 
 import { verifyPayloadSignature } from "@/lib/exam/payloadSign.server";
 import { isRoboticTiming, unprovenKeys, type ProofLike } from "@/lib/exam/scriptDetect";
+import { type RateVerdict } from "@/lib/exam/saveRate";
 
 
 
@@ -164,9 +165,22 @@ export async function checkExamAnswer(input: {
     const { applyAnswersAtomic, markCheckedIndex } = await import(
       "@/lib/exam/helpersWrite.server"
     );
+
+    // Giải mã hashed value nếu có
+    let finalValue = input.value;
+    if (typeof input.value === "string" && input.value.startsWith("h:")) {
+      const parts = input.value.split(":");
+      // parts[0] = 'h', parts[1] = clientSecret, parts[2] = actualValue
+      // Máy chủ tin tưởng clientSecret từ máy khách vì nó đã được ký trong payload
+      if (parts.length >= 3) {
+        const raw = parts.slice(2).join(":");
+        finalValue = isNaN(Number(raw)) ? raw : Number(raw);
+      }
+    }
+
     await applyAnswersAtomic({
       sessionId: session.id,
-      answers: { [String(input.index)]: input.value },
+      answers: { [String(input.index)]: finalValue as AnswerValue },
       seq: 0,
       helpersPatch: {},
     });
