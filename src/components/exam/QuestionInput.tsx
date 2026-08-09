@@ -45,7 +45,9 @@ export function QuestionInput({
   disabled,
   feedback = null,
   onTrap,
+  secureMode = false,
 }: QuestionInputProps) {
+
   const [zoom, setZoom] = useState<string | null>(null);
 
   if (kind === "fill_blank") {
