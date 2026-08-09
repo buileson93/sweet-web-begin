@@ -31,6 +31,7 @@ import { useIntegrityWatch } from "@/hooks/useIntegrityWatch";
 import { attachInputProof, inputProof } from "@/lib/exam/inputProof";
 import { automationSignals, collectAutomationEnv } from "@/lib/exam/scriptDetect";
 import { behaviorTracker } from "@/lib/exam/behavior";
+import { buildCloak } from "@/lib/exam/optionCloak";
 import { CaptchaGuardDialog } from "@/components/exam/CaptchaGuardDialog";
 import { reportEvent, reverifyCaptcha } from "@/lib/exam.functions";
 
@@ -530,7 +531,7 @@ function ExamPage() {
             onX2={() => void requestX2()}
             onFifty={() => void requestFifty()}
             onTrap={onTrap}
-            onAnswer={handleAnswer}
+            onAnswer={(idx, value, opt) => void handleAnswer(idx, value, opt)}
             onConfirm={() => {
               const value = answers[String(current)];
               if (value !== undefined) void handleAnswer(current, value, { confirm: true });

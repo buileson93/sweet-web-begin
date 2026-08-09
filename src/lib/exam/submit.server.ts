@@ -827,9 +827,21 @@ export async function saveExamProgress(input: {
 
   // Ghi NGUYÊN TỬ: chỉ gửi phần vá (đáp án mới + mắt xích chuỗi băm), không ghi đè cả cột.
   const { applyAnswersAtomic } = await import("@/lib/exam/helpersWrite.server");
+
+  // Giải mã hashed values trong accepted delta nếu có clientSecret
+  const finalAccepted: Record<string, AnswerValue> = {};
+  for (const [key, value] of Object.entries(accepted)) {
+    if (input.clientSecret && typeof value === "string" && value.startsWith(`h:${input.clientSecret}:`)) {
+      const raw = value.slice(input.clientSecret.length + 3);
+      finalAccepted[key] = isNaN(Number(raw)) ? raw : Number(raw);
+    } else {
+      finalAccepted[key] = value;
+    }
+  }
+
   await applyAnswersAtomic({
     sessionId: session.id,
-    answers: accepted,
+    answers: finalAccepted,
     seq: input.clientSeq,
     helpersPatch: { 
       chain: { head: check.head, seq: input.clientSeq },
