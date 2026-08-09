@@ -56,7 +56,7 @@ export function QuestionCard({
   x2Active: boolean;
   onX2: () => void;
   onFifty: () => void;
-  onAnswer: (value: AnswerValue) => void;
+  onAnswer: (idx: number, value: AnswerValue, opt?: { clientSecret?: string }) => void;
   /** Bấm trúng thẻ mồi ẩn — dấu hiệu script thao tác DOM. */
   onTrap?: (info: { token: string }) => void;
   /** Chốt đáp án cho câu cần nhiều thao tác (chế độ chấm ngay). */
@@ -108,7 +108,7 @@ export function QuestionCard({
           removed={removed}
           disabled={disabled}
           feedback={feedback}
-          onChange={(val) => onAnswer(index, val, { clientSecret: cloak.clientSecret })}
+          onChange={(val) => onAnswer(current, val)}
           onTrap={onTrap}
           secureMode={settings.strictMode}
         />
