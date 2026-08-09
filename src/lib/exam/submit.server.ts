@@ -585,6 +585,7 @@ export async function submitExamSession(input: {
     passed,
     passPercent,
     timeSeconds,
+    timeMs,
     disqualified,
     quizId: session.quiz_id,
     quizTitle: quiz?.title ?? "",
