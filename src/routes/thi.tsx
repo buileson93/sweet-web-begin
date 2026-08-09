@@ -522,7 +522,7 @@ function ExamPage() {
             onX2={() => void requestX2()}
             onFifty={() => void requestFifty()}
             onTrap={onTrap}
-            onAnswer={(value) => void handleAnswer(current, value)}
+            onAnswer={handleAnswer}
             onConfirm={() => {
               const value = answers[String(current)];
               if (value !== undefined) void handleAnswer(current, value, { confirm: true });
