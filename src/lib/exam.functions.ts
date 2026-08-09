@@ -44,6 +44,7 @@ const submitSchema = z.object({
   proofs: proofSchema.optional(),
   disqualified: z.boolean().optional(),
   disqualifyReason: z.string().max(300).optional(),
+  clientSecret: z.string().max(32).optional(),
 });
 
 /** Lưu tạm đáp án giữa giờ (autosave). clientSeq tăng dần để chống ghi lùi. */
