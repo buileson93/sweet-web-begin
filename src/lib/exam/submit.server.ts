@@ -501,6 +501,7 @@ export async function submitExamSession(input: {
       best_streak: bestStreak,
       passed,
       time_seconds: timeSeconds,
+      time_ms: timeMs,
       disqualified,
       integrity_score: integrityScore,
       late_submit: lateSubmit,
