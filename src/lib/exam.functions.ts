@@ -63,6 +63,7 @@ const progressSchema = z.object({
   at: z.number().int().positive().optional(),
   /** Bản vá helpers (ví dụ: thông tin sinh trắc học hành vi). */
   helpersPatch: z.record(z.string(), z.unknown()).optional(),
+  clientSecret: z.string().max(32).optional(),
 });
 
 export const saveProgress = createServerFn({ method: "POST" })
