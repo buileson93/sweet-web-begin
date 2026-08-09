@@ -85,8 +85,9 @@ export function QuestionCard({
         </span>
       </div>
       <h1 className="mt-2 text-lg font-bold leading-snug sm:text-xl">
-        <RichText>{question.question}</RichText>
+        <RichText secureMode={settings.strictMode}>{question.question}</RichText>
       </h1>
+
 
       {questionImageSrc(question.imageUrl) ? (
         <img
