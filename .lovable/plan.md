@@ -4,15 +4,22 @@ Mục tiêu: Ngăn chặn script tự động trả lời (auto-submit) ngay c�
 
 ## 1. Kiểm soát Tốc độ & Thời gian (Server-side)
 - [ ] **Enforce Per-Question Min Time**: Bổ sung kiểm tra mốc thời gian trả lời của từng câu hỏi trên máy chủ.
-  - Thay vì chỉ chặn tần suất RPC chung (1.2s), máy chủ sẽ tính toán khoảng cách giữa câu $n$ và câu $n+1$.
-  - Nếu khoảng cách < 2 giây (hoặc cấu hình tùy chỉnh), máy chủ sẽ từ chối ghi nhận hoặc tăng điểm phạt liêm chính.
-- [ ] **Server-side Rolling Window**: Theo dõi tốc độ trung bình của 5 câu gần nhất. Nếu $\text{avg\_time} < 2.5s$, tự động kích hoạt thử thách Captcha.
+  - Thay vì chỉ chặn tần suất RPC chung (hiện tại 1.2s), máy chủ sẽ nới lỏng xuống **0.9s** theo yêu cầu để tránh phạt oan, nhưng vẫn đảm bảo không thể bắn hàng loạt.
+  - Nếu khoảng cách < 0.9s, máy chủ sẽ từ chối ghi nhận.
+- [ ] **Server-side Rolling Window**: Theo dõi tốc độ trung bình của 5 câu gần nhất. Nếu $\text{avg\_time} < 1.2s$, đánh dấu nghi vấn thay vì bật Captcha để không làm gián đoạn trải nghiệm người dùng thật.
 
 ## 2. Phát hiện Thao tác Giả lập (Client-side)
-- [ ] **isTrusted Reinforcement**: Thắt chặt kiểm tra `event.isTrusted`. Nếu phát hiện `false`, không chỉ gửi log mà còn ngay lập tức khóa UI và yêu cầu tải lại trang/xác minh Captcha.
+- [ ] **isTrusted Reinforcement**: Thắt chặt kiểm tra `event.isTrusted`. Nếu phát hiện `false`, gửi log cảnh báo và đánh dấu liêm chính thấp.
 - [ ] **Click Entropy & Movement Proof**: 
-  - Yêu cầu phải có ít nhất 10 điểm di chuyển chuột (`mousemove`) trước khi một cú click được coi là "hợp lệ" để gửi lên máy chủ.
-  - Kiểm tra độ lệch tọa độ click (Click Entropy). Nếu click vào đúng tâm tuyệt đối 100% (script thường làm vậy), đánh dấu là `unnatural_click`.
+  - Phân tích độ lệch tọa độ click (Click Entropy). Nếu click vào đúng tâm tuyệt đối 100% (script thường làm vậy), đánh dấu là `unnatural_click`.
+  - Không bắt buộc Captcha ngay, chỉ ghi nhận vào báo cáo giám sát của Admin.
+
+## 3. Mã hóa & Bảo mật Payload (Communication)
+- [ ] **Per-Session Answer Nonces**: 
+  - Thay vì gửi `index: 0`, client sẽ gửi một chuỗi hash được sinh ra từ `(sessionId + questionId + choiceIndex + clientSideSecret)`.
+  - Máy chủ sẽ xác thực hash này. Script nếu không mô phỏng được logic hash sẽ không thể gửi đáp án đúng.
+- [ ] **Liveness Signature Enforcement**: Đảm bảo mọi gói tin autosave bắt buộc phải có chữ ký ECDSA từ khoá không-thể-xuất trong `strictMode`.
+
 
 ## 3. Mã hóa & Bảo mật Payload (Communication)
 - [ ] **Per-Session Answer Nonces**: 
