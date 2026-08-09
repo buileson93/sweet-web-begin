@@ -116,6 +116,7 @@ export async function getExamHistoryFor(input: {
         !result?.disqualified &&
         isPassed(score, total, passPercentById.get(s.quiz_id) ?? PASS_PERCENT_DEFAULT),
       timeSeconds: result?.time_seconds ?? 0,
+      timeMs: result?.time_ms ?? (result?.time_seconds ?? 0) * 1000,
       questions,
     };
   });
