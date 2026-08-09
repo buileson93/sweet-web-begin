@@ -93,6 +93,8 @@ export type SubmitExamResult = {
   /** Mức điểm đạt của cuộc thi, tính theo PHẦN TRĂM (0-100). */
   passPercent: number;
   timeSeconds: number;
+  /** Thời gian làm bài chính xác tới mili-giây. */
+  timeMs: number;
   disqualified: boolean;
   quizId: string;
   quizTitle: string;
