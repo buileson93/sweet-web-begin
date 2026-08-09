@@ -66,8 +66,8 @@ export function QuestionInput({
         <p className="type-meta mt-2">Không phân biệt chữ hoa/thường và dấu.</p>
       </div>
     );
-  secureMode?: boolean;
-}
+  }
+
 
 
   if (kind === "matching") {
