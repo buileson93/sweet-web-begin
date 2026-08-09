@@ -95,6 +95,13 @@ function ExamPage() {
     isMobileRef.current = isMobileDevice();
   }, []);
 
+  const cloak = useMemo(() => {
+    if (!session) return null;
+    const q = session.questions[current];
+    if (!q) return null;
+    return buildCloak(q.options);
+  }, [current, session]);
+
   // Autosave đáp án lên máy chủ (delta, nhịp 12s, debounce 2s, tối đa 1 request/5s).
   const {
     status: saveStatus,
@@ -107,6 +114,7 @@ function ExamPage() {
     answers,
     enabled: Boolean(session) && !result,
     initialSeq: serverSeq,
+    clientSecret: cloak?.clientSecret,
   });
 
   // Kiểm tra liveness liên tục bằng challenge-response (WebCrypto): phát hiện thay người giữa chừng.
