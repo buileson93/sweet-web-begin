@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { RichText } from "@/components/RichText";
 import { behaviorTracker } from "@/lib/exam/behavior";
 
+
 export type QuestionInputProps = {
   kind: QuestionKind;
   options: string[];
