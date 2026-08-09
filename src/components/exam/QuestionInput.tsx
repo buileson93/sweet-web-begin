@@ -26,7 +26,10 @@ export type QuestionInputProps = {
   feedback?: "correct" | "wrong" | null;
   /** Có bấm trúng thẻ mồi ẩn (chỉ script quét DOM mới làm được). */
   onTrap?: (info: { token: string }) => void;
+  /** Chế độ bảo mật: render văn bản thành ảnh. */
+  secureMode?: boolean;
 };
+
 
 const LETTER = (i: number) => String.fromCharCode(65 + i);
 
