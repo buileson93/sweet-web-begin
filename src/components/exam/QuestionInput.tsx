@@ -294,7 +294,7 @@ export function QuestionInput({
               </span>
             ) : null}
             <span className="relative z-10 min-w-0 flex-1 text-[0.95rem] font-medium leading-snug">
-              <RichText inline>{opt}</RichText>
+              <RichText inline secureMode={secureMode}>{opt}</RichText>
             </span>
             {active && !feedback ? (
               <>
