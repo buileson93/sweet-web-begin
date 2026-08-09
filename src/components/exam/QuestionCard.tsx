@@ -110,7 +110,9 @@ export function QuestionCard({
           feedback={feedback}
           onChange={onAnswer}
           onTrap={onTrap}
+          secureMode={settings.strictMode}
         />
+
       </div>
 
       {instant && feedback ? (
