@@ -126,6 +126,8 @@ export type HistoryAttempt = {
   percent: number;
   passed: boolean;
   timeSeconds: number;
+  /** Thời gian làm bài chính xác tới mili-giây. */
+  timeMs: number;
   questions: HistoryQuestion[];
 };
 
