@@ -34,6 +34,8 @@ export type Cloak = {
   slots: CloakSlot[];
   /** Tra token của một phương án thật. */
   tokenOf: (index: number) => string;
+  /** Secret dùng để tạo hash cho câu trả lời phía client (mỗi lần buildCloak một secret mới). */
+  clientSecret: string;
 };
 
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -85,6 +87,7 @@ export function buildCloak(
 ): Cloak {
   const rng = opts.rng ?? defaultRng;
   const trapCount = Math.max(0, Math.min(6, opts.trapCount ?? 3));
+  const clientSecret = randomToken(rng);
 
   const tokens = options.map(() => randomToken(rng));
   const real: CloakSlot[] = options.map((text, i) => ({
@@ -111,5 +114,6 @@ export function buildCloak(
   return {
     slots: shuffled([...real, ...traps], rng),
     tokenOf: (index: number) => tokens[index] ?? "",
+    clientSecret,
   };
 }

@@ -40,6 +40,7 @@ import {
 
 import { verifyPayloadSignature } from "@/lib/exam/payloadSign.server";
 import { isRoboticTiming, unprovenKeys, type ProofLike } from "@/lib/exam/scriptDetect";
+import { type RateVerdict } from "@/lib/exam/saveRate";
 
 
 
@@ -164,9 +165,22 @@ export async function checkExamAnswer(input: {
     const { applyAnswersAtomic, markCheckedIndex } = await import(
       "@/lib/exam/helpersWrite.server"
     );
+
+    // Giải mã hashed value nếu có
+    let finalValue = input.value;
+    if (typeof input.value === "string" && input.value.startsWith("h:")) {
+      const parts = input.value.split(":");
+      // parts[0] = 'h', parts[1] = clientSecret, parts[2] = actualValue
+      // Máy chủ tin tưởng clientSecret từ máy khách vì nó đã được ký trong payload
+      if (parts.length >= 3) {
+        const raw = parts.slice(2).join(":");
+        finalValue = isNaN(Number(raw)) ? raw : Number(raw);
+      }
+    }
+
     await applyAnswersAtomic({
       sessionId: session.id,
-      answers: { [String(input.index)]: input.value },
+      answers: { [String(input.index)]: finalValue as AnswerValue },
       seq: 0,
       helpersPatch: {},
     });
@@ -190,6 +204,7 @@ export async function submitExamSession(input: {
   proofs?: Record<string, ProofLike>;
   disqualified?: boolean;
   disqualifyReason?: string;
+  clientSecret?: string;
 }): Promise<SubmitExamResult> {
   const { data: session, error: sessionError } = await supabaseAdmin
     .from("exam_sessions")
@@ -621,6 +636,7 @@ export async function saveExamProgress(input: {
   source?: SaveSource;
   /** Bản vá helpers (ví dụ: thông tin sinh trắc học hành vi). */
   helpersPatch?: Record<string, unknown>;
+  clientSecret?: string;
 }): Promise<{
   savedAt: string;
   seq: number;
@@ -697,9 +713,17 @@ export async function saveExamProgress(input: {
       seq: currentSeq,
       accepted: [],
       chainHead: expectedHead,
-
       rejected: "rate",
     };
+  }
+
+  // Nếu nhịp độ đáng ngờ (Rolling Window), ghi log nhưng không chặn (Adaptive Monitoring)
+  if (rateVerdict.suspicious) {
+    const { flagScriptEvent } = await import("@/lib/exam/scriptGuard.server");
+    await flagScriptEvent(session.id, "script_suspect", {
+      reason: "robotic_timing_rolling",
+      source,
+    });
   }
 
   // Chuỗi băm: gói này phải nối tiếp đúng mắt xích máy chủ đã xác nhận ở gói trước.
@@ -805,9 +829,21 @@ export async function saveExamProgress(input: {
 
   // Ghi NGUYÊN TỬ: chỉ gửi phần vá (đáp án mới + mắt xích chuỗi băm), không ghi đè cả cột.
   const { applyAnswersAtomic } = await import("@/lib/exam/helpersWrite.server");
+
+  // Giải mã hashed values trong accepted delta nếu có clientSecret
+  const finalAccepted: Record<string, AnswerValue> = {};
+  for (const [key, value] of Object.entries(accepted)) {
+    if (input.clientSecret && typeof value === "string" && value.startsWith(`h:${input.clientSecret}:`)) {
+      const raw = value.slice(input.clientSecret.length + 3);
+      finalAccepted[key] = isNaN(Number(raw)) ? raw : Number(raw);
+    } else {
+      finalAccepted[key] = value;
+    }
+  }
+
   await applyAnswersAtomic({
     sessionId: session.id,
-    answers: accepted,
+    answers: finalAccepted,
     seq: input.clientSeq,
     helpersPatch: { 
       chain: { head: check.head, seq: input.clientSeq },

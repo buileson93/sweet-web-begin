@@ -1,5 +1,6 @@
+import React from "react";
 import { ArrowLeft, ArrowRight, Frown, Send, ThumbsUp, Wand2, Zap } from "lucide-react";
-
+import { buildCloak } from "@/lib/exam/optionCloak";
 import { QuestionInput } from "@/components/exam/QuestionInput";
 import { RichText } from "@/components/RichText";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,7 @@ export function QuestionCard({
   x2Active: boolean;
   onX2: () => void;
   onFifty: () => void;
-  onAnswer: (value: AnswerValue) => void;
+  onAnswer: (idx: number, value: AnswerValue, opt?: { clientSecret?: string }) => void;
   /** Bấm trúng thẻ mồi ẩn — dấu hiệu script thao tác DOM. */
   onTrap?: (info: { token: string }) => void;
   /** Chốt đáp án cho câu cần nhiều thao tác (chế độ chấm ngay). */
@@ -66,6 +67,7 @@ export function QuestionCard({
   onSubmit: () => void;
 }) {
   const last = current === total - 1;
+  const cloak = React.useMemo(() => buildCloak(question.options), [question.options]);
 
   return (
     <section
@@ -108,11 +110,10 @@ export function QuestionCard({
           removed={removed}
           disabled={disabled}
           feedback={feedback}
-          onChange={onAnswer}
+          onChange={(val) => onAnswer(current, val, { clientSecret: cloak.clientSecret })}
           onTrap={onTrap}
           secureMode={settings.strictMode}
         />
-
       </div>
 
       {instant && feedback ? (
