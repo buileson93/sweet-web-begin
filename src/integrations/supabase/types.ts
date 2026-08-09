@@ -1489,6 +1489,7 @@ export type Database = {
           score: number
           session_id: string | null
           submitted_at: string
+          time_ms: number | null
           time_seconds: number
           total: number
           unit: string
@@ -1514,6 +1515,7 @@ export type Database = {
           score?: number
           session_id?: string | null
           submitted_at?: string
+          time_ms?: number | null
           time_seconds?: number
           total?: number
           unit?: string
@@ -1539,6 +1541,7 @@ export type Database = {
           score?: number
           session_id?: string | null
           submitted_at?: string
+          time_ms?: number | null
           time_seconds?: number
           total?: number
           unit?: string
