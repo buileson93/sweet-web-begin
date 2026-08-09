@@ -10,7 +10,7 @@
  */
 
 /** Khoảng cách tối thiểu giữa hai gói autosave thường (ms). */
-export const MIN_GAP_RPC_MS = 1_200;
+export const MIN_GAP_RPC_MS = 900;
 /** Khoảng cách tối thiểu giữa hai gói gửi bằng sendBeacon (ms). */
 export const MIN_GAP_BEACON_MS = 2_000;
 /** Tổng số gói autosave tối đa cho một phiên thi. */
