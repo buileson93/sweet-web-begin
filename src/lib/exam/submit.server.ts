@@ -635,6 +635,7 @@ export async function saveExamProgress(input: {
   source?: SaveSource;
   /** Bản vá helpers (ví dụ: thông tin sinh trắc học hành vi). */
   helpersPatch?: Record<string, unknown>;
+  clientSecret?: string;
 }): Promise<{
   savedAt: string;
   seq: number;
