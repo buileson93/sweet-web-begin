@@ -48,7 +48,8 @@ export const RichText = memo(function RichText({
       <div className={cn("rich-text-secure", className)}>
         <img
           src={imageSrc}
-          alt="Nội dung bảo mật"
+          alt=""
+          aria-hidden="true"
           className={cn(
             "max-w-full h-auto select-none pointer-events-none",
             inline ? "inline-block align-middle" : "block"
@@ -57,7 +58,7 @@ export const RichText = memo(function RichText({
         />
         {/* Hidden text for screen readers, but structured to be annoying for simple scripts */}
         <span className="sr-only">
-          {text.split("").join("\u200B")}
+          {text.split("").map(c => <span key={Math.random()}>{c}{"\u200B"}</span>)}
         </span>
       </div>
     );
