@@ -20,6 +20,10 @@ Mục tiêu: Ngăn chặn script tự động trả lời (auto-submit) ngay c�
   - Máy chủ sẽ xác thực hash này. Script nếu không mô phỏng được logic hash sẽ không thể gửi đáp án đúng.
 - [ ] **Liveness Signature Enforcement**: Đảm bảo mọi gói tin autosave bắt buộc phải có chữ ký ECDSA từ khoá không-thể-xuất trong `strictMode`.
 
+## 4. Ngắt mạch (Adaptive Friction)
+- [ ] **Adaptive Monitoring**: Khi máy chủ trả về lỗi `too_fast` hoặc `suspicious_behavior`, giao diện sẽ ghi nhận log và Admin sẽ theo dõi thay vì tự động hiện Captcha làm gián đoạn người dùng (trừ trường hợp rủi ro cực cao).
+
+
 
 ## 3. Mã hóa & Bảo mật Payload (Communication)
 - [ ] **Per-Session Answer Nonces**: 
