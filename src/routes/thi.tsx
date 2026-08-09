@@ -177,6 +177,7 @@ function ExamPage() {
         proofs: inputProof.collect(Object.keys(answers)),
         disqualified: opts?.disqualified,
         disqualifyReason: opts?.reason,
+        clientSecret: cloak?.clientSecret,
       };
       try {
 
