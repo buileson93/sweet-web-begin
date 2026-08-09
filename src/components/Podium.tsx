@@ -1,6 +1,6 @@
 import { Crown, Medal, Sparkles, Trophy } from "lucide-react";
 
-import { formatSeconds } from "@/lib/format";
+import { formatDurationOf } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export type PodiumRow = {
@@ -10,6 +10,7 @@ export type PodiumRow = {
   score: number;
   total: number;
   time_seconds: number;
+  time_ms?: number | null;
 };
 
 function shortName(name: string) {
@@ -159,7 +160,7 @@ export function Podium({ rows, className }: { rows: PodiumRow[]; className?: str
                 </span>
               ) : null}
               <span className={cn("font-heading text-xl font-extrabold tabular-nums", tone[i].value)}>{row.score}</span>
-              <span className="font-mono text-[10px] text-muted-foreground">{formatSeconds(row.time_seconds)}</span>
+              <span className="font-mono text-[10px] text-muted-foreground">{formatDurationOf(row)}</span>
             </div>
             <span className="w-full truncate text-center text-[11px] font-bold text-foreground">
               {row.candidate_name}

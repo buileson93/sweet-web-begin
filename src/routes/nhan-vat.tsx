@@ -28,7 +28,7 @@ import { Label } from "@/components/ui/label";
 import { verifyEmployeeFn } from "@/lib/employees.functions";
 import { getExamHistory } from "@/lib/exam.functions";
 import type { ExamHistory } from "@/lib/exam.server";
-import { formatDateTime, formatSeconds } from "@/lib/format";
+import { formatDateTime, formatDuration } from "@/lib/format";
 import { getPlayerProfile, type PlayerProfile } from "@/lib/player.functions";
 import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
 import { cn } from "@/lib/utils";
@@ -252,7 +252,7 @@ function CharacterPage() {
                           <CalendarClock className="size-3.5" /> {formatDateTime(a.startedAt)}
                         </span>
                         <span className="inline-flex items-center gap-1">
-                          <Timer className="size-3.5" /> {formatSeconds(a.timeSeconds)}
+                          <Timer className="size-3.5" /> {formatDuration(a.timeMs || a.timeSeconds * 1000)}
                         </span>
                       </span>
                     </span>

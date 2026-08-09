@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeResults } from "@/hooks/useRealtimeResults";
 import type { SubmitExamResult } from "@/lib/exam.server";
-import { formatSeconds } from "@/lib/format";
+import { formatDuration } from "@/lib/format";
 import { questionImageSrc } from "@/lib/questionImage";
 import { KIND_LABEL } from "@/lib/questionKinds";
 import { cn } from "@/lib/utils";
@@ -114,7 +114,7 @@ export function ExamResult({
                 )}
                 {result.disqualified
                   ? "Không tính vào bảng xếp hạng"
-                  : `Đạt khi ≥ ${result.passPercent}% · thời gian ${formatSeconds(result.timeSeconds)}`}
+                  : `Đạt khi ≥ ${result.passPercent}% · thời gian ${formatDuration(result.timeMs || result.timeSeconds * 1000)}`}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="type-meta inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/10 px-3 py-1 text-primary-foreground/85">
