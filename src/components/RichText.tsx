@@ -1,10 +1,12 @@
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 
 import { cn } from "@/lib/utils";
+import { renderTextToImage } from "@/lib/exam/textCanvas";
+
 
 /**
  * Hiển thị nội dung Markdown + công thức toán (KaTeX) cho đề bài, phương án và giải thích.
