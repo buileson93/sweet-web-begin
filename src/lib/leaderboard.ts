@@ -87,7 +87,7 @@ export function rankResults<T extends RankableResult>(rows: T[]): T[] {
 export function compareBestAttempt(a: RankableResult, b: RankableResult): number {
   const acc = accuracyOf(b) - accuracyOf(a);
   if (Math.abs(acc) > 1e-9) return acc;
-  return a.time_seconds - b.time_seconds;
+  return timeMsOf(a) - timeMsOf(b);
 }
 
 /**
