@@ -369,10 +369,10 @@ export async function submitExamSession(input: {
   const startedAt = new Date(session.started_at);
   const expiresAt = new Date(session.expires_at);
   const endMoment = now > expiresAt ? expiresAt : now;
-  const timeSeconds =
-    replay && existing
-      ? existing.time_seconds
-      : Math.max(0, Math.round((endMoment.getTime() - startedAt.getTime()) / 1000));
+  const elapsedMs = Math.max(0, endMoment.getTime() - startedAt.getTime());
+  const timeMs =
+    replay && existing ? ((existing as { time_ms?: number | null }).time_ms ?? existing.time_seconds * 1000) : elapsedMs;
+  const timeSeconds = replay && existing ? existing.time_seconds : Math.round(elapsedMs / 1000);
   // Tương thích ngược: vẫn nhận input.disqualified nhưng CHỈ ghi lại như một gợi ý,
   // không dùng để quyết định kết quả (chặn request mạng không còn giúp thoát bị huỷ bài).
   if (!replay && input.disqualified) {
