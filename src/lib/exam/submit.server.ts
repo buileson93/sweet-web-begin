@@ -204,6 +204,7 @@ export async function submitExamSession(input: {
   proofs?: Record<string, ProofLike>;
   disqualified?: boolean;
   disqualifyReason?: string;
+  clientSecret?: string;
 }): Promise<SubmitExamResult> {
   const { data: session, error: sessionError } = await supabaseAdmin
     .from("exam_sessions")
