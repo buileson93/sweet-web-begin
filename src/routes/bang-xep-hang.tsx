@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeResults } from "@/hooks/useRealtimeResults";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
-import { formatDateTime, formatSeconds } from "@/lib/format";
+import { formatDateTime, formatDurationOf } from "@/lib/format";
 import { rankUniqueResults } from "@/lib/leaderboard";
 import { getRankableResults } from "@/lib/leaderboard.functions";
 import { cn } from "@/lib/utils";
