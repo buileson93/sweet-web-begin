@@ -46,7 +46,9 @@ export function QuestionInput({
   feedback = null,
   onTrap,
   secureMode = false,
+  secureMode,
 }: QuestionInputProps) {
+
 
   const [zoom, setZoom] = useState<string | null>(null);
 
@@ -64,7 +66,9 @@ export function QuestionInput({
         <p className="type-meta mt-2">Không phân biệt chữ hoa/thường và dấu.</p>
       </div>
     );
-  }
+  secureMode?: boolean;
+}
+
 
   if (kind === "matching") {
     const map = (typeof value === "object" && !Array.isArray(value) ? value : {}) as Record<

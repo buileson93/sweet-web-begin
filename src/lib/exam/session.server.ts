@@ -186,6 +186,18 @@ export async function startExamSession(input: {
   // Cờ "Xáo trộn câu hỏi" quyết định thứ tự câu trong đề; tắt thì giữ order_index.
   const ordered = pickByBlueprint(usablePool, wanted, blueprint, quiz.shuffle_questions !== false);
 
+  const settings: ExamSettings = {
+    instantFeedback: quiz.instant_feedback ?? false,
+    allowFiftyFifty: quiz.allow_fifty_fifty ?? false,
+    allowSkip: quiz.allow_skip ?? false,
+    streakBonus: quiz.streak_bonus ?? false,
+    comboFx: quiz.combo_fx ?? true,
+    showQuestionMap: quiz.show_question_map ?? true,
+    passPercent: quiz.pass_percent ?? PASS_PERCENT_DEFAULT,
+    strictMode: quiz.strict_mode ?? false,
+  };
+
+
 
   const optionOrders: number[][] = [];
   const questions: ExamQuestion[] = ordered.map((q) => {
