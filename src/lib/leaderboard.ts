@@ -13,9 +13,18 @@ export type RankableResult = {
   points?: number | null;
   max_points?: number | null;
   time_seconds: number;
+  /** Thời gian làm bài tính bằng mili-giây (chính xác hơn `time_seconds`). */
+  time_ms?: number | null;
   /** Số lần thí sinh đã thi cuộc thi này (dùng để phá hoà: thi ít lần hơn xếp trên). */
   attempts?: number | null;
 };
+
+/** Thời gian làm bài (mili-giây); dữ liệu cũ chỉ có giây thì quy đổi. */
+export function timeMsOf(r: RankableResult): number {
+  const ms = r.time_ms;
+  if (ms !== null && ms !== undefined) return Math.max(0, ms);
+  return Math.max(0, r.time_seconds) * 1000;
+}
 
 /** Tỉ lệ đúng 0–1. */
 export function accuracyOf(r: RankableResult): number {
@@ -42,7 +51,8 @@ export function isRankable(r: RankableResult): boolean {
 export function compareResults(a: RankableResult, b: RankableResult): number {
   const acc = accuracyOf(b) - accuracyOf(a);
   if (Math.abs(acc) > 1e-9) return acc;
-  if (a.time_seconds !== b.time_seconds) return a.time_seconds - b.time_seconds;
+  const ms = timeMsOf(a) - timeMsOf(b);
+  if (ms !== 0) return ms;
   // Cùng tỉ lệ đúng và cùng thời gian: ai thi ÍT LẦN hơn được xếp trên.
   return attemptsOf(a) - attemptsOf(b);
 }
@@ -77,7 +87,7 @@ export function rankResults<T extends RankableResult>(rows: T[]): T[] {
 export function compareBestAttempt(a: RankableResult, b: RankableResult): number {
   const acc = accuracyOf(b) - accuracyOf(a);
   if (Math.abs(acc) > 1e-9) return acc;
-  return a.time_seconds - b.time_seconds;
+  return timeMsOf(a) - timeMsOf(b);
 }
 
 /**

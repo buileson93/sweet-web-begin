@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getExamHistory } from "@/lib/exam.functions";
 import type { ExamHistory } from "@/lib/exam.server";
-import { formatDateTime, formatSeconds } from "@/lib/format";
+import { formatDateTime, formatDuration } from "@/lib/format";
 import { readQuickLogin, saveQuickLogin } from "@/lib/quickLogin";
 import { cn } from "@/lib/utils";
 
@@ -166,7 +166,7 @@ function HistoryPage() {
                           <span className="inline-flex items-center gap-1">
                             <Timer className="size-3.5" />
                             {a.finishedAt ? formatDateTime(a.finishedAt) : "Chưa nộp"}
-                            {a.timeSeconds ? ` · ${formatSeconds(a.timeSeconds)}` : ""}
+                            {a.timeMs || a.timeSeconds ? ` · ${formatDuration(a.timeMs || a.timeSeconds * 1000)}` : ""}
                           </span>
                         </p>
                       </div>

@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { normalizeKey } from "@/lib/csv";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatDurationOf } from "@/lib/format";
 import { PASS_PERCENT_DEFAULT, isPassed } from "@/lib/grading";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,7 @@ type ResultRow = {
   score: number;
   total: number;
   time_seconds: number;
+  time_ms: number | null;
   disqualified: boolean;
   submitted_at: string;
 };
@@ -65,7 +66,7 @@ export function EmployeeHistoryManager() {
       const { data, error } = await supabase
         .from("results")
         .select(
-          "id, employee_id, candidate_name, unit, quiz_id, quiz_title, score, total, time_seconds, disqualified, submitted_at",
+          "id, employee_id, candidate_name, unit, quiz_id, quiz_title, score, total, time_seconds, time_ms, disqualified, submitted_at",
         )
         .order("submitted_at", { ascending: false })
         .limit(5000);
@@ -138,7 +139,7 @@ export function EmployeeHistoryManager() {
         : isPassed(r.score, r.total, PASS_PERCENT_DEFAULT)
           ? "Đạt"
           : "Chưa đạt",
-      "Thời gian làm (giây)": r.time_seconds,
+      "Thời gian làm": formatDurationOf(r),
       "Thời điểm nộp": formatDateTime(r.submitted_at),
     }));
   }
@@ -301,7 +302,7 @@ export function EmployeeHistoryManager() {
                           : "Chưa đạt"}
                     </span>
                     <span>{pct}%</span>
-                    <span>· {Math.round(r.time_seconds / 60)} phút</span>
+                    <span>· {formatDurationOf(r)}</span>
                     <span>· {formatDateTime(r.submitted_at)}</span>
                   </div>
                 </div>

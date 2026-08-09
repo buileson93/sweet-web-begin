@@ -58,3 +58,11 @@ describe("phá hoà theo số lần thi", () => {
     expect(rankUniqueResults(rows).map((r) => r.candidate_name)).toEqual(["Ít", "Nhiều"]);
   });
 });
+
+describe("phá hoà theo mili-giây", () => {
+  it("cùng số giây thì ai nhanh hơn theo mili-giây đứng trên", () => {
+    const a = { candidate_name: "A", score: 18, total: 20, time_seconds: 150, time_ms: 150_900 };
+    const b = { candidate_name: "B", score: 18, total: 20, time_seconds: 150, time_ms: 150_120 };
+    expect(rankResults([a, b]).map((r) => r.candidate_name)).toEqual(["B", "A"]);
+  });
+});

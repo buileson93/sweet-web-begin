@@ -51,7 +51,7 @@ export async function getExamHistoryFor(input: {
     supabaseAdmin.from("questions").select(QUESTION_COLUMNS).in("id", questionIds),
     supabaseAdmin
       .from("results")
-      .select("session_id, score, total, time_seconds, disqualified, submitted_at, quiz_title")
+      .select("session_id, score, total, time_seconds, time_ms, disqualified, submitted_at, quiz_title")
       .in(
         "session_id",
         list.map((s) => s.id),
@@ -116,6 +116,7 @@ export async function getExamHistoryFor(input: {
         !result?.disqualified &&
         isPassed(score, total, passPercentById.get(s.quiz_id) ?? PASS_PERCENT_DEFAULT),
       timeSeconds: result?.time_seconds ?? 0,
+      timeMs: result?.time_ms ?? (result?.time_seconds ?? 0) * 1000,
       questions,
     };
   });

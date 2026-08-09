@@ -11,6 +11,7 @@ export type AwardRow = {
   score: number;
   total: number;
   time_seconds: number;
+  time_ms?: number | null;
   points: number;
   best_streak: number;
   submitted_at: string;
@@ -65,10 +66,15 @@ function best<T>(items: T[], score: (item: T) => number): T | null {
   return winner;
 }
 
-function mmss(total: number) {
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+function msOf(r: AwardRow) {
+  return r.time_ms ?? Math.max(0, r.time_seconds) * 1000;
+}
+
+function mmssms(ms: number) {
+  const t = Math.max(0, Math.round(ms));
+  const m = Math.floor(t / 60_000);
+  const s = Math.floor((t % 60_000) / 1000);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(t % 1000).padStart(3, "0")}`;
 }
 
 /** Tính toàn bộ hạng mục vinh danh từ danh sách kết quả hợp lệ. */
@@ -119,7 +125,7 @@ export function computeAwards(rows: AwardRow[]): AwardWinner[] {
     });
   }
 
-  const speed = best(valid, (r) => (r.time_seconds > 0 ? -r.time_seconds : -Infinity));
+  const speed = best(valid, (r) => (r.time_seconds > 0 ? -msOf(r) : -Infinity));
   if (speed && speed.time_seconds > 0) {
     awards.push({
       key: "speed",
@@ -127,7 +133,7 @@ export function computeAwards(rows: AwardRow[]): AwardWinner[] {
       description: "Hoàn thành nhanh nhất (bài đạt)",
       name: speed.candidate_name,
       unit: speed.unit ?? "Chưa rõ đơn vị",
-      value: mmss(speed.time_seconds),
+      value: mmssms(msOf(speed)),
       raw: speed.time_seconds,
     });
   }

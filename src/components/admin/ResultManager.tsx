@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
-import { formatDateTime, formatSeconds } from "@/lib/format";
+import { formatDateTime, formatDurationOf } from "@/lib/format";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
@@ -171,7 +171,7 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
         r.quiz_title,
         r.score,
         r.total,
-        formatSeconds(r.time_seconds),
+        formatDurationOf(r),
         formatDateTime(r.submitted_at),
         r.disqualified ? "Huỷ (gian lận)" : "Hợp lệ",
       ]),
@@ -287,7 +287,7 @@ export function ResultManager({ canEdit = true }: { canEdit?: boolean }) {
                     <IntegrityCell sessionId={r.session_id} score={r.integrity_score} />
                   </td>
                   <td className="px-4 py-3 font-mono text-muted-foreground">
-                    {formatSeconds(r.time_seconds)}
+                    {formatDurationOf(r)}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {formatDateTime(r.submitted_at)}

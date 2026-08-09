@@ -15,7 +15,7 @@ export const getRankableResults = createServerFn({ method: "POST" })
     // 1. Lấy kết quả đã nộp
     let query = supabaseAdmin
       .from("results")
-      .select("id, candidate_name, unit, score, total, time_seconds, submitted_at, quiz_title, quiz_id, points, max_points, best_streak, employee_id")
+      .select("id, candidate_name, unit, score, total, time_seconds, time_ms, submitted_at, quiz_title, quiz_id, points, max_points, best_streak, employee_id")
       .eq("disqualified", false)
       .order("score", { ascending: false })
       .order("time_seconds", { ascending: true })

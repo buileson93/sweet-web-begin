@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeResults } from "@/hooks/useRealtimeResults";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
-import { formatDateTime, formatSeconds } from "@/lib/format";
+import { formatDateTime, formatDurationOf } from "@/lib/format";
 import { rankUniqueResults } from "@/lib/leaderboard";
 import { getRankableResults } from "@/lib/leaderboard.functions";
 import { cn } from "@/lib/utils";
@@ -105,6 +105,7 @@ function LeaderboardPage() {
         score: r.score,
         total: r.total,
         time_seconds: r.time_seconds,
+        time_ms: r.time_ms ?? null,
         points: r.points ?? 0,
         best_streak: r.best_streak ?? 0,
         submitted_at: r.submitted_at,
@@ -136,7 +137,7 @@ function LeaderboardPage() {
       "Số câu đúng": `${r.score}/${r.total}`,
       "Chuỗi dài nhất": r.best_streak ?? 0,
       "Số lượt thi": r.attempts ?? 1,
-      "Thời gian làm bài": formatSeconds(r.time_seconds),
+      "Thời gian làm bài": formatDurationOf(r),
       "Thời điểm nộp": formatDateTime(r.submitted_at),
     }));
   }
@@ -444,7 +445,7 @@ function LeaderboardPage() {
                       <p className="font-mono text-xs text-muted-foreground">
                         {r.score}/{r.total} câu
                       </p>
-                      <p className="font-mono text-xs text-muted-foreground">{formatSeconds(r.time_seconds)}</p>
+                      <p className="font-mono text-xs text-muted-foreground">{formatDurationOf(r)}</p>
                     </div>
                   </li>
                   );
