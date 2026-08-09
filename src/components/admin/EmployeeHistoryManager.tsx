@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { normalizeKey } from "@/lib/csv";
 import { downloadCsv, downloadExcel, type ExportRow } from "@/lib/export";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatDurationOf } from "@/lib/format";
 import { PASS_PERCENT_DEFAULT, isPassed } from "@/lib/grading";
 import { cn } from "@/lib/utils";
 
