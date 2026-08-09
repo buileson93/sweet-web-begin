@@ -51,7 +51,7 @@ export async function getExamHistoryFor(input: {
     supabaseAdmin.from("questions").select(QUESTION_COLUMNS).in("id", questionIds),
     supabaseAdmin
       .from("results")
-      .select("session_id, score, total, time_seconds, disqualified, submitted_at, quiz_title")
+      .select("session_id, score, total, time_seconds, time_ms, disqualified, submitted_at, quiz_title")
       .in(
         "session_id",
         list.map((s) => s.id),
