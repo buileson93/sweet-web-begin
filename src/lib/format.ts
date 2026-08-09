@@ -4,6 +4,29 @@ export function formatSeconds(total: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+/** Thời gian làm bài dạng mm:ss.mmm (chính xác tới mili-giây). */
+export function formatDuration(ms: number) {
+  const t = Math.max(0, Math.round(ms || 0));
+  const m = Math.floor(t / 60_000);
+  const s = Math.floor((t % 60_000) / 1000);
+  const rest = t % 1000;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(rest).padStart(3, "0")}`;
+}
+
+export type DurationRow = { time_ms?: number | null; time_seconds?: number | null };
+
+/** Mili-giây của một bài thi; dữ liệu cũ chỉ có giây thì quy đổi. */
+export function durationMsOf(row: DurationRow): number {
+  const ms = row.time_ms;
+  if (ms !== null && ms !== undefined) return Math.max(0, ms);
+  return Math.max(0, (row.time_seconds ?? 0) * 1000);
+}
+
+/** Hiển thị mm:ss.mmm từ một bản ghi kết quả. */
+export function formatDurationOf(row: DurationRow): string {
+  return formatDuration(durationMsOf(row));
+}
+
 export function formatDateTime(value?: string | null) {
   if (!value) return "—";
   return new Intl.DateTimeFormat("vi-VN", {
