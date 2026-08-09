@@ -253,7 +253,7 @@ export async function submitExamSession(input: {
       .eq("disqualified", false),
     supabaseAdmin
       .from("results")
-      .select("id, disqualified, time_seconds")
+      .select("id, disqualified, time_seconds, time_ms")
       .eq("session_id", session.id)
       .maybeSingle(),
   ]);
