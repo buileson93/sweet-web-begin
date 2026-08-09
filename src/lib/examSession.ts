@@ -13,7 +13,9 @@ export const DEFAULT_EXAM_SETTINGS: ExamSettings = {
   comboFx: true,
   showQuestionMap: true,
   passPercent: 50,
+  strictMode: false,
 };
+
 
 type StorageLike = Pick<Storage, "getItem" | "removeItem">;
 
