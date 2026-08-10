@@ -3,32 +3,22 @@
 The user reports that some users are incorrectly blocked by the device reuse protection ("Thiết bị này vừa được ... sử dụng để dự thi"). This mechanism is intended to prevent people from passing their phone/computer to someone else to take the exam for them.
 
 ## Analysis
-1.  **Mechanism**: The protection uses a `p_device_id` (derived from `getDeviceId()` which stores a UUID in `localStorage`) and a `fingerprint` (Canvas/WebGL signature).
-2.  **Potential Causes for False Positives**:
-    *   **Shared IPs**: If the code used IP addresses, it would be a major cause, but it uses `device_id` and `fingerprint`.
-    *   **Fingerprint Collisions**: Generic hardware (e.g., identical corporate laptops or phones with same browser version) might produce identical fingerprints.
-    *   **Device ID persistence**: If `localStorage` is shared (unlikely for different users on different physical devices, but possible if using a shared workstation without logging out of the OS/Browser profile).
-    *   **Race Conditions**: `claim_exam_device` uses advisory locks, which is good.
-    *   **Strict Fingerprint matching**: The logic `v_row.device_id IS NULL AND v_fingerprint IS NOT NULL` might be too aggressive if many users have the same fingerprint.
+1.  **Mechanism**: The protection uses a `p_device_id` (UUID in `localStorage`) and a `fingerprint` (Canvas/WebGL signature).
+2.  **Identified Cause**: Database queries show that several fingerprints are shared by 2-4 different employees. This happens when they use identical hardware (e.g., same model of corporate phone or laptop) with the same browser version.
+3.  **Strict Logic**: The `claim_exam_device` function currently treats a fingerprint match as a "same device" even if the `device_id` is different. This is intended to catch incognito mode/cache clearing, but it's causing false positives for users with identical hardware.
 
 ## Proposed Steps
 
-### 1. Investigation
-*   Examine `device_locks` table to see if multiple `employee_id`s share the same `fingerprint` or `device_id`.
-*   Check if the `DEVICE_COOLDOWN_MINUTES` (currently 120 minutes / 2 hours) is too long for the specific use case where people might share a tablet in a common room (even if discouraged). The user mentions "12 minutes 19 seconds" in their example, which suggests they might have seen a shorter wait or it's a specific instance. Actually, 120 minutes is 2 hours.
+### 1. Database Fix
+*   Modify `claim_exam_device` SQL function:
+    *   Relax the fingerprint-only matching logic. Instead of automatically blocking, we should only block if BOTH `device_id` matches OR if the `fingerprint` match is very recent AND we have high confidence.
+    *   Better: Use fingerprint only as a "secondary signal" or completely remove fingerprint-based *blocking* if it's too noisy, keeping it for logging only.
+    *   Decision: We will keep fingerprint matching but add a check to see if that fingerprint has been seen by *many* users recently, which indicates a generic device type. If it's a generic fingerprint, we rely solely on `device_id`.
 
-### 2. Fixes & Improvements
-*   **Relax Fingerprint matching**: If fingerprints are colliding too often, prioritize `device_id` and only use fingerprint as a fallback with lower confidence.
-*   **Improve User Guidance**: Make the message clearer about *why* it's blocked (e.g., mention shared browser profiles).
-*   **Adjust Cooldown**: Consider if 120 minutes is too strict for high-volume internal exams.
+### 2. UI/Text Fix
+*   Update `src/lib/deviceLock.ts` with the new descriptive Vietnamese message as requested.
 
-## Task: Update Text
-Update the text in `src/lib/deviceLock.ts` as requested.
+### 3. Verification
+*   Verify the SQL function logic.
+*   Verify the UI message via unit tests.
 
-### Files to modify:
-*   `src/lib/deviceLock.ts`: Update the message.
-*   `src/lib/exam/session.server.ts`: (Optional) Adjust `DEVICE_COOLDOWN_MINUTES` if found to be the cause.
-
-### Verification:
-*   Run tests for `deviceLock.ts`.
-*   Check database logs for collisions.
