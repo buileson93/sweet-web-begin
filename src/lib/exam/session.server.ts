@@ -73,6 +73,8 @@ export async function startExamSession(input: {
       p_employee_id: employee.id,
       p_candidate_name: name,
       p_cooldown_minutes: DEVICE_COOLDOWN_MINUTES,
+      p_ip: input.request?.ip ?? null,
+      p_ua: input.request?.userAgent ?? null,
     });
     if (claimError) throw new Error(claimError.message);
     const lock = claim?.[0];
