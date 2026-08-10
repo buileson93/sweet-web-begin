@@ -115,7 +115,9 @@ export async function startExamSession(input: {
   });
   if (strict && !captcha.ok) {
     throw new Error(
-      "Không qua được xác minh chống script (" + captcha.reason + ") Vui lòng tải lại trang và thử lại.",
+      "đang bị lỗi cho các user bị Không qua được xác minh chống script (Hệ thống không nhận được tín hiệu xác minh an toàn từ Cloudflare. Vui lòng kiểm tra kết nối mạng và tải lại trang để tiếp tục.) Vui lòng tải lại trang và thử lại. (" +
+        captcha.reason +
+        ")",
     );
   }
 
