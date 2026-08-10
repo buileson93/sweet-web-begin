@@ -64,10 +64,10 @@ export async function claimSaveSlot(params: {
   } as never);
   if (error) throw new Error(error.message);
   const row = (Array.isArray(data) ? data[0] : data) as
-    | { ok?: boolean; reason?: string; suspicious?: boolean }
+    | { ok?: boolean; reason?: string }
     | null
     | undefined;
-  if (row?.ok) return { ok: true, suspicious: row.suspicious };
+  if (row?.ok) return { ok: true };
   const reason = row?.reason;
   if (reason === "too_fast" || reason === "too_many" || reason === "too_many_beacons" || reason === "replay") {
     return { ok: false, reason };

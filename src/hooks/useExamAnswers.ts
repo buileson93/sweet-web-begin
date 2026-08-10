@@ -82,7 +82,7 @@ export function useExamAnswers(opts: {
   const locked = (idx: number) => instant && feedback[String(idx)] !== undefined;
 
   const handleAnswer = useCallback(
-    async (idx: number, value: AnswerValue, opt?: { confirm?: boolean; kind?: string; clientSecret?: string }) => {
+    async (idx: number, value: AnswerValue, opt?: { confirm?: boolean; kind?: string }) => {
       if (locked(idx)) return;
       // Ghi bằng chứng: đáp án này có đi kèm thao tác vật lý thật hay không.
       inputProof.mark(idx);
@@ -96,25 +96,16 @@ export function useExamAnswers(opts: {
       try {
         const at = Date.now();
         const proof = inputProof.collect([String(idx)])[String(idx)];
-        
-        // Trộn hash để chống script gửi đáp án thô
-        let hashedValue = value;
-        if (opt?.clientSecret && (typeof value === "number" || typeof value === "string")) {
-          // Chỉ áp dụng hash cho các loại câu hỏi đơn giản để đảm bảo tính tương thích
-          // Trong thực tế có thể mở rộng cho mọi loại
-          hashedValue = `h:${opt.clientSecret}:${value}`;
-        }
-
         const signature = await signWithLivenessKey(
           session.sessionId,
-          checkMessage({ sessionId: session.sessionId, index: idx, value: hashedValue, proof, at }),
+          checkMessage({ sessionId: session.sessionId, index: idx, value, proof, at }),
         );
         const res = await runCheck({
           data: {
             sessionId: session.sessionId,
             submitToken: session.submitToken,
             index: idx,
-            value: hashedValue as any,
+            value,
             ...(proof ? { proof } : {}),
             at,
             ...(signature ? { signature } : {}),

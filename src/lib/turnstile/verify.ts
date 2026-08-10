@@ -71,7 +71,7 @@ export function evaluateTurnstile(
     const detail = codes.map(describeTurnstileCode).join(", ");
     return {
       ok: false,
-      reason: detail ? `đang bị lỗi xác định nhầm người thi \"thông báo Thiết bị này vừa được L. T. Á. Kiều sử dụng để dự thi. Để chống thi hộ, vui lòng chờ thêm 12 phút 19 giây rồi thử lại, hoặc dùng thiết bị khác.\" tìm nguyên nhân và đưa ra kế hoạch khắc phục khogon sửa UI text hay tzclock gì hết (${detail})` : "đang bị lỗi xác định nhầm người thi \"thông báo Thiết bị này vừa được L. T. Á. Kiều sử dụng để dự thi. Để chống thi hộ, vui lòng chờ thêm 12 phút 19 giây rồi thử lại, hoặc dùng thiết bị khác.\" tìm nguyên nhân và đưa ra kế hoạch khắc phục khogon sửa UI text hay tzclock gì hết",
+      reason: detail ? `Xác minh chống script thất bại (${detail}).` : "Xác minh chống script thất bại.",
       codes,
     };
   }

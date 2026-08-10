@@ -10,7 +10,7 @@
  */
 
 /** Khoảng cách tối thiểu giữa hai gói autosave thường (ms). */
-export const MIN_GAP_RPC_MS = 900;
+export const MIN_GAP_RPC_MS = 1_200;
 /** Khoảng cách tối thiểu giữa hai gói gửi bằng sendBeacon (ms). */
 export const MIN_GAP_BEACON_MS = 2_000;
 /** Tổng số gói autosave tối đa cho một phiên thi. */
@@ -31,11 +31,6 @@ export type SaveRateState = {
   beacons?: number;
   /** Chữ ký (rút gọn) của các gói gần nhất. */
   seen?: string[];
-  /**
-   * Lưu trữ các mốc thời gian của các gói gần nhất để tính Rolling Window.
-   * Dùng để phát hiện nhịp độ máy móc (ví dụ avg < 1.2s).
-   */
-  history?: number[];
 };
 
 export function readSaveRate(helpers: unknown): SaveRateState {
@@ -49,7 +44,7 @@ export function withSaveRate(helpers: unknown, next: SaveRateState): Record<stri
 }
 
 export type RateVerdict =
-  | { ok: true; suspicious?: boolean }
+  | { ok: true }
   | { ok: false; reason: "too_fast" | "too_many" | "too_many_beacons" | "replay" };
 
 /** Gói này có được nhận hay không (chưa cập nhật trạng thái). */
@@ -69,18 +64,6 @@ export function checkSaveRate(params: {
   if (signature && (state.seen ?? []).includes(fingerprint(signature))) {
     return { ok: false, reason: "replay" };
   }
-
-  // Rolling Window Check (5 gói gần nhất)
-  // Nếu trung bình < 1.2s -> Đánh dấu nghi vấn (suspicious: true)
-  const history = state.history ?? [];
-  if (history.length >= 4) {
-    const prev = history[0]!;
-    const avgGap = (nowMs - prev) / history.length;
-    if (avgGap < 1_200) {
-      return { ok: true, suspicious: true };
-    }
-  }
-
   return { ok: true };
 }
 
@@ -98,12 +81,10 @@ export function advanceSaveRate(params: {
 }): SaveRateState {
   const { state, nowMs, source, signature } = params;
   const seen = signature ? [...(state.seen ?? []), fingerprint(signature)].slice(-SEEN_LIMIT) : (state.seen ?? []);
-  const history = [...(state.history ?? []), nowMs].slice(-5);
   return {
     at: nowMs,
     count: (state.count ?? 0) + 1,
     beacons: (state.beacons ?? 0) + (source === "beacon" ? 1 : 0),
     seen,
-    history,
   };
 }

@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 import { RichText } from "@/components/RichText";
 import { behaviorTracker } from "@/lib/exam/behavior";
 
-
 export type QuestionInputProps = {
   kind: QuestionKind;
   options: string[];
@@ -26,10 +25,7 @@ export type QuestionInputProps = {
   feedback?: "correct" | "wrong" | null;
   /** Có bấm trúng thẻ mồi ẩn (chỉ script quét DOM mới làm được). */
   onTrap?: (info: { token: string }) => void;
-  /** Chế độ bảo mật: render văn bản thành ảnh. */
-  secureMode?: boolean;
 };
-
 
 const LETTER = (i: number) => String.fromCharCode(65 + i);
 
@@ -45,11 +41,7 @@ export function QuestionInput({
   disabled,
   feedback = null,
   onTrap,
-  secureMode = false,
 }: QuestionInputProps) {
-
-
-
   const [zoom, setZoom] = useState<string | null>(null);
 
   if (kind === "fill_blank") {
@@ -67,8 +59,6 @@ export function QuestionInput({
       </div>
     );
   }
-
-
 
   if (kind === "matching") {
     const map = (typeof value === "object" && !Array.isArray(value) ? value : {}) as Record<
@@ -126,7 +116,7 @@ export function QuestionInput({
               {pos + 1}
             </span>
             <span className="min-w-0 flex-1 text-sm">
-              <RichText inline secureMode={secureMode}>{options[optIndex]}</RichText>
+              <RichText inline>{options[optIndex]}</RichText>
             </span>
             <Button
               variant="ghost"
@@ -298,7 +288,7 @@ export function QuestionInput({
               </span>
             ) : null}
             <span className="relative z-10 min-w-0 flex-1 text-[0.95rem] font-medium leading-snug">
-              <RichText inline secureMode={secureMode}>{opt}</RichText>
+              <RichText inline>{opt}</RichText>
             </span>
             {active && !feedback ? (
               <>

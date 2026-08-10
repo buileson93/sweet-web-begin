@@ -33,7 +33,6 @@ type Params = {
   initialSeq?: number;
   /** Mắt xích chuỗi băm máy chủ đang giữ (lấy khi khôi phục bài làm). */
   initialChainHead?: string | null;
-  clientSecret?: string;
 };
 
 /**
@@ -50,7 +49,6 @@ export function useExamAutosave({
   enabled,
   initialSeq,
   initialChainHead,
-  clientSecret,
 }: Params) {
   const [status, setStatus] = useState<AutosaveStatus>("idle");
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -154,7 +152,6 @@ export function useExamAutosave({
           chainPrev: prevHead,
           chainHash,
           helpersPatch: behavior.robotic ? { behavior } : undefined,
-          clientSecret,
         },
       });
       if (res.chainHead) chainHeadRef.current = res.chainHead;

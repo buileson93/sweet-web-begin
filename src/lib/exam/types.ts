@@ -28,10 +28,7 @@ export type ExamSettings = {
   showQuestionMap: boolean;
   /** Mức điểm đạt tính theo PHẦN TRĂM (0-100). */
   passPercent: number;
-  /** Chế độ thi nghiêm ngặt (chống gian lận). */
-  strictMode: boolean;
 };
-
 
 export type StartExamResult = {
   sessionId: string;

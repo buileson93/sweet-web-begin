@@ -97,7 +97,7 @@ export function FraudMonitor() {
   return (
     <AdminSection
       title="Giám sát & Chống gian lận"
-      description="Phát hiện các hành vi bất thường, thi hộ hoặc sử dụng công cụ can thiệp. Đã kích hoạt bảo mật hình ảnh chống quét DOM."
+      description="Phát hiện các hành vi bất thường, thi hộ hoặc sử dụng công cụ can thiệp."
       toolbar={
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Ngưỡng liêm chính:</span>

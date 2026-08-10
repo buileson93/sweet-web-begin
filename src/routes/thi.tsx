@@ -31,7 +31,6 @@ import { useIntegrityWatch } from "@/hooks/useIntegrityWatch";
 import { attachInputProof, inputProof } from "@/lib/exam/inputProof";
 import { automationSignals, collectAutomationEnv } from "@/lib/exam/scriptDetect";
 import { behaviorTracker } from "@/lib/exam/behavior";
-import { buildCloak } from "@/lib/exam/optionCloak";
 import { CaptchaGuardDialog } from "@/components/exam/CaptchaGuardDialog";
 import { reportEvent, reverifyCaptcha } from "@/lib/exam.functions";
 
@@ -96,13 +95,6 @@ function ExamPage() {
     isMobileRef.current = isMobileDevice();
   }, []);
 
-  const cloak = useMemo(() => {
-    if (!session) return null;
-    const q = session.questions[current];
-    if (!q) return null;
-    return buildCloak(q.options);
-  }, [current, session]);
-
   // Autosave đáp án lên máy chủ (delta, nhịp 12s, debounce 2s, tối đa 1 request/5s).
   const {
     status: saveStatus,
@@ -115,7 +107,6 @@ function ExamPage() {
     answers,
     enabled: Boolean(session) && !result,
     initialSeq: serverSeq,
-    clientSecret: cloak?.clientSecret,
   });
 
   // Kiểm tra liveness liên tục bằng challenge-response (WebCrypto): phát hiện thay người giữa chừng.
@@ -177,7 +168,6 @@ function ExamPage() {
         proofs: inputProof.collect(Object.keys(answers)),
         disqualified: opts?.disqualified,
         disqualifyReason: opts?.reason,
-        clientSecret: cloak?.clientSecret,
       };
       try {
 
@@ -273,12 +263,8 @@ function ExamPage() {
         },
       }).catch(() => undefined);
       
-      // Nếu có dấu hiệu robotic rõ rệt hoặc pixel-perfect click, hoặc entropy bất thường, khóa ngay
-      if (
-        signals.includes("pixel_perfect_clicks") || 
-        signals.includes("robotic_trajectory") ||
-        signals.includes("unnatural_click_entropy")
-      ) {
+      // Nếu có dấu hiệu robotic rõ rệt hoặc pixel-perfect click, khóa ngay
+      if (signals.includes("pixel_perfect_clicks") || signals.includes("robotic_trajectory")) {
         setCaptchaLocked(true);
         toast.error("Phát hiện thao tác bất thường. Hãy xác minh lại để tiếp tục làm bài.");
       }
@@ -532,7 +518,7 @@ function ExamPage() {
             onX2={() => void requestX2()}
             onFifty={() => void requestFifty()}
             onTrap={onTrap}
-            onAnswer={(idx, value, opt) => void handleAnswer(idx, value, opt)}
+            onAnswer={(value) => void handleAnswer(current, value)}
             onConfirm={() => {
               const value = answers[String(current)];
               if (value !== undefined) void handleAnswer(current, value, { confirm: true });

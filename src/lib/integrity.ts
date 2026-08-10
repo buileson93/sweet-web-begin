@@ -29,7 +29,6 @@ export const EXAM_EVENT_KINDS = [
   "speed_anomaly",
   "robotic_movement",
   "unnatural_click",
-  "unnatural_click_entropy",
 ] as const;
 
 
@@ -175,8 +174,6 @@ export function scoreEvent(kind: ExamEventKind | string, detail: ExamEventDetail
       return 5;
     case "unnatural_click":
       return 4;
-    case "unnatural_click_entropy":
-      return 5;
     case "reconnect":
       return 0;
 
@@ -253,7 +250,6 @@ export const EXAM_EVENT_LABEL: Record<string, string> = {
   speed_anomaly: "Tốc độ trả lời bất thường",
   robotic_movement: "Di chuyển chuột/touch như máy",
   unnatural_click: "Tọa độ click bất thường (pixel-perfect)",
-  unnatural_click_entropy: "Phân tích Entropy click bất thường (script)",
 };
 
 
