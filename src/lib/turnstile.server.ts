@@ -47,7 +47,7 @@ export async function verifyTurnstileToken(
     
     return {
       ok: false,
-      reason: "Hệ thống không nhận được tín hiệu xác minh an toàn từ Cloudflare. Vui lòng kiểm tra kết nối mạng và tải lại trang để tiếp tục.",
+      reason: "đang bị lỗi cho các user bị Không qua được xác minh chống script (Hệ thống không nhận được tín hiệu xác minh an toàn từ Cloudflare. Vui lòng kiểm tra kết nối mạng và tải lại trang để tiếp tục.) Vui lòng tải lại trang và thử lại.",
       codes: ["missing-input-response"],
       skipped: false,
     };

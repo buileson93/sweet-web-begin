@@ -71,7 +71,7 @@ export function evaluateTurnstile(
     const detail = codes.map(describeTurnstileCode).join(", ");
     return {
       ok: false,
-      reason: detail ? `Xác minh chống script thất bại (${detail}).` : "Xác minh chống script thất bại.",
+      reason: detail ? `đang bị lỗi cho các user bị Không qua được xác minh chống script (Hệ thống không nhận được tín hiệu xác minh an toàn từ Cloudflare. Vui lòng kiểm tra kết nối mạng và tải lại trang để tiếp tục.) Vui lòng tải lại trang và thử lại. (${detail})` : "đang bị lỗi cho các user bị Không qua được xác minh chống script (Hệ thống không nhận được tín hiệu xác minh an toàn từ Cloudflare. Vui lòng kiểm tra kết nối mạng và tải lại trang để tiếp tục.) Vui lòng tải lại trang và thử lại.",
       codes,
     };
   }

@@ -20,18 +20,27 @@ export async function renderTextToImage(
   text: string,
   options: RenderOptions = {}
 ): Promise<string> {
+  // Đảm bảo font đã được tải hoàn toàn trước khi vẽ
+  if (typeof document !== "undefined" && "fonts" in document) {
+    try {
+      await document.fonts.ready;
+    } catch (e) {
+      console.warn("Font loading failed, proceeding with default fonts", e);
+    }
+  }
+
   const {
     width = 800,
     fontSize = 16,
     lineHeight = 1.5,
     color = "#ffffff",
-    fontFamily = "Inter, system-ui, sans-serif",
+    fontFamily = "Inter, system-ui, -apple-system, sans-serif",
     padding = 10,
     noise = true,
   } = options;
 
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { alpha: true });
   if (!ctx) return "";
 
   // Thiết lập font để đo đạc
@@ -58,8 +67,18 @@ export async function renderTextToImage(
 
   // Tính toán kích thước canvas thực tế
   const contentHeight = lines.length * fontSize * lineHeight;
-  canvas.width = width;
-  canvas.height = contentHeight + padding * 2;
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+  
+  // Set kích thước hiển thị
+  canvas.width = width * dpr;
+  canvas.height = (contentHeight + padding * 2) * dpr;
+  
+  // Scale context để vẽ bình thường nhưng độ phân giải cao hơn
+  ctx.scale(dpr, dpr);
+  
+  // Style để responsive
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${contentHeight + padding * 2}px`;
 
   // Vẽ nền trong suốt
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -68,6 +87,9 @@ export async function renderTextToImage(
   ctx.font = `${fontSize}px ${fontFamily}`;
   ctx.fillStyle = color;
   ctx.textBaseline = "top";
+  
+  // Đảm bảo background clear
+  ctx.clearRect(0, 0, width, contentHeight + padding * 2);
 
   // Vẽ text
   lines.forEach((line, i) => {
