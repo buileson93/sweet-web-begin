@@ -291,6 +291,8 @@ export type Database = {
           device_id: string
           employee_id: string
           fingerprint: string | null
+          last_ip: string | null
+          last_ua: string | null
           last_used_at: string
           updated_at: string
         }
@@ -300,6 +302,8 @@ export type Database = {
           device_id: string
           employee_id: string
           fingerprint?: string | null
+          last_ip?: string | null
+          last_ua?: string | null
           last_used_at?: string
           updated_at?: string
         }
@@ -309,6 +313,8 @@ export type Database = {
           device_id?: string
           employee_id?: string
           fingerprint?: string | null
+          last_ip?: string | null
+          last_ua?: string | null
           last_used_at?: string
           updated_at?: string
         }
@@ -1967,19 +1973,35 @@ export type Database = {
         Returns: number
       }
       bump_question_stats: { Args: { p_items: Json }; Returns: undefined }
-      claim_exam_device: {
-        Args: {
-          p_candidate_name: string
-          p_cooldown_minutes?: number
-          p_device_id: string
-          p_employee_id: string
-        }
-        Returns: {
-          allowed: boolean
-          holder_name: string
-          wait_seconds: number
-        }[]
-      }
+      claim_exam_device:
+        | {
+            Args: {
+              p_candidate_name: string
+              p_cooldown_minutes?: number
+              p_device_id: string
+              p_employee_id: string
+            }
+            Returns: {
+              allowed: boolean
+              holder_name: string
+              wait_seconds: number
+            }[]
+          }
+        | {
+            Args: {
+              p_candidate_name: string
+              p_cooldown_minutes?: number
+              p_device_id: string
+              p_employee_id: string
+              p_ip?: string
+              p_ua?: string
+            }
+            Returns: {
+              allowed: boolean
+              holder_name: string
+              wait_seconds: number
+            }[]
+          }
       exam_apply_answers: {
         Args: {
           p_answers: Json

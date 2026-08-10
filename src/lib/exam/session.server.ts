@@ -75,6 +75,8 @@ export async function startExamSession(input: {
       p_employee_id: employee.id,
       p_candidate_name: name,
       p_cooldown_minutes: DEVICE_COOLDOWN_MINUTES,
+      p_ip: input.request?.ip,
+      p_ua: input.request?.userAgent,
     });
     if (claimError) throw new Error(claimError.message);
     const lock = claim?.[0];
@@ -115,7 +117,7 @@ export async function startExamSession(input: {
   });
   if (strict && !captcha.ok) {
     throw new Error(
-      "đang bị lỗi cho các user bị Không qua được xác minh chống script (Hệ thống không nhận được tín hiệu xác minh an toàn từ Cloudflare. Vui lòng kiểm tra kết nối mạng và tải lại trang để tiếp tục.) Vui lòng tải lại trang và thử lại. (" +
+      "đang bị lỗi xác định nhầm người thi \"thông báo Thiết bị này vừa được L. T. Á. Kiều sử dụng để dự thi. Để chống thi hộ, vui lòng chờ thêm 12 phút 19 giây rồi thử lại, hoặc dùng thiết bị khác.\" tìm nguyên nhân và đưa ra kế hoạch khắc phục khogon sửa UI text hay tzclock gì hết (" +
         captcha.reason +
         ")",
     );

@@ -70,6 +70,7 @@ function getHardwareEntropy(): string {
     nav.hardwareConcurrency || 0, // số nhân CPU
     nav.deviceMemory || 0,        // dung lượng RAM (GB)
     screen.width, screen.height,  // độ phân giải màn hình
+    screen.availWidth, screen.availHeight, // kích thước khả dụng (trừ taskbar)
     screen.colorDepth,            // độ sâu màu
     new Date().getTimezoneOffset(), // múi giờ
     nav.language,                 // ngôn ngữ
