@@ -80,15 +80,16 @@ export async function renderTextToImage(
   canvas.style.width = `${width}px`;
   canvas.style.height = `${contentHeight + padding * 2}px`;
 
-  // Vẽ nền trong suốt
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Style để responsive
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${contentHeight + padding * 2}px`;
 
-  // Thiết lập lại font sau khi đổi size canvas
+  // Thiết lập state vẽ (font cần set LẠI sau mỗi lần resize canvas)
   ctx.font = `${fontSize}px ${fontFamily}`;
   ctx.fillStyle = color;
   ctx.textBaseline = "top";
-  
-  // Đảm bảo background clear
+
+  // Vẽ nền trong suốt
   ctx.clearRect(0, 0, width, contentHeight + padding * 2);
 
   // Vẽ text
@@ -125,8 +126,8 @@ export async function renderTextToImage(
     ctx.lineWidth = 0.5;
     for (let i = 0; i < 3; i++) {
       ctx.beginPath();
-      ctx.moveTo(Math.random() * canvas.width, 0);
-      ctx.lineTo(Math.random() * canvas.width, canvas.height);
+      ctx.moveTo(Math.random() * width, 0);
+      ctx.lineTo(Math.random() * width, contentHeight + padding * 2);
       ctx.stroke();
     }
   }
