@@ -30,6 +30,6 @@ export function deviceCooldownMessage(waitSeconds: number, holderName: string): 
   return (
     `Thiết bị này vừa được ${maskName(holderName)} sử dụng để dự thi. ` +
     `Để chống thi hộ, vui lòng chờ thêm ${humanizeWait(waitSeconds)} rồi thử lại, ` +
-    `hoặc dùng thiết bị khác.`
+    `hoặc dùng thiết bị khác. (Nếu bạn đang dùng máy tính chung hoặc thiết bị lạ, hãy đảm bảo đã đăng xuất các tài khoản khác và tải lại trang.)`
   );
 }
