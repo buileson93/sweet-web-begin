@@ -1,6 +1,6 @@
 # Plan - Database Seed for "Phòng Kỹ Thuật" Employees
 
-The user wants to seed the database with perfect exam scores for all employees in "Phòng Kỹ Thuật" for the quiz "Tìm hiểu về Tiết kiệm, phòng, chống lãng phí" (ID: `b05b5a04-9bc2-4833-9f68-7f1c01928764`). The duration should be randomized between 30s and 45s.
+The user wants to seed the database with perfect exam scores for all employees in "Phòng Kỹ Thuật" for the quiz "Tìm hiểu về Tiết kiệm, phòng, chống lãng phí" (ID: `b05b5a04-9bc2-4833-9f68-7f1c01928764`). The duration should be randomized between 30s and 45s, and every question should be marked as correct (105/105).
 
 ## Objectives
 - Identify all employees in "Phòng Kỹ Thuật".
